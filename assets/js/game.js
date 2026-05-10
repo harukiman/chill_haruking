@@ -1720,26 +1720,35 @@
     var settingsOverlay = document.getElementById('settingsOverlay');
     var closeSettingsBtn = document.getElementById('closeSettingsBtn');
     var volumeSlider = document.getElementById('volumeSlider');
+    var bgmSlider = document.getElementById('bgmSlider');
+    var seSlider = document.getElementById('seSlider');
     var returnTitleBtn = document.getElementById('returnTitleFromSettings');
 
     if (!settingsBtn || !settingsOverlay) return;
 
-    settingsBtn.addEventListener('click', function () {
+    function syncSliders() {
+      if (volumeSlider) volumeSlider.value = Math.round(GameEngine.getMasterVolume() * 100);
+      if (bgmSlider) bgmSlider.value = Math.round(GameEngine.getBgmVolume() * 100);
+      if (seSlider) seSlider.value = Math.round(GameEngine.getSeVolume() * 100);
+      var vl = document.getElementById('volumeValue');
+      var bl = document.getElementById('bgmValue');
+      var sl = document.getElementById('seValue');
+      if (vl) vl.textContent = Math.round(GameEngine.getMasterVolume() * 100) + '%';
+      if (bl) bl.textContent = Math.round(GameEngine.getBgmVolume() * 100) + '%';
+      if (sl) sl.textContent = Math.round(GameEngine.getSeVolume() * 100) + '%';
+    }
+
+    function openSettings() {
       if (phase === PHASES.TITLE) return;
       settingsOverlay.style.display = 'flex';
       GameEngine.paused = true;
-      if (volumeSlider) {
-        volumeSlider.value = GameEngine.getMasterVolume() * 100;
-      }
-    });
+      syncSliders();
+    }
+
+    settingsBtn.addEventListener('click', openSettings);
     settingsBtn.addEventListener('touchend', function (e) {
       e.preventDefault();
-      if (phase === PHASES.TITLE) return;
-      settingsOverlay.style.display = 'flex';
-      GameEngine.paused = true;
-      if (volumeSlider) {
-        volumeSlider.value = GameEngine.getMasterVolume() * 100;
-      }
+      openSettings();
     });
 
     if (closeSettingsBtn) {
@@ -1755,11 +1764,27 @@
     }
 
     if (volumeSlider) {
-      var volumeLabel = document.getElementById('volumeValue');
       volumeSlider.addEventListener('input', function () {
         var v = Math.round(this.value);
         GameEngine.setMasterVolume(v / 100);
-        if (volumeLabel) volumeLabel.textContent = v + '%';
+        var lbl = document.getElementById('volumeValue');
+        if (lbl) lbl.textContent = v + '%';
+      });
+    }
+    if (bgmSlider) {
+      bgmSlider.addEventListener('input', function () {
+        var v = Math.round(this.value);
+        GameEngine.setBgmVolume(v / 100);
+        var lbl = document.getElementById('bgmValue');
+        if (lbl) lbl.textContent = v + '%';
+      });
+    }
+    if (seSlider) {
+      seSlider.addEventListener('input', function () {
+        var v = Math.round(this.value);
+        GameEngine.setSeVolume(v / 100);
+        var lbl = document.getElementById('seValue');
+        if (lbl) lbl.textContent = v + '%';
       });
     }
 

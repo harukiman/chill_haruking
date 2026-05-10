@@ -89,8 +89,12 @@
   var audioCtx = null;
   var audioInitialized = false;
   var masterGain = null;
+  var bgmGain = null;
+  var seGain = null;
   var activeLoops = {};
   var masterVolume = 0.7;
+  var bgmVolume = 0.7;
+  var seVolume = 0.8;
 
   // ───────────────────────────────────────────────
   // Joystick state
@@ -742,6 +746,12 @@
         masterGain = audioCtx.createGain();
         masterGain.gain.value = masterVolume;
         masterGain.connect(audioCtx.destination);
+        bgmGain = audioCtx.createGain();
+        bgmGain.gain.value = bgmVolume;
+        bgmGain.connect(masterGain);
+        seGain = audioCtx.createGain();
+        seGain.gain.value = seVolume;
+        seGain.connect(masterGain);
         audioInitialized = true;
 
         // Resume context if suspended (iOS)
@@ -853,10 +863,33 @@
       return masterVolume;
     },
 
+    setBgmVolume: function (vol) {
+      bgmVolume = Math.max(0, Math.min(1, vol));
+      if (bgmGain) {
+        bgmGain.gain.setValueAtTime(bgmVolume, bgmGain.context.currentTime);
+      }
+    },
+
+    getBgmVolume: function () {
+      return bgmVolume;
+    },
+
+    setSeVolume: function (vol) {
+      seVolume = Math.max(0, Math.min(1, vol));
+      if (seGain) {
+        seGain.gain.setValueAtTime(seVolume, seGain.context.currentTime);
+      }
+    },
+
+    getSeVolume: function () {
+      return seVolume;
+    },
+
     // --- Sound implementations ---
 
     _playFootstep: function (now) {
-      var bufferSize = audioCtx.sampleRate * 0.05; // 50ms
+      var dest = seGain || masterGain;
+      var bufferSize = audioCtx.sampleRate * 0.05;
       var buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
       var data = buffer.getChannelData(0);
       for (var i = 0; i < bufferSize; i++) {
@@ -868,11 +901,12 @@
       var gain = audioCtx.createGain();
       gain.gain.value = 0.15;
       src.connect(gain);
-      gain.connect(masterGain);
+      gain.connect(dest);
       src.start(now);
     },
 
     _playDoor: function (now) {
+      var dest = seGain || masterGain;
       var osc = audioCtx.createOscillator();
       var gain = audioCtx.createGain();
       osc.type = 'sawtooth';
@@ -881,12 +915,13 @@
       gain.gain.setValueAtTime(0.2, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
       osc.connect(gain);
-      gain.connect(masterGain);
+      gain.connect(dest);
       osc.start(now);
       osc.stop(now + 0.4);
     },
 
     _playPhone: function (now) {
+      var dest = seGain || masterGain;
       var osc1 = audioCtx.createOscillator();
       var osc2 = audioCtx.createOscillator();
       var gain = audioCtx.createGain();
@@ -900,7 +935,7 @@
       gain.gain.setValueAtTime(0, now + 1.0);
       osc1.connect(gain);
       osc2.connect(gain);
-      gain.connect(masterGain);
+      gain.connect(dest);
       osc1.start(now);
       osc2.start(now);
       osc1.stop(now + 1.1);
@@ -908,7 +943,7 @@
     },
 
     _playHeartbeat: function (now) {
-      // Two thuds: lub-dub
+      var dest = bgmGain || masterGain;
       for (var i = 0; i < 2; i++) {
         var offset = i * 0.15;
         var osc = audioCtx.createOscillator();
@@ -918,14 +953,14 @@
         gain.gain.setValueAtTime(0.4, now + offset);
         gain.gain.exponentialRampToValueAtTime(0.001, now + offset + 0.15);
         osc.connect(gain);
-        gain.connect(masterGain);
+        gain.connect(dest);
         osc.start(now + offset);
         osc.stop(now + offset + 0.2);
       }
     },
 
     _playJumpscare: function (now) {
-      // White noise burst
+      var dest = seGain || masterGain;
       var bufferSize = audioCtx.sampleRate * 0.5;
       var buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
       var data = buffer.getChannelData(0);
@@ -938,11 +973,10 @@
       noiseGain.gain.setValueAtTime(0.8, now);
       noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
       noiseSrc.connect(noiseGain);
-      noiseGain.connect(masterGain);
+      noiseGain.connect(dest);
       noiseSrc.start(now);
       noiseSrc.stop(now + 0.6);
 
-      // Dissonant chord (stacked minor 2nds)
       var freqs = [200, 212, 224, 237, 450, 477];
       for (var f = 0; f < freqs.length; f++) {
         var osc = audioCtx.createOscillator();
@@ -952,13 +986,14 @@
         g.gain.setValueAtTime(0.3, now);
         g.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
         osc.connect(g);
-        g.connect(masterGain);
+        g.connect(dest);
         osc.start(now);
         osc.stop(now + 0.55);
       }
     },
 
     _playKnock: function (now) {
+      var dest = seGain || masterGain;
       for (var i = 0; i < 3; i++) {
         var offset = i * 0.12;
         var bufLen = audioCtx.sampleRate * 0.04;
@@ -973,18 +1008,19 @@
         var gain = audioCtx.createGain();
         gain.gain.value = 0.35;
         src.connect(gain);
-        gain.connect(masterGain);
+        gain.connect(dest);
         src.start(now + offset);
       }
     },
 
     _playBreath: function (now) {
+      var dest = bgmGain || masterGain;
       var bufferSize = audioCtx.sampleRate * 2;
       var buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
       var data = buffer.getChannelData(0);
       for (var i = 0; i < bufferSize; i++) {
         var t = i / audioCtx.sampleRate;
-        var envelope = Math.sin(t * Math.PI); // Breathe in-out shape
+        var envelope = Math.sin(t * Math.PI);
         data[i] = (Math.random() * 2 - 1) * envelope * 0.2;
       }
       var src = audioCtx.createBufferSource();
@@ -997,11 +1033,12 @@
       gain.gain.value = 0.25;
       src.connect(filter);
       filter.connect(gain);
-      gain.connect(masterGain);
+      gain.connect(dest);
       src.start(now);
     },
 
     _playStatic: function (now) {
+      var dest = bgmGain || masterGain;
       var bufferSize = audioCtx.sampleRate * 0.3;
       var buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
       var data = buffer.getChannelData(0);
@@ -1013,12 +1050,12 @@
       var gain = audioCtx.createGain();
       gain.gain.value = 0.3;
       src.connect(gain);
-      gain.connect(masterGain);
+      gain.connect(dest);
       src.start(now);
     },
 
     _playHit: function (now) {
-      // Low thud
+      var dest = seGain || masterGain;
       var osc = audioCtx.createOscillator();
       var gain = audioCtx.createGain();
       osc.type = 'sine';
@@ -1027,11 +1064,10 @@
       gain.gain.setValueAtTime(0.5, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
       osc.connect(gain);
-      gain.connect(masterGain);
+      gain.connect(dest);
       osc.start(now);
       osc.stop(now + 0.25);
 
-      // Noise burst
       var bufLen = audioCtx.sampleRate * 0.08;
       var buf = audioCtx.createBuffer(1, bufLen, audioCtx.sampleRate);
       var d = buf.getChannelData(0);
@@ -1044,8 +1080,22 @@
       var g2 = audioCtx.createGain();
       g2.gain.value = 0.3;
       src.connect(g2);
-      g2.connect(masterGain);
+      g2.connect(dest);
       src.start(now);
+    },
+
+    _playTextBlip: function (now) {
+      var dest = seGain || masterGain;
+      var osc = audioCtx.createOscillator();
+      var gain = audioCtx.createGain();
+      osc.type = 'square';
+      osc.frequency.value = 600 + Math.random() * 100;
+      gain.gain.setValueAtTime(0.06, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+      osc.connect(gain);
+      gain.connect(dest);
+      osc.start(now);
+      osc.stop(now + 0.05);
     },
 
     // --- Loop sound implementations ---
@@ -1068,7 +1118,7 @@
 
       gain.gain.value = 0.06;
       osc.connect(gain);
-      gain.connect(masterGain);
+      gain.connect(bgmGain || masterGain);
 
       osc.start();
       lfo.start();
@@ -1127,7 +1177,7 @@
       var gain = audioCtx.createGain();
       gain.gain.value = 0.2;
       src.connect(gain);
-      gain.connect(masterGain);
+      gain.connect(bgmGain || masterGain);
       src.start();
       return { nodes: [src], gain: gain };
     },
@@ -1361,6 +1411,10 @@
           dialogueCharTimer -= DIALOGUE_CHAR_DELAY;
           dialogueCharIndex++;
           dialogueDisplayed = dialogueFullText.substring(0, dialogueCharIndex);
+          // Text blip sound every 2 characters
+          if (dialogueCharIndex % 2 === 0 && audioCtx && audioCtx.state === 'running') {
+            engine._playTextBlip(audioCtx.currentTime);
+          }
         }
         if (dialogueCharIndex >= dialogueFullText.length) {
           dialogueComplete = true;

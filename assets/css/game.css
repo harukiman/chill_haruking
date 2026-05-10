@@ -998,8 +998,14 @@ html, body {
   letter-spacing: 0.1em;
 }
 
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .volume-slider {
-  width: 100%;
+  flex: 1;
   height: 4px;
   -webkit-appearance: none;
   appearance: none;
