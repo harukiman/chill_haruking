@@ -2,7 +2,7 @@
  * CHILL HARUKING - Game Logic
  * チル・ハルキング 〜ホテルの怪〜
  *
- * A Chilla's Art-style 2D top-down horror game.
+ * A Chilla's Art-style first-person raycasting horror game.
  * Player works at a hotel front desk. Haruki calls asking for towels.
  * Player walks to Room 404 -- nobody inside. Gets attacked from behind.
  * Wakes up in basement utility room. Must escape the hotel while Haruki chases.
@@ -234,6 +234,7 @@
     w: 20, h: 20,
     speed: 120,
     sprintSpeed: 200,
+    angle: Math.PI * 1.5, // facing up (north) initially
     dir: 'down',
     color: '#4488cc',
     stamina: 1.0,
@@ -254,6 +255,7 @@
     speed: 100,
     dir: 'down',
     color: '#880000',
+    sprite: 'assets/img/haruki.png',
     active: false,
     visible: true,
     path: [],
@@ -548,6 +550,7 @@
     var sp = gToW(7, 26);
     player.x = sp.x;
     player.y = sp.y;
+    player.angle = Math.PI * 1.5; // facing up (north)
     player.dir = 'up';
     player.flashlightRadius = 200;
     player.flashlightFlicker = 0;
@@ -643,6 +646,7 @@
     var sp = gToW(2, 33);
     player.x = sp.x;
     player.y = sp.y;
+    player.angle = Math.PI * 1.5; // facing up (north)
     player.dir = 'up';
     player.flashlightRadius = 100;
     player.flashlightFlicker = 0.8;
@@ -810,22 +814,18 @@
     if (unlockingExit) return;
 
     var input = GameEngine.input;
-    var dx = input.dx || 0;
-    var dy = input.dy || 0;
-
-    // Normalize diagonal
-    var mag = Math.sqrt(dx * dx + dy * dy);
-    if (mag > 1) { dx /= mag; dy /= mag; }
+    var turnSpeed = 2.5; // radians per second
 
     // Sprint logic (only during chase phases or explore)
     sprinting = false;
-    if ((phase === PHASES.CHASE_1 || phase === PHASES.EXPLORE || phase === PHASES.CHASE_FINAL) && mag > 0.7) {
+    if ((phase === PHASES.CHASE_1 || phase === PHASES.EXPLORE || phase === PHASES.CHASE_FINAL) &&
+        (Math.abs(input.dy) > 0.7 || input.sprint)) {
       if (!player.staminaRecharging && player.stamina > 0) {
         sprinting = true;
       }
     }
 
-    var spd = sprinting ? player.sprintSpeed : player.speed;
+    var moveSpeed = sprinting ? player.sprintSpeed : player.speed;
 
     if (sprinting) {
       player.stamina -= dt / 5; // 5 seconds of sprint
@@ -856,27 +856,27 @@
       }
     }
 
-    var moveX = dx * spd * dt;
-    var moveY = dy * spd * dt;
-    player.moving = (mag > 0.1);
+    // Turn (joystick left/right)
+    if (Math.abs(input.dx) > 0.1) {
+      player.angle += input.dx * turnSpeed * dt;
+    }
 
-    // Try move X
+    // Move forward/backward (joystick up/down)
+    var moveX = 0, moveY = 0;
+    if (Math.abs(input.dy) > 0.1) {
+      moveX = Math.cos(player.angle) * (-input.dy) * moveSpeed * dt;
+      moveY = Math.sin(player.angle) * (-input.dy) * moveSpeed * dt;
+    }
+
+    // Collision check and apply movement
     if (moveX !== 0 && canMoveTo(player.x + moveX, player.y)) {
       player.x += moveX;
     }
-    // Try move Y
     if (moveY !== 0 && canMoveTo(player.x, player.y + moveY)) {
       player.y += moveY;
     }
 
-    // Direction
-    if (Math.abs(dx) > 0.1 || Math.abs(dy) > 0.1) {
-      if (Math.abs(dx) > Math.abs(dy)) {
-        player.dir = dx > 0 ? 'right' : 'left';
-      } else {
-        player.dir = dy > 0 ? 'down' : 'up';
-      }
-    }
+    player.moving = (Math.abs(input.dy) > 0.1);
 
     // Footstep sounds
     if (player.moving) {
@@ -893,9 +893,8 @@
     var pg = wToG(player.x, player.y);
     visitedTiles[pg.gx + ',' + pg.gy] = true;
 
-    // Update camera
-    GameEngine.camera.x = player.x;
-    GameEngine.camera.y = player.y;
+    // Update camera (first-person view)
+    GameEngine.setPlayerView(player.x, player.y, player.angle);
 
     // Handle action button press
     if (input.actionJustPressed && actionCallback) {
@@ -1206,40 +1205,34 @@
   //  RENDERING
   // =========================================================
   function renderGame(ctx) {
-    // 1. Draw map
+    // 1. Draw map (raycasting: walls, floor, ceiling)
     GameEngine.drawMap();
 
-    // 2. Draw room labels
-    drawRoomLabels(ctx);
-
-    // 3. Draw items on ground
+    // 2. Draw items as sprites (key card)
     drawItems(ctx);
 
-    // 4. Draw player
-    GameEngine.drawEntity(player);
-
-    // 5. Draw Haruki (only if active and in flashlight range)
+    // 3. Draw Haruki as sprite (only if active and in range)
     if (haruki.active) {
       var hdx = haruki.x - player.x;
       var hdy = haruki.y - player.y;
       var hDist = Math.sqrt(hdx * hdx + hdy * hdy);
       if (hDist < player.flashlightRadius + 60) {
-        drawHarukiEntity(ctx);
+        GameEngine.drawEntity(haruki);
       }
     }
 
-    // 6. Darkness / flashlight
+    // 4. Darkness / vignette
     if (phase !== PHASES.TITLE && phase !== PHASES.GAME_OVER && phase !== PHASES.ENDING) {
       GameEngine.drawDarkness(player.x, player.y, player.flashlightRadius, player.flashlightFlicker);
     }
 
-    // 7. Draw minimap
+    // 5. Draw minimap
     if (phase === PHASES.EXPLORE || phase === PHASES.CHASE_1 || phase === PHASES.CHASE_FINAL ||
         phase === PHASES.WALK_TO_ROOM) {
       drawMinimap(ctx);
     }
 
-    // 8. Phase overlays
+    // 6. Phase overlays
     if (phase === PHASES.CHASE_FINAL && unlockingExit) {
       drawUnlockingOverlay(ctx);
     }
@@ -1270,72 +1263,23 @@
   }
 
   function drawItems(ctx) {
-    var cam = GameEngine.camera;
-    var canvas = ctx.canvas;
-    var cx = canvas.width / 2;
-    var cy = canvas.height / 2;
+    if (!keyCardItem || keyCardItem.collected) return;
 
-    for (var i = 0; i < interactables.length; i++) {
-      var item = interactables[i];
-      if (item.collected) continue;
-
-      var sx = item.wx - cam.x + cx;
-      var sy = item.wy - cam.y + cy;
-
-      // Only draw if on screen
-      if (sx < -50 || sx > canvas.width + 50 || sy < -50 || sy > canvas.height + 50) continue;
-
-      // Glow effect
-      item.glowPhase = (item.glowPhase || 0) + 0.05;
-      var glow = 0.5 + Math.sin(item.glowPhase) * 0.3;
-
-      ctx.save();
-      ctx.globalAlpha = glow;
-
-      if (item.type === 'keycard') {
-        // Draw a small glowing card shape
-        ctx.fillStyle = '#ffcc00';
-        ctx.shadowColor = '#ffcc00';
-        ctx.shadowBlur = 10;
-        ctx.fillRect(sx - 8, sy - 5, 16, 10);
-        ctx.fillStyle = '#aa8800';
-        ctx.shadowBlur = 0;
-        ctx.fillRect(sx - 4, sy - 2, 4, 4);
-      }
-
-      ctx.restore();
-    }
+    // Render key card as a sprite in first-person
+    var itemEntity = {
+      x: keyCardItem.wx,
+      y: keyCardItem.wy,
+      w: 16,
+      h: 16,
+      color: '#ffcc00',
+      visible: true
+    };
+    GameEngine.drawEntity(itemEntity);
   }
 
   function drawHarukiEntity(ctx) {
-    var cam = GameEngine.camera;
-    var canvas = ctx.canvas;
-    var cx = canvas.width / 2;
-    var cy = canvas.height / 2;
-
-    var sx = haruki.x - cam.x + cx;
-    var sy = haruki.y - cam.y + cy;
-
-    // Draw body
-    ctx.save();
-    ctx.fillStyle = haruki.color;
-    ctx.shadowColor = '#ff0000';
-    ctx.shadowBlur = 8;
-    ctx.fillRect(sx - haruki.w / 2, sy - haruki.h / 2, haruki.w, haruki.h);
-
-    // Draw face image if available
-    var faceImg = GameEngine.images['assets/img/haruki.png'];
-    if (faceImg) {
-      ctx.shadowBlur = 0;
-      ctx.drawImage(faceImg, sx - haruki.w / 2, sy - haruki.h / 2, haruki.w, haruki.h);
-    } else {
-      // Draw creepy eyes
-      ctx.shadowBlur = 0;
-      ctx.fillStyle = '#ff0000';
-      ctx.fillRect(sx - 5, sy - 4, 3, 3);
-      ctx.fillRect(sx + 2, sy - 4, 3, 3);
-    }
-    ctx.restore();
+    // In first-person mode, the engine's sprite renderer handles Haruki
+    GameEngine.drawEntity(haruki);
   }
 
   function drawMinimap(ctx) {
@@ -1494,6 +1438,26 @@
     // Load the map
     var mapData = buildMapData();
     GameEngine.loadMap(mapData);
+
+    // Tell raycaster which tiles are solid (block rays)
+    GameEngine.isTileSolid = function (tile, gx, gy) {
+      // Always-solid tiles
+      if (tile === TILE.WALL || tile === TILE.FURNITURE || tile === TILE.WINDOW) return true;
+      // Closed doors block rays
+      if (tile === TILE.DOOR) {
+        for (var i = 0; i < doors.length; i++) {
+          if (doors[i].gx === gx && doors[i].gy === gy) {
+            return !doors[i].open;
+          }
+        }
+        return false; // unlisted door → open
+      }
+      // Exit door
+      if (tile === TILE.EXIT_DOOR) return !exitDoor.open;
+      // Elevator
+      if (tile === TILE.ELEVATOR) return true;
+      return false;
+    };
 
     // Preload images
     Promise.all([

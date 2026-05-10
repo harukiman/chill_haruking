@@ -1,6 +1,6 @@
 /**
- * GameEngine - 2D Top-Down Horror Game Engine
- * Mobile-first, procedural audio, flashlight darkness system
+ * GameEngine - First-Person Raycasting Horror Game Engine
+ * Mobile-first, procedural audio, distance fog darkness system
  */
 (function () {
   'use strict';
@@ -30,6 +30,20 @@
     }
     noiseCtx.putImageData(id, 0, 0);
   }
+
+  // ───────────────────────────────────────────────
+  // Player view state (first-person camera)
+  // ───────────────────────────────────────────────
+  var playerAngle = 0; // radians, 0 = east, PI/2 = south
+  var playerX = 0; // world position (pixels)
+  var playerY = 0;
+  var FOV = Math.PI / 3; // 60 degree field of view
+
+  // ───────────────────────────────────────────────
+  // Flashlight / fog state
+  // ───────────────────────────────────────────────
+  var currentFlashlightRadius = 200;
+  var currentFlashlightFlicker = 0;
 
   // ───────────────────────────────────────────────
   // Shake state
@@ -118,6 +132,249 @@
   var rafId = null;
 
   // ───────────────────────────────────────────────
+  // Raycasting renderer functions
+  // ───────────────────────────────────────────────
+
+  function getWallColor(tile, side, dist) {
+    var r, g, b;
+    switch (tile) {
+      case 1: r = 58; g = 58; b = 58; break; // Wall
+      case 2: r = 106; g = 64; b = 0; break; // Door (closed)
+      case 6: r = 30; g = 80; b = 30; break; // Exit door
+      case 7: r = 50; g = 50; b = 50; break; // Furniture
+      case 9: r = 70; g = 70; b = 75; break; // Elevator door
+      case 10: r = 42; g = 48; b = 64; break; // Window
+      default: r = 58; g = 58; b = 58; break;
+    }
+
+    // Darken one side for depth
+    if (side === 1) { r = r * 0.7 | 0; g = g * 0.7 | 0; b = b * 0.7 | 0; }
+
+    // Distance fog (darken with distance, using flashlight radius)
+    var flickerAdjust = currentFlashlightFlicker * (Math.random() * 0.3);
+    var effectiveRadius = currentFlashlightRadius * (1 - flickerAdjust);
+    var fogFactor = Math.max(0, 1 - dist / (effectiveRadius / TILE_SIZE));
+    r = (r * fogFactor) | 0;
+    g = (g * fogFactor) | 0;
+    b = (b * fogFactor) | 0;
+
+    return 'rgb(' + r + ',' + g + ',' + b + ')';
+  }
+
+  function renderFirstPerson() {
+    var ctx = engine.ctx;
+    var w = engine.width;
+    var h = engine.height;
+    var map = engine.currentMap;
+    if (!map) return;
+
+    var tiles = map.tiles;
+    var mapW = map.width;
+    var mapH = map.height;
+    var ts = TILE_SIZE;
+
+    // Apply shake to angle for camera wobble
+    var renderAngle = playerAngle + shakeOffsetX * 0.01;
+
+    // Draw ceiling
+    var ceilGrad = ctx.createLinearGradient(0, 0, 0, h / 2);
+    ceilGrad.addColorStop(0, '#050505');
+    ceilGrad.addColorStop(1, '#101010');
+    ctx.fillStyle = ceilGrad;
+    ctx.fillRect(0, 0, w, h / 2);
+
+    // Draw floor
+    var floorGrad = ctx.createLinearGradient(0, h / 2, 0, h);
+    floorGrad.addColorStop(0, '#0a0a0a');
+    floorGrad.addColorStop(1, '#1a1a1a');
+    ctx.fillStyle = floorGrad;
+    ctx.fillRect(0, h / 2, w, h / 2);
+
+    // Z-buffer for sprite clipping
+    var zBuffer = new Float32Array(w);
+
+    // Cast rays
+    var stripWidth = 2; // 2px wide strips for mobile performance
+    var numRays = Math.ceil(w / stripWidth);
+
+    for (var i = 0; i < numRays; i++) {
+      var screenX = i * stripWidth;
+      var rayAngle = renderAngle - FOV / 2 + (i / numRays) * FOV;
+
+      var sinA = Math.sin(rayAngle);
+      var cosA = Math.cos(rayAngle);
+
+      // DDA raycasting
+      var mapX = Math.floor(playerX / ts);
+      var mapY = Math.floor(playerY / ts);
+
+      var deltaDistX = Math.abs(1 / cosA) || 1e10;
+      var deltaDistY = Math.abs(1 / sinA) || 1e10;
+
+      var stepX, stepY, sideDistX, sideDistY;
+
+      if (cosA < 0) {
+        stepX = -1;
+        sideDistX = (playerX / ts - mapX) * deltaDistX;
+      } else {
+        stepX = 1;
+        sideDistX = (mapX + 1 - playerX / ts) * deltaDistX;
+      }
+      if (sinA < 0) {
+        stepY = -1;
+        sideDistY = (playerY / ts - mapY) * deltaDistY;
+      } else {
+        stepY = 1;
+        sideDistY = (mapY + 1 - playerY / ts) * deltaDistY;
+      }
+
+      // Step through grid
+      var hit = false;
+      var side = 0; // 0=NS wall, 1=EW wall
+      var hitTile = 1;
+      var maxSteps = 30;
+
+      for (var step = 0; step < maxSteps; step++) {
+        if (sideDistX < sideDistY) {
+          sideDistX += deltaDistX;
+          mapX += stepX;
+          side = 0;
+        } else {
+          sideDistY += deltaDistY;
+          mapY += stepY;
+          side = 1;
+        }
+
+        if (mapX < 0 || mapX >= mapW || mapY < 0 || mapY >= mapH) break;
+
+        var tile = tiles[mapY][mapX];
+        // Check if this tile blocks rays
+        var solid = false;
+        if (engine.isTileSolid) {
+          solid = engine.isTileSolid(tile, mapX, mapY);
+        } else {
+          solid = (tile === 1 || tile === 7 || tile === 10);
+        }
+        if (solid) {
+          hit = true;
+          hitTile = tile;
+          break;
+        }
+      }
+
+      if (!hit) {
+        for (var si = 0; si < stripWidth; si++) {
+          if (screenX + si < w) zBuffer[screenX + si] = 999;
+        }
+        continue;
+      }
+
+      // Calculate perpendicular distance (avoid fisheye)
+      var perpDist;
+      if (side === 0) {
+        perpDist = (mapX - playerX / ts + (1 - stepX) / 2) / cosA;
+      } else {
+        perpDist = (mapY - playerY / ts + (1 - stepY) / 2) / sinA;
+      }
+      perpDist = Math.abs(perpDist);
+
+      // Fix fisheye
+      var correctedDist = perpDist * Math.cos(rayAngle - renderAngle);
+
+      // Store in z-buffer
+      for (var si2 = 0; si2 < stripWidth; si2++) {
+        if (screenX + si2 < w) zBuffer[screenX + si2] = correctedDist;
+      }
+
+      // Calculate wall height
+      var wallHeight = h / correctedDist;
+      var drawStart = Math.max(0, (h - wallHeight) / 2);
+      var drawEnd = Math.min(h, (h + wallHeight) / 2);
+
+      // Wall color based on tile type and side
+      var color = getWallColor(hitTile, side, correctedDist);
+
+      ctx.fillStyle = color;
+      ctx.fillRect(screenX, drawStart, stripWidth, drawEnd - drawStart);
+    }
+
+    // Store z-buffer for sprite rendering
+    engine._zBuffer = zBuffer;
+  }
+
+  function renderSprite(entity) {
+    if (!entity || entity.visible === false) return;
+
+    var dx = entity.x - playerX;
+    var dy = entity.y - playerY;
+
+    // Transform to camera space
+    var renderAngle = playerAngle + shakeOffsetX * 0.01;
+    var cosA = Math.cos(-renderAngle);
+    var sinA = Math.sin(-renderAngle);
+    var transformX = dx * cosA - dy * sinA;
+    var transformY = dx * sinA + dy * cosA;
+
+    // transformY = depth (forward), transformX = lateral
+    if (transformY <= 0.1) return; // Behind camera
+
+    var w = engine.width;
+    var h = engine.height;
+    var ts = TILE_SIZE;
+
+    var spriteScreenX = (w / 2) * (1 + transformX / transformY);
+    var spriteHeight = Math.abs(h / (transformY / ts)) * 0.8;
+    var spriteWidth = spriteHeight;
+
+    var drawStartY = (h - spriteHeight) / 2;
+    var drawStartX = spriteScreenX - spriteWidth / 2;
+
+    // Check z-buffer for visibility
+    var zBuf = engine._zBuffer;
+    if (!zBuf) return;
+
+    // Distance fog
+    var fogDist = transformY / ts;
+    var flickerAdjust = currentFlashlightFlicker * (Math.random() * 0.3);
+    var effectiveRadius = currentFlashlightRadius * (1 - flickerAdjust);
+    var fogFactor = Math.max(0, 1 - fogDist / (effectiveRadius / ts));
+    if (fogFactor <= 0) return;
+
+    // Use entity image or color rectangle
+    var img = entity.sprite ? engine.images[entity.sprite] : null;
+
+    var ctx = engine.ctx;
+    ctx.save();
+    ctx.globalAlpha = fogFactor;
+
+    var depthInTiles = transformY / ts;
+
+    if (img) {
+      // Draw sprite column by column, checking z-buffer
+      var startCol = Math.max(0, Math.floor(drawStartX));
+      var endCol = Math.min(w, Math.ceil(drawStartX + spriteWidth));
+      for (var col = startCol; col < endCol; col++) {
+        if (col >= 0 && col < w && zBuf[col] > depthInTiles) {
+          var srcX = ((col - drawStartX) / spriteWidth) * img.width;
+          ctx.drawImage(img, srcX, 0, 1, img.height, col, drawStartY, 1, spriteHeight);
+        }
+      }
+    } else {
+      // Fallback: colored rectangle
+      ctx.fillStyle = entity.color || '#880000';
+      var startCol2 = Math.max(0, Math.floor(drawStartX));
+      var endCol2 = Math.min(w, Math.ceil(drawStartX + spriteWidth));
+      for (var col2 = startCol2; col2 < endCol2; col2++) {
+        if (zBuf[col2] > depthInTiles) {
+          ctx.fillRect(col2, drawStartY, 1, spriteHeight);
+        }
+      }
+    }
+
+    ctx.restore();
+  }
+
+  // ───────────────────────────────────────────────
   // The Engine
   // ───────────────────────────────────────────────
   var engine = {
@@ -152,9 +409,29 @@
     onUpdate: null,
     onRender: null,
 
+    // Callback: game sets this to tell raycaster which tiles block rays
+    // signature: isTileSolid(tileType, gx, gy) → boolean
+    isTileSolid: null,
+
+    // Z-buffer (set by raycasting renderer)
+    _zBuffer: null,
+
     // State
     running: false,
     paused: false,
+
+    // ─────────────────────────────────────────────
+    // First-person camera API
+    // ─────────────────────────────────────────────
+    setPlayerView: function (x, y, angle) {
+      playerX = x;
+      playerY = y;
+      playerAngle = angle;
+    },
+
+    getPlayerAngle: function () {
+      return playerAngle;
+    },
 
     // ─────────────────────────────────────────────
     // 1. INIT
@@ -243,33 +520,8 @@
     // 3. RENDERING
     // ─────────────────────────────────────────────
     drawMap: function () {
-      var ctx = this.ctx;
-      var cam = this.camera;
-      var m = this.currentMap;
-      if (!m) return;
-
-      var halfW = this.width / 2;
-      var halfH = this.height / 2;
-
-      // Camera offset with shake
-      var ox = halfW - cam.x + shakeOffsetX;
-      var oy = halfH - cam.y + shakeOffsetY;
-
-      // Visible tile range (with 1-tile padding)
-      var startGX = Math.max(0, Math.floor((cam.x - halfW) / TILE_SIZE) - 1);
-      var startGY = Math.max(0, Math.floor((cam.y - halfH) / TILE_SIZE) - 1);
-      var endGX = Math.min(m.width - 1, Math.ceil((cam.x + halfW) / TILE_SIZE) + 1);
-      var endGY = Math.min(m.height - 1, Math.ceil((cam.y + halfH) / TILE_SIZE) + 1);
-
-      for (var gy = startGY; gy <= endGY; gy++) {
-        for (var gx = startGX; gx <= endGX; gx++) {
-          var t = m.tiles[gy][gx];
-          var sx = gx * TILE_SIZE + ox;
-          var sy = gy * TILE_SIZE + oy;
-
-          this._drawTile(ctx, t, sx, sy, gx, gy);
-        }
-      }
+      if (!this.currentMap) return;
+      renderFirstPerson();
     },
 
     _drawTile: function (ctx, type, sx, sy, gx, gy) {
@@ -407,110 +659,25 @@
 
     drawEntity: function (entity) {
       if (!entity || entity.visible === false) return;
-
-      var ctx = this.ctx;
-      var cam = this.camera;
-      var halfW = this.width / 2;
-      var halfH = this.height / 2;
-
-      var ox = halfW - cam.x + shakeOffsetX;
-      var oy = halfH - cam.y + shakeOffsetY;
-
-      var sx = entity.x + ox;
-      var sy = entity.y + oy;
-
-      // Frustum check
-      var margin = Math.max(entity.w || 24, entity.h || 24);
-      if (sx < -margin || sx > this.width + margin ||
-        sy < -margin || sy > this.height + margin) return;
-
-      var w = entity.w || 20;
-      var h = entity.h || 20;
-      var color = entity.color || '#aaa';
-
-      if (entity.sprite && this.images[entity.sprite]) {
-        var img = this.images[entity.sprite];
-        ctx.drawImage(img, sx - w / 2, sy - h / 2, w, h);
-      } else {
-        // Draw body (rectangle)
-        ctx.fillStyle = color;
-        ctx.fillRect(sx - w / 4, sy - h / 6, w / 2, h / 2);
-
-        // Draw head (circle)
-        ctx.beginPath();
-        ctx.arc(sx, sy - h / 3, w / 4, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Direction indicator (small triangle)
-        if (entity.dir !== undefined) {
-          ctx.fillStyle = 'rgba(255,255,200,0.5)';
-          ctx.save();
-          ctx.translate(sx, sy);
-
-          var angle = 0;
-          switch (entity.dir) {
-            case 'up': angle = -Math.PI / 2; break;
-            case 'down': angle = Math.PI / 2; break;
-            case 'left': angle = Math.PI; break;
-            case 'right': angle = 0; break;
-          }
-          ctx.rotate(angle);
-
-          ctx.beginPath();
-          ctx.moveTo(w / 2 + 4, 0);
-          ctx.lineTo(w / 4, -4);
-          ctx.lineTo(w / 4, 4);
-          ctx.closePath();
-          ctx.fill();
-          ctx.restore();
-        }
-      }
+      renderSprite(entity);
     },
 
     // ─────────────────────────────────────────────
     // DARKNESS / FLASHLIGHT SYSTEM
     // ─────────────────────────────────────────────
     drawDarkness: function (px, py, radius, flickerAmount) {
+      currentFlashlightRadius = radius || 200;
+      currentFlashlightFlicker = flickerAmount || 0;
+      // Fog is applied during raycasting, so no separate overlay needed
+      // But still apply a subtle vignette for atmosphere
       var ctx = this.ctx;
-      var cam = this.camera;
-      var halfW = this.width / 2;
-      var halfH = this.height / 2;
-
-      var ox = halfW - cam.x + shakeOffsetX;
-      var oy = halfH - cam.y + shakeOffsetY;
-
-      var screenX = px + ox;
-      var screenY = py + oy;
-
-      var flicker = flickerAmount || 0;
-      var actualRadius = radius * (1 - flicker * (Math.random() * 0.3));
-      if (actualRadius < 10) actualRadius = 10;
-
-      ctx.save();
-
-      // 1. Solid darkness outside the flashlight circle (donut shape)
-      ctx.beginPath();
-      ctx.rect(0, 0, this.width, this.height);
-      ctx.arc(screenX, screenY, actualRadius, 0, Math.PI * 2, true);
-      ctx.fillStyle = 'rgba(0,0,0,0.97)';
-      ctx.fill();
-
-      // 2. Soft gradient within flashlight area for natural falloff
-      var gradient = ctx.createRadialGradient(
-        screenX, screenY, actualRadius * 0.1,
-        screenX, screenY, actualRadius
-      );
-      gradient.addColorStop(0, 'rgba(0,0,0,0)');
-      gradient.addColorStop(0.4, 'rgba(0,0,0,0.15)');
-      gradient.addColorStop(0.7, 'rgba(0,0,0,0.4)');
-      gradient.addColorStop(1, 'rgba(0,0,0,0.85)');
-
-      ctx.fillStyle = gradient;
-      ctx.beginPath();
-      ctx.arc(screenX, screenY, actualRadius, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.restore();
+      var w = this.width;
+      var h = this.height;
+      var grad = ctx.createRadialGradient(w / 2, h / 2, w * 0.2, w / 2, h / 2, w * 0.7);
+      grad.addColorStop(0, 'rgba(0,0,0,0)');
+      grad.addColorStop(1, 'rgba(0,0,0,0.4)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
     },
 
     // ─────────────────────────────────────────────
