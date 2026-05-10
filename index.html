@@ -86,15 +86,23 @@
     </div>
   </div>
 
-  <!-- Virtual Joystick (left side: movement) -->
-  <div id="joystickArea" style="display:none;">
+  <!-- Left Joystick (movement) -->
+  <div id="joystickArea" class="virtual-stick" style="display:none;">
     <div class="joystick-outer">
       <div class="joystick-inner" id="joystickThumb"></div>
     </div>
   </div>
 
-  <!-- Look Area (right side: camera rotation) -->
-  <div id="lookArea" style="display:none;"></div>
+  <!-- Right Joystick (camera) -->
+  <div id="lookArea" class="virtual-stick" style="display:none;">
+    <div class="joystick-outer">
+      <div class="joystick-inner" id="lookThumb"></div>
+    </div>
+  </div>
+
+  <!-- Touch zones (invisible, capture touches to spawn joysticks) -->
+  <div id="touchZoneLeft" style="display:none;"></div>
+  <div id="touchZoneRight" style="display:none;"></div>
 
   <!-- Action Button -->
   <button id="actionBtn" type="button" style="display:none;">

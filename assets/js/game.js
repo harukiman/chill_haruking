@@ -437,16 +437,25 @@
   }
 
   function showJoystick() {
+    var lz = document.getElementById('touchZoneLeft');
+    if (lz) lz.style.display = 'block';
+    var rz = document.getElementById('touchZoneRight');
+    if (rz) rz.style.display = 'block';
+    // Stick visuals are shown on touch, keep them available
     var el = document.getElementById('joystickArea');
     if (el) el.style.display = 'block';
     var la = document.getElementById('lookArea');
     if (la) la.style.display = 'block';
   }
   function hideJoystick() {
+    var lz = document.getElementById('touchZoneLeft');
+    if (lz) lz.style.display = 'none';
+    var rz = document.getElementById('touchZoneRight');
+    if (rz) rz.style.display = 'none';
     var el = document.getElementById('joystickArea');
-    if (el) el.style.display = 'none';
+    if (el) { el.style.display = 'none'; el.classList.remove('active'); }
     var la = document.getElementById('lookArea');
-    if (la) la.style.display = 'none';
+    if (la) { la.style.display = 'none'; la.classList.remove('active'); }
   }
   function showStamina() {
     var el = document.getElementById('staminaBar');
@@ -463,18 +472,18 @@
   function queueDialogue(lines, onComplete) {
     dialogueQueue = lines.slice();
     dialogueActive = true;
-    var joyArea = document.getElementById('joystickArea');
-    if (joyArea) joyArea.classList.add('faded');
-    var lookArea = document.getElementById('lookArea');
-    if (lookArea) lookArea.classList.add('faded');
+    var lz = document.getElementById('touchZoneLeft');
+    if (lz) lz.classList.add('faded');
+    var rz = document.getElementById('touchZoneRight');
+    if (rz) rz.classList.add('faded');
     var advance = function () {
       if (dialogueQueue.length === 0) {
         GameEngine.hideDialogue();
         dialogueActive = false;
-        var joyArea = document.getElementById('joystickArea');
-        if (joyArea) joyArea.classList.remove('faded');
-        var lookArea = document.getElementById('lookArea');
-        if (lookArea) lookArea.classList.remove('faded');
+        var lz = document.getElementById('touchZoneLeft');
+        if (lz) lz.classList.remove('faded');
+        var rz = document.getElementById('touchZoneRight');
+        if (rz) rz.classList.remove('faded');
         if (onComplete) onComplete();
         return;
       }
@@ -864,10 +873,9 @@
       }
     }
 
-    // Turn (right look area drag)
-    if (Math.abs(input.lookDx) > 0.01) {
+    // Turn (right joystick horizontal)
+    if (Math.abs(input.lookDx) > 0.1) {
       player.angle += input.lookDx * turnSpeed * dt;
-      input.lookDx = 0; // consume delta each frame
     }
 
     // Move (left joystick: dy=forward/back, dx=strafe)
@@ -1591,102 +1599,11 @@
   }
 
   // =========================================================
-  //  VIRTUAL JOYSTICK
+  //  VIRTUAL JOYSTICK (touch handled by engine via touch zones)
   // =========================================================
   function bindJoystick() {
-    var joystickArea = document.getElementById('joystickArea');
-    var joystickThumb = document.getElementById('joystickThumb');
-    if (!joystickArea || !joystickThumb) return;
-
-    var outer = joystickArea.querySelector('.joystick-outer');
-    if (!outer) return;
-
-    var active = false;
-    var centerX = 0, centerY = 0;
-    var maxDist = 40;
-    var touchId = null;
-
-    function getCenter() {
-      var rect = outer.getBoundingClientRect();
-      centerX = rect.left + rect.width / 2;
-      centerY = rect.top + rect.height / 2;
-      maxDist = rect.width / 2 - 20;
-    }
-
-    function handleStart(e) {
-      e.preventDefault();
-      var touch = e.changedTouches ? e.changedTouches[0] : e;
-      if (e.changedTouches) touchId = touch.identifier;
-      active = true;
-      getCenter();
-      handleMove(e);
-    }
-
-    function handleMove(e) {
-      if (!active) return;
-      e.preventDefault();
-      var touch = null;
-      if (e.changedTouches) {
-        for (var i = 0; i < e.changedTouches.length; i++) {
-          if (e.changedTouches[i].identifier === touchId) {
-            touch = e.changedTouches[i];
-            break;
-          }
-        }
-        if (!touch) return;
-      } else {
-        touch = e;
-      }
-
-      var dx = touch.clientX - centerX;
-      var dy = touch.clientY - centerY;
-      var dist = Math.sqrt(dx * dx + dy * dy);
-
-      if (dist > maxDist) {
-        dx = (dx / dist) * maxDist;
-        dy = (dy / dist) * maxDist;
-        dist = maxDist;
-      }
-
-      // Move the thumb
-      joystickThumb.style.transform = 'translate(' + dx + 'px, ' + dy + 'px)';
-
-      // Set input
-      if (GameEngine.input) {
-        GameEngine.input.dx = dx / maxDist;
-        GameEngine.input.dy = dy / maxDist;
-      }
-    }
-
-    function handleEnd(e) {
-      if (e.changedTouches) {
-        var found = false;
-        for (var i = 0; i < e.changedTouches.length; i++) {
-          if (e.changedTouches[i].identifier === touchId) {
-            found = true;
-            break;
-          }
-        }
-        if (!found) return;
-      }
-      active = false;
-      touchId = null;
-      joystickThumb.style.transform = 'translate(0px, 0px)';
-      if (GameEngine.input) {
-        GameEngine.input.dx = 0;
-        GameEngine.input.dy = 0;
-      }
-    }
-
-    joystickArea.addEventListener('touchstart', handleStart, { passive: false });
-    joystickArea.addEventListener('touchmove', handleMove, { passive: false });
-    joystickArea.addEventListener('touchend', handleEnd, { passive: false });
-    joystickArea.addEventListener('touchcancel', handleEnd, { passive: false });
-
-    // Mouse fallback (for desktop testing)
-    joystickArea.addEventListener('mousedown', handleStart);
-    window.addEventListener('mousemove', function (e) { if (active) handleMove(e); });
-    window.addEventListener('mouseup', handleEnd);
+    // Touch input is handled by engine.js touch zones.
+    // No additional binding needed.
   }
 
   // =========================================================

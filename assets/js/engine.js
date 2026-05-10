@@ -765,135 +765,157 @@
         }
       }, { passive: true });
 
-      // --- Left joystick touch handling on canvas (movement) ---
-      canvas.addEventListener('touchstart', function (e) {
-        e.preventDefault();
-        for (var i = 0; i < e.changedTouches.length; i++) {
-          var touch = e.changedTouches[i];
+      // --- Dynamic joystick system via touch zones ---
+      var stickSize = 120; // matches CSS .virtual-stick width/height
+      var maxDrag = 50;
 
-          // Left half = movement joystick
-          if (touch.clientX < self.width / 2 && joystickTouchId === null) {
-            joystickTouchId = touch.identifier;
-            joystickCenterX = touch.clientX;
-            joystickCenterY = touch.clientY;
-            joystickActive = true;
+      var leftStick = document.getElementById('joystickArea');
+      var leftThumb = document.getElementById('joystickThumb');
+      var rightStick = document.getElementById('lookArea');
+      var rightThumb = document.getElementById('lookThumb');
+      var leftZone = document.getElementById('touchZoneLeft');
+      var rightZone = document.getElementById('touchZoneRight');
 
-            // Double tap detection for sprint
-            var now = performance.now();
-            if (now - lastTapTime < 300) {
-              self.input.sprint = true;
+      function showStick(stickEl, thumbEl, cx, cy) {
+        stickEl.style.left = (cx - stickSize / 2) + 'px';
+        stickEl.style.top = (cy - stickSize / 2) + 'px';
+        stickEl.classList.add('active');
+        thumbEl.style.transform = 'translate(0px, 0px)';
+      }
+
+      function hideStick(stickEl, thumbEl) {
+        stickEl.classList.remove('active');
+        thumbEl.style.transform = 'translate(0px, 0px)';
+      }
+
+      function calcStick(touch, centerX, centerY) {
+        var rawDx = touch.clientX - centerX;
+        var rawDy = touch.clientY - centerY;
+        var dist = Math.sqrt(rawDx * rawDx + rawDy * rawDy);
+        if (dist < 8) return { dx: 0, dy: 0, thumbX: 0, thumbY: 0 };
+        var norm = Math.min(dist, maxDrag) / maxDrag;
+        var thumbX = (rawDx / dist) * Math.min(dist, maxDrag);
+        var thumbY = (rawDy / dist) * Math.min(dist, maxDrag);
+        return { dx: (rawDx / dist) * norm, dy: (rawDy / dist) * norm, thumbX: thumbX, thumbY: thumbY };
+      }
+
+      // --- Left zone (movement joystick) ---
+      if (leftZone) {
+        leftZone.addEventListener('touchstart', function (e) {
+          e.preventDefault();
+          for (var i = 0; i < e.changedTouches.length; i++) {
+            var touch = e.changedTouches[i];
+            if (joystickTouchId === null) {
+              joystickTouchId = touch.identifier;
+              joystickCenterX = touch.clientX;
+              joystickCenterY = touch.clientY;
+              joystickActive = true;
+              showStick(leftStick, leftThumb, touch.clientX, touch.clientY);
+              // Double tap = sprint
+              var now = performance.now();
+              if (now - lastTapTime < 300) self.input.sprint = true;
+              lastTapTime = now;
             }
-            lastTapTime = now;
           }
-        }
-      }, { passive: false });
+          if (joystickActive && lookActive) self.input.sprint = true;
+        }, { passive: false });
 
-      canvas.addEventListener('touchmove', function (e) {
-        e.preventDefault();
-        for (var i = 0; i < e.changedTouches.length; i++) {
-          var touch = e.changedTouches[i];
-          if (touch.identifier === joystickTouchId) {
-            var rawDx = touch.clientX - joystickCenterX;
-            var rawDy = touch.clientY - joystickCenterY;
-            var dist = Math.sqrt(rawDx * rawDx + rawDy * rawDy);
+        leftZone.addEventListener('touchmove', function (e) {
+          e.preventDefault();
+          for (var i = 0; i < e.changedTouches.length; i++) {
+            var touch = e.changedTouches[i];
+            if (touch.identifier === joystickTouchId) {
+              var s = calcStick(touch, joystickCenterX, joystickCenterY);
+              self.input.dx = s.dx;
+              self.input.dy = s.dy;
+              leftThumb.style.transform = 'translate(' + s.thumbX + 'px, ' + s.thumbY + 'px)';
+            }
+          }
+        }, { passive: false });
 
-            // Dead zone
-            if (dist < 10) {
+        leftZone.addEventListener('touchend', function (e) {
+          e.preventDefault();
+          for (var i = 0; i < e.changedTouches.length; i++) {
+            if (e.changedTouches[i].identifier === joystickTouchId) {
+              joystickTouchId = null;
+              joystickActive = false;
               self.input.dx = 0;
               self.input.dy = 0;
-            } else {
-              var maxDist = 60;
-              var norm = Math.min(dist, maxDist) / maxDist;
-              self.input.dx = (rawDx / dist) * norm;
-              self.input.dy = (rawDy / dist) * norm;
+              self.input.sprint = false;
+              hideStick(leftStick, leftThumb);
             }
           }
-        }
-      }, { passive: false });
+        }, { passive: false });
 
-      canvas.addEventListener('touchend', function (e) {
-        e.preventDefault();
-        for (var i = 0; i < e.changedTouches.length; i++) {
-          var touch = e.changedTouches[i];
-          if (touch.identifier === joystickTouchId) {
-            joystickTouchId = null;
-            joystickActive = false;
-            self.input.dx = 0;
-            self.input.dy = 0;
-            self.input.sprint = false;
+        leftZone.addEventListener('touchcancel', function (e) {
+          e.preventDefault();
+          for (var i = 0; i < e.changedTouches.length; i++) {
+            if (e.changedTouches[i].identifier === joystickTouchId) {
+              joystickTouchId = null;
+              joystickActive = false;
+              self.input.dx = 0;
+              self.input.dy = 0;
+              self.input.sprint = false;
+              hideStick(leftStick, leftThumb);
+            }
           }
-        }
-      }, { passive: false });
+        }, { passive: false });
+      }
 
-      canvas.addEventListener('touchcancel', function (e) {
-        e.preventDefault();
-        for (var i = 0; i < e.changedTouches.length; i++) {
-          var touch = e.changedTouches[i];
-          if (touch.identifier === joystickTouchId) {
-            joystickTouchId = null;
-            joystickActive = false;
-            self.input.dx = 0;
-            self.input.dy = 0;
-            self.input.sprint = false;
-          }
-        }
-      }, { passive: false });
+      // --- Right zone (camera joystick) ---
+      if (rightZone) {
+        var lookCenterX = 0, lookCenterY = 0;
 
-      // --- Right look area touch handling (camera rotation) ---
-      var lookAreaEl = document.getElementById('lookArea');
-      if (lookAreaEl) {
-        lookAreaEl.addEventListener('touchstart', function (e) {
+        rightZone.addEventListener('touchstart', function (e) {
           e.preventDefault();
           for (var i = 0; i < e.changedTouches.length; i++) {
             var touch = e.changedTouches[i];
             if (lookTouchId === null) {
               lookTouchId = touch.identifier;
+              lookCenterX = touch.clientX;
+              lookCenterY = touch.clientY;
               lookLastX = touch.clientX;
               lookActive = true;
+              showStick(rightStick, rightThumb, touch.clientX, touch.clientY);
             }
           }
-          // Two simultaneous touches (left+right) = sprint
-          if (joystickActive && lookActive) {
-            self.input.sprint = true;
-          }
+          if (joystickActive && lookActive) self.input.sprint = true;
         }, { passive: false });
 
-        lookAreaEl.addEventListener('touchmove', function (e) {
+        rightZone.addEventListener('touchmove', function (e) {
           e.preventDefault();
           for (var i = 0; i < e.changedTouches.length; i++) {
             var touch = e.changedTouches[i];
             if (touch.identifier === lookTouchId) {
-              var deltaX = touch.clientX - lookLastX;
-              lookLastX = touch.clientX;
-              // Sensitivity: pixels → normalized look speed
-              self.input.lookDx = deltaX / 8;
+              var s = calcStick(touch, lookCenterX, lookCenterY);
+              // Use horizontal as look direction
+              self.input.lookDx = s.dx;
+              rightThumb.style.transform = 'translate(' + s.thumbX + 'px, ' + s.thumbY + 'px)';
             }
           }
         }, { passive: false });
 
-        lookAreaEl.addEventListener('touchend', function (e) {
+        rightZone.addEventListener('touchend', function (e) {
           e.preventDefault();
           for (var i = 0; i < e.changedTouches.length; i++) {
-            var touch = e.changedTouches[i];
-            if (touch.identifier === lookTouchId) {
+            if (e.changedTouches[i].identifier === lookTouchId) {
               lookTouchId = null;
               lookActive = false;
               self.input.lookDx = 0;
+              self.input.sprint = false;
+              hideStick(rightStick, rightThumb);
             }
-          }
-          if (!joystickActive || !lookActive) {
-            self.input.sprint = false;
           }
         }, { passive: false });
 
-        lookAreaEl.addEventListener('touchcancel', function (e) {
+        rightZone.addEventListener('touchcancel', function (e) {
           e.preventDefault();
           for (var i = 0; i < e.changedTouches.length; i++) {
-            var touch = e.changedTouches[i];
-            if (touch.identifier === lookTouchId) {
+            if (e.changedTouches[i].identifier === lookTouchId) {
               lookTouchId = null;
               lookActive = false;
               self.input.lookDx = 0;
+              hideStick(rightStick, rightThumb);
             }
           }
         }, { passive: false });
