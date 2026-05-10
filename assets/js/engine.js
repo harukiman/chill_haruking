@@ -138,22 +138,28 @@
   function getWallColor(tile, side, dist) {
     var r, g, b;
     switch (tile) {
-      case 1: r = 58; g = 58; b = 58; break; // Wall
-      case 2: r = 106; g = 64; b = 0; break; // Door (closed)
-      case 6: r = 30; g = 80; b = 30; break; // Exit door
-      case 7: r = 50; g = 50; b = 50; break; // Furniture
-      case 9: r = 70; g = 70; b = 75; break; // Elevator door
-      case 10: r = 42; g = 48; b = 64; break; // Window
-      default: r = 58; g = 58; b = 58; break;
+      case 1: r = 130; g = 120; b = 110; break; // Wall (hotel plaster)
+      case 2: r = 160; g = 110; b = 50; break;  // Door (wood)
+      case 6: r = 60; g = 150; b = 60; break;   // Exit door (green)
+      case 7: r = 100; g = 90; b = 80; break;   // Furniture
+      case 9: r = 140; g = 140; b = 150; break;  // Elevator door (metal)
+      case 10: r = 80; g = 90; b = 130; break;   // Window (blue tint)
+      default: r = 130; g = 120; b = 110; break;
     }
 
     // Darken one side for depth
-    if (side === 1) { r = r * 0.7 | 0; g = g * 0.7 | 0; b = b * 0.7 | 0; }
+    if (side === 1) { r = r * 0.75 | 0; g = g * 0.75 | 0; b = b * 0.75 | 0; }
 
-    // Distance fog (darken with distance, using flashlight radius)
-    var flickerAdjust = currentFlashlightFlicker * (Math.random() * 0.3);
-    var effectiveRadius = currentFlashlightRadius * (1 - flickerAdjust);
-    var fogFactor = Math.max(0, 1 - dist / (effectiveRadius / TILE_SIZE));
+    // Distance fog — visible up to ~12 tiles out
+    var maxViewDist = 12;
+    var fogFactor = Math.max(0.05, 1 - dist / maxViewDist);
+
+    // Flashlight flicker only slightly dims
+    if (currentFlashlightFlicker > 0) {
+      var flickerAdjust = currentFlashlightFlicker * (Math.random() * 0.15);
+      fogFactor *= (1 - flickerAdjust);
+    }
+
     r = (r * fogFactor) | 0;
     g = (g * fogFactor) | 0;
     b = (b * fogFactor) | 0;
@@ -178,15 +184,15 @@
 
     // Draw ceiling
     var ceilGrad = ctx.createLinearGradient(0, 0, 0, h / 2);
-    ceilGrad.addColorStop(0, '#050505');
-    ceilGrad.addColorStop(1, '#101010');
+    ceilGrad.addColorStop(0, '#1a1a1a');
+    ceilGrad.addColorStop(1, '#2a2520');
     ctx.fillStyle = ceilGrad;
     ctx.fillRect(0, 0, w, h / 2);
 
     // Draw floor
     var floorGrad = ctx.createLinearGradient(0, h / 2, 0, h);
-    floorGrad.addColorStop(0, '#0a0a0a');
-    floorGrad.addColorStop(1, '#1a1a1a');
+    floorGrad.addColorStop(0, '#1a1815');
+    floorGrad.addColorStop(1, '#302820');
     ctx.fillStyle = floorGrad;
     ctx.fillRect(0, h / 2, w, h / 2);
 
@@ -333,12 +339,14 @@
     var zBuf = engine._zBuffer;
     if (!zBuf) return;
 
-    // Distance fog
+    // Distance fog — match wall fog (12 tiles)
     var fogDist = transformY / ts;
-    var flickerAdjust = currentFlashlightFlicker * (Math.random() * 0.3);
-    var effectiveRadius = currentFlashlightRadius * (1 - flickerAdjust);
-    var fogFactor = Math.max(0, 1 - fogDist / (effectiveRadius / ts));
-    if (fogFactor <= 0) return;
+    var maxViewDist = 12;
+    var fogFactor = Math.max(0.05, 1 - fogDist / maxViewDist);
+    if (currentFlashlightFlicker > 0) {
+      fogFactor *= (1 - currentFlashlightFlicker * (Math.random() * 0.15));
+    }
+    if (fogFactor <= 0.05) return;
 
     // Use entity image or color rectangle
     var img = entity.sprite ? engine.images[entity.sprite] : null;
@@ -673,9 +681,9 @@
       var ctx = this.ctx;
       var w = this.width;
       var h = this.height;
-      var grad = ctx.createRadialGradient(w / 2, h / 2, w * 0.2, w / 2, h / 2, w * 0.7);
+      var grad = ctx.createRadialGradient(w / 2, h / 2, w * 0.3, w / 2, h / 2, w * 0.8);
       grad.addColorStop(0, 'rgba(0,0,0,0)');
-      grad.addColorStop(1, 'rgba(0,0,0,0.4)');
+      grad.addColorStop(1, 'rgba(0,0,0,0.25)');
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, w, h);
     },
