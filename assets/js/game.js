@@ -1397,14 +1397,15 @@
       setTimeout(function () { player.flashlightFlicker = 0; }, 200);
     }
 
-    // Check if player is at Room 404 door
+    // Check if player is near Room 404 door
     var pg = wToG(player.x, player.y);
     var d404 = findDoor('404');
     if (d404) {
       var dist = Math.abs(pg.gx - d404.gx) + Math.abs(pg.gy - d404.gy);
-      if (dist <= 1 && !phaseFlags.knockShown) {
+      if (dist <= 2 && !phaseFlags.knockShown) {
         phaseFlags.knockShown = true;
         showActionBtn('ノックする', function () {
+          phaseFlags.knockShown = false;
           GameEngine.playSound('knock');
           setTimeout(function () {
             d404.locked = false;
@@ -1413,7 +1414,7 @@
             setPhase(PHASES.ENTER_ROOM);
           }, 800);
         });
-      } else if (dist > 1 && phaseFlags.knockShown) {
+      } else if (dist > 3 && phaseFlags.knockShown) {
         phaseFlags.knockShown = false;
         hideActionBtn();
       }
@@ -2009,9 +2010,17 @@
           cb();
         }
       };
-      actionBtn.addEventListener('click', handleAction);
+      actionBtn.addEventListener('touchstart', function (e) {
+        e.stopPropagation();
+      }, { passive: true });
+      actionBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        handleAction();
+      });
       actionBtn.addEventListener('touchend', function (e) {
         e.preventDefault();
+        e.stopPropagation();
         handleAction();
       });
     }
