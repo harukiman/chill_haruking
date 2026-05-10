@@ -188,6 +188,128 @@
     return 'rgb(' + r + ',' + g + ',' + b + ')';
   }
 
+  function renderDoorStrip(ctx, x, sw, drawStart, wallH, wallX, tile, side, dim) {
+    var drawEnd = drawStart + wallH;
+    var sideDim = side === 1 ? 0.72 : 1;
+    var d = dim * sideDim;
+
+    // Door base colors
+    var doorR, doorG, doorB;
+    var frameR, frameG, frameB;
+    if (tile === 6) {
+      // Exit door — dark green with gold frame
+      doorR = 35; doorG = 80; doorB = 40;
+      frameR = 140; frameG = 120; frameB = 50;
+    } else if (tile === 9) {
+      // Elevator — brushed metal
+      doorR = 110; doorG = 115; doorB = 120;
+      frameR = 80; frameG = 82; frameB = 85;
+    } else {
+      // Regular door — rich dark wood
+      doorR = 100; doorG = 55; doorB = 25;
+      frameR = 65; frameG = 40; frameB = 20;
+    }
+
+    // Frame border (left/right 8%, top 5%, bottom 3%)
+    var isFrame = wallX < 0.08 || wallX > 0.92;
+    var topBorder = drawStart + wallH * 0.05;
+    var bottomBorder = drawEnd - wallH * 0.03;
+
+    if (isFrame) {
+      // Door frame
+      var r = (frameR * d) | 0;
+      var g = (frameG * d) | 0;
+      var b = (frameB * d) | 0;
+      ctx.fillStyle = 'rgb(' + r + ',' + g + ',' + b + ')';
+      ctx.fillRect(x, drawStart, sw, wallH);
+      return;
+    }
+
+    // Top frame strip
+    var tR = (frameR * d) | 0;
+    var tG = (frameG * d) | 0;
+    var tB = (frameB * d) | 0;
+    ctx.fillStyle = 'rgb(' + tR + ',' + tG + ',' + tB + ')';
+    ctx.fillRect(x, drawStart, sw, topBorder - drawStart);
+
+    // Main door panel
+    // Add subtle vertical grain variation for wood texture
+    var grain = 1;
+    if (tile !== 9) {
+      grain = 0.92 + Math.sin(wallX * 80) * 0.04 + Math.sin(wallX * 200) * 0.02;
+    }
+    var pR = (doorR * d * grain) | 0;
+    var pG = (doorG * d * grain) | 0;
+    var pB = (doorB * d * grain) | 0;
+    ctx.fillStyle = 'rgb(' + pR + ',' + pG + ',' + pB + ')';
+    ctx.fillRect(x, topBorder, sw, bottomBorder - topBorder);
+
+    // Upper panel inset (decorative rectangle, top 15%-40%)
+    var panelIn = wallX > 0.18 && wallX < 0.82;
+    if (panelIn && tile !== 9) {
+      var panelTop = drawStart + wallH * 0.12;
+      var panelBot = drawStart + wallH * 0.38;
+      var inR = ((doorR - 15) * d * grain) | 0;
+      var inG = ((doorG - 10) * d * grain) | 0;
+      var inB = ((doorB - 5) * d * grain) | 0;
+      if (inR < 0) inR = 0;
+      if (inG < 0) inG = 0;
+      if (inB < 0) inB = 0;
+      ctx.fillStyle = 'rgb(' + inR + ',' + inG + ',' + inB + ')';
+      ctx.fillRect(x, panelTop, sw, panelBot - panelTop);
+    }
+
+    // Lower panel inset (50%-85%)
+    if (panelIn && tile !== 9) {
+      var lpTop = drawStart + wallH * 0.48;
+      var lpBot = drawStart + wallH * 0.85;
+      var lR = ((doorR - 15) * d * grain) | 0;
+      var lG = ((doorG - 10) * d * grain) | 0;
+      var lB = ((doorB - 5) * d * grain) | 0;
+      if (lR < 0) lR = 0;
+      if (lG < 0) lG = 0;
+      if (lB < 0) lB = 0;
+      ctx.fillStyle = 'rgb(' + lR + ',' + lG + ',' + lB + ')';
+      ctx.fillRect(x, lpTop, sw, lpBot - lpTop);
+    }
+
+    // Doorknob — golden/brass circle at ~55% height, 82-88% from left
+    if (wallX > 0.80 && wallX < 0.90) {
+      var knobCenterY = drawStart + wallH * 0.55;
+      var knobRadius = wallH * 0.025;
+      var knobDist = Math.abs(wallX - 0.85);
+      var knobNorm = knobDist / 0.05; // 0 at center, 1 at edge
+      if (knobNorm < 1) {
+        // Vertical extent check
+        var knobTopY = knobCenterY - knobRadius;
+        var knobBotY = knobCenterY + knobRadius;
+        // Gold/brass highlight
+        var kBright = (1 - knobNorm * knobNorm) * 0.8 + 0.2;
+        var kR, kG, kB;
+        if (tile === 6) {
+          kR = (200 * d * kBright) | 0; kG = (180 * d * kBright) | 0; kB = (60 * d * kBright) | 0;
+        } else {
+          kR = (210 * d * kBright) | 0; kG = (175 * d * kBright) | 0; kB = (50 * d * kBright) | 0;
+        }
+        ctx.fillStyle = 'rgb(' + kR + ',' + kG + ',' + kB + ')';
+        ctx.fillRect(x, knobTopY, sw, knobBotY - knobTopY);
+      }
+    }
+
+    // Elevator: center line (split door effect)
+    if (tile === 9 && wallX > 0.48 && wallX < 0.52) {
+      var cR = (40 * d) | 0;
+      var cG = (42 * d) | 0;
+      var cB = (45 * d) | 0;
+      ctx.fillStyle = 'rgb(' + cR + ',' + cG + ',' + cB + ')';
+      ctx.fillRect(x, topBorder, sw, bottomBorder - topBorder);
+    }
+
+    // Bottom frame strip
+    ctx.fillStyle = 'rgb(' + tR + ',' + tG + ',' + tB + ')';
+    ctx.fillRect(x, bottomBorder, sw, drawEnd - bottomBorder);
+  }
+
   function renderFirstPerson() {
     var ctx = engine.ctx;
     var w = engine.width;
@@ -320,28 +442,45 @@
       var drawStart = Math.max(0, (h - wallHeight) / 2);
       var drawEnd = Math.min(h, (h + wallHeight) / 2);
 
-      // Wall: upper wallpaper + dado rail + lower wainscoting
+      // Wall X coordinate (0-1, where ray hit on tile surface)
+      var wallX;
+      if (side === 0) {
+        wallX = (playerY / ts) + perpDist * sinA;
+      } else {
+        wallX = (playerX / ts) + perpDist * cosA;
+      }
+      wallX = wallX - Math.floor(wallX); // fractional part 0-1
+
       var wallH = drawEnd - drawStart;
-      var splitY = drawStart + wallH * 0.62; // Lower 38% is wainscoting
-      var colorUpper = getWallColor(hitTile, side, correctedDist, false);
-      var colorLower = getWallColor(hitTile, side, correctedDist, true);
-
-      // Upper wallpaper
-      ctx.fillStyle = colorUpper;
-      ctx.fillRect(screenX, drawStart, stripWidth, splitY - drawStart);
-
-      // Dado rail (thin dark trim line)
-      var railH = Math.max(1, wallH * 0.015);
       var fogDim = Math.max(0.05, 1 - correctedDist / 12);
-      var railR = (50 * fogDim) | 0;
-      var railG = (35 * fogDim) | 0;
-      var railB = (22 * fogDim) | 0;
-      ctx.fillStyle = 'rgb(' + railR + ',' + railG + ',' + railB + ')';
-      ctx.fillRect(screenX, splitY, stripWidth, railH);
+      var flickDim = 1;
+      if (currentFlashlightFlicker > 0) {
+        flickDim = 1 - currentFlashlightFlicker * (Math.random() * 0.15);
+      }
+      var totalDim = fogDim * flickDim;
 
-      // Lower wainscoting
-      ctx.fillStyle = colorLower;
-      ctx.fillRect(screenX, splitY + railH, stripWidth, drawEnd - splitY - railH);
+      // --- Door rendering (tile 2, 6, 9) ---
+      if (hitTile === 2 || hitTile === 6 || hitTile === 9) {
+        renderDoorStrip(ctx, screenX, stripWidth, drawStart, wallH, wallX, hitTile, side, totalDim);
+      } else {
+        // Regular wall: upper wallpaper + dado rail + lower wainscoting
+        var splitY = drawStart + wallH * 0.62;
+        var colorUpper = getWallColor(hitTile, side, correctedDist, false);
+        var colorLower = getWallColor(hitTile, side, correctedDist, true);
+
+        ctx.fillStyle = colorUpper;
+        ctx.fillRect(screenX, drawStart, stripWidth, splitY - drawStart);
+
+        var railH = Math.max(1, wallH * 0.015);
+        var railR = (50 * totalDim) | 0;
+        var railG = (35 * totalDim) | 0;
+        var railB = (22 * totalDim) | 0;
+        ctx.fillStyle = 'rgb(' + railR + ',' + railG + ',' + railB + ')';
+        ctx.fillRect(screenX, splitY, stripWidth, railH);
+
+        ctx.fillStyle = colorLower;
+        ctx.fillRect(screenX, splitY + railH, stripWidth, drawEnd - splitY - railH);
+      }
     }
 
     // Store z-buffer for sprite rendering
@@ -1785,7 +1924,10 @@
       }
       staticCtx.putImageData(id, 0, 0);
       ctx.drawImage(staticCanvas, 0, 0, this.width, this.height);
-    }
+    },
+
+    _getAudioCtx: function () { return audioCtx; },
+    _getSeGain: function () { return seGain; }
   };
 
   // ───────────────────────────────────────────────

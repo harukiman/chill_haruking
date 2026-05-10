@@ -85,6 +85,26 @@ html, body {
     linear-gradient(180deg, #050000 0%, #0a0000 40%, #000000 100%);
   z-index: 200;
   animation: fadeIn 1.5s ease-out;
+  overflow: hidden;
+}
+
+#lightningCanvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+#titleScreen .title-content {
+  position: relative;
+  z-index: 1;
+}
+
+#titleScreen .copyright {
+  z-index: 1;
 }
 
 .title-content {
@@ -1066,31 +1086,30 @@ html, body {
 #settingsOverlay {
   background: rgba(0,0,0,0.92);
   z-index: 500;
+  align-items: flex-start;
+  padding-top: 10vh;
 }
 
 .settings-panel {
   background: rgba(20,0,0,0.95);
   border: 1px solid rgba(255,255,255,0.1);
   border-radius: 12px;
-  padding: 20px 16px;
+  padding: 16px 16px;
   width: 85%;
   max-width: 340px;
-  max-height: 80vh;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
   text-align: center;
 }
 
 .settings-title {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--text-color);
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   letter-spacing: 0.15em;
 }
 
 .settings-item {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   text-align: left;
 }
 

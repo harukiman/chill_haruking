@@ -302,6 +302,278 @@
   var unlockTimer = 0;
 
   // =========================================================
+  //  TITLE SCREEN LIGHTNING
+  // =========================================================
+  var lightning = {
+    canvas: null,
+    ctx: null,
+    active: false,
+    timer: 0,
+    nextStrike: 3,   // seconds until next lightning
+    flashAlpha: 0,
+    bolts: [],       // stored bolt paths for rendering during flash
+    rumbleTimeout: null
+  };
+
+  function initLightningCanvas() {
+    lightning.canvas = document.getElementById('lightningCanvas');
+    if (!lightning.canvas) return;
+    lightning.ctx = lightning.canvas.getContext('2d');
+    resizeLightningCanvas();
+  }
+
+  function resizeLightningCanvas() {
+    if (!lightning.canvas) return;
+    lightning.canvas.width = window.innerWidth;
+    lightning.canvas.height = window.innerHeight;
+  }
+
+  function generateBolt(x1, y1, x2, y2, depth) {
+    var segments = [];
+    var dx = x2 - x1;
+    var dy = y2 - y1;
+    var len = Math.sqrt(dx * dx + dy * dy);
+    if (len < 4 || depth > 5) {
+      segments.push({ x1: x1, y1: y1, x2: x2, y2: y2 });
+      return segments;
+    }
+    var mx = (x1 + x2) / 2 + (Math.random() - 0.5) * len * 0.3;
+    var my = (y1 + y2) / 2 + (Math.random() - 0.5) * len * 0.15;
+    var upper = generateBolt(x1, y1, mx, my, depth + 1);
+    var lower = generateBolt(mx, my, x2, y2, depth + 1);
+    segments = upper.concat(lower);
+    // Branch at midpoint
+    if (depth < 3 && Math.random() < 0.4) {
+      var bx = mx + (Math.random() - 0.5) * len * 0.5;
+      var by = my + len * (0.15 + Math.random() * 0.25);
+      var branch = generateBolt(mx, my, bx, by, depth + 2);
+      segments = segments.concat(branch);
+    }
+    return segments;
+  }
+
+  function triggerLightning() {
+    if (!lightning.canvas) return;
+    var w = lightning.canvas.width;
+    var h = lightning.canvas.height;
+    // Generate 1-2 bolts
+    lightning.bolts = [];
+    var numBolts = Math.random() < 0.3 ? 2 : 1;
+    for (var i = 0; i < numBolts; i++) {
+      var startX = w * (0.2 + Math.random() * 0.6);
+      var endX = startX + (Math.random() - 0.5) * w * 0.3;
+      var bolt = generateBolt(startX, 0, endX, h * (0.4 + Math.random() * 0.3), 0);
+      lightning.bolts.push(bolt);
+    }
+    lightning.flashAlpha = 1.0;
+    // Play thunder sound
+    playThunder();
+  }
+
+  function updateLightning(dt) {
+    if (!lightning.active) return;
+    lightning.timer += dt;
+    if (lightning.timer >= lightning.nextStrike) {
+      lightning.timer = 0;
+      lightning.nextStrike = 4 + Math.random() * 8; // 4-12 seconds between strikes
+      triggerLightning();
+    }
+    // Decay flash
+    if (lightning.flashAlpha > 0) {
+      // Rapid flicker effect: briefly re-flash
+      if (lightning.flashAlpha > 0.7 && Math.random() < 0.15) {
+        lightning.flashAlpha = 0.9;
+      }
+      lightning.flashAlpha -= dt * 2.5;
+      if (lightning.flashAlpha < 0) lightning.flashAlpha = 0;
+    }
+    renderLightning();
+  }
+
+  function renderLightning() {
+    var ctx = lightning.ctx;
+    var w = lightning.canvas.width;
+    var h = lightning.canvas.height;
+    ctx.clearRect(0, 0, w, h);
+    if (lightning.flashAlpha <= 0) return;
+
+    // Screen flash (white with slight blue tint)
+    ctx.fillStyle = 'rgba(200,210,255,' + (lightning.flashAlpha * 0.15) + ')';
+    ctx.fillRect(0, 0, w, h);
+
+    // Draw bolt segments
+    var alpha = lightning.flashAlpha;
+    for (var b = 0; b < lightning.bolts.length; b++) {
+      var segs = lightning.bolts[b];
+      // Outer glow
+      ctx.strokeStyle = 'rgba(150,160,255,' + (alpha * 0.3) + ')';
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      for (var i = 0; i < segs.length; i++) {
+        ctx.moveTo(segs[i].x1, segs[i].y1);
+        ctx.lineTo(segs[i].x2, segs[i].y2);
+      }
+      ctx.stroke();
+      // Inner bright core
+      ctx.strokeStyle = 'rgba(220,225,255,' + alpha + ')';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (var j = 0; j < segs.length; j++) {
+        ctx.moveTo(segs[j].x1, segs[j].y1);
+        ctx.lineTo(segs[j].x2, segs[j].y2);
+      }
+      ctx.stroke();
+    }
+  }
+
+  function playThunder() {
+    if (!audioInitialized) return;
+    try {
+      var ac = GameEngine._getAudioCtx();
+      if (!ac || ac.state !== 'running') return;
+      var now = ac.currentTime;
+      var seNode = GameEngine._getSeGain();
+
+      // --- Crack (sharp initial impact) ---
+      var crackBuf = ac.createBuffer(1, ac.sampleRate * 0.15, ac.sampleRate);
+      var crackData = crackBuf.getChannelData(0);
+      for (var i = 0; i < crackData.length; i++) {
+        crackData[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ac.sampleRate * 0.03));
+      }
+      var crackSrc = ac.createBufferSource();
+      crackSrc.buffer = crackBuf;
+      var crackGain = ac.createGain();
+      crackGain.gain.setValueAtTime(0.6, now);
+      crackGain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+      var crackFilter = ac.createBiquadFilter();
+      crackFilter.type = 'highpass';
+      crackFilter.frequency.value = 800;
+      crackSrc.connect(crackFilter);
+      crackFilter.connect(crackGain);
+      crackGain.connect(seNode);
+      crackSrc.start(now);
+
+      // --- Rumble (low thunder roll) ---
+      var rumbleDur = 1.5 + Math.random() * 1.5;
+      var rumbleBuf = ac.createBuffer(1, ac.sampleRate * rumbleDur, ac.sampleRate);
+      var rumbleData = rumbleBuf.getChannelData(0);
+      for (var r = 0; r < rumbleData.length; r++) {
+        var env = Math.exp(-r / (ac.sampleRate * rumbleDur * 0.4));
+        // Add some rumble variation
+        var wave = Math.sin(r / ac.sampleRate * 60 * Math.PI * 2) * 0.3;
+        rumbleData[r] = ((Math.random() * 2 - 1) * 0.7 + wave) * env;
+      }
+      var rumbleSrc = ac.createBufferSource();
+      rumbleSrc.buffer = rumbleBuf;
+      var rumbleGain = ac.createGain();
+      rumbleGain.gain.setValueAtTime(0.35, now + 0.1);
+      rumbleGain.gain.exponentialRampToValueAtTime(0.01, now + 0.1 + rumbleDur);
+      var rumbleFilter = ac.createBiquadFilter();
+      rumbleFilter.type = 'lowpass';
+      rumbleFilter.frequency.value = 200;
+      rumbleSrc.connect(rumbleFilter);
+      rumbleFilter.connect(rumbleGain);
+      rumbleGain.connect(seNode);
+      rumbleSrc.start(now + 0.08);
+
+      // --- Distant secondary rumble ---
+      var dist2Dur = 2 + Math.random();
+      var dist2Buf = ac.createBuffer(1, ac.sampleRate * dist2Dur, ac.sampleRate);
+      var dist2Data = dist2Buf.getChannelData(0);
+      for (var d = 0; d < dist2Data.length; d++) {
+        dist2Data[d] = (Math.random() * 2 - 1) * Math.exp(-d / (ac.sampleRate * dist2Dur * 0.5)) * 0.3;
+      }
+      var dist2Src = ac.createBufferSource();
+      dist2Src.buffer = dist2Buf;
+      var dist2Gain = ac.createGain();
+      dist2Gain.gain.setValueAtTime(0.15, now + 0.5);
+      dist2Gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5 + dist2Dur);
+      var dist2Filter = ac.createBiquadFilter();
+      dist2Filter.type = 'lowpass';
+      dist2Filter.frequency.value = 120;
+      dist2Src.connect(dist2Filter);
+      dist2Filter.connect(dist2Gain);
+      dist2Gain.connect(seNode);
+      dist2Src.start(now + 0.4 + Math.random() * 0.3);
+    } catch (e) {
+      // ignore audio errors
+    }
+  }
+
+  function startTitleLightning() {
+    initLightningCanvas();
+    lightning.active = true;
+    lightning.timer = 0;
+    lightning.nextStrike = 1.5 + Math.random() * 2; // first strike comes sooner
+    lightning.flashAlpha = 0;
+    lightning.bolts = [];
+  }
+
+  function stopTitleLightning() {
+    lightning.active = false;
+    lightning.flashAlpha = 0;
+    if (lightning.ctx) {
+      lightning.ctx.clearRect(0, 0, lightning.canvas.width, lightning.canvas.height);
+    }
+  }
+
+  // ─── Title Rain Sound ───
+  var titleRainNodes = null;
+
+  function startTitleRain() {
+    if (!audioInitialized) return;
+    if (titleRainNodes) return;
+    try {
+      var ac = GameEngine._getAudioCtx();
+      if (!ac) return;
+      if (ac.state === 'suspended') ac.resume();
+      var bgmNode = GameEngine._getSeGain(); // use SE gain for rain
+
+      // Brown noise → bandpass = rain-like hiss
+      var bufSize = ac.sampleRate * 4;
+      var noiseBuf = ac.createBuffer(1, bufSize, ac.sampleRate);
+      var data = noiseBuf.getChannelData(0);
+      var last = 0;
+      for (var i = 0; i < bufSize; i++) {
+        var white = Math.random() * 2 - 1;
+        data[i] = (last + 0.02 * white) / 1.02;
+        last = data[i];
+        data[i] *= 3.5;
+      }
+      var src = ac.createBufferSource();
+      src.buffer = noiseBuf;
+      src.loop = true;
+
+      var filter = ac.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.value = 3000;
+      filter.Q.value = 0.5;
+
+      var gain = ac.createGain();
+      gain.gain.value = 0.12;
+
+      src.connect(filter);
+      filter.connect(gain);
+      gain.connect(bgmNode);
+      src.start();
+
+      titleRainNodes = { src: src, filter: filter, gain: gain };
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  function stopTitleRain() {
+    if (titleRainNodes) {
+      try { titleRainNodes.src.stop(); } catch (e) { /* */ }
+      try { titleRainNodes.src.disconnect(); } catch (e) { /* */ }
+      try { titleRainNodes.filter.disconnect(); } catch (e) { /* */ }
+      try { titleRainNodes.gain.disconnect(); } catch (e) { /* */ }
+      titleRainNodes = null;
+    }
+  }
+
+  // =========================================================
   //  HELPER: Grid ↔ World
   // =========================================================
   function gToW(gx, gy) {
@@ -558,10 +830,14 @@
     GameEngine.hideDialogue();
     GameEngine.stopAll();
     haruki.active = false;
+    startTitleLightning();
+    startTitleRain();
   }
 
   function onEnterFrontDesk() {
     hideOverlay('titleScreen');
+    stopTitleLightning();
+    stopTitleRain();
     showJoystick();
 
     // Spawn player at front desk area
@@ -1532,6 +1808,7 @@
     // Clamp dt to prevent physics explosions
     if (dt > 0.1) dt = 0.1;
 
+    updateLightning(dt);
     updatePlayer(dt);
     updatePhase(dt);
   }
@@ -1585,6 +1862,8 @@
 
   function initGame() {
     GameEngine.init('gameCanvas');
+    initLightningCanvas();
+    window.addEventListener('resize', resizeLightningCanvas);
 
     // Load the map
     var mapData = buildMapData();
