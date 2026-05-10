@@ -526,7 +526,7 @@
       fading = true;
       fadeAlpha = 0;
       fadeTarget = 1;
-      fadeDuration = duration || 1;
+      fadeDuration = duration > 10 ? duration / 1000 : (duration || 1);
       fadeTimer = 0;
       fadeCb = cb || null;
     },
@@ -535,20 +535,21 @@
       fading = true;
       fadeAlpha = 1;
       fadeTarget = 0;
-      fadeDuration = duration || 1;
+      fadeDuration = duration > 10 ? duration / 1000 : (duration || 1);
       fadeTimer = 0;
       fadeCb = cb || null;
     },
 
     shakeScreen: function (intensity, duration) {
       shakeIntensity = intensity || 5;
-      shakeDuration = duration || 0.3;
+      shakeDuration = duration > 10 ? duration / 1000 : (duration || 0.3);
       shakeTimer = 0;
     },
 
     flashImage: function (imgElement, duration, cb) {
       flashImg = imgElement;
-      flashDuration = duration || 0.5;
+      // Accept ms or seconds: if > 10 assume ms
+      flashDuration = duration > 10 ? duration / 1000 : (duration || 0.5);
       flashTimer = 0;
       flashCb = cb || null;
     },
@@ -569,7 +570,10 @@
       var canvas = this.canvas;
 
       // Prevent default touch behaviors on the whole document
+      // But allow interaction on settings overlay (sliders, buttons)
       document.addEventListener('touchmove', function (e) {
+        var settingsOverlay = document.getElementById('settingsOverlay');
+        if (settingsOverlay && settingsOverlay.style.display !== 'none') return;
         e.preventDefault();
       }, { passive: false });
 
