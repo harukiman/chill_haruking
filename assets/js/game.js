@@ -991,10 +991,15 @@
       }
     }
 
-    // Check distance to player for heartbeat volume
+    // Check distance to player — proximity affects BGM/heartbeat
     var pdx = player.x - haruki.x;
     var pdy = player.y - haruki.y;
     var pDist = Math.sqrt(pdx * pdx + pdy * pdy);
+
+    // Proximity: 0 at 400px+, 1 at 0px
+    var maxProxDist = 400;
+    var proximity = Math.max(0, 1 - pDist / maxProxDist);
+    GameEngine.setProximity(proximity);
 
     // Catch check
     if (pDist < haruki.catchRadius) {
@@ -1005,6 +1010,7 @@
 
   function onHarukiCatchPlayer() {
     haruki.active = false;
+    GameEngine.setProximity(0);
     GameEngine.stopAll();
     GameEngine.playSound('jumpscare');
     GameEngine.shakeScreen(15, 400);
@@ -1461,18 +1467,6 @@
     ctx.textAlign = 'center';
     ctx.fillText('現在地', px, py - ts * 1.8);
 
-    // Haruki (red dot if in visited area)
-    if (haruki.active) {
-      var hg = wToG(haruki.x, haruki.y);
-      if (visitedTiles[hg.gx + ',' + hg.gy]) {
-        var hx = hg.gx * ts + ts / 2;
-        var hy = hg.gy * ts + ts / 2;
-        ctx.beginPath();
-        ctx.arc(hx, hy, ts * 0.6, 0, Math.PI * 2);
-        ctx.fillStyle = '#ff0000';
-        ctx.fill();
-      }
-    }
   }
 
   function drawUnlockingOverlay(ctx) {

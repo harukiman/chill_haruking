@@ -109,6 +109,8 @@
   var masterVolume = 0.7;
   var bgmVolume = 0.7;
   var seVolume = 0.8;
+  var heartbeatRate = 800; // ms between beats
+  var proximityBoost = 0;  // 0-1 extra BGM gain from enemy proximity
 
   // ───────────────────────────────────────────────
   // Joystick state
@@ -1152,6 +1154,20 @@
       return seVolume;
     },
 
+    // Set enemy proximity (0=far, 1=very close)
+    // Controls heartbeat speed and BGM volume boost
+    setProximity: function (value) {
+      value = Math.max(0, Math.min(1, value));
+      // Heartbeat rate: 800ms (far) → 300ms (close)
+      heartbeatRate = Math.round(800 - value * 500);
+      // BGM volume boost
+      proximityBoost = value * 0.5;
+      if (bgmGain && audioCtx) {
+        var boosted = Math.min(1, bgmVolume + proximityBoost);
+        bgmGain.gain.setTargetAtTime(boosted, audioCtx.currentTime, 0.1);
+      }
+    },
+
     // --- Sound implementations ---
 
     _playFootstep: function (now) {
@@ -1395,12 +1411,16 @@
 
     _startHeartbeatLoop: function () {
       var self = this;
-      var intervalId = setInterval(function () {
+      var running = true;
+      function beat() {
+        if (!running) return;
         if (audioCtx && audioCtx.state === 'running') {
           self._playHeartbeat(audioCtx.currentTime);
         }
-      }, 800);
-      return { interval: intervalId };
+        setTimeout(beat, heartbeatRate);
+      }
+      beat();
+      return { stop: function () { running = false; } };
     },
 
     _startPhoneLoop: function () {
