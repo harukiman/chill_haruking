@@ -618,16 +618,22 @@
     var w = engine.width;
     var h = engine.height;
     var ts = TILE_SIZE;
+    var depthInTiles = tY / ts;
 
+    // Z-buffer occlusion: check if a wall is closer at the screen center of the glow
+    var zBuf = engine._zBuffer;
     var screenX = (w / 2) * (1 + tX / tY);
-    // Floor glow sits on the ground plane — project to bottom half of screen
-    var screenY = h / 2 + (h * 0.5) / (tY / ts);
-    var glowSize = (h / (tY / ts)) * 0.6;
+    var screenCol = Math.round(screenX);
+    if (zBuf && screenCol >= 0 && screenCol < w && zBuf[screenCol] < depthInTiles) {
+      return; // wall is in front — don't draw
+    }
+
+    var screenY = h / 2 + (h * 0.5) / depthInTiles;
+    var glowSize = (h / depthInTiles) * 0.6;
 
     if (glowSize < 2 || glowSize > h) return;
 
-    var fogDist = tY / ts;
-    var fogFactor = Math.max(0, 1 - fogDist / 12);
+    var fogFactor = Math.max(0, 1 - depthInTiles / 12);
     if (fogFactor <= 0.05) return;
 
     var pulse = 0.6 + Math.sin(phase) * 0.4;
@@ -648,15 +654,12 @@
       ctx.strokeStyle = '#ffd700';
       ctx.lineWidth = Math.max(1, iconSize * 0.15);
       ctx.beginPath();
-      // Key head (circle)
       var kx = screenX;
       var ky = screenY - iconSize * 0.2;
       var kr = iconSize * 0.25;
       ctx.arc(kx, ky, kr, 0, Math.PI * 2);
-      // Key shaft
       ctx.moveTo(kx, ky + kr);
       ctx.lineTo(kx, ky + kr + iconSize * 0.5);
-      // Key teeth
       ctx.moveTo(kx, ky + kr + iconSize * 0.3);
       ctx.lineTo(kx + iconSize * 0.15, ky + kr + iconSize * 0.3);
       ctx.moveTo(kx, ky + kr + iconSize * 0.45);
