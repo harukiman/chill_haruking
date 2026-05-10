@@ -573,6 +573,24 @@ html, body {
 }
 
 /* =============================================
+   LOOK AREA (right side camera control)
+   ============================================= */
+#lookArea {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 50%;
+  height: 100%;
+  z-index: 40;
+  touch-action: none;
+  pointer-events: auto;
+}
+
+#lookArea.faded {
+  pointer-events: none;
+}
+
+/* =============================================
    ACTION BUTTON
    ============================================= */
 #actionBtn {

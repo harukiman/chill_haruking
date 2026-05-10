@@ -439,10 +439,14 @@
   function showJoystick() {
     var el = document.getElementById('joystickArea');
     if (el) el.style.display = 'block';
+    var la = document.getElementById('lookArea');
+    if (la) la.style.display = 'block';
   }
   function hideJoystick() {
     var el = document.getElementById('joystickArea');
     if (el) el.style.display = 'none';
+    var la = document.getElementById('lookArea');
+    if (la) la.style.display = 'none';
   }
   function showStamina() {
     var el = document.getElementById('staminaBar');
@@ -461,12 +465,16 @@
     dialogueActive = true;
     var joyArea = document.getElementById('joystickArea');
     if (joyArea) joyArea.classList.add('faded');
+    var lookArea = document.getElementById('lookArea');
+    if (lookArea) lookArea.classList.add('faded');
     var advance = function () {
       if (dialogueQueue.length === 0) {
         GameEngine.hideDialogue();
         dialogueActive = false;
         var joyArea = document.getElementById('joystickArea');
         if (joyArea) joyArea.classList.remove('faded');
+        var lookArea = document.getElementById('lookArea');
+        if (lookArea) lookArea.classList.remove('faded');
         if (onComplete) onComplete();
         return;
       }
@@ -856,16 +864,21 @@
       }
     }
 
-    // Turn (joystick left/right)
-    if (Math.abs(input.dx) > 0.1) {
-      player.angle += input.dx * turnSpeed * dt;
+    // Turn (right look area drag)
+    if (Math.abs(input.lookDx) > 0.01) {
+      player.angle += input.lookDx * turnSpeed * dt;
+      input.lookDx = 0; // consume delta each frame
     }
 
-    // Move forward/backward (joystick up/down)
+    // Move (left joystick: dy=forward/back, dx=strafe)
     var moveX = 0, moveY = 0;
-    if (Math.abs(input.dy) > 0.1) {
-      moveX = Math.cos(player.angle) * (-input.dy) * moveSpeed * dt;
-      moveY = Math.sin(player.angle) * (-input.dy) * moveSpeed * dt;
+    if (Math.abs(input.dy) > 0.1 || Math.abs(input.dx) > 0.1) {
+      // Forward/backward along facing direction
+      var fwd = Math.abs(input.dy) > 0.1 ? -input.dy : 0;
+      // Strafe perpendicular to facing direction
+      var strafe = Math.abs(input.dx) > 0.1 ? input.dx : 0;
+      moveX = (Math.cos(player.angle) * fwd + Math.cos(player.angle + Math.PI / 2) * strafe) * moveSpeed * dt;
+      moveY = (Math.sin(player.angle) * fwd + Math.sin(player.angle + Math.PI / 2) * strafe) * moveSpeed * dt;
     }
 
     // Collision check and apply movement
@@ -876,7 +889,7 @@
       player.y += moveY;
     }
 
-    player.moving = (Math.abs(input.dy) > 0.1);
+    player.moving = (Math.abs(input.dy) > 0.1 || Math.abs(input.dx) > 0.1);
 
     // Footstep sounds
     if (player.moving) {

@@ -119,6 +119,11 @@
   var joystickActive = false;
   var lastTapTime = 0;
 
+  // Look area state (right side camera control)
+  var lookTouchId = null;
+  var lookLastX = 0;
+  var lookActive = false;
+
   // ───────────────────────────────────────────────
   // Action button state
   // ───────────────────────────────────────────────
@@ -403,8 +408,9 @@
 
     // Input
     input: {
-      dx: 0,
-      dy: 0,
+      dx: 0,       // left joystick horizontal (strafe)
+      dy: 0,       // left joystick vertical (forward/back)
+      lookDx: 0,   // right look area horizontal (turn camera)
       action: false,
       actionJustPressed: false,
       sprint: false
@@ -759,13 +765,13 @@
         }
       }, { passive: true });
 
-      // --- Joystick touch handling on canvas ---
+      // --- Left joystick touch handling on canvas (movement) ---
       canvas.addEventListener('touchstart', function (e) {
         e.preventDefault();
         for (var i = 0; i < e.changedTouches.length; i++) {
           var touch = e.changedTouches[i];
 
-          // Left half = joystick
+          // Left half = movement joystick
           if (touch.clientX < self.width / 2 && joystickTouchId === null) {
             joystickTouchId = touch.identifier;
             joystickCenterX = touch.clientX;
@@ -779,11 +785,6 @@
             }
             lastTapTime = now;
           }
-        }
-
-        // Two finger touch = sprint
-        if (e.touches.length >= 2) {
-          self.input.sprint = true;
         }
       }, { passive: false });
 
@@ -822,9 +823,6 @@
             self.input.sprint = false;
           }
         }
-        if (e.touches.length < 2) {
-          self.input.sprint = false;
-        }
       }, { passive: false });
 
       canvas.addEventListener('touchcancel', function (e) {
@@ -840,6 +838,66 @@
           }
         }
       }, { passive: false });
+
+      // --- Right look area touch handling (camera rotation) ---
+      var lookAreaEl = document.getElementById('lookArea');
+      if (lookAreaEl) {
+        lookAreaEl.addEventListener('touchstart', function (e) {
+          e.preventDefault();
+          for (var i = 0; i < e.changedTouches.length; i++) {
+            var touch = e.changedTouches[i];
+            if (lookTouchId === null) {
+              lookTouchId = touch.identifier;
+              lookLastX = touch.clientX;
+              lookActive = true;
+            }
+          }
+          // Two simultaneous touches (left+right) = sprint
+          if (joystickActive && lookActive) {
+            self.input.sprint = true;
+          }
+        }, { passive: false });
+
+        lookAreaEl.addEventListener('touchmove', function (e) {
+          e.preventDefault();
+          for (var i = 0; i < e.changedTouches.length; i++) {
+            var touch = e.changedTouches[i];
+            if (touch.identifier === lookTouchId) {
+              var deltaX = touch.clientX - lookLastX;
+              lookLastX = touch.clientX;
+              // Sensitivity: pixels → normalized look speed
+              self.input.lookDx = deltaX / 8;
+            }
+          }
+        }, { passive: false });
+
+        lookAreaEl.addEventListener('touchend', function (e) {
+          e.preventDefault();
+          for (var i = 0; i < e.changedTouches.length; i++) {
+            var touch = e.changedTouches[i];
+            if (touch.identifier === lookTouchId) {
+              lookTouchId = null;
+              lookActive = false;
+              self.input.lookDx = 0;
+            }
+          }
+          if (!joystickActive || !lookActive) {
+            self.input.sprint = false;
+          }
+        }, { passive: false });
+
+        lookAreaEl.addEventListener('touchcancel', function (e) {
+          e.preventDefault();
+          for (var i = 0; i < e.changedTouches.length; i++) {
+            var touch = e.changedTouches[i];
+            if (touch.identifier === lookTouchId) {
+              lookTouchId = null;
+              lookActive = false;
+              self.input.lookDx = 0;
+            }
+          }
+        }, { passive: false });
+      }
 
       // --- Action button ---
       var actionBtn = document.getElementById('actionBtn');
@@ -896,11 +954,12 @@
     },
 
     _updateKeyboardInput: function (keys) {
+      // WASD = movement (left joystick equivalent)
       var dx = 0, dy = 0;
-      if (keys['ArrowLeft'] || keys['a'] || keys['A']) dx -= 1;
-      if (keys['ArrowRight'] || keys['d'] || keys['D']) dx += 1;
-      if (keys['ArrowUp'] || keys['w'] || keys['W']) dy -= 1;
-      if (keys['ArrowDown'] || keys['s'] || keys['S']) dy += 1;
+      if (keys['a'] || keys['A']) dx -= 1;
+      if (keys['d'] || keys['D']) dx += 1;
+      if (keys['w'] || keys['W']) dy -= 1;
+      if (keys['s'] || keys['S']) dy += 1;
       // Normalize diagonal
       if (dx !== 0 && dy !== 0) {
         var inv = 1 / Math.sqrt(2);
@@ -911,6 +970,13 @@
       if (!joystickActive) {
         this.input.dx = dx;
         this.input.dy = dy;
+      }
+      // Arrow keys = camera look (right look area equivalent)
+      if (!lookActive) {
+        var look = 0;
+        if (keys['ArrowLeft']) look -= 1;
+        if (keys['ArrowRight']) look += 1;
+        this.input.lookDx = look;
       }
     },
 
