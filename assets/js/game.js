@@ -256,6 +256,8 @@
     dir: 'down',
     color: '#880000',
     sprite: 'assets/img/haruki.png',
+    bodyColor: true,
+    _bodyR: 35, _bodyG: 30, _bodyB: 40, // dark suit/robe
     active: false,
     visible: true,
     path: [],
@@ -1169,7 +1171,7 @@
 
     // Brief dialogue flash
     queueDialogue([
-      { speaker: '？？？', text: '...見ーつけた...逃がさないよ...' }
+      { speaker: 'ハルキ', text: 'みーつけたぁ♡ もう逃がさないわよぉ〜！' }
     ], function () {
       // Chase begins
     });
@@ -1673,13 +1675,32 @@
       haruki.pathTimer = 0;
       GameEngine.startLoop('heartbeat');
       queueDialogue([
-        { speaker: '？？？', text: '...どこかで足音がする...' }
+        { speaker: 'ハルキ', text: 'ねぇ〜？どこに隠れてるのぉ〜？出てきなさいよぉ〜！' }
       ]);
     }
 
     // Update Haruki if active (slow patrol during explore)
     if (haruki.active) {
       updateHaruki(dt);
+
+      // Periodic shouts from Haruki
+      if (!phaseFlags.harukiShoutTimer) phaseFlags.harukiShoutTimer = 12 + Math.random() * 8;
+      phaseFlags.harukiShoutTimer -= dt;
+      if (phaseFlags.harukiShoutTimer <= 0 && !dialogueActive) {
+        phaseFlags.harukiShoutTimer = 15 + Math.random() * 15;
+        var shouts = [
+          'ねぇ〜？どこにいるのぉ〜？',
+          'かくれんぼは終わりよぉ〜♡',
+          'あたしから逃げられると思ってるのぉ？うふふ',
+          'ねぇってばぁ〜！無視しないでよぉ〜！',
+          '出てきなさいよぉ...怒るわよぉ？',
+          'あら〜...こっちかしらぁ？',
+          'もぉ〜...じらさないでよぉ〜♡',
+          'あなたの匂い...するわよぉ〜うふふふ'
+        ];
+        var shout = shouts[Math.floor(Math.random() * shouts.length)];
+        queueDialogue([{ speaker: 'ハルキ', text: shout }]);
+      }
     }
 
     // Check for key card pickup
@@ -1709,6 +1730,23 @@
 
   function updateChase1(dt) {
     updateHaruki(dt);
+
+    // Periodic chase shouts
+    if (!phaseFlags.harukiShoutTimer) phaseFlags.harukiShoutTimer = 8 + Math.random() * 5;
+    phaseFlags.harukiShoutTimer -= dt;
+    if (phaseFlags.harukiShoutTimer <= 0 && !dialogueActive) {
+      phaseFlags.harukiShoutTimer = 10 + Math.random() * 10;
+      var chaseShouts = [
+        '逃げても無駄よぉ〜♡',
+        'もうすぐ捕まえちゃうわよぉ〜！',
+        '待ちなさいよぉ〜！あたしを置いていかないでぇ！',
+        'あはははっ！楽しいわねぇ〜このかくれんぼ！',
+        'そっちに行ったわねぇ〜♡',
+        'ねぇ...ずっと一緒にいましょうよぉ〜'
+      ];
+      var s = chaseShouts[Math.floor(Math.random() * chaseShouts.length)];
+      queueDialogue([{ speaker: 'ハルキ', text: s }]);
+    }
 
     // Flashlight flicker intensifies
     player.flashlightFlicker = 0.4 + Math.sin(phaseTimer * 4) * 0.2;
@@ -2234,10 +2272,10 @@
         if (phase !== PHASES.PHONE_CALL) return;
         hideOverlay('phoneUI');
         queueDialogue([
-          { speaker: 'ハルキ', text: 'もしもし、フロント？404号室のハルキだけど...' },
-          { speaker: 'ハルキ', text: 'バスタオルが部屋に無いんだけど、持ってきてくれない？' },
+          { speaker: 'ハルキ', text: 'あら〜、フロントさん？404のハルキよぉ〜' },
+          { speaker: 'ハルキ', text: 'バスタオルが無いのぉ。届けてくれなぁい？' },
           { speaker: 'あなた', text: '（はぁ...面倒くさいな...）わかりました、すぐお持ちします。' },
-          { speaker: 'ハルキ', text: 'ありがと〜、待ってるから。' }
+          { speaker: 'ハルキ', text: 'やったぁ♡ 待ってるわねぇ〜うふふ' }
         ], function () {
           setPhase(PHASES.WALK_TO_ROOM);
         });

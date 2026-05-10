@@ -536,18 +536,61 @@
 
     var depthInTiles = transformY / ts;
 
+    // If entity has a body, split into head (upper 40%) + body (lower 60%)
+    var hasBody = !!entity.bodyColor;
+    var headHeight = hasBody ? spriteHeight * 0.35 : spriteHeight;
+    var bodyHeight = hasBody ? spriteHeight * 0.65 : 0;
+    var headStartY = drawStartY;
+    var bodyStartY = drawStartY + headHeight;
+    var headWidth = hasBody ? spriteWidth * 0.8 : spriteWidth;
+    var headStartX = hasBody ? drawStartX + (spriteWidth - headWidth) / 2 : drawStartX;
+    var bodyWidth = hasBody ? spriteWidth * 0.55 : 0;
+    var bodyStartX = drawStartX + (spriteWidth - bodyWidth) / 2;
+
+    // Draw body first (behind head)
+    if (hasBody) {
+      var bStartCol = Math.max(0, Math.floor(bodyStartX));
+      var bEndCol = Math.min(w, Math.ceil(bodyStartX + bodyWidth));
+      // Body shape: slightly tapered, darker at edges
+      for (var bc = bStartCol; bc < bEndCol; bc++) {
+        if (bc >= 0 && bc < w && zBuf[bc] > depthInTiles) {
+          var bNorm = (bc - bodyStartX) / bodyWidth; // 0-1 across body
+          var edgeDim = 1 - Math.pow(Math.abs(bNorm - 0.5) * 2, 2) * 0.4;
+          // Parse body color
+          var br = entity._bodyR || 40;
+          var bg = entity._bodyG || 40;
+          var bb = entity._bodyB || 45;
+          ctx.fillStyle = 'rgb(' + ((br * edgeDim) | 0) + ',' + ((bg * edgeDim) | 0) + ',' + ((bb * edgeDim) | 0) + ')';
+          ctx.fillRect(bc, bodyStartY, 1, bodyHeight);
+        }
+      }
+      // Shoulders (wider at top of body)
+      var shoulderW = spriteWidth * 0.7;
+      var shoulderX = drawStartX + (spriteWidth - shoulderW) / 2;
+      var shoulderH = bodyHeight * 0.12;
+      var sStartCol = Math.max(0, Math.floor(shoulderX));
+      var sEndCol = Math.min(w, Math.ceil(shoulderX + shoulderW));
+      for (var sc = sStartCol; sc < sEndCol; sc++) {
+        if (sc >= 0 && sc < w && zBuf[sc] > depthInTiles) {
+          var sNorm = (sc - shoulderX) / shoulderW;
+          var sDim = 1 - Math.pow(Math.abs(sNorm - 0.5) * 2, 3) * 0.5;
+          ctx.fillStyle = 'rgb(' + (((entity._bodyR || 40) * sDim) | 0) + ',' + (((entity._bodyG || 40) * sDim) | 0) + ',' + (((entity._bodyB || 45) * sDim) | 0) + ')';
+          ctx.fillRect(sc, bodyStartY, 1, shoulderH);
+        }
+      }
+    }
+
+    // Draw head (face sprite or color)
     if (img) {
-      // Draw sprite column by column, checking z-buffer
-      var startCol = Math.max(0, Math.floor(drawStartX));
-      var endCol = Math.min(w, Math.ceil(drawStartX + spriteWidth));
+      var startCol = Math.max(0, Math.floor(headStartX));
+      var endCol = Math.min(w, Math.ceil(headStartX + headWidth));
       for (var col = startCol; col < endCol; col++) {
         if (col >= 0 && col < w && zBuf[col] > depthInTiles) {
-          var srcX = ((col - drawStartX) / spriteWidth) * img.width;
-          ctx.drawImage(img, srcX, 0, 1, img.height, col, drawStartY, 1, spriteHeight);
+          var srcX = ((col - headStartX) / headWidth) * img.width;
+          ctx.drawImage(img, srcX, 0, 1, img.height, col, headStartY, 1, headHeight);
         }
       }
     } else {
-      // Fallback: colored rectangle
       ctx.fillStyle = entity.color || '#880000';
       var startCol2 = Math.max(0, Math.floor(drawStartX));
       var endCol2 = Math.min(w, Math.ceil(drawStartX + spriteWidth));
