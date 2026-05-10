@@ -1088,37 +1088,38 @@ html, body {
   background: rgba(0,0,0,0.92);
   z-index: 500;
   align-items: flex-start;
-  padding-top: 10vh;
+  justify-content: flex-start;
+  padding-top: 0;
 }
 
 .settings-panel {
   background: rgba(20,0,0,0.95);
   border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 12px;
-  padding: 16px 16px;
-  width: 85%;
-  max-width: 340px;
+  border-radius: 0 0 12px 12px;
+  padding: 12px 16px;
+  width: 100%;
+  max-width: 360px;
   text-align: center;
 }
 
 .settings-title {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--text-color);
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   letter-spacing: 0.15em;
 }
 
 .settings-item {
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   text-align: left;
 }
 
 .settings-item label {
   display: block;
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-dim);
-  margin-bottom: 8px;
+  margin-bottom: 4px;
   letter-spacing: 0.1em;
 }
 
@@ -1169,22 +1170,22 @@ html, body {
 .settings-buttons {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-top: 8px;
+  gap: 8px;
+  margin-top: 4px;
 }
 
 .settings-action-btn {
   font-family: var(--font-main);
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text-color);
   background: transparent;
   border: 1px solid rgba(255,255,255,0.2);
-  padding: 12px 24px;
+  padding: 10px 20px;
   border-radius: 6px;
   cursor: pointer;
   letter-spacing: 0.1em;
   touch-action: manipulation;
-  min-height: 44px;
+  min-height: 40px;
   transition: all 0.2s ease;
 }
 .settings-action-btn:active {
@@ -1194,16 +1195,16 @@ html, body {
 
 .settings-close-btn {
   font-family: var(--font-main);
-  font-size: 14px;
+  font-size: 13px;
   color: #fff;
   background: var(--horror-red);
   border: none;
-  padding: 12px 24px;
+  padding: 10px 20px;
   border-radius: 6px;
   cursor: pointer;
   letter-spacing: 0.1em;
   touch-action: manipulation;
-  min-height: 44px;
+  min-height: 40px;
   transition: all 0.2s ease;
 }
 .settings-close-btn:active {
