@@ -252,19 +252,35 @@
   var haruki = {
     x: 0, y: 0,
     w: 24, h: 24,
-    speed: 100,
+    speed: 90,         // patrol speed (player walk=120, sprint=200)
+    chaseSpeed: 155,    // chase speed — player can outrun with sprint
     dir: 'down',
     color: '#880000',
     sprite: 'assets/img/haruki.png',
     bodyColor: true,
-    _bodyR: 35, _bodyG: 30, _bodyB: 40, // dark suit/robe
+    _bodyR: 35, _bodyG: 30, _bodyB: 40,
     active: false,
     visible: true,
     path: [],
     pathTimer: 0,
-    chaseIntensity: 1.0,
-    catchRadius: TS * 0.9
+    catchRadius: TS * 0.8,
+    // AI state: 'patrol' | 'chase' | 'search'
+    aiState: 'patrol',
+    patrolIndex: 0,
+    lastSeenX: 0, lastSeenY: 0,
+    searchTimer: 0,
+    lostSightTimer: 0,     // time since player last seen during chase
+    spotRange: TS * 6      // 6 tiles line-of-sight
   };
+
+  // Patrol waypoints (corridor loop)
+  var patrolPoints = [
+    { gx: 1, gy: 7 }, { gx: 14, gy: 7 }, { gx: 28, gy: 7 },   // upper corridor
+    { gx: 14, gy: 15 }, { gx: 14, gy: 19 },                     // stairway
+    { gx: 14, gy: 25 }, { gx: 7, gy: 25 }, { gx: 24, gy: 25 }, // ground floor
+    { gx: 14, gy: 30 }, { gx: 7, gy: 30 }, { gx: 24, gy: 30 }, // basement
+    { gx: 14, gy: 25 }, { gx: 14, gy: 19 }, { gx: 14, gy: 15 }  // back up
+  ];
 
   // =========================================================
   //  PHASE / STATE MACHINE
@@ -817,6 +833,118 @@
   }
 
   // =========================================================
+  //  HARUKI-SPECIFIC PATHFINDING & LINE OF SIGHT
+  // =========================================================
+
+  // Haruki treats unlocked doors (even if closed) as walkable
+  function isTileWalkableForHaruki(gx, gy) {
+    if (gx < 0 || gy < 0 || gx >= MAP_W || gy >= MAP_H) return false;
+    var t = MAP_TILES[gy][gx];
+    if (t === TILE.EXIT_DOOR) return exitDoor.open;
+    if (t === TILE.DOOR) {
+      for (var i = 0; i < doors.length; i++) {
+        if (doors[i].gx === gx && doors[i].gy === gy) {
+          return !doors[i].locked; // passable if unlocked (even if closed)
+        }
+      }
+      return false;
+    }
+    return !!WALKABLE_TILES[t];
+  }
+
+  // BFS pathfinding using Haruki's walkability rules
+  function findPathForHaruki(sx, sy, ex, ey) {
+    if (sx === ex && sy === ey) return [];
+    if (!isTileWalkableForHaruki(ex, ey)) return null;
+
+    var queue = [];
+    var visited = {};
+    var parent = {};
+    var key = function (x, y) { return x + ',' + y; };
+
+    queue.push({ x: sx, y: sy });
+    visited[key(sx, sy)] = true;
+
+    var dirs = [
+      { dx: 0, dy: -1 }, { dx: 0, dy: 1 },
+      { dx: -1, dy: 0 }, { dx: 1, dy: 0 }
+    ];
+
+    var head = 0;
+    while (head < queue.length) {
+      var cur = queue[head++];
+      if (cur.x === ex && cur.y === ey) {
+        var path = [];
+        var c = cur;
+        while (c) {
+          path.push({ gx: c.x, gy: c.y });
+          c = parent[key(c.x, c.y)];
+        }
+        path.reverse();
+        return path;
+      }
+      for (var d = 0; d < dirs.length; d++) {
+        var nx = cur.x + dirs[d].dx;
+        var ny = cur.y + dirs[d].dy;
+        var nk = key(nx, ny);
+        if (!visited[nk] && isTileWalkableForHaruki(nx, ny)) {
+          visited[nk] = true;
+          parent[nk] = cur;
+          queue.push({ x: nx, y: ny });
+        }
+      }
+      if (head > 3000) return null;
+    }
+    return null;
+  }
+
+  // Raycast line-of-sight check between two world positions
+  // Returns true if no wall blocks the view
+  function hasLineOfSight(x1, y1, x2, y2) {
+    var dx = x2 - x1;
+    var dy = y2 - y1;
+    var dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist < 1) return true;
+
+    var steps = Math.ceil(dist / (TS * 0.4)); // check every ~0.4 tiles
+    for (var i = 1; i < steps; i++) {
+      var t = i / steps;
+      var cx = x1 + dx * t;
+      var cy = y1 + dy * t;
+      var g = wToG(cx, cy);
+      var tile = MAP_TILES[g.gy] && MAP_TILES[g.gy][g.gx];
+      if (tile === undefined) return false;
+      // Walls and windows block sight
+      if (tile === TILE.WALL || tile === TILE.WINDOW || tile === TILE.FURNITURE) return false;
+      // Closed doors block sight
+      if (tile === TILE.DOOR) {
+        for (var di = 0; di < doors.length; di++) {
+          if (doors[di].gx === g.gx && doors[di].gy === g.gy && !doors[di].open) return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  // Haruki collision check: can Haruki move to this world position?
+  function canHarukiMoveTo(wx, wy) {
+    var hw = 10;
+    var corners = [
+      wToG(wx - hw, wy - hw), wToG(wx + hw, wy - hw),
+      wToG(wx - hw, wy + hw), wToG(wx + hw, wy + hw)
+    ];
+    for (var i = 0; i < 4; i++) {
+      if (!isTileWalkableForHaruki(corners[i].gx, corners[i].gy)) return false;
+    }
+    return true;
+  }
+
+  // =========================================================
+  //  CAMERA SENSITIVITY
+  // =========================================================
+  var lookSensitivity = 1.0; // 0.3 to 2.0 range
+
+  // =========================================================
   //  UI HELPERS
   // =========================================================
   function showOverlay(id) {
@@ -1289,7 +1417,7 @@
     if (unlockingExit) return;
 
     var input = GameEngine.input;
-    var turnSpeed = 2.5; // radians per second
+    var turnSpeed = 2.5 * lookSensitivity; // radians per second * sensitivity
 
     // Sprint logic (only during chase phases or explore)
     sprinting = false;
@@ -1399,27 +1527,115 @@
   }
 
   // =========================================================
-  //  HARUKI AI UPDATE
+  //  HARUKI AI UPDATE — Patrol / Chase / Search state machine
   // =========================================================
   function updateHaruki(dt) {
     if (!haruki.active) return;
 
-    // Increase chase intensity over time
-    haruki.chaseIntensity += 0.02 * dt;
-    var currentSpeed = haruki.speed * haruki.chaseIntensity;
+    var hg = wToG(haruki.x, haruki.y);
+    var pg = wToG(player.x, player.y);
+    var pdx = player.x - haruki.x;
+    var pdy = player.y - haruki.y;
+    var pDist = Math.sqrt(pdx * pdx + pdy * pdy);
 
-    // Recalculate path periodically
-    haruki.pathTimer -= dt;
-    if (haruki.pathTimer <= 0) {
-      haruki.pathTimer = 0.5;
-      var hg = wToG(haruki.x, haruki.y);
-      var pg = wToG(player.x, player.y);
-      haruki.path = findPath(hg.gx, hg.gy, pg.gx, pg.gy) || [];
-      // Remove the first element (current position)
-      if (haruki.path.length > 0) haruki.path.shift();
+    // Line-of-sight check to player
+    var canSeePlayer = pDist < haruki.spotRange && hasLineOfSight(haruki.x, haruki.y, player.x, player.y);
+
+    // --- STATE TRANSITIONS ---
+    switch (haruki.aiState) {
+      case 'patrol':
+        if (canSeePlayer) {
+          haruki.aiState = 'chase';
+          haruki.lostSightTimer = 0;
+          haruki.lastSeenX = player.x;
+          haruki.lastSeenY = player.y;
+          haruki.path = [];
+          haruki.pathTimer = 0;
+        }
+        break;
+
+      case 'chase':
+        if (canSeePlayer) {
+          haruki.lostSightTimer = 0;
+          haruki.lastSeenX = player.x;
+          haruki.lastSeenY = player.y;
+        } else {
+          haruki.lostSightTimer += dt;
+          if (haruki.lostSightTimer > 3.0) {
+            // Lost sight for 3 seconds → search last known position
+            haruki.aiState = 'search';
+            haruki.searchTimer = 0;
+            haruki.path = [];
+            haruki.pathTimer = 0;
+          }
+        }
+        break;
+
+      case 'search':
+        if (canSeePlayer) {
+          haruki.aiState = 'chase';
+          haruki.lostSightTimer = 0;
+          haruki.lastSeenX = player.x;
+          haruki.lastSeenY = player.y;
+          haruki.path = [];
+          haruki.pathTimer = 0;
+        } else {
+          haruki.searchTimer += dt;
+          if (haruki.searchTimer > 8.0) {
+            // Gave up searching → resume patrol
+            haruki.aiState = 'patrol';
+            haruki.path = [];
+            haruki.pathTimer = 0;
+          }
+        }
+        break;
     }
 
-    // Follow path
+    // --- STATE BEHAVIOR ---
+    var currentSpeed;
+    switch (haruki.aiState) {
+      case 'patrol':
+        currentSpeed = haruki.speed;
+        haruki.pathTimer -= dt;
+        if (haruki.pathTimer <= 0) {
+          haruki.pathTimer = 1.0;
+          var wp = patrolPoints[haruki.patrolIndex];
+          haruki.path = findPathForHaruki(hg.gx, hg.gy, wp.gx, wp.gy) || [];
+          if (haruki.path.length > 0) haruki.path.shift();
+        }
+        // Check if reached patrol waypoint
+        if (haruki.path.length === 0) {
+          haruki.patrolIndex = (haruki.patrolIndex + 1) % patrolPoints.length;
+          haruki.pathTimer = 0; // recalc immediately
+        }
+        break;
+
+      case 'chase':
+        currentSpeed = haruki.chaseSpeed;
+        haruki.pathTimer -= dt;
+        if (haruki.pathTimer <= 0) {
+          haruki.pathTimer = 0.3; // faster repath during chase
+          haruki.path = findPathForHaruki(hg.gx, hg.gy, pg.gx, pg.gy) || [];
+          if (haruki.path.length > 0) haruki.path.shift();
+        }
+        break;
+
+      case 'search':
+        currentSpeed = haruki.speed;
+        haruki.pathTimer -= dt;
+        if (haruki.pathTimer <= 0) {
+          haruki.pathTimer = 1.0;
+          var lastG = wToG(haruki.lastSeenX, haruki.lastSeenY);
+          haruki.path = findPathForHaruki(hg.gx, hg.gy, lastG.gx, lastG.gy) || [];
+          if (haruki.path.length > 0) haruki.path.shift();
+        }
+        break;
+
+      default:
+        currentSpeed = haruki.speed;
+    }
+
+    // --- FOLLOW PATH with wall collision ---
     if (haruki.path.length > 0) {
       var next = haruki.path[0];
       var target = gToW(next.gx, next.gy);
@@ -1427,47 +1643,39 @@
       var ddy = target.y - haruki.y;
       var dist = Math.sqrt(ddx * ddx + ddy * ddy);
 
-      if (dist < 4) {
-        haruki.x = target.x;
-        haruki.y = target.y;
+      if (dist < TS * 0.3) {
+        // Arrived at waypoint — snap only if walkable
+        if (canHarukiMoveTo(target.x, target.y)) {
+          haruki.x = target.x;
+          haruki.y = target.y;
+        }
         haruki.path.shift();
       } else {
         var nx = ddx / dist;
         var ny = ddy / dist;
-        var moveX = nx * currentSpeed * dt;
-        var moveY = ny * currentSpeed * dt;
+        var stepDist = currentSpeed * dt;
+        // Clamp step to remaining distance to avoid overshoot
+        if (stepDist > dist) stepDist = dist;
+        var moveX = nx * stepDist;
+        var moveY = ny * stepDist;
 
-        // Collision check — same as player
-        var hw = 10;
-        var newX = haruki.x + moveX;
-        var newY = haruki.y + moveY;
-        var canX = true, canY = true;
-        // Check X movement
-        var corners = [
-          wToG(newX - hw, haruki.y - hw), wToG(newX + hw, haruki.y - hw),
-          wToG(newX - hw, haruki.y + hw), wToG(newX + hw, haruki.y + hw)
-        ];
-        for (var ci = 0; ci < 4; ci++) {
-          if (!isTileWalkable(corners[ci].gx, corners[ci].gy)) { canX = false; break; }
+        // Separate X/Y collision
+        var movedX = false, movedY = false;
+        if (moveX !== 0 && canHarukiMoveTo(haruki.x + moveX, haruki.y)) {
+          haruki.x += moveX;
+          movedX = true;
         }
-        // Check Y movement
-        var cornersY = [
-          wToG(haruki.x - hw, newY - hw), wToG(haruki.x + hw, newY - hw),
-          wToG(haruki.x - hw, newY + hw), wToG(haruki.x + hw, newY + hw)
-        ];
-        for (var cj = 0; cj < 4; cj++) {
-          if (!isTileWalkable(cornersY[cj].gx, cornersY[cj].gy)) { canY = false; break; }
+        if (moveY !== 0 && canHarukiMoveTo(haruki.x, haruki.y + moveY)) {
+          haruki.y += moveY;
+          movedY = true;
         }
 
-        if (canX) haruki.x = newX;
-        if (canY) haruki.y = newY;
-
-        // If stuck, recalculate path immediately
-        if (!canX && !canY) {
+        // If completely stuck, repath immediately
+        if (!movedX && !movedY && (moveX !== 0 || moveY !== 0)) {
           haruki.pathTimer = 0;
         }
 
-        // Update direction
+        // Update facing direction
         if (Math.abs(nx) > Math.abs(ny)) {
           haruki.dir = nx > 0 ? 'right' : 'left';
         } else {
@@ -1475,29 +1683,23 @@
         }
       }
 
-      // Haruki opens closed unlocked doors he passes through
-      var hg = wToG(haruki.x, haruki.y);
+      // Haruki opens closed unlocked doors he walks near
+      var hgNow = wToG(haruki.x, haruki.y);
       for (var di = 0; di < doors.length; di++) {
         var dd = doors[di];
-        if (!dd.open && !dd.locked && Math.abs(dd.gx - hg.gx) + Math.abs(dd.gy - hg.gy) <= 1) {
+        if (!dd.open && !dd.locked && Math.abs(dd.gx - hgNow.gx) + Math.abs(dd.gy - hgNow.gy) <= 1) {
           dd.open = true;
         }
       }
     }
 
-    // Check distance to player — proximity affects BGM/heartbeat
-    var pdx = player.x - haruki.x;
-    var pdy = player.y - haruki.y;
-    var pDist = Math.sqrt(pdx * pdx + pdy * pdy);
-
-    // Proximity: 0 at 400px+, 1 at 0px
+    // --- PROXIMITY audio ---
     var maxProxDist = 400;
     var proximity = Math.max(0, 1 - pDist / maxProxDist);
     GameEngine.setProximity(proximity);
 
-    // Catch check
+    // --- CATCH check ---
     if (pDist < haruki.catchRadius) {
-      // Caught!
       onHarukiCatchPlayer();
     }
   }
@@ -1873,43 +2075,32 @@
 
     // Update glow animation
     keyCardItem.glowPhase += 0.05;
-
-    // Glowing light pillar above key card position
     var pulse = 0.6 + Math.sin(keyCardItem.glowPhase) * 0.4;
+
+    // Large glowing pillar (taller, brighter)
     var glowEntity = {
       x: keyCardItem.wx,
       y: keyCardItem.wy,
-      w: 24,
-      h: 48,
-      color: 'rgba(255,220,50,' + (0.3 * pulse) + ')',
+      w: 30,
+      h: 60,
+      color: 'rgba(255,220,50,' + (0.5 * pulse) + ')',
       visible: true
     };
     GameEngine.drawEntity(glowEntity);
 
-    // Key card itself (brighter, larger)
+    // Key card object (bright golden)
     var itemEntity = {
       x: keyCardItem.wx,
       y: keyCardItem.wy,
-      w: 20,
-      h: 20,
+      w: 22,
+      h: 22,
       color: 'rgb(255,' + ((200 + 55 * pulse) | 0) + ',0)',
       visible: true
     };
     GameEngine.drawEntity(itemEntity);
 
-    // Draw ground glow circle on floor around key position
-    var cam = GameEngine.camera;
-    var canvas = ctx.canvas;
-    var cx = canvas.width / 2;
-    var cy = canvas.height / 2;
-    var sx = keyCardItem.wx - cam.x + cx;
-    var sy = keyCardItem.wy - cam.y + cy;
-    var glowR = 30 + 10 * pulse;
-    var grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, glowR);
-    grad.addColorStop(0, 'rgba(255,200,0,' + (0.25 * pulse) + ')');
-    grad.addColorStop(1, 'rgba(255,200,0,0)');
-    ctx.fillStyle = grad;
-    ctx.fillRect(sx - glowR, sy - glowR, glowR * 2, glowR * 2);
+    // Floor glow with key icon projected onto the ground
+    GameEngine.drawFloorGlow(keyCardItem.wx, keyCardItem.wy, keyCardItem.glowPhase);
   }
 
   function drawHarukiEntity(ctx) {
@@ -2391,6 +2582,7 @@
     var volumeSlider = document.getElementById('volumeSlider');
     var bgmSlider = document.getElementById('bgmSlider');
     var seSlider = document.getElementById('seSlider');
+    var sensSlider = document.getElementById('sensSlider');
     var returnTitleBtn = document.getElementById('returnTitleFromSettings');
 
     if (!settingsBtn || !settingsOverlay) return;
@@ -2399,12 +2591,15 @@
       if (volumeSlider) volumeSlider.value = Math.round(GameEngine.getMasterVolume() * 100);
       if (bgmSlider) bgmSlider.value = Math.round(GameEngine.getBgmVolume() * 100);
       if (seSlider) seSlider.value = Math.round(GameEngine.getSeVolume() * 100);
+      if (sensSlider) sensSlider.value = Math.round(lookSensitivity * 100);
       var vl = document.getElementById('volumeValue');
       var bl = document.getElementById('bgmValue');
       var sl = document.getElementById('seValue');
+      var snl = document.getElementById('sensValue');
       if (vl) vl.textContent = Math.round(GameEngine.getMasterVolume() * 100) + '%';
       if (bl) bl.textContent = Math.round(GameEngine.getBgmVolume() * 100) + '%';
       if (sl) sl.textContent = Math.round(GameEngine.getSeVolume() * 100) + '%';
+      if (snl) snl.textContent = Math.round(lookSensitivity * 100) + '%';
     }
 
     function openSettings() {
@@ -2448,6 +2643,14 @@
         var v = Math.round(this.value);
         GameEngine.setSeVolume(v / 100);
         var lbl = document.getElementById('seValue');
+        if (lbl) lbl.textContent = v + '%';
+      });
+    }
+    if (sensSlider) {
+      sensSlider.addEventListener('input', function () {
+        var v = Math.round(this.value);
+        lookSensitivity = v / 100;
+        var lbl = document.getElementById('sensValue');
         if (lbl) lbl.textContent = v + '%';
       });
     }

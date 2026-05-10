@@ -604,6 +604,69 @@
     ctx.restore();
   }
 
+  // Render a golden glow on the floor at a world position (for key card, etc.)
+  function renderFloorGlow(wx, wy, phase) {
+    var dx = wx - playerX;
+    var dy = wy - playerY;
+    var renderAngle = playerAngle + shakeOffsetX * 0.01;
+    var cosA = Math.cos(-renderAngle);
+    var sinA = Math.sin(-renderAngle);
+    var tX = dx * cosA - dy * sinA;
+    var tY = dx * sinA + dy * cosA;
+    if (tY <= 0.5) return;
+
+    var w = engine.width;
+    var h = engine.height;
+    var ts = TILE_SIZE;
+
+    var screenX = (w / 2) * (1 + tX / tY);
+    // Floor glow sits on the ground plane — project to bottom half of screen
+    var screenY = h / 2 + (h * 0.5) / (tY / ts);
+    var glowSize = (h / (tY / ts)) * 0.6;
+
+    if (glowSize < 2 || glowSize > h) return;
+
+    var fogDist = tY / ts;
+    var fogFactor = Math.max(0, 1 - fogDist / 12);
+    if (fogFactor <= 0.05) return;
+
+    var pulse = 0.6 + Math.sin(phase) * 0.4;
+    var ctx = engine.ctx;
+    ctx.save();
+    ctx.globalAlpha = fogFactor * 0.7;
+    var grad = ctx.createRadialGradient(screenX, screenY, 0, screenX, screenY, glowSize);
+    grad.addColorStop(0, 'rgba(255,200,50,' + (0.5 * pulse) + ')');
+    grad.addColorStop(0.5, 'rgba(255,180,0,' + (0.2 * pulse) + ')');
+    grad.addColorStop(1, 'rgba(255,150,0,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(screenX - glowSize, screenY - glowSize, glowSize * 2, glowSize * 2);
+
+    // Key icon (simple key shape)
+    var iconSize = glowSize * 0.3;
+    if (iconSize > 4) {
+      ctx.globalAlpha = fogFactor * pulse * 0.8;
+      ctx.strokeStyle = '#ffd700';
+      ctx.lineWidth = Math.max(1, iconSize * 0.15);
+      ctx.beginPath();
+      // Key head (circle)
+      var kx = screenX;
+      var ky = screenY - iconSize * 0.2;
+      var kr = iconSize * 0.25;
+      ctx.arc(kx, ky, kr, 0, Math.PI * 2);
+      // Key shaft
+      ctx.moveTo(kx, ky + kr);
+      ctx.lineTo(kx, ky + kr + iconSize * 0.5);
+      // Key teeth
+      ctx.moveTo(kx, ky + kr + iconSize * 0.3);
+      ctx.lineTo(kx + iconSize * 0.15, ky + kr + iconSize * 0.3);
+      ctx.moveTo(kx, ky + kr + iconSize * 0.45);
+      ctx.lineTo(kx + iconSize * 0.12, ky + kr + iconSize * 0.45);
+      ctx.stroke();
+    }
+
+    ctx.restore();
+  }
+
   // ───────────────────────────────────────────────
   // The Engine
   // ───────────────────────────────────────────────
@@ -891,6 +954,10 @@
     drawEntity: function (entity) {
       if (!entity || entity.visible === false) return;
       renderSprite(entity);
+    },
+
+    drawFloorGlow: function (wx, wy, phase) {
+      renderFloorGlow(wx, wy, phase);
     },
 
     // ─────────────────────────────────────────────
