@@ -1,6 +1,6 @@
 /**
- * CHILL HARUKING - Game Logic
- * チル・ハルキング 〜ホテルの怪〜
+ * 追跡者 -HARUKI- (TSUISEKISHA -HARUKI-)
+ * 一人称モバイルホラーゲーム
  *
  * A Chilla's Art-style first-person raycasting horror game.
  * Player works at a hotel front desk. Haruki calls asking for towels.
