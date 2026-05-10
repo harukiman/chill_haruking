@@ -441,11 +441,12 @@
     if (lz) lz.style.display = 'block';
     var rz = document.getElementById('touchZoneRight');
     if (rz) rz.style.display = 'block';
-    // Stick visuals are shown on touch, keep them available
     var el = document.getElementById('joystickArea');
     if (el) el.style.display = 'block';
     var la = document.getElementById('lookArea');
     if (la) la.style.display = 'block';
+    var mb = document.getElementById('minimapBtn');
+    if (mb) mb.classList.add('visible');
   }
   function hideJoystick() {
     var lz = document.getElementById('touchZoneLeft');
@@ -456,6 +457,8 @@
     if (el) { el.style.display = 'none'; el.classList.remove('active'); }
     var la = document.getElementById('lookArea');
     if (la) { la.style.display = 'none'; la.classList.remove('active'); }
+    var mb = document.getElementById('minimapBtn');
+    if (mb) mb.classList.remove('visible');
   }
   function showStamina() {
     var el = document.getElementById('staminaBar');
@@ -1247,10 +1250,10 @@
       GameEngine.drawDarkness(player.x, player.y, player.flashlightRadius, player.flashlightFlicker);
     }
 
-    // 5. Draw minimap
+    // 5. Update visited tile discovery
     if (phase === PHASES.EXPLORE || phase === PHASES.CHASE_1 || phase === PHASES.CHASE_FINAL ||
         phase === PHASES.WALK_TO_ROOM) {
-      drawMinimap(ctx);
+      updateVisitedTiles();
     }
 
     // 6. Phase overlays
@@ -1303,40 +1306,9 @@
     GameEngine.drawEntity(haruki);
   }
 
-  function drawMinimap(ctx) {
-    var canvas = ctx.canvas;
-    var mmW = 80;
-    var mmH = 110;
-    var mmX = canvas.width - mmW - 8;
-    var mmY = 8;
-    var tileSize = 2;
-
-    ctx.save();
-    ctx.globalAlpha = 0.6;
-    ctx.fillStyle = 'rgba(0,0,0,0.7)';
-    ctx.fillRect(mmX - 2, mmY - 2, mmW + 4, mmH + 4);
-
-    // Draw visited tiles
-    ctx.fillStyle = '#333';
+  // Track tile discovery each frame
+  function updateVisitedTiles() {
     var pg = wToG(player.x, player.y);
-
-    for (var key in visitedTiles) {
-      var parts = key.split(',');
-      var gx = parseInt(parts[0]);
-      var gy = parseInt(parts[1]);
-      var tx = mmX + (gx / MAP_W) * mmW;
-      var ty = mmY + (gy / MAP_H) * mmH;
-      var t = MAP_TILES[gy] ? MAP_TILES[gy][gx] : 1;
-
-      if (t === TILE.WALL || t === TILE.WINDOW) {
-        ctx.fillStyle = '#555';
-      } else {
-        ctx.fillStyle = '#2a2a2a';
-      }
-      ctx.fillRect(tx, ty, tileSize + 1, tileSize + 1);
-    }
-
-    // Mark surrounding tiles as visited for discovery
     for (var dy = -3; dy <= 3; dy++) {
       for (var dx = -3; dx <= 3; dx++) {
         var vgx = pg.gx + dx;
@@ -1346,25 +1318,161 @@
         }
       }
     }
+  }
+
+  // Get current objective grid position based on phase
+  function getObjective() {
+    if (phase === PHASES.WALK_TO_ROOM) {
+      // Go to room 404
+      var d404 = findDoor('404');
+      if (d404) return { gx: d404.gx, gy: d404.gy, label: '404号室' };
+      return { gx: 14, gy: 5, label: '404号室' };
+    }
+    if (phase === PHASES.EXPLORE || phase === PHASES.CHASE_1) {
+      // Find key card, then exit
+      if (keyCardItem && !keyCardItem.collected) {
+        return { gx: keyCardItem.gx, gy: keyCardItem.gy, label: 'カードキー' };
+      }
+      return { gx: exitDoor.gx, gy: exitDoor.gy, label: '出口' };
+    }
+    if (phase === PHASES.CHASE_FINAL) {
+      return { gx: exitDoor.gx, gy: exitDoor.gy, label: '出口' };
+    }
+    return null;
+  }
+
+  var minimapOpen = false;
+
+  function openMinimap() {
+    var overlay = document.getElementById('minimapOverlay');
+    if (!overlay) return;
+    minimapOpen = true;
+    overlay.style.display = 'flex';
+    GameEngine.paused = true;
+    drawExpandedMinimap();
+  }
+
+  function closeMinimap() {
+    var overlay = document.getElementById('minimapOverlay');
+    if (overlay) overlay.style.display = 'none';
+    minimapOpen = false;
+    GameEngine.paused = false;
+  }
+
+  function drawExpandedMinimap() {
+    var mmCanvas = document.getElementById('minimapCanvas');
+    if (!mmCanvas) return;
+
+    var ts = 6; // tile size in minimap pixels
+    mmCanvas.width = MAP_W * ts;
+    mmCanvas.height = MAP_H * ts;
+    var ctx = mmCanvas.getContext('2d');
+
+    // Background
+    ctx.fillStyle = '#0a0a0a';
+    ctx.fillRect(0, 0, mmCanvas.width, mmCanvas.height);
+
+    // Draw visited tiles
+    for (var key in visitedTiles) {
+      var parts = key.split(',');
+      var gx = parseInt(parts[0]);
+      var gy = parseInt(parts[1]);
+      var t = MAP_TILES[gy] ? MAP_TILES[gy][gx] : 1;
+      var tx = gx * ts;
+      var ty = gy * ts;
+
+      switch (t) {
+        case TILE.WALL:
+        case TILE.WINDOW:
+          ctx.fillStyle = '#666';
+          break;
+        case TILE.DOOR:
+          ctx.fillStyle = '#8a6020';
+          break;
+        case TILE.EXIT_DOOR:
+          ctx.fillStyle = '#2a6a2a';
+          break;
+        case TILE.CARPET:
+          ctx.fillStyle = '#3a2a30';
+          break;
+        case TILE.ELEVATOR:
+          ctx.fillStyle = '#555';
+          break;
+        case TILE.FURNITURE:
+          ctx.fillStyle = '#444';
+          break;
+        default:
+          ctx.fillStyle = '#2a2a2a';
+      }
+      ctx.fillRect(tx, ty, ts, ts);
+
+      // Grid lines
+      ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+      ctx.strokeRect(tx, ty, ts, ts);
+    }
+
+    // Objective marker (pulsing yellow)
+    var obj = getObjective();
+    if (obj) {
+      var ox = obj.gx * ts + ts / 2;
+      var oy = obj.gy * ts + ts / 2;
+      // Glow
+      ctx.beginPath();
+      ctx.arc(ox, oy, ts * 1.5, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255, 204, 0, 0.25)';
+      ctx.fill();
+      // Dot
+      ctx.beginPath();
+      ctx.arc(ox, oy, ts * 0.6, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffcc00';
+      ctx.fill();
+      // Label
+      ctx.font = 'bold ' + (ts * 1.5) + 'px sans-serif';
+      ctx.fillStyle = '#ffcc00';
+      ctx.textAlign = 'center';
+      ctx.fillText(obj.label, ox, oy - ts * 1.8);
+    }
+
+    // Player position
+    var pg = wToG(player.x, player.y);
+    var px = pg.gx * ts + ts / 2;
+    var py = pg.gy * ts + ts / 2;
+
+    // Player direction indicator
+    var dirLen = ts * 2;
+    var dx = Math.cos(player.angle) * dirLen;
+    var dy = Math.sin(player.angle) * dirLen;
+    ctx.beginPath();
+    ctx.moveTo(px, py);
+    ctx.lineTo(px + dx, py + dy);
+    ctx.strokeStyle = '#4488ff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
 
     // Player dot
-    var px = mmX + (pg.gx / MAP_W) * mmW;
-    var py = mmY + (pg.gy / MAP_H) * mmH;
+    ctx.beginPath();
+    ctx.arc(px, py, ts * 0.6, 0, Math.PI * 2);
     ctx.fillStyle = '#4488ff';
-    ctx.fillRect(px - 1, py - 1, 3, 3);
+    ctx.fill();
 
-    // Haruki dot (if active and within visited range)
+    // Label
+    ctx.font = 'bold ' + (ts * 1.5) + 'px sans-serif';
+    ctx.fillStyle = '#4488ff';
+    ctx.textAlign = 'center';
+    ctx.fillText('現在地', px, py - ts * 1.8);
+
+    // Haruki (red dot if in visited area)
     if (haruki.active) {
       var hg = wToG(haruki.x, haruki.y);
       if (visitedTiles[hg.gx + ',' + hg.gy]) {
-        var hpx = mmX + (hg.gx / MAP_W) * mmW;
-        var hpy = mmY + (hg.gy / MAP_H) * mmH;
+        var hx = hg.gx * ts + ts / 2;
+        var hy = hg.gy * ts + ts / 2;
+        ctx.beginPath();
+        ctx.arc(hx, hy, ts * 0.6, 0, Math.PI * 2);
         ctx.fillStyle = '#ff0000';
-        ctx.fillRect(hpx - 1, hpy - 1, 3, 3);
+        ctx.fill();
       }
     }
-
-    ctx.restore();
   }
 
   function drawUnlockingOverlay(ctx) {
@@ -1593,6 +1701,7 @@
 
     // Joystick handling
     bindJoystick();
+    bindMinimap();
 
     // Settings / pause
     bindSettingsButton();
@@ -1604,6 +1713,31 @@
   function bindJoystick() {
     // Touch input is handled by engine.js touch zones.
     // No additional binding needed.
+  }
+
+  function bindMinimap() {
+    var btn = document.getElementById('minimapBtn');
+    var closeBtn = document.getElementById('closeMinimapBtn');
+    var overlay = document.getElementById('minimapOverlay');
+    if (btn) {
+      btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!minimapOpen) openMinimap();
+      });
+    }
+    if (closeBtn) {
+      closeBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        closeMinimap();
+      });
+    }
+    if (overlay) {
+      overlay.addEventListener('click', function (e) {
+        if (e.target === overlay) closeMinimap();
+      });
+    }
   }
 
   // =========================================================

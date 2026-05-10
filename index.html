@@ -109,6 +109,28 @@
     <span id="actionBtnText">調べる</span>
   </button>
 
+  <!-- Minimap Button -->
+  <button id="minimapBtn" type="button" style="display:none;" aria-label="マップ">
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5">
+      <rect x="1" y="1" width="16" height="16" rx="2"/>
+      <line x1="7" y1="1" x2="7" y2="17"/>
+      <line x1="11" y1="1" x2="11" y2="17"/>
+      <line x1="1" y1="9" x2="17" y2="9"/>
+    </svg>
+  </button>
+
+  <!-- Expanded Minimap Overlay -->
+  <div id="minimapOverlay" class="overlay" style="display:none;">
+    <div class="minimap-expanded">
+      <canvas id="minimapCanvas"></canvas>
+      <div class="minimap-legend">
+        <span class="legend-player">■</span> 現在地
+        <span class="legend-objective">■</span> 目的地
+      </div>
+      <button id="closeMinimapBtn" type="button" class="minimap-close">閉じる</button>
+    </div>
+  </div>
+
   <!-- Settings Button -->
   <button id="settingsBtn" type="button" class="settings-btn" aria-label="設定">
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">

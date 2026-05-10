@@ -597,6 +597,74 @@ html, body {
 }
 
 /* =============================================
+   MINIMAP BUTTON & OVERLAY
+   ============================================= */
+#minimapBtn {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  z-index: 55;
+  touch-action: manipulation;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+#minimapBtn.visible {
+  display: flex;
+}
+
+.minimap-expanded {
+  position: relative;
+  background: rgba(10, 10, 10, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  padding: 16px;
+  max-width: 90vw;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+#minimapCanvas {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  max-width: 100%;
+}
+
+.minimap-legend {
+  font-family: var(--font-main);
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.legend-player { color: #4488ff; }
+.legend-objective { color: #ffcc00; }
+
+.minimap-close {
+  font-family: var(--font-main);
+  font-size: 13px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  padding: 6px 24px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+/* =============================================
    ACTION BUTTON
    ============================================= */
 #actionBtn {
