@@ -757,6 +757,8 @@
       document.addEventListener('touchmove', function (e) {
         var settingsOverlay = document.getElementById('settingsOverlay');
         if (settingsOverlay && settingsOverlay.style.display !== 'none') return;
+        var minimapOverlay = document.getElementById('minimapOverlay');
+        if (minimapOverlay && minimapOverlay.style.display !== 'none') return;
         e.preventDefault();
       }, { passive: false });
 

@@ -633,7 +633,7 @@
       if (img) {
         // Play jumpscare sound DURING the face display
         GameEngine.playSound('jumpscare');
-        GameEngine.flashImage(img, 1000, function () {
+        GameEngine.flashImage(img, 3000, function () {
           // Second scare: brief black then face again with shake
           GameEngine.shakeScreen(20, 300);
           GameEngine.redFlash();
@@ -672,7 +672,7 @@
     GameEngine.stopAll();
 
     // Teleport player to utility room
-    var sp = gToW(2, 33);
+    var sp = gToW(3, 33);
     player.x = sp.x;
     player.y = sp.y;
     player.angle = Math.PI * 1.5; // facing up (north)
