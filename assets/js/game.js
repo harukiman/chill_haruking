@@ -970,9 +970,13 @@
     GameEngine.hideDialogue();
     GameEngine.stopAll();
     haruki.active = false;
-    // Reset start button visibility
+    // Reset start button
     var sb = document.getElementById('startBtn');
-    if (sb) { sb.style.opacity = ''; sb.style.pointerEvents = ''; }
+    if (sb) {
+      sb.style.opacity = '';
+      sb.style.pointerEvents = '';
+      sb.textContent = audioInitialized ? 'ゲームスタート' : 'タップしてスタート';
+    }
     startTitleLightning();
     // Audio starts on first tap (mobile requires user gesture)
     if (audioInitialized) {
@@ -2109,19 +2113,28 @@
     if (startBtn) {
       var handleStart = function () {
         if (phase !== PHASES.TITLE) return;
-        if (phaseFlags.starting) return; // prevent double tap
-        phaseFlags.starting = true;
+
+        // First tap: init audio + start BGM/rain
         if (!audioInitialized) {
           GameEngine.initAudio();
           audioInitialized = true;
+          startTitleRain();
+          startTitleBGM();
+          startBtn.textContent = 'ゲームスタート';
+          return;
         }
-        // Big thunder + lightning flash (Resident Evil style)
+
+        // Already audio ready but rain/BGM not started (returned to title)
+        if (!titleRainNodes) startTitleRain();
+        if (!titleBgmNodes) startTitleBGM();
+
+        // Thunder transition
+        if (phaseFlags.starting) return;
+        phaseFlags.starting = true;
         triggerLightning();
         playBigThunder();
-        // Hide start button immediately
         startBtn.style.opacity = '0';
         startBtn.style.pointerEvents = 'none';
-        // Fade title screen to black after flash
         var ts = document.getElementById('titleScreen');
         setTimeout(function () {
           if (ts) {
@@ -2143,17 +2156,6 @@
         e.preventDefault();
         handleStart();
       });
-    }
-
-    // Title screen tap → init audio for BGM/rain/thunder
-    var titleScreen = document.getElementById('titleScreen');
-    if (titleScreen) {
-      titleScreen.addEventListener('touchstart', function () {
-        initTitleAudio();
-      }, { once: true });
-      titleScreen.addEventListener('click', function () {
-        initTitleAudio();
-      }, { once: true });
     }
 
     // Phone answer button
