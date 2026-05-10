@@ -1000,23 +1000,24 @@
   }
 
   function onEnterChase1() {
-    // Haruki appears!
+    // Haruki goes into full chase mode!
     GameEngine.redFlash();
-    GameEngine.startLoop('heartbeat');
-
-    // Spawn Haruki at upper floor corridor
-    var sp = gToW(14, 7);
-    haruki.x = sp.x;
-    haruki.y = sp.y;
-    haruki.active = true;
-    haruki.visible = true;
+    if (!haruki.active) {
+      GameEngine.startLoop('heartbeat');
+      // Spawn if not already active
+      var sp = gToW(14, 7);
+      haruki.x = sp.x;
+      haruki.y = sp.y;
+      haruki.active = true;
+      haruki.visible = true;
+    }
     haruki.chaseIntensity = 1.0;
     haruki.path = [];
     haruki.pathTimer = 0;
 
     // Brief dialogue flash
     queueDialogue([
-      { speaker: '？？？', text: '...見ーつけた...' }
+      { speaker: '？？？', text: '...見ーつけた...逃がさないよ...' }
     ], function () {
       // Chase begins
     });
@@ -1448,10 +1449,50 @@
       setTimeout(function () { player.flashlightFlicker = 0.3; }, 150);
     }
 
+    // Spawn Haruki after 25 seconds of exploring (slow patrol mode)
+    if (phaseTimer > 25 && !haruki.active && !phaseFlags.harukiSpawned) {
+      phaseFlags.harukiSpawned = true;
+      // Spawn far from player
+      var pg = wToG(player.x, player.y);
+      var spawnPoints = [
+        { gx: 14, gy: 7 },  // upper corridor center
+        { gx: 1, gy: 7 },   // upper corridor left
+        { gx: 28, gy: 7 },  // upper corridor right
+        { gx: 14, gy: 25 }  // ground floor
+      ];
+      // Pick furthest spawn from player
+      var best = spawnPoints[0];
+      var bestDist = 0;
+      for (var s = 0; s < spawnPoints.length; s++) {
+        var sd = Math.abs(spawnPoints[s].gx - pg.gx) + Math.abs(spawnPoints[s].gy - pg.gy);
+        if (sd > bestDist) {
+          bestDist = sd;
+          best = spawnPoints[s];
+        }
+      }
+      var sp = gToW(best.gx, best.gy);
+      haruki.x = sp.x;
+      haruki.y = sp.y;
+      haruki.active = true;
+      haruki.visible = true;
+      haruki.chaseIntensity = 0.5; // slow patrol during explore
+      haruki.path = [];
+      haruki.pathTimer = 0;
+      GameEngine.startLoop('heartbeat');
+      queueDialogue([
+        { speaker: '？？？', text: '...どこかで足音がする...' }
+      ]);
+    }
+
+    // Update Haruki if active (slow patrol during explore)
+    if (haruki.active) {
+      updateHaruki(dt);
+    }
+
     // Check for key card pickup
     if (keyCardItem && !keyCardItem.collected) {
-      var pg = wToG(player.x, player.y);
-      var dist = Math.abs(pg.gx - keyCardItem.gx) + Math.abs(pg.gy - keyCardItem.gy);
+      var pg2 = wToG(player.x, player.y);
+      var dist = Math.abs(pg2.gx - keyCardItem.gx) + Math.abs(pg2.gy - keyCardItem.gy);
       if (dist <= 1 && !phaseFlags.keyActionShown) {
         phaseFlags.keyActionShown = true;
         showActionBtn('調べる', function () {
@@ -1556,6 +1597,9 @@
     if (phase !== PHASES.TITLE && phase !== PHASES.GAME_OVER && phase !== PHASES.ENDING) {
       GameEngine.drawDarkness(player.x, player.y, player.flashlightRadius, player.flashlightFlicker);
     }
+
+    // 4.5. Persistent film grain overlay
+    GameEngine.staticEffect(0.08);
 
     // 5. Update visited tile discovery
     if (phase === PHASES.EXPLORE || phase === PHASES.CHASE_1 || phase === PHASES.CHASE_FINAL ||
