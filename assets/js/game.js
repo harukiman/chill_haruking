@@ -517,6 +517,146 @@
     }
   }
 
+  // ─── Big Thunder (Resident Evil style, for start button) ───
+  function playBigThunder() {
+    if (!audioInitialized) return;
+    try {
+      var ac = GameEngine._getAudioCtx();
+      if (!ac || ac.state !== 'running') return;
+      var now = ac.currentTime;
+      var seNode = GameEngine._getSeGain();
+
+      // Massive crack
+      var crackBuf = ac.createBuffer(1, ac.sampleRate * 0.25, ac.sampleRate);
+      var crackData = crackBuf.getChannelData(0);
+      for (var i = 0; i < crackData.length; i++) {
+        crackData[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ac.sampleRate * 0.05));
+      }
+      var crackSrc = ac.createBufferSource();
+      crackSrc.buffer = crackBuf;
+      var crackGain = ac.createGain();
+      crackGain.gain.setValueAtTime(1.0, now);
+      crackGain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+      var crackHi = ac.createBiquadFilter();
+      crackHi.type = 'highpass';
+      crackHi.frequency.value = 600;
+      crackSrc.connect(crackHi);
+      crackHi.connect(crackGain);
+      crackGain.connect(seNode);
+      crackSrc.start(now);
+
+      // Heavy rumble
+      var rumbleDur = 3.5;
+      var rumbleBuf = ac.createBuffer(1, ac.sampleRate * rumbleDur, ac.sampleRate);
+      var rumbleData = rumbleBuf.getChannelData(0);
+      for (var r = 0; r < rumbleData.length; r++) {
+        var env = Math.exp(-r / (ac.sampleRate * rumbleDur * 0.35));
+        var wave = Math.sin(r / ac.sampleRate * 45 * Math.PI * 2) * 0.4;
+        var wave2 = Math.sin(r / ac.sampleRate * 30 * Math.PI * 2) * 0.2;
+        rumbleData[r] = ((Math.random() * 2 - 1) * 0.6 + wave + wave2) * env;
+      }
+      var rumbleSrc = ac.createBufferSource();
+      rumbleSrc.buffer = rumbleBuf;
+      var rumbleGain = ac.createGain();
+      rumbleGain.gain.setValueAtTime(0.7, now + 0.05);
+      rumbleGain.gain.exponentialRampToValueAtTime(0.01, now + rumbleDur);
+      var rumbleFilter = ac.createBiquadFilter();
+      rumbleFilter.type = 'lowpass';
+      rumbleFilter.frequency.value = 150;
+      rumbleSrc.connect(rumbleFilter);
+      rumbleFilter.connect(rumbleGain);
+      rumbleGain.connect(seNode);
+      rumbleSrc.start(now + 0.03);
+
+      // Reverberant tail
+      var tailDur = 4;
+      var tailBuf = ac.createBuffer(1, ac.sampleRate * tailDur, ac.sampleRate);
+      var tailData = tailBuf.getChannelData(0);
+      for (var t = 0; t < tailData.length; t++) {
+        tailData[t] = (Math.random() * 2 - 1) * Math.exp(-t / (ac.sampleRate * tailDur * 0.3)) * 0.15;
+      }
+      var tailSrc = ac.createBufferSource();
+      tailSrc.buffer = tailBuf;
+      var tailGain = ac.createGain();
+      tailGain.gain.setValueAtTime(0.4, now + 0.2);
+      tailGain.gain.exponentialRampToValueAtTime(0.001, now + 0.2 + tailDur);
+      var tailFilter = ac.createBiquadFilter();
+      tailFilter.type = 'lowpass';
+      tailFilter.frequency.value = 80;
+      tailSrc.connect(tailFilter);
+      tailFilter.connect(tailGain);
+      tailGain.connect(seNode);
+      tailSrc.start(now + 0.15);
+    } catch (e) { /* ignore */ }
+  }
+
+  // ─── Title BGM (eerie drone) ───
+  var titleBgmNodes = null;
+
+  function startTitleBGM() {
+    if (!audioInitialized) return;
+    if (titleBgmNodes) return;
+    try {
+      var ac = GameEngine._getAudioCtx();
+      if (!ac) return;
+      if (ac.state === 'suspended') ac.resume();
+      var bgmNode = GameEngine._getSeGain();
+
+      // Low drone oscillator
+      var osc1 = ac.createOscillator();
+      osc1.type = 'sine';
+      osc1.frequency.value = 55; // low A
+      var osc2 = ac.createOscillator();
+      osc2.type = 'sine';
+      osc2.frequency.value = 58; // slightly detuned for unease
+
+      // LFO for slow pulsing
+      var lfo = ac.createOscillator();
+      lfo.type = 'sine';
+      lfo.frequency.value = 0.15;
+      var lfoGain = ac.createGain();
+      lfoGain.gain.value = 0.03;
+      lfo.connect(lfoGain);
+      lfoGain.connect(osc1.frequency);
+
+      var gain = ac.createGain();
+      gain.gain.value = 0.08;
+      osc1.connect(gain);
+      osc2.connect(gain);
+      gain.connect(bgmNode);
+
+      osc1.start();
+      osc2.start();
+      lfo.start();
+
+      titleBgmNodes = { nodes: [osc1, osc2, lfo], gain: gain };
+    } catch (e) { /* ignore */ }
+  }
+
+  function stopTitleBGM() {
+    if (titleBgmNodes) {
+      for (var i = 0; i < titleBgmNodes.nodes.length; i++) {
+        try { titleBgmNodes.nodes[i].stop(); } catch (e) { /* */ }
+        try { titleBgmNodes.nodes[i].disconnect(); } catch (e) { /* */ }
+      }
+      try { titleBgmNodes.gain.disconnect(); } catch (e) { /* */ }
+      titleBgmNodes = null;
+    }
+  }
+
+  // ─── Init title audio on first tap ───
+  function initTitleAudio() {
+    if (audioInitialized) {
+      startTitleRain();
+      startTitleBGM();
+      return;
+    }
+    GameEngine.initAudio();
+    audioInitialized = true;
+    startTitleRain();
+    startTitleBGM();
+  }
+
   // ─── Title Rain Sound ───
   var titleRainNodes = null;
 
@@ -830,14 +970,22 @@
     GameEngine.hideDialogue();
     GameEngine.stopAll();
     haruki.active = false;
+    // Reset start button visibility
+    var sb = document.getElementById('startBtn');
+    if (sb) { sb.style.opacity = ''; sb.style.pointerEvents = ''; }
     startTitleLightning();
-    startTitleRain();
+    // Audio starts on first tap (mobile requires user gesture)
+    if (audioInitialized) {
+      startTitleRain();
+      startTitleBGM();
+    }
   }
 
   function onEnterFrontDesk() {
     hideOverlay('titleScreen');
     stopTitleLightning();
     stopTitleRain();
+    stopTitleBGM();
     showJoystick();
 
     // Spawn player at front desk area
@@ -1959,23 +2107,53 @@
     // Title screen start button
     var startBtn = document.getElementById('startBtn');
     if (startBtn) {
-      startBtn.addEventListener('click', function () {
+      var handleStart = function () {
         if (phase !== PHASES.TITLE) return;
+        if (phaseFlags.starting) return; // prevent double tap
+        phaseFlags.starting = true;
         if (!audioInitialized) {
           GameEngine.initAudio();
           audioInitialized = true;
         }
-        setPhase(PHASES.FRONT_DESK);
+        // Big thunder + lightning flash (Resident Evil style)
+        triggerLightning();
+        playBigThunder();
+        // Hide start button immediately
+        startBtn.style.opacity = '0';
+        startBtn.style.pointerEvents = 'none';
+        // Fade title screen to black after flash
+        var ts = document.getElementById('titleScreen');
+        setTimeout(function () {
+          if (ts) {
+            ts.style.transition = 'opacity 1.5s ease-in';
+            ts.style.opacity = '0';
+          }
+          setTimeout(function () {
+            setPhase(PHASES.FRONT_DESK);
+            if (ts) { ts.style.transition = ''; ts.style.opacity = ''; }
+            GameEngine.fadeFromBlack(1000);
+          }, 1600);
+        }, 800);
+      };
+      startBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        handleStart();
       });
       startBtn.addEventListener('touchend', function (e) {
         e.preventDefault();
-        if (phase !== PHASES.TITLE) return;
-        if (!audioInitialized) {
-          GameEngine.initAudio();
-          audioInitialized = true;
-        }
-        setPhase(PHASES.FRONT_DESK);
+        handleStart();
       });
+    }
+
+    // Title screen tap → init audio for BGM/rain/thunder
+    var titleScreen = document.getElementById('titleScreen');
+    if (titleScreen) {
+      titleScreen.addEventListener('touchstart', function () {
+        initTitleAudio();
+      }, { once: true });
+      titleScreen.addEventListener('click', function () {
+        initTitleAudio();
+      }, { once: true });
     }
 
     // Phone answer button
