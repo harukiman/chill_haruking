@@ -682,6 +682,9 @@
     player.hasKey = false;
     player.stamina = 1.0;
 
+    // Sync camera to new position
+    GameEngine.setPlayerView(player.x, player.y, player.angle);
+
     // Reset items for explore phase
     resetItems();
 
@@ -706,6 +709,7 @@
   }
 
   function onEnterExplore() {
+    GameEngine.paused = false;
     showJoystick();
     showStamina();
     // Ensure touch zones are fully active (clear any leftover faded state)
@@ -1791,18 +1795,13 @@
       syncSliders();
     }
 
-    settingsBtn.addEventListener('click', openSettings);
-    settingsBtn.addEventListener('touchend', function (e) {
+    settingsBtn.addEventListener('click', function (e) {
       e.preventDefault();
       openSettings();
     });
 
     if (closeSettingsBtn) {
-      closeSettingsBtn.addEventListener('click', function () {
-        settingsOverlay.style.display = 'none';
-        GameEngine.paused = false;
-      });
-      closeSettingsBtn.addEventListener('touchend', function (e) {
+      closeSettingsBtn.addEventListener('click', function (e) {
         e.preventDefault();
         settingsOverlay.style.display = 'none';
         GameEngine.paused = false;
@@ -1835,12 +1834,7 @@
     }
 
     if (returnTitleBtn) {
-      returnTitleBtn.addEventListener('click', function () {
-        settingsOverlay.style.display = 'none';
-        GameEngine.paused = false;
-        setPhase(PHASES.TITLE);
-      });
-      returnTitleBtn.addEventListener('touchend', function (e) {
+      returnTitleBtn.addEventListener('click', function (e) {
         e.preventDefault();
         settingsOverlay.style.display = 'none';
         GameEngine.paused = false;

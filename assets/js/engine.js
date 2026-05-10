@@ -142,20 +142,34 @@
   // Raycasting renderer functions
   // ───────────────────────────────────────────────
 
-  function getWallColor(tile, side, dist) {
+  function getWallColor(tile, side, dist, isLower) {
     var r, g, b;
-    switch (tile) {
-      case 1: r = 130; g = 120; b = 110; break; // Wall (hotel plaster)
-      case 2: r = 160; g = 110; b = 50; break;  // Door (wood)
-      case 6: r = 60; g = 150; b = 60; break;   // Exit door (green)
-      case 7: r = 100; g = 90; b = 80; break;   // Furniture
-      case 9: r = 140; g = 140; b = 150; break;  // Elevator door (metal)
-      case 10: r = 80; g = 90; b = 130; break;   // Window (blue tint)
-      default: r = 130; g = 120; b = 110; break;
+    if (isLower) {
+      // Wainscoting / dark wood panel (lower wall)
+      switch (tile) {
+        case 1: r = 85; g = 55; b = 35; break;   // Dark oak panel
+        case 2: r = 130; g = 85; b = 40; break;   // Door (lighter wood)
+        case 6: r = 45; g = 110; b = 45; break;   // Exit door (green)
+        case 7: r = 75; g = 50; b = 30; break;    // Furniture (dark wood)
+        case 9: r = 100; g = 100; b = 110; break;  // Elevator (brushed metal)
+        case 10: r = 55; g = 65; b = 95; break;    // Window
+        default: r = 85; g = 55; b = 35; break;
+      }
+    } else {
+      // Upper wall — warm cream/beige wallpaper with subtle pattern
+      switch (tile) {
+        case 1: r = 155; g = 135; b = 105; break;  // Cream wallpaper
+        case 2: r = 160; g = 110; b = 50; break;   // Door (wood)
+        case 6: r = 60; g = 150; b = 60; break;    // Exit door (green)
+        case 7: r = 100; g = 90; b = 80; break;    // Furniture
+        case 9: r = 140; g = 140; b = 150; break;  // Elevator (metal)
+        case 10: r = 80; g = 90; b = 130; break;   // Window (blue tint)
+        default: r = 155; g = 135; b = 105; break;
+      }
     }
 
     // Darken one side for depth
-    if (side === 1) { r = r * 0.75 | 0; g = g * 0.75 | 0; b = b * 0.75 | 0; }
+    if (side === 1) { r = r * 0.72 | 0; g = g * 0.72 | 0; b = b * 0.72 | 0; }
 
     // Distance fog — visible up to ~12 tiles out
     var maxViewDist = 12;
@@ -189,17 +203,19 @@
     // Apply shake to angle for camera wobble
     var renderAngle = playerAngle + shakeOffsetX * 0.01;
 
-    // Draw ceiling
+    // Draw ceiling (hotel ceiling — warm off-white receding into dark)
     var ceilGrad = ctx.createLinearGradient(0, 0, 0, h / 2);
-    ceilGrad.addColorStop(0, '#1a1a1a');
-    ceilGrad.addColorStop(1, '#2a2520');
+    ceilGrad.addColorStop(0, '#181614');
+    ceilGrad.addColorStop(0.7, '#262018');
+    ceilGrad.addColorStop(1, '#302a20');
     ctx.fillStyle = ceilGrad;
     ctx.fillRect(0, 0, w, h / 2);
 
-    // Draw floor
+    // Draw floor (deep burgundy/red hotel carpet)
     var floorGrad = ctx.createLinearGradient(0, h / 2, 0, h);
-    floorGrad.addColorStop(0, '#1a1815');
-    floorGrad.addColorStop(1, '#302820');
+    floorGrad.addColorStop(0, '#1c1210');
+    floorGrad.addColorStop(0.3, '#2d1815');
+    floorGrad.addColorStop(1, '#3a2018');
     ctx.fillStyle = floorGrad;
     ctx.fillRect(0, h / 2, w, h / 2);
 
@@ -304,11 +320,28 @@
       var drawStart = Math.max(0, (h - wallHeight) / 2);
       var drawEnd = Math.min(h, (h + wallHeight) / 2);
 
-      // Wall color based on tile type and side
-      var color = getWallColor(hitTile, side, correctedDist);
+      // Wall: upper wallpaper + dado rail + lower wainscoting
+      var wallH = drawEnd - drawStart;
+      var splitY = drawStart + wallH * 0.62; // Lower 38% is wainscoting
+      var colorUpper = getWallColor(hitTile, side, correctedDist, false);
+      var colorLower = getWallColor(hitTile, side, correctedDist, true);
 
-      ctx.fillStyle = color;
-      ctx.fillRect(screenX, drawStart, stripWidth, drawEnd - drawStart);
+      // Upper wallpaper
+      ctx.fillStyle = colorUpper;
+      ctx.fillRect(screenX, drawStart, stripWidth, splitY - drawStart);
+
+      // Dado rail (thin dark trim line)
+      var railH = Math.max(1, wallH * 0.015);
+      var fogDim = Math.max(0.05, 1 - correctedDist / 12);
+      var railR = (50 * fogDim) | 0;
+      var railG = (35 * fogDim) | 0;
+      var railB = (22 * fogDim) | 0;
+      ctx.fillStyle = 'rgb(' + railR + ',' + railG + ',' + railB + ')';
+      ctx.fillRect(screenX, splitY, stripWidth, railH);
+
+      // Lower wainscoting
+      ctx.fillStyle = colorLower;
+      ctx.fillRect(screenX, splitY + railH, stripWidth, drawEnd - splitY - railH);
     }
 
     // Store z-buffer for sprite rendering
