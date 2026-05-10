@@ -1444,24 +1444,40 @@
 
     _playHeartbeat: function (now) {
       var dest = bgmGain || masterGain;
+      // Volume scales with proximity: 0.3 base → 1.0 at max proximity
+      var vol = 0.3 + proximityBoost * 1.4;
       for (var i = 0; i < 2; i++) {
         var offset = i * 0.15;
         var osc = audioCtx.createOscillator();
         var gain = audioCtx.createGain();
         osc.type = 'sine';
         osc.frequency.setValueAtTime(50 - i * 10, now + offset);
-        gain.gain.setValueAtTime(0.4, now + offset);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + offset + 0.15);
+        gain.gain.setValueAtTime(vol, now + offset);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + offset + 0.18);
         osc.connect(gain);
         gain.connect(dest);
         osc.start(now + offset);
-        osc.stop(now + offset + 0.2);
+        osc.stop(now + offset + 0.25);
+      }
+      // Sub-bass thump for more impact at close range
+      if (proximityBoost > 0.2) {
+        var sub = audioCtx.createOscillator();
+        var subG = audioCtx.createGain();
+        sub.type = 'sine';
+        sub.frequency.value = 30;
+        subG.gain.setValueAtTime(proximityBoost * 0.6, now);
+        subG.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+        sub.connect(subG);
+        subG.connect(dest);
+        sub.start(now);
+        sub.stop(now + 0.25);
       }
     },
 
     _playJumpscare: function (now) {
       var dest = seGain || masterGain;
-      var bufferSize = audioCtx.sampleRate * 0.5;
+      // Loud noise burst
+      var bufferSize = audioCtx.sampleRate * 0.8;
       var buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
       var data = buffer.getChannelData(0);
       for (var i = 0; i < bufferSize; i++) {
@@ -1470,26 +1486,39 @@
       var noiseSrc = audioCtx.createBufferSource();
       noiseSrc.buffer = buffer;
       var noiseGain = audioCtx.createGain();
-      noiseGain.gain.setValueAtTime(0.8, now);
-      noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+      noiseGain.gain.setValueAtTime(1.0, now);
+      noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.8);
       noiseSrc.connect(noiseGain);
       noiseGain.connect(dest);
       noiseSrc.start(now);
-      noiseSrc.stop(now + 0.6);
+      noiseSrc.stop(now + 0.9);
 
+      // Dissonant chord — louder
       var freqs = [200, 212, 224, 237, 450, 477];
       for (var f = 0; f < freqs.length; f++) {
         var osc = audioCtx.createOscillator();
         var g = audioCtx.createGain();
         osc.type = 'sawtooth';
         osc.frequency.value = freqs[f];
-        g.gain.setValueAtTime(0.3, now);
-        g.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+        g.gain.setValueAtTime(0.5, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
         osc.connect(g);
         g.connect(dest);
         osc.start(now);
-        osc.stop(now + 0.55);
+        osc.stop(now + 0.75);
       }
+
+      // Low impact hit
+      var hit = audioCtx.createOscillator();
+      var hitG = audioCtx.createGain();
+      hit.type = 'sine';
+      hit.frequency.value = 60;
+      hitG.gain.setValueAtTime(0.8, now);
+      hitG.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+      hit.connect(hitG);
+      hitG.connect(dest);
+      hit.start(now);
+      hit.stop(now + 0.5);
     },
 
     _playKnock: function (now) {
@@ -1560,25 +1589,25 @@
       var gain = audioCtx.createGain();
       osc.type = 'sine';
       osc.frequency.setValueAtTime(60, now);
-      osc.frequency.exponentialRampToValueAtTime(30, now + 0.15);
-      gain.gain.setValueAtTime(0.5, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+      osc.frequency.exponentialRampToValueAtTime(25, now + 0.2);
+      gain.gain.setValueAtTime(0.9, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
       osc.connect(gain);
       gain.connect(dest);
       osc.start(now);
-      osc.stop(now + 0.25);
+      osc.stop(now + 0.35);
 
-      var bufLen = audioCtx.sampleRate * 0.08;
+      var bufLen = audioCtx.sampleRate * 0.12;
       var buf = audioCtx.createBuffer(1, bufLen, audioCtx.sampleRate);
       var d = buf.getChannelData(0);
       for (var i = 0; i < bufLen; i++) {
         var t = i / audioCtx.sampleRate;
-        d[i] = (Math.random() * 2 - 1) * Math.exp(-t * 60) * 0.4;
+        d[i] = (Math.random() * 2 - 1) * Math.exp(-t * 40) * 0.7;
       }
       var src = audioCtx.createBufferSource();
       src.buffer = buf;
       var g2 = audioCtx.createGain();
-      g2.gain.value = 0.3;
+      g2.gain.value = 0.6;
       src.connect(g2);
       g2.connect(dest);
       src.start(now);
