@@ -107,7 +107,7 @@
   var seGain = null;
   var activeLoops = {};
   var masterVolume = 0.7;
-  var bgmVolume = 0.7;
+  var bgmVolume = 0.9;
   var seVolume = 0.8;
   var heartbeatRate = 800; // ms between beats
   var proximityBoost = 0;  // 0-1 extra BGM gain from enemy proximity

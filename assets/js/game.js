@@ -1249,8 +1249,9 @@
 
   function unlockExplorationDoors() {
     // Unlock more doors for explore phase
-    var labelsToUnlock = ['401', '402', '403', '405', '407', 'back1', 'back2', 'back3',
-                          'utility', 'storage1', 'storage2'];
+    var labelsToUnlock = ['401', '402', '403', '405', '406', '407', '408',
+                          'back1', 'back2', 'back3',
+                          'utility', 'storage1', 'storage2', 'storage3'];
     for (var i = 0; i < doors.length; i++) {
       if (labelsToUnlock.indexOf(doors[i].label) >= 0) {
         doors[i].locked = false;
@@ -1431,14 +1432,53 @@
       } else {
         var nx = ddx / dist;
         var ny = ddy / dist;
-        haruki.x += nx * currentSpeed * dt;
-        haruki.y += ny * currentSpeed * dt;
+        var moveX = nx * currentSpeed * dt;
+        var moveY = ny * currentSpeed * dt;
+
+        // Collision check — same as player
+        var hw = 10;
+        var newX = haruki.x + moveX;
+        var newY = haruki.y + moveY;
+        var canX = true, canY = true;
+        // Check X movement
+        var corners = [
+          wToG(newX - hw, haruki.y - hw), wToG(newX + hw, haruki.y - hw),
+          wToG(newX - hw, haruki.y + hw), wToG(newX + hw, haruki.y + hw)
+        ];
+        for (var ci = 0; ci < 4; ci++) {
+          if (!isTileWalkable(corners[ci].gx, corners[ci].gy)) { canX = false; break; }
+        }
+        // Check Y movement
+        var cornersY = [
+          wToG(haruki.x - hw, newY - hw), wToG(haruki.x + hw, newY - hw),
+          wToG(haruki.x - hw, newY + hw), wToG(haruki.x + hw, newY + hw)
+        ];
+        for (var cj = 0; cj < 4; cj++) {
+          if (!isTileWalkable(cornersY[cj].gx, cornersY[cj].gy)) { canY = false; break; }
+        }
+
+        if (canX) haruki.x = newX;
+        if (canY) haruki.y = newY;
+
+        // If stuck, recalculate path immediately
+        if (!canX && !canY) {
+          haruki.pathTimer = 0;
+        }
 
         // Update direction
         if (Math.abs(nx) > Math.abs(ny)) {
           haruki.dir = nx > 0 ? 'right' : 'left';
         } else {
           haruki.dir = ny > 0 ? 'down' : 'up';
+        }
+      }
+
+      // Haruki opens closed unlocked doors he passes through
+      var hg = wToG(haruki.x, haruki.y);
+      for (var di = 0; di < doors.length; di++) {
+        var dd = doors[di];
+        if (!dd.open && !dd.locked && Math.abs(dd.gx - hg.gx) + Math.abs(dd.gy - hg.gy) <= 1) {
+          dd.open = true;
         }
       }
     }
@@ -1793,16 +1833,45 @@
   function drawItems(ctx) {
     if (!keyCardItem || keyCardItem.collected) return;
 
-    // Render key card as a sprite in first-person
+    // Update glow animation
+    keyCardItem.glowPhase += 0.05;
+
+    // Glowing light pillar above key card position
+    var pulse = 0.6 + Math.sin(keyCardItem.glowPhase) * 0.4;
+    var glowEntity = {
+      x: keyCardItem.wx,
+      y: keyCardItem.wy,
+      w: 24,
+      h: 48,
+      color: 'rgba(255,220,50,' + (0.3 * pulse) + ')',
+      visible: true
+    };
+    GameEngine.drawEntity(glowEntity);
+
+    // Key card itself (brighter, larger)
     var itemEntity = {
       x: keyCardItem.wx,
       y: keyCardItem.wy,
-      w: 16,
-      h: 16,
-      color: '#ffcc00',
+      w: 20,
+      h: 20,
+      color: 'rgb(255,' + ((200 + 55 * pulse) | 0) + ',0)',
       visible: true
     };
     GameEngine.drawEntity(itemEntity);
+
+    // Draw ground glow circle on floor around key position
+    var cam = GameEngine.camera;
+    var canvas = ctx.canvas;
+    var cx = canvas.width / 2;
+    var cy = canvas.height / 2;
+    var sx = keyCardItem.wx - cam.x + cx;
+    var sy = keyCardItem.wy - cam.y + cy;
+    var glowR = 30 + 10 * pulse;
+    var grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, glowR);
+    grad.addColorStop(0, 'rgba(255,200,0,' + (0.25 * pulse) + ')');
+    grad.addColorStop(1, 'rgba(255,200,0,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(sx - glowR, sy - glowR, glowR * 2, glowR * 2);
   }
 
   function drawHarukiEntity(ctx) {
