@@ -321,16 +321,14 @@
     if (t === TILE.EXIT_DOOR) {
       return exitDoor.open;
     }
-    // Regular doors
+    // Regular doors — only walkable when open
     if (t === TILE.DOOR) {
-      // find door
       for (var i = 0; i < doors.length; i++) {
         if (doors[i].gx === gx && doors[i].gy === gy) {
-          if (doors[i].locked && !doors[i].open) return false;
-          return true;
+          return doors[i].open;
         }
       }
-      return true; // unlisted door → walkable
+      return false; // unlisted door → blocked
     }
     return !!WALKABLE_TILES[t];
   }
@@ -623,36 +621,50 @@
     hideJoystick();
 
     // JUMP SCARE SEQUENCE
+    GameEngine.stopAll();
     GameEngine.playSound('hit');
-    GameEngine.shakeScreen(10, 300);
+    GameEngine.shakeScreen(15, 500);
 
     setTimeout(function () {
-      // Flash scary image
+      // Start heartbeat for tension
+      GameEngine.startLoop('heartbeat');
+
       var img = GameEngine.images['assets/img/haruki_scary.png'] || null;
       if (img) {
-        GameEngine.flashImage(img, 400, function () {
-          GameEngine.playSound('jumpscare');
-          GameEngine.fadeToBlack(500, function () {
-            // Pause in black
-            setTimeout(function () {
-              GameEngine.staticEffect(0.8);
+        // Play jumpscare sound DURING the face display
+        GameEngine.playSound('jumpscare');
+        GameEngine.flashImage(img, 1000, function () {
+          // Second scare: brief black then face again with shake
+          GameEngine.shakeScreen(20, 300);
+          GameEngine.redFlash();
+          setTimeout(function () {
+            GameEngine.playSound('hit');
+            GameEngine.staticEffect(0.5);
+            GameEngine.fadeToBlack(800, function () {
+              GameEngine.stopAll();
+              // Eerie silence then static
               setTimeout(function () {
-                setPhase(PHASES.WAKE_UP);
-              }, 800);
-            }, 1500);
-          });
+                GameEngine.playSound('static');
+                GameEngine.staticEffect(1.0);
+                setTimeout(function () {
+                  setPhase(PHASES.WAKE_UP);
+                }, 1200);
+              }, 2000);
+            });
+          }, 300);
         });
       } else {
-        // No image fallback
         GameEngine.playSound('jumpscare');
         GameEngine.redFlash();
-        GameEngine.fadeToBlack(500, function () {
+        GameEngine.shakeScreen(20, 600);
+        GameEngine.fadeToBlack(800, function () {
+          GameEngine.stopAll();
           setTimeout(function () {
             setPhase(PHASES.WAKE_UP);
-          }, 1500);
+          }, 2000);
         });
       }
-    }, 200);
+    }, 400);
   }
 
   function onEnterWakeUp() {
@@ -696,6 +708,12 @@
   function onEnterExplore() {
     showJoystick();
     showStamina();
+    // Ensure touch zones are fully active (clear any leftover faded state)
+    var lz = document.getElementById('touchZoneLeft');
+    if (lz) { lz.style.display = 'block'; lz.classList.remove('faded'); }
+    var rz = document.getElementById('touchZoneRight');
+    if (rz) { rz.style.display = 'block'; rz.classList.remove('faded'); }
+    dialogueActive = false;
     player.flashlightRadius = 100;
     player.flashlightFlicker = 0.6;
     creepyEventTimer = 8 + Math.random() * 7;

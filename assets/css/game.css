@@ -542,17 +542,26 @@ html, body {
 /* =============================================
    TOUCH ZONES (invisible, full-height halves)
    ============================================= */
-#touchZoneLeft, #touchZoneRight {
+#touchZoneLeft {
   position: fixed;
   top: 0;
+  left: 0;
   width: 50%;
   height: 100%;
-  z-index: 45;
+  z-index: 46;
   touch-action: none;
   pointer-events: auto;
 }
-#touchZoneLeft { left: 0; }
-#touchZoneRight { right: 0; }
+#touchZoneRight {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  width: 50%;
+  height: 100%;
+  z-index: 46;
+  touch-action: none;
+  pointer-events: auto;
+}
 #touchZoneLeft.faded, #touchZoneRight.faded {
   pointer-events: none;
 }
