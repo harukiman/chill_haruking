@@ -598,11 +598,8 @@
     hideOverlay('phoneUI');
     player.flashlightRadius = 150;
 
-    // Unlock room 404 door
+    // Keep room 404 door locked until player knocks
     room404DoorRef = findDoor('404');
-    if (room404DoorRef) {
-      room404DoorRef.locked = false;
-    }
 
     // Make the corridor slightly creepier
     phaseFlags.creepySoundTimer = 5; // first creepy sound after 5 sec
@@ -678,6 +675,10 @@
 
     // Unlock rooms for exploration
     unlockExplorationDoors();
+
+    // Open the utility room door so player can leave
+    var utilDoor = findDoor('utility');
+    if (utilDoor) utilDoor.open = true;
 
     GameEngine.fadeFromBlack(2000, function () {
       GameEngine.startLoop('breath');
@@ -1100,13 +1101,12 @@
     // Check if player is at Room 404 door
     var pg = wToG(player.x, player.y);
     var d404 = findDoor('404');
-    if (d404 && !phaseFlags.knockShown) {
+    if (d404) {
       var dist = Math.abs(pg.gx - d404.gx) + Math.abs(pg.gy - d404.gy);
-      if (dist <= 1) {
+      if (dist <= 1 && !phaseFlags.knockShown) {
         phaseFlags.knockShown = true;
         showActionBtn('ノックする', function () {
           GameEngine.playSound('knock');
-          // Brief pause, then door opens
           setTimeout(function () {
             d404.locked = false;
             d404.open = true;
@@ -1114,6 +1114,9 @@
             setPhase(PHASES.ENTER_ROOM);
           }, 800);
         });
+      } else if (dist > 1 && phaseFlags.knockShown) {
+        phaseFlags.knockShown = false;
+        hideActionBtn();
       }
     }
   }
@@ -1334,11 +1337,14 @@
       if (d404) return { gx: d404.gx, gy: d404.gy, label: '404号室' };
       return { gx: 14, gy: 5, label: '404号室' };
     }
-    if (phase === PHASES.EXPLORE || phase === PHASES.CHASE_1) {
-      // Find key card, then exit
-      if (keyCardItem && !keyCardItem.collected) {
-        return { gx: keyCardItem.gx, gy: keyCardItem.gy, label: 'カードキー' };
+    if (phase === PHASES.EXPLORE) {
+      // Don't show keycard location — player must find it
+      if (keyCardItem && keyCardItem.collected) {
+        return { gx: exitDoor.gx, gy: exitDoor.gy, label: '出口' };
       }
+      return null; // no objective shown during search
+    }
+    if (phase === PHASES.CHASE_1) {
       return { gx: exitDoor.gx, gy: exitDoor.gy, label: '出口' };
     }
     if (phase === PHASES.CHASE_FINAL) {
