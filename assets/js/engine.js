@@ -478,51 +478,34 @@
       var screenX = px + ox;
       var screenY = py + oy;
 
-      // Apply flicker
       var flicker = flickerAmount || 0;
       var actualRadius = radius * (1 - flicker * (Math.random() * 0.3));
       if (actualRadius < 10) actualRadius = 10;
 
-      // Draw darkness overlay with radial gradient cutout
       ctx.save();
 
-      // Create a radial gradient from transparent center to opaque edge
+      // 1. Solid darkness outside the flashlight circle (donut shape)
+      ctx.beginPath();
+      ctx.rect(0, 0, this.width, this.height);
+      ctx.arc(screenX, screenY, actualRadius, 0, Math.PI * 2, true);
+      ctx.fillStyle = 'rgba(0,0,0,0.97)';
+      ctx.fill();
+
+      // 2. Soft gradient within flashlight area for natural falloff
       var gradient = ctx.createRadialGradient(
         screenX, screenY, actualRadius * 0.1,
         screenX, screenY, actualRadius
       );
       gradient.addColorStop(0, 'rgba(0,0,0,0)');
-      gradient.addColorStop(0.4, 'rgba(0,0,0,0.3)');
-      gradient.addColorStop(0.7, 'rgba(0,0,0,0.7)');
-      gradient.addColorStop(1, 'rgba(0,0,0,0.97)');
+      gradient.addColorStop(0.4, 'rgba(0,0,0,0.15)');
+      gradient.addColorStop(0.7, 'rgba(0,0,0,0.4)');
+      gradient.addColorStop(1, 'rgba(0,0,0,0.85)');
 
-      // Draw the gradient circle on a temporary approach:
-      // Fill entire screen with black, then "cut out" the flashlight
-
-      // Method: draw dark overlay with the flashlight hole using compositing
-      // First, draw the full darkness
-      ctx.fillStyle = 'rgba(0,0,0,0.97)';
-      ctx.fillRect(0, 0, this.width, this.height);
-
-      // Now cut out the flashlight area using 'destination-out'
-      ctx.globalCompositeOperation = 'destination-out';
-
-      var lightGrad = ctx.createRadialGradient(
-        screenX, screenY, 0,
-        screenX, screenY, actualRadius
-      );
-      lightGrad.addColorStop(0, 'rgba(0,0,0,1)');
-      lightGrad.addColorStop(0.3, 'rgba(0,0,0,0.9)');
-      lightGrad.addColorStop(0.6, 'rgba(0,0,0,0.5)');
-      lightGrad.addColorStop(0.85, 'rgba(0,0,0,0.15)');
-      lightGrad.addColorStop(1, 'rgba(0,0,0,0)');
-
-      ctx.fillStyle = lightGrad;
+      ctx.fillStyle = gradient;
       ctx.beginPath();
       ctx.arc(screenX, screenY, actualRadius, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.globalCompositeOperation = 'source-over';
       ctx.restore();
     },
 
@@ -857,6 +840,17 @@
       Object.keys(activeLoops).forEach(function (type) {
         self.stopLoop(type);
       });
+    },
+
+    setMasterVolume: function (vol) {
+      masterVolume = Math.max(0, Math.min(1, vol));
+      if (masterGain) {
+        masterGain.gain.setValueAtTime(masterVolume, masterGain.context.currentTime);
+      }
+    },
+
+    getMasterVolume: function () {
+      return masterVolume;
     },
 
     // --- Sound implementations ---
@@ -1443,8 +1437,7 @@
       ctx.fillStyle = '#000';
       ctx.fillRect(0, 0, engine.width, engine.height);
 
-      // Tiles
-      engine.drawMap();
+      // Tiles (drawn by game.js which controls the render order)
 
       // Custom render callback (entities, darkness, etc. are drawn by game.js)
       if (engine.onRender) {

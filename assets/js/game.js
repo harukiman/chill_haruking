@@ -457,10 +457,14 @@
   function queueDialogue(lines, onComplete) {
     dialogueQueue = lines.slice();
     dialogueActive = true;
+    var joyArea = document.getElementById('joystickArea');
+    if (joyArea) joyArea.classList.add('faded');
     var advance = function () {
       if (dialogueQueue.length === 0) {
         GameEngine.hideDialogue();
         dialogueActive = false;
+        var joyArea = document.getElementById('joystickArea');
+        if (joyArea) joyArea.classList.remove('faded');
         if (onComplete) onComplete();
         return;
       }
@@ -1027,7 +1031,7 @@
     // After 3 seconds, phone rings
     if (phaseTimer > 3 && !phoneRinging) {
       phoneRinging = true;
-      GameEngine.playSound('phone');
+      GameEngine.startLoop('phone');
       phaseFlags.phoneLoopStarted = true;
     }
 
@@ -1604,6 +1608,9 @@
 
     // Joystick handling
     bindJoystick();
+
+    // Settings / pause
+    bindSettingsButton();
   }
 
   // =========================================================
@@ -1703,6 +1710,72 @@
     joystickArea.addEventListener('mousedown', handleStart);
     window.addEventListener('mousemove', function (e) { if (active) handleMove(e); });
     window.addEventListener('mouseup', handleEnd);
+  }
+
+  // =========================================================
+  //  SETTINGS / PAUSE MENU
+  // =========================================================
+  function bindSettingsButton() {
+    var settingsBtn = document.getElementById('settingsBtn');
+    var settingsOverlay = document.getElementById('settingsOverlay');
+    var closeSettingsBtn = document.getElementById('closeSettingsBtn');
+    var volumeSlider = document.getElementById('volumeSlider');
+    var returnTitleBtn = document.getElementById('returnTitleFromSettings');
+
+    if (!settingsBtn || !settingsOverlay) return;
+
+    settingsBtn.addEventListener('click', function () {
+      if (phase === PHASES.TITLE) return;
+      settingsOverlay.style.display = 'flex';
+      GameEngine.paused = true;
+      if (volumeSlider) {
+        volumeSlider.value = GameEngine.getMasterVolume() * 100;
+      }
+    });
+    settingsBtn.addEventListener('touchend', function (e) {
+      e.preventDefault();
+      if (phase === PHASES.TITLE) return;
+      settingsOverlay.style.display = 'flex';
+      GameEngine.paused = true;
+      if (volumeSlider) {
+        volumeSlider.value = GameEngine.getMasterVolume() * 100;
+      }
+    });
+
+    if (closeSettingsBtn) {
+      closeSettingsBtn.addEventListener('click', function () {
+        settingsOverlay.style.display = 'none';
+        GameEngine.paused = false;
+      });
+      closeSettingsBtn.addEventListener('touchend', function (e) {
+        e.preventDefault();
+        settingsOverlay.style.display = 'none';
+        GameEngine.paused = false;
+      });
+    }
+
+    if (volumeSlider) {
+      var volumeLabel = document.getElementById('volumeValue');
+      volumeSlider.addEventListener('input', function () {
+        var v = Math.round(this.value);
+        GameEngine.setMasterVolume(v / 100);
+        if (volumeLabel) volumeLabel.textContent = v + '%';
+      });
+    }
+
+    if (returnTitleBtn) {
+      returnTitleBtn.addEventListener('click', function () {
+        settingsOverlay.style.display = 'none';
+        GameEngine.paused = false;
+        setPhase(PHASES.TITLE);
+      });
+      returnTitleBtn.addEventListener('touchend', function (e) {
+        e.preventDefault();
+        settingsOverlay.style.display = 'none';
+        GameEngine.paused = false;
+        setPhase(PHASES.TITLE);
+      });
+    }
   }
 
   // =========================================================
