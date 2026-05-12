@@ -36,9 +36,14 @@
       <h1 class="game-title">追跡者</h1>
       <p class="game-subtitle">-HARUKI-</p>
       <div class="title-decoration"></div>
-      <button id="startBtn" class="start-btn" type="button">タップしてスタート</button>
+      <div class="title-menu">
+        <button id="startBtn" class="menu-btn start-btn" type="button">はじめから</button>
+        <button id="controlsBtn" class="menu-btn" type="button">操作説明</button>
+        <button id="creditsBtn" class="menu-btn" type="button">クレジット</button>
+      </div>
     </div>
     <p class="copyright">TSUISEKISHA -HARUKI- &copy; 2026</p>
+    <p class="version-text">ver 2.0</p>
   </div>
 
   <!-- Loading Screen Overlay -->
@@ -93,6 +98,27 @@
       <p class="ending-message">あなたはホテルから逃げ出した。<br>しかし、ハルキの影は今も...<br></p>
       <p class="ending-thanks">プレイしていただき<br>ありがとうございました</p>
       <button id="titleReturnBtn" class="retry-btn" type="button">タイトルへ戻る</button>
+    </div>
+  </div>
+
+  <!-- True Ending Screen -->
+  <div id="trueEndingScreen" class="overlay" style="display:none;">
+    <div class="ending-content true-ending">
+      <p class="ending-escape">真実の脱出</p>
+      <h1 class="ending-title">TRUE END</h1>
+      <p class="ending-message" id="trueEndingMessage"></p>
+      <p class="ending-thanks">全ての真実を暴いた<br>あなたに感謝を</p>
+      <button id="trueEndReturnBtn" class="retry-btn" type="button">タイトルへ戻る</button>
+    </div>
+  </div>
+
+  <!-- Bad Ending Screen -->
+  <div id="badEndingScreen" class="overlay" style="display:none;">
+    <div class="ending-content bad-ending">
+      <p class="ending-escape" style="color:#cc0000;">時間切れ</p>
+      <h1 class="ending-title" style="color:#880000;">BAD END</h1>
+      <p class="ending-message">「やっと観念したのねぇ♡<br>もうどこにも行かせないわ...<br>永遠にあたしのものよ♡」</p>
+      <button id="badEndReturnBtn" class="retry-btn" type="button">タイトルへ戻る</button>
     </div>
   </div>
 
@@ -188,9 +214,148 @@
     </div>
   </div>
 
+  <!-- Objective HUD -->
+  <div id="objectiveHUD" class="hud-objective" style="display:none;">
+    <span id="objectiveText"></span>
+  </div>
+
+  <!-- Inventory HUD -->
+  <div id="inventoryHUD" class="hud-inventory" style="display:none;">
+    <div class="inv-item" id="invKeycard" style="display:none;" title="カードキー">🔑</div>
+    <div class="inv-item" id="invBottle" style="display:none;" title="ガラス瓶">
+      <span class="inv-icon">🍶</span>
+      <span class="inv-count" id="bottleCount">0</span>
+    </div>
+    <div class="inv-item" id="invMemo" style="display:none;" title="メモ">
+      <span class="inv-icon">📄</span>
+      <span class="inv-count" id="memoCount">0</span>
+    </div>
+    <div class="inv-item" id="invPhoto" style="display:none;" title="写真">📷</div>
+  </div>
+
+  <!-- Floor Indicator HUD -->
+  <div id="floorHUD" class="hud-floor" style="display:none;">
+    <span id="floorText">2F</span>
+  </div>
+
+  <!-- Danger Indicator (directional) -->
+  <div id="dangerIndicator" class="danger-indicator" style="display:none;">
+    <div class="danger-edge danger-left" id="dangerLeft"></div>
+    <div class="danger-edge danger-right" id="dangerRight"></div>
+  </div>
+
+  <!-- Cinema Bars -->
+  <div id="cinemaBars" style="display:none;">
+    <div class="cinema-bar cinema-top"></div>
+    <div class="cinema-bar cinema-bottom"></div>
+  </div>
+
+  <!-- Hiding UI -->
+  <div id="hideOverlay" style="display:none;">
+    <div class="hide-ui">
+      <p class="hide-text">隠れている...</p>
+      <div class="hide-breath-bar">
+        <div class="hide-breath-fill" id="hideBreathFill"></div>
+      </div>
+      <p class="hide-hint">息を潜めろ</p>
+      <button id="hideExitBtn" class="hide-exit-btn" type="button">出る</button>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toastNotification" class="toast" style="display:none;">
+    <span id="toastText"></span>
+  </div>
+
+  <!-- Memo Viewer Overlay -->
+  <div id="memoOverlay" class="overlay" style="display:none;">
+    <div class="memo-panel">
+      <h3 class="memo-title" id="memoTitle"></h3>
+      <div class="memo-divider"></div>
+      <p class="memo-text" id="memoText"></p>
+      <button id="closeMemoBtn" class="memo-close-btn" type="button">閉じる</button>
+    </div>
+  </div>
+
+  <!-- Tutorial Overlay -->
+  <div id="tutorialOverlay" class="overlay" style="display:none;">
+    <div class="tutorial-content">
+      <h2 class="tutorial-title">操作方法</h2>
+      <div class="tutorial-item">
+        <div class="tutorial-icon">◀ ▶<br>▲ ▼</div>
+        <p>左スティック：移動</p>
+      </div>
+      <div class="tutorial-item">
+        <div class="tutorial-icon">◀ ▶</div>
+        <p>右スティック：視点操作</p>
+      </div>
+      <div class="tutorial-item">
+        <div class="tutorial-icon tutorial-action-demo">●</div>
+        <p>赤ボタン：調べる・アクション</p>
+      </div>
+      <div class="tutorial-item">
+        <div class="tutorial-icon">🏃</div>
+        <p>両スティック同時：ダッシュ</p>
+      </div>
+      <button id="closeTutorialBtn" class="tutorial-close" type="button">了解</button>
+    </div>
+  </div>
+
+  <!-- Credits Overlay -->
+  <div id="creditsOverlay" class="overlay" style="display:none;">
+    <div class="credits-content">
+      <h2 class="credits-title">クレジット</h2>
+      <p class="credits-role">企画・プログラム</p>
+      <p class="credits-name">HARUKIMAN</p>
+      <p class="credits-role">AI開発協力</p>
+      <p class="credits-name">Claude (Anthropic)</p>
+      <p class="credits-note">追跡者 -HARUKI- &copy; 2026</p>
+      <button id="closeCreditsBtn" class="credits-close" type="button">戻る</button>
+    </div>
+  </div>
+
   <!-- Scripts -->
   <script src="assets/js/engine.js"></script>
   <script src="assets/js/game.js"></script>
+  <script>
+    /* Title menu button handlers (UI-only, game.js handles startBtn) */
+    (function() {
+      var controlsBtn = document.getElementById('controlsBtn');
+      var creditsBtn = document.getElementById('creditsBtn');
+      var closeTutorialBtn = document.getElementById('closeTutorialBtn');
+      var closeCreditsBtn = document.getElementById('closeCreditsBtn');
+      var tutorialOverlay = document.getElementById('tutorialOverlay');
+      var creditsOverlay = document.getElementById('creditsOverlay');
+      var closeMemoBtn = document.getElementById('closeMemoBtn');
+      var memoOverlay = document.getElementById('memoOverlay');
+
+      if (controlsBtn) {
+        controlsBtn.addEventListener('click', function() {
+          if (tutorialOverlay) tutorialOverlay.style.display = 'flex';
+        });
+      }
+      if (creditsBtn) {
+        creditsBtn.addEventListener('click', function() {
+          if (creditsOverlay) creditsOverlay.style.display = 'flex';
+        });
+      }
+      if (closeTutorialBtn) {
+        closeTutorialBtn.addEventListener('click', function() {
+          if (tutorialOverlay) tutorialOverlay.style.display = 'none';
+        });
+      }
+      if (closeCreditsBtn) {
+        closeCreditsBtn.addEventListener('click', function() {
+          if (creditsOverlay) creditsOverlay.style.display = 'none';
+        });
+      }
+      if (closeMemoBtn) {
+        closeMemoBtn.addEventListener('click', function() {
+          if (memoOverlay) memoOverlay.style.display = 'none';
+        });
+      }
+    })();
+  </script>
 
 </body>
 </html>

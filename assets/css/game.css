@@ -1328,3 +1328,767 @@ html, body {
     top: calc(12px + env(safe-area-inset-top));
   }
 }
+
+/* =============================================
+   NEW ANIMATIONS (U3, U2, U6)
+   ============================================= */
+
+@keyframes slideUp {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(16px);
+  }
+  15% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  80% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-8px);
+  }
+}
+
+@keyframes breathe {
+  0%, 100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes dangerPulse {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+
+@keyframes cinemaIn {
+  from {
+    height: 0;
+  }
+  to {
+    height: 12vh;
+  }
+}
+
+@keyframes glowPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(255, 215, 0, 0);
+  }
+  50% {
+    box-shadow: 0 0 8px 3px rgba(255, 215, 0, 0.6);
+  }
+}
+
+@keyframes memoReveal {
+  0% {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes objectiveFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@keyframes dialogueShake {
+  0%, 100% { transform: translateX(0); }
+  15%       { transform: translateX(-4px); }
+  30%       { transform: translateX(4px); }
+  45%       { transform: translateX(-3px); }
+  60%       { transform: translateX(3px); }
+  75%       { transform: translateX(-1px); }
+  90%       { transform: translateX(1px); }
+}
+
+/* =============================================
+   U1-1. OBJECTIVE HUD
+   ============================================= */
+.hud-objective {
+  position: fixed;
+  top: calc(56px + env(safe-area-inset-top, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 15;
+  pointer-events: none;
+  animation: objectiveFadeIn 0.4s ease-out;
+}
+
+.hud-objective span {
+  display: inline-block;
+  background: rgba(0, 0, 0, 0.72);
+  color: #e0e0e0;
+  font-size: 12px;
+  font-family: var(--font-main);
+  letter-spacing: 0.1em;
+  padding: 5px 14px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  white-space: nowrap;
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* =============================================
+   U1-2. INVENTORY HUD
+   ============================================= */
+.hud-inventory {
+  position: fixed;
+  top: calc(12px + env(safe-area-inset-top, 0px));
+  right: calc(60px + env(safe-area-inset-right, 0px));
+  z-index: 15;
+  display: flex;
+  flex-direction: row;
+  gap: 6px;
+  align-items: center;
+  pointer-events: none;
+}
+
+.inv-item {
+  width: 32px;
+  height: 32px;
+  background: rgba(0, 0, 0, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  position: relative;
+  flex-direction: column;
+}
+
+.inv-item.new-item {
+  animation: glowPulse 1s ease-in-out 3;
+}
+
+.inv-icon {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.inv-count {
+  position: absolute;
+  bottom: 1px;
+  right: 3px;
+  font-size: 9px;
+  color: #ffd700;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* =============================================
+   U1-3. FLOOR HUD
+   ============================================= */
+.hud-floor {
+  position: fixed;
+  top: calc(56px + env(safe-area-inset-top, 0px));
+  left: calc(12px + env(safe-area-inset-left, 0px));
+  z-index: 15;
+  pointer-events: none;
+}
+
+.hud-floor span {
+  display: inline-block;
+  background: rgba(0, 0, 0, 0.65);
+  color: #e0e0e0;
+  font-size: 11px;
+  font-family: 'Courier New', 'Menlo', monospace;
+  letter-spacing: 0.1em;
+  padding: 3px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* =============================================
+   U2-1. MEMO VIEWER OVERLAY
+   ============================================= */
+#memoOverlay {
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 1000;
+}
+
+.memo-panel {
+  background: #f4e8d0;
+  color: #2a1a0a;
+  border-radius: 4px;
+  padding: 24px 24px 20px;
+  max-width: 320px;
+  width: calc(100% - 48px);
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.6),
+    inset 0 0 40px rgba(42, 26, 10, 0.08),
+    0 0 0 1px rgba(42, 26, 10, 0.15);
+  animation: memoReveal 0.35s ease-out;
+  position: relative;
+}
+
+.memo-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #2a1a0a;
+  letter-spacing: 0.1em;
+  margin-bottom: 10px;
+  font-family: 'Hiragino Mincho ProN', 'Yu Mincho', 'Georgia', serif;
+}
+
+.memo-divider {
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #8b3a1a, transparent);
+  margin-bottom: 14px;
+  opacity: 0.6;
+}
+
+.memo-text {
+  font-size: 14px;
+  line-height: 1.9;
+  color: #3a2010;
+  word-break: break-all;
+  white-space: pre-wrap;
+  margin-bottom: 20px;
+  font-family: 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+}
+
+.memo-close-btn {
+  font-family: var(--font-main);
+  font-size: 14px;
+  color: #f4e8d0;
+  background: #5a2800;
+  border: none;
+  border-radius: 4px;
+  padding: 10px 28px;
+  cursor: pointer;
+  display: block;
+  margin: 0 auto;
+  touch-action: manipulation;
+  min-height: 44px;
+  letter-spacing: 0.1em;
+  transition: background 0.2s ease;
+}
+
+.memo-close-btn:active {
+  background: #3a1800;
+  transform: scale(0.97);
+}
+
+/* =============================================
+   U2-2. TOAST NOTIFICATION
+   ============================================= */
+.toast {
+  position: fixed;
+  bottom: calc(180px + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  transform: translateX(-50%) translateY(0);
+  z-index: 800;
+  pointer-events: none;
+  animation: slideUp 3s ease forwards;
+}
+
+.toast span {
+  display: inline-block;
+  background: rgba(0, 0, 0, 0.82);
+  color: #e0e0e0;
+  font-family: var(--font-main);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  padding: 8px 20px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  white-space: nowrap;
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* =============================================
+   U3-1. TUTORIAL OVERLAY
+   ============================================= */
+#tutorialOverlay {
+  background: rgba(0, 0, 0, 0.88);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 1200;
+}
+
+.tutorial-content {
+  background: rgba(15, 0, 0, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 24px 20px 20px;
+  max-width: 320px;
+  width: calc(100% - 48px);
+}
+
+.tutorial-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #e0e0e0;
+  letter-spacing: 0.2em;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.tutorial-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.tutorial-icon {
+  width: 52px;
+  min-width: 52px;
+  height: 44px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: #aaa;
+  text-align: center;
+  line-height: 1.3;
+}
+
+.tutorial-action-demo {
+  color: #cc2222;
+  font-size: 22px;
+}
+
+.tutorial-item p {
+  font-size: 13px;
+  color: var(--text-color);
+  letter-spacing: 0.06em;
+  line-height: 1.5;
+}
+
+.tutorial-close {
+  font-family: var(--font-main);
+  font-size: 15px;
+  color: #fff;
+  background: var(--horror-red);
+  border: none;
+  border-radius: 6px;
+  padding: 12px 40px;
+  cursor: pointer;
+  display: block;
+  margin: 20px auto 0;
+  letter-spacing: 0.15em;
+  min-height: 48px;
+  touch-action: manipulation;
+  transition: background 0.2s ease;
+}
+
+.tutorial-close:active {
+  background: #660000;
+  transform: scale(0.97);
+}
+
+/* =============================================
+   U3-2. DIALOGUE STYLING ENHANCEMENTS
+   ============================================= */
+
+/* Haruki speaker: red name + red tint bg */
+#dialogueBox[data-speaker="ハルキ"] .dialogue-inner {
+  background: rgba(20, 0, 0, 0.9);
+}
+
+#dialogueBox[data-speaker="ハルキ"] .speaker-name {
+  color: #cc0000;
+  text-shadow: 0 0 8px rgba(204, 0, 0, 0.6);
+}
+
+#dialogueBox[data-speaker="ハルキ"] .dialogue-text {
+  font-size: 17px;
+}
+
+/* Player / あなた speaker: white name, dimmer text */
+#dialogueBox[data-speaker="あなた"] .speaker-name {
+  color: #e0e0e0;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+#dialogueBox[data-speaker="あなた"] .dialogue-text {
+  color: #b0b0b0;
+}
+
+/* System / narration: no speaker, italic text */
+#dialogueBox[data-speaker=""] .dialogue-text,
+#dialogueBox[data-speaker="system"] .dialogue-text {
+  font-style: italic;
+  color: #888;
+}
+
+/* Shake class for scary moments */
+.dialogue-shake .dialogue-inner {
+  animation: dialogueShake 0.5s ease-in-out;
+}
+
+/* =============================================
+   U3-3. DIRECTIONAL DANGER INDICATOR
+   ============================================= */
+.danger-indicator {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 20;
+}
+
+.danger-edge {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  width: 30px;
+  pointer-events: none;
+  opacity: 0;
+  animation: dangerPulse 0.8s ease-in-out infinite;
+}
+
+.danger-edge.active {
+  opacity: 1;
+}
+
+.danger-left {
+  left: 0;
+  background: linear-gradient(to right, rgba(180, 0, 0, 0.7), transparent);
+}
+
+.danger-right {
+  right: 0;
+  background: linear-gradient(to left, rgba(180, 0, 0, 0.7), transparent);
+}
+
+/* =============================================
+   U3-4. CINEMA BARS
+   ============================================= */
+#cinemaBars {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 18;
+}
+
+.cinema-bar {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  background: #000;
+  height: 0;
+  transition: height 0.5s ease;
+}
+
+.cinema-top {
+  top: 0;
+}
+
+.cinema-bottom {
+  bottom: 0;
+}
+
+#cinemaBars.active .cinema-bar {
+  height: 12vh;
+}
+
+/* =============================================
+   U4-1. TITLE MENU
+   ============================================= */
+.title-menu {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.menu-btn {
+  font-family: var(--font-main);
+  font-size: clamp(13px, 3.5vw, 16px);
+  color: var(--text-color);
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  padding: 12px 36px;
+  letter-spacing: 0.2em;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  min-height: 48px;
+  min-width: 180px;
+  touch-action: manipulation;
+  border-radius: 2px;
+}
+
+.menu-btn:active {
+  background: rgba(139, 0, 0, 0.4);
+  border-color: var(--horror-glow);
+  color: #fff;
+  transform: scale(0.96);
+}
+
+/* Keep pulse on start button */
+#startBtn.menu-btn {
+  animation: pulse 2.5s ease-in-out infinite;
+}
+
+/* =============================================
+   U4-2. CREDITS OVERLAY
+   ============================================= */
+#creditsOverlay {
+  background: rgba(0, 0, 0, 0.92);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 1200;
+}
+
+.credits-content {
+  text-align: center;
+  padding: 40px 24px;
+  max-width: 320px;
+  width: 100%;
+}
+
+.credits-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #e0e0e0;
+  letter-spacing: 0.3em;
+  margin-bottom: 32px;
+}
+
+.credits-role {
+  font-size: 11px;
+  color: #666;
+  letter-spacing: 0.2em;
+  margin-bottom: 4px;
+  margin-top: 16px;
+}
+
+.credits-name {
+  font-size: 17px;
+  color: #e0e0e0;
+  letter-spacing: 0.1em;
+  margin-bottom: 0;
+}
+
+.credits-note {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.2);
+  letter-spacing: 0.2em;
+  margin-top: 32px;
+  margin-bottom: 32px;
+}
+
+.credits-close {
+  font-family: var(--font-main);
+  font-size: 14px;
+  color: var(--text-color);
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  padding: 12px 36px;
+  border-radius: 2px;
+  cursor: pointer;
+  letter-spacing: 0.15em;
+  min-height: 48px;
+  touch-action: manipulation;
+  transition: all 0.2s ease;
+}
+
+.credits-close:active {
+  background: rgba(139, 0, 0, 0.3);
+  border-color: var(--horror-glow);
+}
+
+/* =============================================
+   U4-3. VERSION TEXT
+   ============================================= */
+.version-text {
+  position: absolute;
+  bottom: 48px;
+  right: 16px;
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.12);
+  letter-spacing: 0.15em;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* =============================================
+   U5. TRUE ENDING & BAD ENDING SCREENS
+   ============================================= */
+#trueEndingScreen {
+  background: rgba(0, 0, 0, 0.97);
+  z-index: 300;
+  animation: fadeIn 2s ease-out;
+}
+
+.true-ending .ending-escape {
+  color: #ffd700;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+}
+
+.true-ending .ending-title {
+  color: #ffd700;
+  text-shadow:
+    0 0 20px rgba(255, 215, 0, 0.5),
+    0 0 40px rgba(255, 215, 0, 0.2);
+}
+
+#badEndingScreen {
+  background:
+    radial-gradient(ellipse at 50% 50%, rgba(100, 0, 0, 0.3) 0%, transparent 70%),
+    rgba(0, 0, 0, 0.97);
+  z-index: 300;
+  animation: fadeIn 1.5s ease-out;
+}
+
+/* =============================================
+   U6. HIDING UI
+   ============================================= */
+#hideOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: auto;
+  z-index: 90;
+  background: radial-gradient(ellipse at center,
+    rgba(0,0,0,0.2) 0%,
+    rgba(0,0,0,0.6) 50%,
+    rgba(0,0,0,0.92) 100%
+  );
+  touch-action: manipulation;
+}
+
+.hide-ui {
+  position: absolute;
+  bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  width: calc(100% - 48px);
+  max-width: 280px;
+}
+
+.hide-text {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.7);
+  letter-spacing: 0.2em;
+  margin-bottom: 12px;
+  animation: breathe 2.5s ease-in-out infinite;
+}
+
+.hide-breath-bar {
+  width: 100%;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.hide-breath-fill {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, rgba(255,255,255,0.6), rgba(255,255,255,0.3));
+  border-radius: 2px;
+  transition: width 0.2s linear;
+}
+
+.hide-hint {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.3);
+  letter-spacing: 0.15em;
+  margin-bottom: 16px;
+  animation: breathe 2.5s ease-in-out infinite;
+}
+
+.hide-exit-btn {
+  font-family: var(--font-main);
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.8);
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  padding: 8px 24px;
+  cursor: pointer;
+  letter-spacing: 0.1em;
+  touch-action: manipulation;
+  min-height: 40px;
+  transition: all 0.2s ease;
+}
+
+.hide-exit-btn:active {
+  background: rgba(80, 0, 0, 0.5);
+  border-color: rgba(255, 100, 100, 0.4);
+}
+
+/* =============================================
+   SAFE AREA & SMALL SCREEN ADJUSTMENTS (new)
+   ============================================= */
+@media screen and (max-width: 360px) {
+  .hud-inventory {
+    right: calc(52px + env(safe-area-inset-right, 0px));
+    gap: 4px;
+  }
+
+  .inv-item {
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+  }
+
+  .hud-objective span {
+    font-size: 11px;
+    padding: 4px 10px;
+    max-width: 200px;
+  }
+
+  .toast span {
+    font-size: 12px;
+    padding: 7px 14px;
+  }
+}
+
+@supports (padding-top: env(safe-area-inset-top)) {
+  .hud-objective {
+    top: calc(56px + env(safe-area-inset-top));
+  }
+
+  .hud-floor {
+    top: calc(56px + env(safe-area-inset-top));
+    left: calc(12px + env(safe-area-inset-left));
+  }
+
+  .hud-inventory {
+    top: calc(12px + env(safe-area-inset-top));
+    right: calc(60px + env(safe-area-inset-right));
+  }
+}
