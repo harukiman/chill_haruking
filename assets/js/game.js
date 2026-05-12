@@ -299,6 +299,8 @@
     CHASE_1: 'CHASE_1',
     CHASE_FINAL: 'CHASE_FINAL',
     ENDING: 'ENDING',
+    TRUE_ENDING: 'TRUE_ENDING',
+    BAD_ENDING: 'BAD_ENDING',
     GAME_OVER: 'GAME_OVER'
   };
 
@@ -1281,6 +1283,12 @@
       case PHASES.ENDING:
         onEnterEnding();
         break;
+      case PHASES.TRUE_ENDING:
+        onEnterTrueEnding();
+        break;
+      case PHASES.BAD_ENDING:
+        onEnterBadEnding();
+        break;
       case PHASES.GAME_OVER:
         onEnterGameOver();
         break;
@@ -1300,6 +1308,8 @@
     GameEngine.hideDialogue();
     GameEngine.stopAll();
     haruki.active = false;
+    hideOverlay('trueEndingScreen');
+    hideOverlay('badEndingScreen');
     // Reset start button
     var sb = document.getElementById('startBtn');
     if (sb) {
@@ -1595,43 +1605,65 @@
     if (GameEngine.stopEnemyFootsteps) GameEngine.stopEnemyFootsteps();
 
     // Determine ending type (E4)
-    var memoCount = getCollectedMemoCount();
-    var isTrueEnding = (memoCount >= 10 && inventory.hasPhoto);
+    var mc = getCollectedMemoCount();
+    if (mc >= 10 && inventory.hasPhoto) {
+      setPhase(PHASES.TRUE_ENDING);
+      return;
+    }
 
     GameEngine.fadeToBlack(1000, function () {
       setTimeout(function () {
-        var endScreen = document.getElementById('endingScreen');
-        if (endScreen) {
-          var endTitle = endScreen.querySelector('h1');
-          var endText = endScreen.querySelector('p');
-
-          if (isTrueEnding) {
-            // TRUE ENDING
-            if (endTitle) endTitle.textContent = '脱出成功';
-            if (endText) {
-              endText.innerHTML = 'あなたは全ての記録を持ち出した。<br><br>' +
-                'ハルキ——本名不明。3年前、このホテルに長期滞在。<br>' +
-                'フロント係への異常な執着の末、暴行事件を起こし逃走。<br>' +
-                '以来、ホテルの地下に潜み続けていた。<br><br>' +
-                '写真には、まだ普通の青年だった頃のハルキが笑っていた...<br><br>' +
-                '事件は警察に通報された。もう誰も犠牲にはならない。<br><br>' +
-                '<span style="color:#ffcc00;font-size:1.5em;">TRUE END</span>';
-            }
-          } else {
-            // NORMAL ENDING
-            if (endTitle) endTitle.textContent = '脱出成功';
-            if (endText) {
-              var endMsg = 'あなたはホテルから脱出した。<br>しかし、ハルキはまだあの暗闇の中にいる...';
-              if (memoCount > 0) {
-                endMsg += '<br><br>収集したメモ: ' + memoCount + '/10';
-              }
-              endMsg += '<br><br><span style="color:#aaa;">NORMAL END</span>';
-              endText.innerHTML = endMsg;
-            }
-          }
+        var ep = document.querySelector('#endingScreen .ending-message');
+        if (ep) {
+          var txt = 'あなたはホテルから逃げ出した。<br>しかし、ハルキの影は今も...';
+          if (mc > 0) txt += '<br><br>収集したメモ: ' + mc + '/10';
+          ep.innerHTML = txt;
         }
         showOverlay('endingScreen');
       }, 500);
+    });
+  }
+
+  function onEnterTrueEnding() {
+    hideJoystick();
+    hideStamina();
+    hideActionBtn();
+    GameEngine.stopAll();
+    haruki.active = false;
+    if (GameEngine.stopEnemyFootsteps) GameEngine.stopEnemyFootsteps();
+
+    GameEngine.fadeToBlack(1500, function () {
+      setTimeout(function () {
+        var msg = document.getElementById('trueEndingMessage');
+        if (msg) {
+          msg.innerHTML =
+            'あなたは全ての記録を持ち出した。<br><br>' +
+            'ハルキ——本名不明。3年前、このホテルに長期滞在。<br>' +
+            'フロント係への異常な執着の末、暴行事件を起こし逃走。<br>' +
+            '以来、ホテルの地下に潜み続けていた。<br><br>' +
+            '写真には、まだ普通の青年だった頃のハルキが笑っていた...<br><br>' +
+            '事件は警察に通報された。もう誰も犠牲にはならない。';
+        }
+        showOverlay('trueEndingScreen');
+      }, 500);
+    });
+  }
+
+  function onEnterBadEnding() {
+    hideJoystick();
+    hideStamina();
+    hideActionBtn();
+    GameEngine.stopAll();
+    haruki.active = false;
+    if (GameEngine.stopEnemyFootsteps) GameEngine.stopEnemyFootsteps();
+    if (GameEngine.vignetteIntensity !== undefined) GameEngine.vignetteIntensity = 1.0;
+    GameEngine.playSound('stinger');
+    GameEngine.shakeScreen(10, 500);
+
+    GameEngine.fadeToBlack(2000, function () {
+      setTimeout(function () {
+        showOverlay('badEndingScreen');
+      }, 800);
     });
   }
 
@@ -2541,35 +2573,7 @@
   }
 
   function triggerBadEnding() {
-    // All lights go out
-    if (GameEngine.vignetteIntensity !== undefined) GameEngine.vignetteIntensity = 1.0;
-    if (GameEngine.playSound) GameEngine.playSound('stinger');
-
-    // Teleport Haruki to player
-    haruki.x = player.x;
-    haruki.y = player.y;
-    haruki.active = false;
-    if (GameEngine.stopEnemyFootsteps) GameEngine.stopEnemyFootsteps();
-
-    setTimeout(function () {
-      GameEngine.stopAll();
-      // Special game over
-      var goScreen = document.getElementById('gameOverScreen');
-      if (goScreen) {
-        var goTitle = goScreen.querySelector('h1');
-        if (goTitle) goTitle.textContent = '時間切れ...';
-        var goSub = goScreen.querySelector('p');
-        if (goSub) goSub.textContent = '「やっと観念したのねぇ♡ もうどこにも行かせないわ...永遠にあたしのものよ♡」';
-      }
-      hideJoystick();
-      hideStamina();
-      hideActionBtn();
-      if (GameEngine.playSound) GameEngine.playSound('static');
-      if (GameEngine.staticEffect) GameEngine.staticEffect(1.0);
-      setTimeout(function () {
-        showOverlay('gameOverScreen');
-      }, 600);
-    }, 1500);
+    setPhase(PHASES.BAD_ENDING);
   }
 
   // =========================================================
@@ -3622,19 +3626,26 @@
       });
     }
 
-    // Title return button (ending)
-    var titleReturnBtn = document.getElementById('titleReturnBtn');
-    if (titleReturnBtn) {
-      var handleReturn = function () {
-        hideOverlay('endingScreen');
-        setPhase(PHASES.TITLE);
-      };
-      titleReturnBtn.addEventListener('click', handleReturn);
-      titleReturnBtn.addEventListener('touchend', function (e) {
-        e.preventDefault();
-        handleReturn();
-      });
-    }
+    // Title return buttons (all ending screens)
+    var endingReturnButtons = [
+      { id: 'titleReturnBtn', overlay: 'endingScreen' },
+      { id: 'trueEndReturnBtn', overlay: 'trueEndingScreen' },
+      { id: 'badEndReturnBtn', overlay: 'badEndingScreen' }
+    ];
+    endingReturnButtons.forEach(function (cfg) {
+      var btn = document.getElementById(cfg.id);
+      if (btn) {
+        var handler = function () {
+          hideOverlay(cfg.overlay);
+          setPhase(PHASES.TITLE);
+        };
+        btn.addEventListener('click', handler);
+        btn.addEventListener('touchend', function (e) {
+          e.preventDefault();
+          handler();
+        });
+      }
+    });
 
     // Joystick handling
     bindJoystick();

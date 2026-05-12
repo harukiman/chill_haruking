@@ -683,18 +683,17 @@
 
       // Get the wall bottom for this column from z-buffer
       var fWallDist = zBuffer[fScreenX];
-      var fWallH = (fWallDist < 999) ? (h / (fWallDist * cosCorrect)) : 0;
-      // Not using cosCorrect for wallH calc - use corrected dist already in zbuffer
-      fWallH = (fWallDist < 999) ? (h / fWallDist) : 0;
+      var fWallH = (fWallDist > 0.01 && fWallDist < 999) ? (h / fWallDist) : 0;
       var fWallBottom = ((h + fWallH) / 2) | 0;
       var fWallTop = ((h - fWallH) / 2) | 0;
 
       // Floor: rows below wall bottom
-      var floorMaxY = Math.min(h, fWallBottom + (8 * h / 1)); // limit distance
       for (var fy = fWallBottom; fy < h; fy += 2) { // every 2nd pixel row
-        var fRowDist = halfH / (fy - halfH);
-        if (fRowDist <= 0) continue;
-        var fDistTiles = fRowDist / cosCorrect;
+        var fyDenom = fy - halfH;
+        if (fyDenom <= 0) continue;
+        var fRowDist = halfH / fyDenom;
+        if (fRowDist <= 0.01) continue;
+        var fDistTiles = fRowDist;
         if (fDistTiles > 8) break; // skip floor beyond 8 tiles
 
         var fFloorX = playerX / ts + fCosA * fRowDist;
@@ -756,9 +755,11 @@
 
       // ─── V3: Ceiling Casting ───
       for (var cy = fWallTop; cy >= 0; cy -= 2) {
-        var cRowDist = halfH / (halfH - cy);
-        if (cRowDist <= 0) continue;
-        var cDistTiles = cRowDist / cosCorrect;
+        var cyDenom = halfH - cy;
+        if (cyDenom <= 0) continue;
+        var cRowDist = halfH / cyDenom;
+        if (cRowDist <= 0.01) continue;
+        var cDistTiles = cRowDist;
         if (cDistTiles > 8) break;
 
         var cFloorX = playerX / ts + fCosA * cRowDist;
@@ -2426,6 +2427,7 @@
       bp.connect(gain);
       gain.connect(dest);
       src.start(now);
+      src.stop(now + 2.1);
     },
 
     _playLullaby: function (now) {
@@ -2615,11 +2617,12 @@
       if (obj.melody !== undefined) bgmLayerGains.melody = obj.melody;
       if (obj.pulse !== undefined) bgmLayerGains.pulse = obj.pulse;
       // Apply to live nodes
-      if (bgmLayerNodes) {
-        if (bgmLayerNodes.droneGain) bgmLayerNodes.droneGain.gain.setTargetAtTime(bgmLayerGains.drone, audioCtx.currentTime, 0.3);
-        if (bgmLayerNodes.dissonanceGain) bgmLayerNodes.dissonanceGain.gain.setTargetAtTime(bgmLayerGains.dissonance, audioCtx.currentTime, 0.3);
-        if (bgmLayerNodes.melodyGain) bgmLayerNodes.melodyGain.gain.setTargetAtTime(bgmLayerGains.melody, audioCtx.currentTime, 0.3);
-        if (bgmLayerNodes.pulseGain) bgmLayerNodes.pulseGain.gain.setTargetAtTime(bgmLayerGains.pulse, audioCtx.currentTime, 0.3);
+      if (bgmLayerNodes && audioCtx) {
+        var now = audioCtx.currentTime;
+        if (bgmLayerNodes.droneGain) bgmLayerNodes.droneGain.gain.setTargetAtTime(bgmLayerGains.drone, now, 0.3);
+        if (bgmLayerNodes.dissonanceGain) bgmLayerNodes.dissonanceGain.gain.setTargetAtTime(bgmLayerGains.dissonance, now, 0.3);
+        if (bgmLayerNodes.melodyGain) bgmLayerNodes.melodyGain.gain.setTargetAtTime(bgmLayerGains.melody, now, 0.3);
+        if (bgmLayerNodes.pulseGain) bgmLayerNodes.pulseGain.gain.setTargetAtTime(bgmLayerGains.pulse, now, 0.3);
       }
     },
 
