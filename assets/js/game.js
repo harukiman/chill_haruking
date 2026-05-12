@@ -1357,6 +1357,7 @@
     isHiding = false;
     hideTimer = 0;
     hidingSpotRef = null;
+    hideOverlay('hideOverlay');
     harukiAlertLevel = 0;
     noiseTimer = 0;
     monologueTimer = 0;
@@ -1538,6 +1539,7 @@
     isHiding = false;
     hideTimer = 0;
     hidingSpotRef = null;
+    hideOverlay('hideOverlay');
     harukiAlertLevel = 0;
     noiseTimer = 0;
 
@@ -1677,13 +1679,13 @@
     if (GameEngine.vignetteIntensity !== undefined) GameEngine.vignetteIntensity = 0;
     if (GameEngine.stopEnemyFootsteps) GameEngine.stopEnemyFootsteps();
 
-    // Reset game over screen text to default (in case bad ending changed it)
+    // Reset game over screen text to default
     var goScreen = document.getElementById('gameOverScreen');
     if (goScreen) {
       var goTitle = goScreen.querySelector('h1');
-      if (goTitle) goTitle.textContent = 'GAME OVER';
+      if (goTitle) goTitle.textContent = 'ゲームオーバー';
       var goSub = goScreen.querySelector('p');
-      if (goSub) goSub.textContent = '';
+      if (goSub) goSub.textContent = '「捕まえちゃったぁ♡ もう離さないわよぉ〜」';
     }
 
     GameEngine.playSound('static');
@@ -1967,6 +1969,12 @@
       if (GameEngine.vignetteIntensity !== undefined) {
         GameEngine.vignetteIntensity = 0.7;
       }
+      // Update breath bar
+      var breathFill = document.getElementById('hideBreathFill');
+      if (breathFill) {
+        var breathPct = Math.max(0, 1 - hideTimer / maxHideTime) * 100;
+        breathFill.style.width = breathPct + '%';
+      }
       // After maxHideTime: cough and reveal
       if (hideTimer >= maxHideTime) {
         isHiding = false;
@@ -1975,6 +1983,7 @@
         if (GameEngine.vignetteIntensity !== undefined) {
           GameEngine.vignetteIntensity = 0;
         }
+        hideOverlay('hideOverlay');
         queueDialogue([
           { speaker: 'あなた', text: '（っ...！咳が...）' }
         ]);
@@ -1989,17 +1998,6 @@
         }
         hideActionBtn();
         return;
-      }
-      // Show exit button while hiding
-      if (!actionCallback) {
-        showActionBtn('出る', function () {
-          isHiding = false;
-          hideTimer = 0;
-          hidingSpotRef = null;
-          if (GameEngine.vignetteIntensity !== undefined) {
-            GameEngine.vignetteIntensity = 0;
-          }
-        });
       }
       return;
     }
@@ -2017,6 +2015,8 @@
               if (GameEngine.vignetteIntensity !== undefined) {
                 GameEngine.vignetteIntensity = 0.7;
               }
+              showOverlay('hideOverlay');
+              hideActionBtn();
             });
           })(hs);
           return;
@@ -3626,6 +3626,25 @@
       retryBtn.addEventListener('touchend', function (e) {
         e.preventDefault();
         handleRetry();
+      });
+    }
+
+    // Hide exit button (hiding system)
+    var hideExitBtn = document.getElementById('hideExitBtn');
+    if (hideExitBtn) {
+      var handleHideExit = function () {
+        isHiding = false;
+        hideTimer = 0;
+        hidingSpotRef = null;
+        if (GameEngine.vignetteIntensity !== undefined) {
+          GameEngine.vignetteIntensity = 0;
+        }
+        hideOverlay('hideOverlay');
+      };
+      hideExitBtn.addEventListener('click', handleHideExit);
+      hideExitBtn.addEventListener('touchend', function (e) {
+        e.preventDefault();
+        handleHideExit();
       });
     }
 

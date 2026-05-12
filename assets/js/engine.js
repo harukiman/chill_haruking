@@ -260,30 +260,13 @@
     var maxViewDist = 12;
     var fogFactor = Math.max(0.05, 1 - dist / maxViewDist);
 
-    // V5: Point light contributions
-    if (mapX !== undefined && mapY !== undefined && engine.pointLights && engine.pointLights.length > 0) {
-      var hitWX = (mapX + 0.5) * TILE_SIZE;
-      var hitWY = (mapY + 0.5) * TILE_SIZE;
-      var now = typeof performance !== 'undefined' ? performance.now() / 1000 : 0;
-      for (var li = 0; li < engine.pointLights.length; li++) {
-        var pl = engine.pointLights[li];
-        var plWX = (pl.gx + 0.5) * TILE_SIZE;
-        var plWY = (pl.gy + 0.5) * TILE_SIZE;
-        var ldx = hitWX - plWX;
-        var ldy = hitWY - plWY;
-        var ldist = Math.sqrt(ldx * ldx + ldy * ldy) / TILE_SIZE;
-        if (ldist < pl.radius) {
-          var falloff = 1 - (ldist / pl.radius);
-          falloff = falloff * falloff; // inverse-square-ish
-          var intensity = pl.intensity || 1;
-          if (pl.flicker) {
-            intensity *= (1 + Math.sin(now * pl.flicker + (pl.phase || 0)) * 0.3);
-          }
-          var contrib = falloff * intensity;
-          r = Math.min(255, r + ((pl.r || 255) * contrib * 0.3) | 0);
-          g = Math.min(255, g + ((pl.g || 200) * contrib * 0.3) | 0);
-          b = Math.min(255, b + ((pl.b || 150) * contrib * 0.3) | 0);
-        }
+    // V5: Point light contributions (from precomputed grid)
+    if (mapX !== undefined && mapY !== undefined && _lightGrid && mapX >= 0 && mapX < _lightGridW && mapY >= 0 && mapY < _lightGridH) {
+      var wLIdx = (mapY * _lightGridW + mapX) * 3;
+      if (_lightGrid[wLIdx] > 0 || _lightGrid[wLIdx + 1] > 0) {
+        r = Math.min(255, r + (_lightGrid[wLIdx] * 0.3) | 0);
+        g = Math.min(255, g + (_lightGrid[wLIdx + 1] * 0.3) | 0);
+        b = Math.min(255, b + (_lightGrid[wLIdx + 2] * 0.3) | 0);
       }
     }
 
@@ -487,6 +470,94 @@
     ctx.fillRect(x, bottomBorder, sw, drawEnd - bottomBorder);
   }
 
+  // ───────────────────────────────────────────────
+  // Precomputed per-tile light grid (rebuilt each frame)
+  // ───────────────────────────────────────────────
+  var _lightGrid = null;   // Float32Array: [r, g, b] per tile, mapW*mapH*3
+  var _lightGridW = 0;
+  var _lightGridH = 0;
+
+  function buildLightGrid(mapW, mapH, pointLights, ceilingLights, nowTime) {
+    var sz = mapW * mapH * 3;
+    if (!_lightGrid || _lightGridW !== mapW || _lightGridH !== mapH) {
+      _lightGrid = new Float32Array(sz);
+      _lightGridW = mapW;
+      _lightGridH = mapH;
+    }
+    // Zero out
+    for (var z = 0; z < sz; z++) _lightGrid[z] = 0;
+
+    var ts = TILE_SIZE;
+    var i, pl, gx, gy, r2, dx, dy, d2, falloff, intensity, contrib;
+
+    // Point lights
+    if (pointLights) {
+      for (i = 0; i < pointLights.length; i++) {
+        pl = pointLights[i];
+        intensity = pl.intensity || 1;
+        if (pl.flicker) {
+          intensity *= (1 + Math.sin(nowTime * pl.flicker + (pl.phase || 0)) * 0.3);
+        }
+        var rad = pl.radius;
+        r2 = rad * rad;
+        var minGX = Math.max(0, (pl.gx - rad) | 0);
+        var maxGX = Math.min(mapW - 1, (pl.gx + rad + 1) | 0);
+        var minGY = Math.max(0, (pl.gy - rad) | 0);
+        var maxGY = Math.min(mapH - 1, (pl.gy + rad + 1) | 0);
+        for (gy = minGY; gy <= maxGY; gy++) {
+          dy = gy + 0.5 - (pl.gy + 0.5);
+          for (gx = minGX; gx <= maxGX; gx++) {
+            dx = gx + 0.5 - (pl.gx + 0.5);
+            d2 = dx * dx + dy * dy;
+            if (d2 < r2) {
+              falloff = 1 - Math.sqrt(d2) / rad;
+              falloff = falloff * falloff;
+              contrib = falloff * intensity;
+              var idx = (gy * mapW + gx) * 3;
+              _lightGrid[idx]     += (pl.r || 255) * contrib;
+              _lightGrid[idx + 1] += (pl.g || 200) * contrib;
+              _lightGrid[idx + 2] += (pl.b || 150) * contrib;
+            }
+          }
+        }
+      }
+    }
+
+    // Ceiling lights (add to same grid)
+    if (ceilingLights) {
+      for (i = 0; i < ceilingLights.length; i++) {
+        var cl = ceilingLights[i];
+        var clRad = cl.radius || 1.5;
+        r2 = clRad * clRad;
+        var flkr = 1;
+        var cMinGX = Math.max(0, (cl.gx - clRad) | 0);
+        var cMaxGX = Math.min(mapW - 1, (cl.gx + clRad + 1) | 0);
+        var cMinGY = Math.max(0, (cl.gy - clRad) | 0);
+        var cMaxGY = Math.min(mapH - 1, (cl.gy + clRad + 1) | 0);
+        for (gy = cMinGY; gy <= cMaxGY; gy++) {
+          for (gx = cMinGX; gx <= cMaxGX; gx++) {
+            dx = gx + 0.5 - (cl.gx + 0.5);
+            dy = gy + 0.5 - (cl.gy + 0.5);
+            d2 = dx * dx + dy * dy;
+            if (d2 < r2) {
+              falloff = 1 - Math.sqrt(d2) / clRad;
+              falloff = falloff * falloff;
+              if (cl.flickerRate) {
+                flkr = 0.7 + Math.sin(nowTime * cl.flickerRate + gx * 3.7) * 0.3;
+              }
+              contrib = falloff * flkr;
+              var cidx = (gy * mapW + gx) * 3;
+              // Ceiling lights are warm white
+              _lightGrid[cidx]     += 225 * contrib;
+              _lightGrid[cidx + 1] += 210 * contrib;
+              _lightGrid[cidx + 2] += 170 * contrib;
+            }
+          }
+        }
+      }
+    }
+  }
+
   function renderFirstPerson() {
     var ctx = engine.ctx;
     var w = engine.width;
@@ -522,6 +593,10 @@
     floorGrad.addColorStop(1, '#3a2018');
     ctx.fillStyle = floorGrad;
     ctx.fillRect(0, h / 2, w, h / 2);
+
+    // Precompute light grid once per frame
+    var nowTime = typeof performance !== 'undefined' ? performance.now() / 1000 : 0;
+    buildLightGrid(mapW, mapH, engine.pointLights, engine.ceilingLights, nowTime);
 
     // Z-buffer for sprite clipping
     var zBuffer = new Float32Array(w);
@@ -661,13 +736,9 @@
       }
     }
 
-    // ─── V2: Floor Casting ───
-    // For each column, for each pixel row below the wall bottom, calculate floor tile
+    // ─── V2: Floor & Ceiling Casting (optimized) ───
     var halfH = h / 2;
     var floorColors = engine.floorColors;
-    var ceilingLights = engine.ceilingLights;
-    var pointLights = engine.pointLights;
-    var nowTime = typeof performance !== 'undefined' ? performance.now() / 1000 : 0;
 
     for (var fi = 0; fi < numRays; fi++) {
       var fScreenX = fi * stripWidth;
@@ -676,32 +747,28 @@
       var fCosA = Math.cos(fRayAngle);
       var cosCorrect = Math.cos(fRayAngle - renderAngle);
 
-      // Get the wall bottom for this column from z-buffer
+      // Get the wall distance for this column — floor/ceiling must stop here
       var fWallDist = zBuffer[fScreenX];
       var fWallH = (fWallDist > 0.01 && fWallDist < 999) ? (h / fWallDist) : 0;
       var fWallBottom = ((h + fWallH) / 2) | 0;
       var fWallTop = ((h - fWallH) / 2) | 0;
+      // Max perpendicular distance for floor/ceiling = wall distance (clamp to prevent see-through)
+      var maxFloorDist = (fWallDist < 999) ? fWallDist : 10;
 
       // Floor: rows below wall bottom
-      for (var fy = fWallBottom; fy < h; fy += 2) { // every 2nd pixel row
+      for (var fy = fWallBottom; fy < h; fy += 2) {
         var fyDenom = fy - halfH;
         if (fyDenom <= 0) continue;
-        var fRowDist = halfH / fyDenom; // perpendicular distance
-        if (fRowDist <= 0.01) continue;
-        var fRayDist = fRowDist / cosCorrect; // actual distance along ray
-        var fDistTiles = fRowDist;
-        if (fDistTiles > 8) break; // skip floor beyond 8 tiles
+        var fRowDist = halfH / fyDenom;
+        if (fRowDist <= 0.01 || fRowDist > maxFloorDist) break;
+        var fRayDist = fRowDist / cosCorrect;
 
         var fFloorX = playerX / ts + fCosA * fRayDist;
         var fFloorY = playerY / ts + fSinA * fRayDist;
-        var fgx = Math.floor(fFloorX);
-        var fgy = Math.floor(fFloorY);
+        var fgx = fFloorX | 0;
+        var fgy = fFloorY | 0;
 
-        // Skip floor outside map bounds
         if (fgx < 0 || fgx >= mapW || fgy < 0 || fgy >= mapH) continue;
-        // Skip floor pixels that land on solid tiles (seeing through walls)
-        var fTile = tiles[fgy][fgx];
-        if (engine.isTileSolid && engine.isTileSolid(fTile, fgx, fgy)) continue;
 
         // Default: burgundy carpet
         var fR = 60, fG = 25, fB = 22;
@@ -709,42 +776,20 @@
         if (floorColors && floorColors[fKey]) {
           var fc = floorColors[fKey];
           fR = fc.r; fG = fc.g; fB = fc.b;
-        }
-
-        // Checkerboard subtle pattern for tile floors
-        if (floorColors && floorColors[fKey] && floorColors[fKey].checker) {
-          if ((fgx + fgy) % 2 === 0) {
+          if (fc.checker && ((fgx + fgy) & 1) === 0) {
             fR = (fR * 0.9) | 0; fG = (fG * 0.9) | 0; fB = (fB * 0.9) | 0;
           }
         }
 
         // Distance fog
-        var fFog = Math.max(0.05, 1 - fDistTiles / 12);
+        var fFog = Math.max(0.05, 1 - fRowDist / 12);
 
-        // V5: Point light on floor
-        if (pointLights && pointLights.length > 0) {
-          var flWX = fFloorX * ts;
-          var flWY = fFloorY * ts;
-          for (var fli = 0; fli < pointLights.length; fli++) {
-            var fpl = pointLights[fli];
-            var fplWX = (fpl.gx + 0.5) * ts;
-            var fplWY = (fpl.gy + 0.5) * ts;
-            var fldx = flWX - fplWX;
-            var fldy = flWY - fplWY;
-            var fldist = Math.sqrt(fldx * fldx + fldy * fldy) / ts;
-            if (fldist < fpl.radius) {
-              var fFalloff = 1 - (fldist / fpl.radius);
-              fFalloff = fFalloff * fFalloff;
-              var fIntensity = fpl.intensity || 1;
-              if (fpl.flicker) {
-                fIntensity *= (1 + Math.sin(nowTime * fpl.flicker + (fpl.phase || 0)) * 0.3);
-              }
-              var fContrib = fFalloff * fIntensity;
-              fR = Math.min(255, fR + ((fpl.r || 255) * fContrib * 0.25) | 0);
-              fG = Math.min(255, fG + ((fpl.g || 200) * fContrib * 0.25) | 0);
-              fB = Math.min(255, fB + ((fpl.b || 150) * fContrib * 0.25) | 0);
-            }
-          }
+        // Light from precomputed grid (floor uses 0.25 multiplier)
+        var fLIdx = (fgy * mapW + fgx) * 3;
+        if (_lightGrid[fLIdx] > 0 || _lightGrid[fLIdx + 1] > 0) {
+          fR = Math.min(255, fR + (_lightGrid[fLIdx] * 0.25) | 0);
+          fG = Math.min(255, fG + (_lightGrid[fLIdx + 1] * 0.25) | 0);
+          fB = Math.min(255, fB + (_lightGrid[fLIdx + 2] * 0.25) | 0);
         }
 
         fR = (fR * fFog) | 0;
@@ -755,75 +800,33 @@
         ctx.fillRect(fScreenX, fy, stripWidth, 2);
       }
 
-      // ─── V3: Ceiling Casting ───
+      // Ceiling: rows above wall top
       for (var cy = fWallTop; cy >= 0; cy -= 2) {
         var cyDenom = halfH - cy;
         if (cyDenom <= 0) continue;
-        var cRowDist = halfH / cyDenom; // perpendicular distance
-        if (cRowDist <= 0.01) continue;
-        var cRayDist = cRowDist / cosCorrect; // actual distance along ray
-        var cDistTiles = cRowDist;
-        if (cDistTiles > 8) break;
+        var cRowDist = halfH / cyDenom;
+        if (cRowDist <= 0.01 || cRowDist > maxFloorDist) break;
+        var cRayDist = cRowDist / cosCorrect;
 
         var cFloorX = playerX / ts + fCosA * cRayDist;
         var cFloorY = playerY / ts + fSinA * cRayDist;
-        var cgx = Math.floor(cFloorX);
-        var cgy = Math.floor(cFloorY);
+        var cgx = cFloorX | 0;
+        var cgy = cFloorY | 0;
 
-        // Skip ceiling outside map or on solid tiles
         if (cgx < 0 || cgx >= mapW || cgy < 0 || cgy >= mapH) continue;
-        var cTile = tiles[cgy][cgx];
-        if (engine.isTileSolid && engine.isTileSolid(cTile, cgx, cgy)) continue;
 
         // Default ceiling: dark warm tone
         var cR = 30, cG = 24, cB = 20;
 
-        // V3: Ceiling lights
-        if (ceilingLights && ceilingLights.length > 0) {
-          for (var cli = 0; cli < ceilingLights.length; cli++) {
-            var cl = ceilingLights[cli];
-            var cldx = cFloorX - (cl.gx + 0.5);
-            var cldy = cFloorY - (cl.gy + 0.5);
-            var clDist = Math.sqrt(cldx * cldx + cldy * cldy);
-            var clRadius = cl.radius || 1.5;
-            if (clDist < clRadius) {
-              var clFall = 1 - (clDist / clRadius);
-              clFall = clFall * clFall;
-              var flkr = 1;
-              if (cl.flickerRate) {
-                flkr = 0.7 + Math.sin(nowTime * cl.flickerRate + cgx * 3.7) * 0.3;
-              }
-              var lightAdd = clFall * flkr;
-              cR = Math.min(255, cR + (225 * lightAdd) | 0);
-              cG = Math.min(255, cG + (210 * lightAdd) | 0);
-              cB = Math.min(255, cB + (170 * lightAdd) | 0);
-            }
-          }
+        // Light from precomputed grid (ceiling uses full contrib)
+        var cLIdx = (cgy * mapW + cgx) * 3;
+        if (_lightGrid[cLIdx] > 0 || _lightGrid[cLIdx + 1] > 0) {
+          cR = Math.min(255, cR + _lightGrid[cLIdx] | 0);
+          cG = Math.min(255, cG + _lightGrid[cLIdx + 1] | 0);
+          cB = Math.min(255, cB + _lightGrid[cLIdx + 2] | 0);
         }
 
-        // Point lights on ceiling
-        if (pointLights && pointLights.length > 0) {
-          for (var cpli = 0; cpli < pointLights.length; cpli++) {
-            var cpl = pointLights[cpli];
-            var cpldx = cFloorX - (cpl.gx + 0.5);
-            var cpldy = cFloorY - (cpl.gy + 0.5);
-            var cpldist = Math.sqrt(cpldx * cpldx + cpldy * cpldy);
-            if (cpldist < cpl.radius) {
-              var cplFall = 1 - (cpldist / cpl.radius);
-              cplFall = cplFall * cplFall;
-              var cplInt = (cpl.intensity || 1) * 0.15;
-              if (cpl.flicker) {
-                cplInt *= (1 + Math.sin(nowTime * cpl.flicker + (cpl.phase || 0)) * 0.3);
-              }
-              var cplContrib = cplFall * cplInt;
-              cR = Math.min(255, cR + ((cpl.r || 255) * cplContrib) | 0);
-              cG = Math.min(255, cG + ((cpl.g || 200) * cplContrib) | 0);
-              cB = Math.min(255, cB + ((cpl.b || 150) * cplContrib) | 0);
-            }
-          }
-        }
-
-        var cFog = Math.max(0.05, 1 - cDistTiles / 12);
+        var cFog = Math.max(0.05, 1 - cRowDist / 12);
         cR = (cR * cFog) | 0;
         cG = (cG * cFog) | 0;
         cB = (cB * cFog) | 0;
