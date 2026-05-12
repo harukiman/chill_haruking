@@ -1968,6 +1968,22 @@ html, body {
   animation: fadeIn 1.5s ease-out;
 }
 
+.bad-ending .ending-escape {
+  color: #cc0000;
+  text-shadow: 0 0 10px rgba(200, 0, 0, 0.5);
+}
+
+.bad-ending .ending-title {
+  color: #880000;
+  text-shadow:
+    0 0 20px rgba(150, 0, 0, 0.5),
+    0 0 40px rgba(100, 0, 0, 0.3);
+}
+
+.bad-ending .ending-message {
+  color: #cc4444;
+}
+
 /* =============================================
    U6. HIDING UI
    ============================================= */
