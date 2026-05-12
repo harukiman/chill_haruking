@@ -39,7 +39,6 @@
       <div class="title-menu">
         <button id="startBtn" class="menu-btn" type="button">はじめから</button>
         <button id="controlsBtn" class="menu-btn" type="button">操作説明</button>
-        <button id="creditsBtn" class="menu-btn" type="button">クレジット</button>
       </div>
     </div>
     <p class="copyright">TSUISEKISHA -HARUKI- &copy; 2026</p>
@@ -301,16 +300,6 @@
     </div>
   </div>
 
-  <!-- Credits Overlay -->
-  <div id="creditsOverlay" class="overlay" style="display:none;">
-    <div class="credits-content">
-      <h2 class="credits-title">クレジット</h2>
-      <p class="credits-role">企画・プログラム</p>
-      <p class="credits-name">HARUKIMAN</p>
-      <p class="credits-note">追跡者 -HARUKI- &copy; 2026</p>
-      <button id="closeCreditsBtn" class="credits-close" type="button">戻る</button>
-    </div>
-  </div>
 
   <!-- Scripts -->
   <script src="assets/js/engine.js"></script>
@@ -319,11 +308,8 @@
     /* Title menu button handlers (UI-only, game.js handles startBtn) */
     (function() {
       var controlsBtn = document.getElementById('controlsBtn');
-      var creditsBtn = document.getElementById('creditsBtn');
       var closeTutorialBtn = document.getElementById('closeTutorialBtn');
-      var closeCreditsBtn = document.getElementById('closeCreditsBtn');
       var tutorialOverlay = document.getElementById('tutorialOverlay');
-      var creditsOverlay = document.getElementById('creditsOverlay');
       var closeMemoBtn = document.getElementById('closeMemoBtn');
       var memoOverlay = document.getElementById('memoOverlay');
 
@@ -332,19 +318,9 @@
           if (tutorialOverlay) tutorialOverlay.style.display = 'flex';
         });
       }
-      if (creditsBtn) {
-        creditsBtn.addEventListener('click', function() {
-          if (creditsOverlay) creditsOverlay.style.display = 'flex';
-        });
-      }
       if (closeTutorialBtn) {
         closeTutorialBtn.addEventListener('click', function() {
           if (tutorialOverlay) tutorialOverlay.style.display = 'none';
-        });
-      }
-      if (closeCreditsBtn) {
-        closeCreditsBtn.addEventListener('click', function() {
-          if (creditsOverlay) creditsOverlay.style.display = 'none';
         });
       }
       if (closeMemoBtn) {
