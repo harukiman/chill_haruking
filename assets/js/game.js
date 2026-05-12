@@ -1315,7 +1315,7 @@
     if (sb) {
       sb.style.opacity = '';
       sb.style.pointerEvents = '';
-      sb.textContent = audioInitialized ? 'ゲームスタート' : 'タップしてスタート';
+      sb.textContent = 'はじめから';
     }
     startTitleLightning();
     // Audio starts on first tap (mobile requires user gesture)
@@ -3506,8 +3506,10 @@
       GameEngine.onUpdate = onUpdate;
       GameEngine.onRender = onRender;
 
-      // Start at title
-      setPhase(PHASES.TITLE);
+      // Only reset to title if game hasn't already started
+      if (phase === PHASES.TITLE && !phaseFlags.starting) {
+        setPhase(PHASES.TITLE);
+      }
     });
   }
 
@@ -3518,26 +3520,27 @@
     // Title screen start button
     var startBtn = document.getElementById('startBtn');
     if (startBtn) {
+      var startHandled = false; // prevent double-fire from touch+click
       var handleStart = function () {
+        if (startHandled) return;
         if (phase !== PHASES.TITLE) return;
 
-        // First tap: init audio + start BGM/rain
+        // Ensure audio is initialised (engine may have already done this on first touch)
         if (!audioInitialized) {
           GameEngine.initAudio();
           audioInitialized = true;
-          startTitleRain();
-          startTitleBGM();
-          startBtn.textContent = 'ゲームスタート';
-          return;
         }
 
-        // Already audio ready but rain/BGM not started (returned to title)
+        // Start title audio if not yet playing
         if (!titleRainNodes) startTitleRain();
         if (!titleBgmNodes) startTitleBGM();
 
         // Thunder transition
         if (phaseFlags.starting) return;
         phaseFlags.starting = true;
+        startHandled = true;
+        setTimeout(function () { startHandled = false; }, 3000);
+
         triggerLightning();
         playBigThunder();
         startBtn.style.opacity = '0';
