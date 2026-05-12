@@ -85,6 +85,37 @@
   var staticCtx = null;
 
   // ───────────────────────────────────────────────
+  // Seeded random for deterministic wall textures
+  // ───────────────────────────────────────────────
+  function seededRandom(a, b, c) {
+    var x = Math.sin(a * 12.9898 + b * 78.233 + c * 45.164) * 43758.5453;
+    return x - Math.floor(x);
+  }
+
+  // ───────────────────────────────────────────────
+  // Particle system state
+  // ───────────────────────────────────────────────
+  var particles = [];
+  var MAX_PARTICLES = 50;
+
+  // ───────────────────────────────────────────────
+  // BGM layer state
+  // ───────────────────────────────────────────────
+  var bgmLayerNodes = null;
+  var bgmLayerGains = { drone: 0.06, dissonance: 0, melody: 0, pulse: 0 };
+  var bgmMelodyIndex = 0;
+  var bgmMelodyTimer = 0;
+  var bgmPulsePhase = 0;
+
+  // ───────────────────────────────────────────────
+  // Enemy footstep state
+  // ───────────────────────────────────────────────
+  var enemyFootstepInterval = null;
+  var enemyFootstepWX = 0;
+  var enemyFootstepWY = 0;
+  var footstepSurface = 'carpet';
+
+  // ───────────────────────────────────────────────
   // Dialogue state
   // ───────────────────────────────────────────────
   var dialogueActive = false;
@@ -142,7 +173,7 @@
   // Raycasting renderer functions
   // ───────────────────────────────────────────────
 
-  function getWallColor(tile, side, dist, isLower) {
+  function getWallColor(tile, side, dist, isLower, wallX, mapX, mapY) {
     var r, g, b;
     if (isLower) {
       // Wainscoting / dark wood panel (lower wall)
@@ -155,6 +186,13 @@
         case 10: r = 55; g = 65; b = 95; break;    // Window
         default: r = 85; g = 55; b = 35; break;
       }
+      // V1: Wainscoting wood grain — horizontal line variation
+      if (wallX !== undefined) {
+        var grain = 0.95 + Math.sin(wallX * 60) * 0.03 + Math.sin(wallX * 150) * 0.02;
+        r = (r * grain) | 0;
+        g = (g * grain) | 0;
+        b = (b * grain) | 0;
+      }
     } else {
       // Upper wall — warm cream/beige wallpaper with subtle pattern
       switch (tile) {
@@ -165,6 +203,53 @@
         case 9: r = 140; g = 140; b = 150; break;  // Elevator (metal)
         case 10: r = 80; g = 90; b = 130; break;   // Window (blue tint)
         default: r = 155; g = 135; b = 105; break;
+      }
+      // V1: Procedural wallpaper vertical stripe pattern
+      if (wallX !== undefined) {
+        var stripePhase = (wallX * 10) | 0;
+        if (stripePhase % 2 === 0) {
+          r = (r * 0.95) | 0;
+          g = (g * 0.95) | 0;
+          b = (b * 0.95) | 0;
+        }
+      }
+    }
+
+    // V1: Aging/stain — seeded random darker patches on ~20% of strips
+    if (mapX !== undefined && mapY !== undefined) {
+      var stainSeed = seededRandom(mapX, mapY, side);
+      if (stainSeed < 0.20) {
+        var stainDark = 0.85 + stainSeed * 0.5;
+        r = (r * stainDark) | 0;
+        g = (g * stainDark) | 0;
+        b = (b * stainDark) | 0;
+      }
+      // V1: Wall cracks — thin dark lines at random wallX on ~10% of tiles
+      if (wallX !== undefined && stainSeed > 0.20 && stainSeed < 0.30) {
+        var crackPos = seededRandom(mapX * 3, mapY * 7, 99);
+        if (Math.abs(wallX - crackPos) < 0.015) {
+          r = (r * 0.5) | 0;
+          g = (g * 0.5) | 0;
+          b = (b * 0.5) | 0;
+        }
+      }
+    }
+
+    // V1: Blood stains
+    if (mapX !== undefined && mapY !== undefined && engine.bloodTiles) {
+      var bKey = mapY * 1000 + mapX;
+      if (engine.bloodTiles[bKey]) {
+        // Blood drip pattern using wallX
+        if (wallX !== undefined) {
+          var drip1 = seededRandom(mapX, mapY, 1);
+          var drip2 = seededRandom(mapX, mapY, 2);
+          var dripW = 0.06;
+          if (Math.abs(wallX - drip1) < dripW || Math.abs(wallX - drip2) < dripW) {
+            r = Math.min(255, r + 60);
+            g = (g * 0.3) | 0;
+            b = (b * 0.3) | 0;
+          }
+        }
       }
     }
 
@@ -181,6 +266,33 @@
       fogFactor *= (1 - flickerAdjust);
     }
 
+    // V5: Point light contributions
+    if (mapX !== undefined && mapY !== undefined && engine.pointLights && engine.pointLights.length > 0) {
+      var hitWX = (mapX + 0.5) * TILE_SIZE;
+      var hitWY = (mapY + 0.5) * TILE_SIZE;
+      var now = typeof performance !== 'undefined' ? performance.now() / 1000 : 0;
+      for (var li = 0; li < engine.pointLights.length; li++) {
+        var pl = engine.pointLights[li];
+        var plWX = (pl.gx + 0.5) * TILE_SIZE;
+        var plWY = (pl.gy + 0.5) * TILE_SIZE;
+        var ldx = hitWX - plWX;
+        var ldy = hitWY - plWY;
+        var ldist = Math.sqrt(ldx * ldx + ldy * ldy) / TILE_SIZE;
+        if (ldist < pl.radius) {
+          var falloff = 1 - (ldist / pl.radius);
+          falloff = falloff * falloff; // inverse-square-ish
+          var intensity = pl.intensity || 1;
+          if (pl.flicker) {
+            intensity *= (1 + Math.sin(now * pl.flicker + (pl.phase || 0)) * 0.3);
+          }
+          var contrib = falloff * intensity;
+          r = Math.min(255, r + ((pl.r || 255) * contrib * 0.3) | 0);
+          g = Math.min(255, g + ((pl.g || 200) * contrib * 0.3) | 0);
+          b = Math.min(255, b + ((pl.b || 150) * contrib * 0.3) | 0);
+        }
+      }
+    }
+
     r = (r * fogFactor) | 0;
     g = (g * fogFactor) | 0;
     b = (b * fogFactor) | 0;
@@ -188,22 +300,33 @@
     return 'rgb(' + r + ',' + g + ',' + b + ')';
   }
 
-  function renderDoorStrip(ctx, x, sw, drawStart, wallH, wallX, tile, side, dim) {
+  function renderDoorStrip(ctx, x, sw, drawStart, wallH, wallX, tile, side, dim, mapX, mapY) {
     var drawEnd = drawStart + wallH;
     var sideDim = side === 1 ? 0.72 : 1;
     var d = dim * sideDim;
 
+    // V4: Check for door style override
+    var doorStyle = 'wood';
+    if (mapX !== undefined && mapY !== undefined && engine.doorStyles) {
+      var dsKey = mapX + ',' + mapY;
+      if (engine.doorStyles[dsKey]) doorStyle = engine.doorStyles[dsKey];
+    }
+
     // Door base colors
     var doorR, doorG, doorB;
     var frameR, frameG, frameB;
-    if (tile === 6) {
-      // Exit door — dark green with gold frame
+    if (tile === 6 || doorStyle === 'emergency') {
+      // Exit / emergency door — dark green with gold frame
       doorR = 35; doorG = 80; doorB = 40;
       frameR = 140; frameG = 120; frameB = 50;
     } else if (tile === 9) {
       // Elevator — brushed metal
       doorR = 110; doorG = 115; doorB = 120;
       frameR = 80; frameG = 82; frameB = 85;
+    } else if (doorStyle === 'steel') {
+      // V4: Steel door — gray metal
+      doorR = 90; doorG = 95; doorB = 100;
+      frameR = 60; frameG = 62; frameB = 65;
     } else {
       // Regular door — rich dark wood
       doorR = 100; doorG = 55; doorB = 25;
@@ -243,6 +366,66 @@
     var pB = (doorB * d * grain) | 0;
     ctx.fillStyle = 'rgb(' + pR + ',' + pG + ',' + pB + ')';
     ctx.fillRect(x, topBorder, sw, bottomBorder - topBorder);
+
+    // V4: Steel door — rivets at corners, no panels
+    if (doorStyle === 'steel') {
+      // Rivets at corners
+      var rivetPositions = [0.12, 0.88];
+      for (var ri = 0; ri < rivetPositions.length; ri++) {
+        if (Math.abs(wallX - rivetPositions[ri]) < 0.03) {
+          var rivetY1 = drawStart + wallH * 0.08;
+          var rivetY2 = drawStart + wallH * 0.92;
+          var rivetSize = Math.max(1, wallH * 0.015);
+          var rvR = Math.min(255, ((doorR + 40) * d) | 0);
+          var rvG = Math.min(255, ((doorG + 40) * d) | 0);
+          var rvB = Math.min(255, ((doorB + 40) * d) | 0);
+          ctx.fillStyle = 'rgb(' + rvR + ',' + rvG + ',' + rvB + ')';
+          ctx.fillRect(x, rivetY1, sw, rivetSize);
+          ctx.fillRect(x, rivetY2, sw, rivetSize);
+        }
+      }
+      // Industrial handle at 80-85%
+      if (wallX > 0.78 && wallX < 0.87) {
+        var handleY = drawStart + wallH * 0.45;
+        var handleH = wallH * 0.12;
+        var hR = Math.min(255, ((doorR + 30) * d) | 0);
+        var hG = Math.min(255, ((doorG + 30) * d) | 0);
+        var hB = Math.min(255, ((doorB + 30) * d) | 0);
+        ctx.fillStyle = 'rgb(' + hR + ',' + hG + ',' + hB + ')';
+        ctx.fillRect(x, handleY, sw, handleH);
+      }
+      // Bottom frame
+      ctx.fillStyle = 'rgb(' + tR + ',' + tG + ',' + tB + ')';
+      ctx.fillRect(x, bottomBorder, sw, drawEnd - bottomBorder);
+      return;
+    }
+
+    // V4: Emergency door — EXIT text band + push bar
+    if (doorStyle === 'emergency' && tile !== 6) {
+      // EXIT text band at top 10-18%
+      if (wallX > 0.2 && wallX < 0.8) {
+        var exitTop = drawStart + wallH * 0.08;
+        var exitH = wallH * 0.1;
+        var exR = (200 * d) | 0;
+        var exG = (220 * d) | 0;
+        var exB = (200 * d) | 0;
+        ctx.fillStyle = 'rgb(' + exR + ',' + exG + ',' + exB + ')';
+        ctx.fillRect(x, exitTop, sw, exitH);
+      }
+      // Push bar at 55-60%
+      if (wallX > 0.15 && wallX < 0.85) {
+        var barY = drawStart + wallH * 0.55;
+        var barH = wallH * 0.04;
+        var bR = (160 * d) | 0;
+        var bG = (160 * d) | 0;
+        var bB = (160 * d) | 0;
+        ctx.fillStyle = 'rgb(' + bR + ',' + bG + ',' + bB + ')';
+        ctx.fillRect(x, barY, sw, barH);
+      }
+      ctx.fillStyle = 'rgb(' + tR + ',' + tG + ',' + tB + ')';
+      ctx.fillRect(x, bottomBorder, sw, drawEnd - bottomBorder);
+      return;
+    }
 
     // Upper panel inset (decorative rectangle, top 15%-40%)
     var panelIn = wallX > 0.18 && wallX < 0.82;
@@ -461,12 +644,12 @@
 
       // --- Door rendering (tile 2, 6, 9) ---
       if (hitTile === 2 || hitTile === 6 || hitTile === 9) {
-        renderDoorStrip(ctx, screenX, stripWidth, drawStart, wallH, wallX, hitTile, side, totalDim);
+        renderDoorStrip(ctx, screenX, stripWidth, drawStart, wallH, wallX, hitTile, side, totalDim, mapX, mapY);
       } else {
         // Regular wall: upper wallpaper + dado rail + lower wainscoting
         var splitY = drawStart + wallH * 0.62;
-        var colorUpper = getWallColor(hitTile, side, correctedDist, false);
-        var colorLower = getWallColor(hitTile, side, correctedDist, true);
+        var colorUpper = getWallColor(hitTile, side, correctedDist, false, wallX, mapX, mapY);
+        var colorLower = getWallColor(hitTile, side, correctedDist, true, wallX, mapX, mapY);
 
         ctx.fillStyle = colorUpper;
         ctx.fillRect(screenX, drawStart, stripWidth, splitY - drawStart);
@@ -480,6 +663,164 @@
 
         ctx.fillStyle = colorLower;
         ctx.fillRect(screenX, splitY + railH, stripWidth, drawEnd - splitY - railH);
+      }
+    }
+
+    // ─── V2: Floor Casting ───
+    // For each column, for each pixel row below the wall bottom, calculate floor tile
+    var halfH = h / 2;
+    var floorColors = engine.floorColors;
+    var ceilingLights = engine.ceilingLights;
+    var pointLights = engine.pointLights;
+    var nowTime = typeof performance !== 'undefined' ? performance.now() / 1000 : 0;
+
+    for (var fi = 0; fi < numRays; fi++) {
+      var fScreenX = fi * stripWidth;
+      var fRayAngle = renderAngle - FOV / 2 + (fi / numRays) * FOV;
+      var fSinA = Math.sin(fRayAngle);
+      var fCosA = Math.cos(fRayAngle);
+      var cosCorrect = Math.cos(fRayAngle - renderAngle);
+
+      // Get the wall bottom for this column from z-buffer
+      var fWallDist = zBuffer[fScreenX];
+      var fWallH = (fWallDist < 999) ? (h / (fWallDist * cosCorrect)) : 0;
+      // Not using cosCorrect for wallH calc - use corrected dist already in zbuffer
+      fWallH = (fWallDist < 999) ? (h / fWallDist) : 0;
+      var fWallBottom = ((h + fWallH) / 2) | 0;
+      var fWallTop = ((h - fWallH) / 2) | 0;
+
+      // Floor: rows below wall bottom
+      var floorMaxY = Math.min(h, fWallBottom + (8 * h / 1)); // limit distance
+      for (var fy = fWallBottom; fy < h; fy += 2) { // every 2nd pixel row
+        var fRowDist = halfH / (fy - halfH);
+        if (fRowDist <= 0) continue;
+        var fDistTiles = fRowDist / cosCorrect;
+        if (fDistTiles > 8) break; // skip floor beyond 8 tiles
+
+        var fFloorX = playerX / ts + fCosA * fRowDist;
+        var fFloorY = playerY / ts + fSinA * fRowDist;
+        var fgx = Math.floor(fFloorX);
+        var fgy = Math.floor(fFloorY);
+
+        // Default: burgundy carpet
+        var fR = 60, fG = 25, fB = 22;
+        var fKey = fgy * 1000 + fgx;
+        if (floorColors && floorColors[fKey]) {
+          var fc = floorColors[fKey];
+          fR = fc.r; fG = fc.g; fB = fc.b;
+        }
+
+        // Checkerboard subtle pattern for tile floors
+        if (floorColors && floorColors[fKey] && floorColors[fKey].checker) {
+          if ((fgx + fgy) % 2 === 0) {
+            fR = (fR * 0.9) | 0; fG = (fG * 0.9) | 0; fB = (fB * 0.9) | 0;
+          }
+        }
+
+        // Distance fog
+        var fFog = Math.max(0.05, 1 - fDistTiles / 12);
+
+        // V5: Point light on floor
+        if (pointLights && pointLights.length > 0) {
+          var flWX = fFloorX * ts;
+          var flWY = fFloorY * ts;
+          for (var fli = 0; fli < pointLights.length; fli++) {
+            var fpl = pointLights[fli];
+            var fplWX = (fpl.gx + 0.5) * ts;
+            var fplWY = (fpl.gy + 0.5) * ts;
+            var fldx = flWX - fplWX;
+            var fldy = flWY - fplWY;
+            var fldist = Math.sqrt(fldx * fldx + fldy * fldy) / ts;
+            if (fldist < fpl.radius) {
+              var fFalloff = 1 - (fldist / fpl.radius);
+              fFalloff = fFalloff * fFalloff;
+              var fIntensity = fpl.intensity || 1;
+              if (fpl.flicker) {
+                fIntensity *= (1 + Math.sin(nowTime * fpl.flicker + (fpl.phase || 0)) * 0.3);
+              }
+              var fContrib = fFalloff * fIntensity;
+              fR = Math.min(255, fR + ((fpl.r || 255) * fContrib * 0.25) | 0);
+              fG = Math.min(255, fG + ((fpl.g || 200) * fContrib * 0.25) | 0);
+              fB = Math.min(255, fB + ((fpl.b || 150) * fContrib * 0.25) | 0);
+            }
+          }
+        }
+
+        fR = (fR * fFog) | 0;
+        fG = (fG * fFog) | 0;
+        fB = (fB * fFog) | 0;
+
+        ctx.fillStyle = 'rgb(' + fR + ',' + fG + ',' + fB + ')';
+        ctx.fillRect(fScreenX, fy, stripWidth, 2);
+      }
+
+      // ─── V3: Ceiling Casting ───
+      for (var cy = fWallTop; cy >= 0; cy -= 2) {
+        var cRowDist = halfH / (halfH - cy);
+        if (cRowDist <= 0) continue;
+        var cDistTiles = cRowDist / cosCorrect;
+        if (cDistTiles > 8) break;
+
+        var cFloorX = playerX / ts + fCosA * cRowDist;
+        var cFloorY = playerY / ts + fSinA * cRowDist;
+        var cgx = Math.floor(cFloorX);
+        var cgy = Math.floor(cFloorY);
+
+        // Default ceiling: dark warm tone
+        var cR = 30, cG = 24, cB = 20;
+
+        // V3: Ceiling lights
+        if (ceilingLights && ceilingLights.length > 0) {
+          for (var cli = 0; cli < ceilingLights.length; cli++) {
+            var cl = ceilingLights[cli];
+            var cldx = cFloorX - (cl.gx + 0.5);
+            var cldy = cFloorY - (cl.gy + 0.5);
+            var clDist = Math.sqrt(cldx * cldx + cldy * cldy);
+            var clRadius = cl.radius || 1.5;
+            if (clDist < clRadius) {
+              var clFall = 1 - (clDist / clRadius);
+              clFall = clFall * clFall;
+              var flkr = 1;
+              if (cl.flickerRate) {
+                flkr = 0.7 + Math.sin(nowTime * cl.flickerRate + cgx * 3.7) * 0.3;
+              }
+              var lightAdd = clFall * flkr;
+              cR = Math.min(255, cR + (225 * lightAdd) | 0);
+              cG = Math.min(255, cG + (210 * lightAdd) | 0);
+              cB = Math.min(255, cB + (170 * lightAdd) | 0);
+            }
+          }
+        }
+
+        // Point lights on ceiling
+        if (pointLights && pointLights.length > 0) {
+          for (var cpli = 0; cpli < pointLights.length; cpli++) {
+            var cpl = pointLights[cpli];
+            var cpldx = cFloorX - (cpl.gx + 0.5);
+            var cpldy = cFloorY - (cpl.gy + 0.5);
+            var cpldist = Math.sqrt(cpldx * cpldx + cpldy * cpldy);
+            if (cpldist < cpl.radius) {
+              var cplFall = 1 - (cpldist / cpl.radius);
+              cplFall = cplFall * cplFall;
+              var cplInt = (cpl.intensity || 1) * 0.15;
+              if (cpl.flicker) {
+                cplInt *= (1 + Math.sin(nowTime * cpl.flicker + (cpl.phase || 0)) * 0.3);
+              }
+              var cplContrib = cplFall * cplInt;
+              cR = Math.min(255, cR + ((cpl.r || 255) * cplContrib) | 0);
+              cG = Math.min(255, cG + ((cpl.g || 200) * cplContrib) | 0);
+              cB = Math.min(255, cB + ((cpl.b || 150) * cplContrib) | 0);
+            }
+          }
+        }
+
+        var cFog = Math.max(0.05, 1 - cDistTiles / 12);
+        cR = (cR * cFog) | 0;
+        cG = (cG * cFog) | 0;
+        cB = (cB * cFog) | 0;
+
+        ctx.fillStyle = 'rgb(' + cR + ',' + cG + ',' + cB + ')';
+        ctx.fillRect(fScreenX, cy, stripWidth, 2);
       }
     }
 
@@ -671,6 +1012,59 @@
   }
 
   // ───────────────────────────────────────────────
+  // V7: Particle system renderer
+  // ───────────────────────────────────────────────
+  function renderParticles() {
+    if (particles.length === 0) return;
+    var ctx = engine.ctx;
+    var w = engine.width;
+    var h = engine.height;
+    var ts = TILE_SIZE;
+    var renderAngle = playerAngle + shakeOffsetX * 0.01;
+    var cosA = Math.cos(-renderAngle);
+    var sinA = Math.sin(-renderAngle);
+    var zBuf = engine._zBuffer;
+
+    ctx.save();
+    for (var pi = 0; pi < particles.length; pi++) {
+      var p = particles[pi];
+      var dx = p.x - playerX;
+      var dy = p.y - playerY;
+      var tX = dx * cosA - dy * sinA;
+      var tY = dx * sinA + dy * cosA;
+      if (tY <= 0.5) continue;
+
+      var depthInTiles = tY / ts;
+      if (depthInTiles > 10) continue;
+
+      var screenX = (w / 2) * (1 + tX / tY);
+      var screenY = h / 2; // particles float at mid-height
+      var size = Math.max(1, (p.size || 2) * (h / tY) * 0.02);
+
+      var col = Math.round(screenX);
+      if (col < 0 || col >= w) continue;
+      if (zBuf && zBuf[col] < depthInTiles) continue;
+
+      var fogFactor = Math.max(0, 1 - depthInTiles / 12);
+      var lifeRatio = p.life / p.maxLife;
+      ctx.globalAlpha = fogFactor * lifeRatio * 0.6;
+
+      if (p.type === 'dust') {
+        ctx.fillStyle = 'rgba(200,190,170,1)';
+      } else if (p.type === 'fog') {
+        ctx.fillStyle = 'rgba(120,120,130,1)';
+        size *= 3;
+      } else if (p.type === 'spark') {
+        ctx.fillStyle = 'rgba(255,220,80,1)';
+      } else {
+        ctx.fillStyle = 'rgba(180,180,180,1)';
+      }
+      ctx.fillRect(screenX - size / 2, screenY - size / 2, size, size);
+    }
+    ctx.restore();
+  }
+
+  // ───────────────────────────────────────────────
   // The Engine
   // ───────────────────────────────────────────────
   var engine = {
@@ -717,6 +1111,29 @@
     running: false,
     paused: false,
 
+    // ── V1: Blood stain tiles ──
+    bloodTiles: {},
+
+    // ── V2: Floor colors per tile ──
+    floorColors: {},
+
+    // ── V3: Ceiling lights ──
+    ceilingLights: [],
+
+    // ── V4: Door styles ──
+    doorStyles: {},
+
+    // ── V5: Point lights ──
+    pointLights: [],
+
+    // ── V6: Post-effect settings ──
+    grainIntensity: 0.3,
+    chromaticLevel: 0,
+    vignetteIntensity: 0.3,
+
+    // ── V7: Particle API ──
+    particles: particles,
+
     // ─────────────────────────────────────────────
     // First-person camera API
     // ─────────────────────────────────────────────
@@ -728,6 +1145,74 @@
 
     getPlayerAngle: function () {
       return playerAngle;
+    },
+
+    // ── V5: Point light management ──
+    addPointLight: function (id, gx, gy, opts) {
+      opts = opts || {};
+      // Remove existing with same id
+      this.removePointLight(id);
+      this.pointLights.push({
+        id: id,
+        gx: gx,
+        gy: gy,
+        radius: opts.radius || 4,
+        r: opts.r || 255,
+        g: opts.g || 200,
+        b: opts.b || 150,
+        intensity: opts.intensity || 1,
+        flicker: opts.flicker || 0,
+        phase: opts.phase || 0
+      });
+    },
+
+    removePointLight: function (id) {
+      for (var i = this.pointLights.length - 1; i >= 0; i--) {
+        if (this.pointLights[i].id === id) {
+          this.pointLights.splice(i, 1);
+        }
+      }
+    },
+
+    // ── V7: Particle system API ──
+    addParticle: function (type, wx, wy) {
+      if (particles.length >= MAX_PARTICLES) return;
+      var p = { x: wx, y: wy, vx: 0, vy: 0, life: 0, maxLife: 2, type: type, size: 2 };
+      if (type === 'dust') {
+        p.vx = (Math.random() - 0.5) * 5;
+        p.vy = (Math.random() - 0.5) * 5;
+        p.maxLife = 3 + Math.random() * 3;
+        p.size = 1;
+      } else if (type === 'fog') {
+        p.vx = (Math.random() - 0.5) * 8;
+        p.vy = (Math.random() - 0.5) * 8;
+        p.maxLife = 4 + Math.random() * 4;
+        p.size = 4;
+      } else if (type === 'spark') {
+        p.vx = (Math.random() - 0.5) * 40;
+        p.vy = (Math.random() - 0.5) * 40;
+        p.maxLife = 0.3 + Math.random() * 0.3;
+        p.size = 2;
+      }
+      p.life = p.maxLife;
+      particles.push(p);
+    },
+
+    updateParticles: function (dt) {
+      for (var i = particles.length - 1; i >= 0; i--) {
+        var p = particles[i];
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.life -= dt;
+        if (p.life <= 0) {
+          particles.splice(i, 1);
+        }
+      }
+    },
+
+    // ── V7: Render particles (called from game render pipeline) ──
+    drawParticles: function () {
+      renderParticles();
     },
 
     // ─────────────────────────────────────────────
@@ -1355,6 +1840,44 @@
         case 'hit':
           this._playHit(now);
           break;
+        // S2: Environmental sounds
+        case 'pipe_creak':
+          this._playPipeCreak(now);
+          break;
+        case 'glass_rattle':
+          this._playGlassRattle(now);
+          break;
+        case 'clock_tick':
+          this._playClockTick(now);
+          break;
+        case 'elevator_hum':
+          this._playElevatorHum(now);
+          break;
+        case 'item_get':
+          this._playItemGet(now);
+          break;
+        case 'paper':
+          this._playPaper(now);
+          break;
+        case 'key_unlock':
+          this._playKeyUnlock(now);
+          break;
+        // S4: Horror stingers and whispers
+        case 'stinger':
+          this._playStinger(now);
+          break;
+        case 'whisper':
+          this._playWhisper(now);
+          break;
+        case 'lullaby':
+          this._playLullaby(now);
+          break;
+        case 'tinnitus':
+          this._playTinnitus(now);
+          break;
+        case 'thunder':
+          this._playThunder(now);
+          break;
       }
     },
 
@@ -1366,7 +1889,11 @@
 
       switch (type) {
         case 'ambient':
-          activeLoops[type] = this._startAmbientLoop();
+          // S1: Start layered BGM system instead of simple drone
+          this._startLayeredBGM();
+          activeLoops[type] = {
+            stop: function () { engine._stopLayeredBGM(); }
+          };
           break;
         case 'heartbeat':
           activeLoops[type] = this._startHeartbeatLoop();
@@ -1406,6 +1933,7 @@
       Object.keys(activeLoops).forEach(function (type) {
         self.stopLoop(type);
       });
+      this.stopEnemyFootsteps();
     },
 
     setMasterVolume: function (vol) {
@@ -1683,6 +2211,297 @@
       src.start(now);
     },
 
+    // ── S2: Environmental sounds ──
+
+    _playPipeCreak: function (now) {
+      var dest = seGain || masterGain;
+      var bufferSize = (audioCtx.sampleRate * 1.5) | 0;
+      var buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      var data = buffer.getChannelData(0);
+      for (var i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1);
+      }
+      var src = audioCtx.createBufferSource();
+      src.buffer = buffer;
+      var bp = audioCtx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.setValueAtTime(800, now);
+      bp.frequency.linearRampToValueAtTime(1200, now + 0.7);
+      bp.frequency.linearRampToValueAtTime(900, now + 1.5);
+      bp.Q.value = 8;
+      var gain = audioCtx.createGain();
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.15, now + 0.3);
+      gain.gain.linearRampToValueAtTime(0.12, now + 0.8);
+      gain.gain.linearRampToValueAtTime(0, now + 1.5);
+      src.connect(bp);
+      bp.connect(gain);
+      gain.connect(dest);
+      src.start(now);
+      src.stop(now + 1.6);
+    },
+
+    _playGlassRattle: function (now) {
+      var dest = seGain || masterGain;
+      var rattles = 3 + ((Math.random() * 2) | 0);
+      for (var ri = 0; ri < rattles; ri++) {
+        var offset = ri * (0.08 + Math.random() * 0.04);
+        var bufLen = (audioCtx.sampleRate * 0.05) | 0;
+        var buf = audioCtx.createBuffer(1, bufLen, audioCtx.sampleRate);
+        var d = buf.getChannelData(0);
+        for (var j = 0; j < bufLen; j++) {
+          d[j] = (Math.random() * 2 - 1) * Math.exp(-j / audioCtx.sampleRate * 60);
+        }
+        var s = audioCtx.createBufferSource();
+        s.buffer = buf;
+        var hp = audioCtx.createBiquadFilter();
+        hp.type = 'highpass';
+        hp.frequency.value = 2000;
+        var g = audioCtx.createGain();
+        g.gain.value = 0.12;
+        s.connect(hp);
+        hp.connect(g);
+        g.connect(dest);
+        s.start(now + offset);
+      }
+    },
+
+    _playClockTick: function (now) {
+      var dest = seGain || masterGain;
+      var osc = audioCtx.createOscillator();
+      var gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = 2000;
+      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.02);
+      osc.connect(gain);
+      gain.connect(dest);
+      osc.start(now);
+      osc.stop(now + 0.03);
+    },
+
+    _playElevatorHum: function (now) {
+      var dest = seGain || masterGain;
+      var gain = audioCtx.createGain();
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.15, now + 1);
+      gain.gain.setValueAtTime(0.15, now + 3);
+      gain.gain.linearRampToValueAtTime(0, now + 4);
+      var osc1 = audioCtx.createOscillator();
+      osc1.type = 'triangle';
+      osc1.frequency.value = 30;
+      osc1.connect(gain);
+      var osc2 = audioCtx.createOscillator();
+      osc2.type = 'triangle';
+      osc2.frequency.value = 60;
+      var g2 = audioCtx.createGain();
+      g2.gain.value = 0.5;
+      osc2.connect(g2);
+      g2.connect(gain);
+      gain.connect(dest);
+      osc1.start(now);
+      osc2.start(now);
+      osc1.stop(now + 4.1);
+      osc2.stop(now + 4.1);
+    },
+
+    _playItemGet: function (now) {
+      var dest = seGain || masterGain;
+      var osc = audioCtx.createOscillator();
+      var gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(400, now);
+      osc.frequency.exponentialRampToValueAtTime(800, now + 0.2);
+      gain.gain.setValueAtTime(0.25, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+      osc.connect(gain);
+      gain.connect(dest);
+      osc.start(now);
+      osc.stop(now + 0.35);
+      // Octave harmonic
+      var osc2 = audioCtx.createOscillator();
+      var g2 = audioCtx.createGain();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(800, now);
+      osc2.frequency.exponentialRampToValueAtTime(1600, now + 0.2);
+      g2.gain.setValueAtTime(0.12, now);
+      g2.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+      osc2.connect(g2);
+      g2.connect(dest);
+      osc2.start(now);
+      osc2.stop(now + 0.3);
+    },
+
+    _playPaper: function (now) {
+      var dest = seGain || masterGain;
+      var bufLen = (audioCtx.sampleRate * 0.1) | 0;
+      var buf = audioCtx.createBuffer(1, bufLen, audioCtx.sampleRate);
+      var d = buf.getChannelData(0);
+      for (var i = 0; i < bufLen; i++) {
+        var t = i / audioCtx.sampleRate;
+        var env = Math.sin(t / 0.1 * Math.PI);
+        d[i] = (Math.random() * 2 - 1) * env;
+      }
+      var src = audioCtx.createBufferSource();
+      src.buffer = buf;
+      var bp = audioCtx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = 1500;
+      bp.Q.value = 3;
+      var gain = audioCtx.createGain();
+      gain.gain.value = 0.2;
+      src.connect(bp);
+      bp.connect(gain);
+      gain.connect(dest);
+      src.start(now);
+    },
+
+    _playKeyUnlock: function (now) {
+      var dest = seGain || masterGain;
+      // 3 clicks
+      for (var ki = 0; ki < 3; ki++) {
+        var offset = ki * 0.08;
+        var osc = audioCtx.createOscillator();
+        var g = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = 3000;
+        g.gain.setValueAtTime(0.2, now + offset);
+        g.gain.exponentialRampToValueAtTime(0.001, now + offset + 0.01);
+        osc.connect(g);
+        g.connect(dest);
+        osc.start(now + offset);
+        osc.stop(now + offset + 0.015);
+      }
+      // Final clunk
+      var clunk = audioCtx.createOscillator();
+      var cg = audioCtx.createGain();
+      clunk.type = 'sine';
+      clunk.frequency.value = 200;
+      cg.gain.setValueAtTime(0.3, now + 0.28);
+      cg.gain.exponentialRampToValueAtTime(0.001, now + 0.33);
+      clunk.connect(cg);
+      cg.connect(dest);
+      clunk.start(now + 0.28);
+      clunk.stop(now + 0.35);
+    },
+
+    // ── S4: Horror stingers and whispers ──
+
+    _playStinger: function (now) {
+      var dest = seGain || masterGain;
+      for (var si = 0; si < 6; si++) {
+        var osc = audioCtx.createOscillator();
+        var g = audioCtx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.value = 200 + Math.random() * 400;
+        g.gain.setValueAtTime(0.7, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+        osc.connect(g);
+        g.connect(dest);
+        osc.start(now);
+        osc.stop(now + 0.55);
+      }
+    },
+
+    _playWhisper: function (now) {
+      var dest = seGain || masterGain;
+      var bufLen = (audioCtx.sampleRate * 2) | 0;
+      var buf = audioCtx.createBuffer(1, bufLen, audioCtx.sampleRate);
+      var d = buf.getChannelData(0);
+      for (var i = 0; i < bufLen; i++) {
+        var t = i / audioCtx.sampleRate;
+        // Amplitude modulated at 4Hz to simulate syllables
+        var am = 0.5 + 0.5 * Math.sin(t * 4 * Math.PI * 2);
+        d[i] = (Math.random() * 2 - 1) * am;
+      }
+      var src = audioCtx.createBufferSource();
+      src.buffer = buf;
+      var bp = audioCtx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = 800;
+      bp.Q.value = 5;
+      var gain = audioCtx.createGain();
+      gain.gain.value = 0.15;
+      src.connect(bp);
+      bp.connect(gain);
+      gain.connect(dest);
+      src.start(now);
+    },
+
+    _playLullaby: function (now) {
+      var dest = seGain || masterGain;
+      // C4, E4, G4, E4, C4
+      var notes = [261.63, 329.63, 392.00, 329.63, 261.63];
+      for (var li = 0; li < notes.length; li++) {
+        var offset = li * 0.4;
+        var osc = audioCtx.createOscillator();
+        var g = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = notes[li] * 0.98; // detuned -20 cents approx
+        // Vibrato: 5Hz LFO on frequency
+        var lfo = audioCtx.createOscillator();
+        var lfoG = audioCtx.createGain();
+        lfo.type = 'sine';
+        lfo.frequency.value = 5;
+        lfoG.gain.value = notes[li] * 0.01;
+        lfo.connect(lfoG);
+        lfoG.connect(osc.frequency);
+        g.gain.setValueAtTime(0.1, now + offset);
+        g.gain.exponentialRampToValueAtTime(0.001, now + offset + 0.4);
+        // Simple delay for reverb effect
+        var delay = audioCtx.createDelay();
+        delay.delayTime.value = 0.15;
+        var delayG = audioCtx.createGain();
+        delayG.gain.value = 0.3;
+        osc.connect(g);
+        g.connect(dest);
+        g.connect(delay);
+        delay.connect(delayG);
+        delayG.connect(dest);
+        osc.start(now + offset);
+        lfo.start(now + offset);
+        osc.stop(now + offset + 0.5);
+        lfo.stop(now + offset + 0.5);
+      }
+    },
+
+    _playTinnitus: function (now) {
+      var dest = seGain || masterGain;
+      var osc = audioCtx.createOscillator();
+      var gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = 8000;
+      gain.gain.setValueAtTime(0.1, now);
+      gain.gain.setValueAtTime(0.1, now + 2);
+      gain.gain.linearRampToValueAtTime(0, now + 3);
+      osc.connect(gain);
+      gain.connect(dest);
+      osc.start(now);
+      osc.stop(now + 3.1);
+    },
+
+    _playThunder: function (now) {
+      var dest = seGain || masterGain;
+      var bufLen = (audioCtx.sampleRate * 2) | 0;
+      var buf = audioCtx.createBuffer(1, bufLen, audioCtx.sampleRate);
+      var d = buf.getChannelData(0);
+      for (var i = 0; i < bufLen; i++) {
+        var t = i / audioCtx.sampleRate;
+        d[i] = (Math.random() * 2 - 1) * Math.exp(-t * 2);
+      }
+      var src = audioCtx.createBufferSource();
+      src.buffer = buf;
+      var lp = audioCtx.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.value = 400;
+      var gain = audioCtx.createGain();
+      gain.gain.value = 0.6;
+      src.connect(lp);
+      lp.connect(gain);
+      gain.connect(dest);
+      src.start(now);
+    },
+
     _playTextBlip: function (now) {
       var dest = seGain || masterGain;
       var osc = audioCtx.createOscillator();
@@ -1783,6 +2602,314 @@
       gain.connect(bgmGain || masterGain);
       src.start();
       return { nodes: [src], gain: gain };
+    },
+
+    // ─────────────────────────────────────────────
+    // S1: Layered BGM System
+    // ─────────────────────────────────────────────
+    _bgmLayers: bgmLayerGains,
+
+    setBGMLayers: function (obj) {
+      if (obj.drone !== undefined) bgmLayerGains.drone = obj.drone;
+      if (obj.dissonance !== undefined) bgmLayerGains.dissonance = obj.dissonance;
+      if (obj.melody !== undefined) bgmLayerGains.melody = obj.melody;
+      if (obj.pulse !== undefined) bgmLayerGains.pulse = obj.pulse;
+      // Apply to live nodes
+      if (bgmLayerNodes) {
+        if (bgmLayerNodes.droneGain) bgmLayerNodes.droneGain.gain.setTargetAtTime(bgmLayerGains.drone, audioCtx.currentTime, 0.3);
+        if (bgmLayerNodes.dissonanceGain) bgmLayerNodes.dissonanceGain.gain.setTargetAtTime(bgmLayerGains.dissonance, audioCtx.currentTime, 0.3);
+        if (bgmLayerNodes.melodyGain) bgmLayerNodes.melodyGain.gain.setTargetAtTime(bgmLayerGains.melody, audioCtx.currentTime, 0.3);
+        if (bgmLayerNodes.pulseGain) bgmLayerNodes.pulseGain.gain.setTargetAtTime(bgmLayerGains.pulse, audioCtx.currentTime, 0.3);
+      }
+    },
+
+    _startLayeredBGM: function () {
+      if (!audioCtx) return;
+      var dest = bgmGain || masterGain;
+      var now = audioCtx.currentTime;
+      bgmLayerNodes = {};
+
+      // Drone layer: low sine (35Hz) + triangle (55Hz)
+      var droneOsc1 = audioCtx.createOscillator();
+      droneOsc1.type = 'sine';
+      droneOsc1.frequency.value = 35;
+      var droneOsc2 = audioCtx.createOscillator();
+      droneOsc2.type = 'triangle';
+      droneOsc2.frequency.value = 55;
+      var droneG = audioCtx.createGain();
+      droneG.gain.value = bgmLayerGains.drone;
+      droneOsc1.connect(droneG);
+      droneOsc2.connect(droneG);
+      droneG.connect(dest);
+      droneOsc1.start(now);
+      droneOsc2.start(now);
+      bgmLayerNodes.droneGain = droneG;
+      bgmLayerNodes.droneNodes = [droneOsc1, droneOsc2];
+
+      // Dissonance layer: detuned oscillator pair (220Hz ± 3Hz)
+      var disOsc1 = audioCtx.createOscillator();
+      disOsc1.type = 'sine';
+      disOsc1.frequency.value = 217;
+      var disOsc2 = audioCtx.createOscillator();
+      disOsc2.type = 'sine';
+      disOsc2.frequency.value = 223;
+      var disG = audioCtx.createGain();
+      disG.gain.value = bgmLayerGains.dissonance;
+      disOsc1.connect(disG);
+      disOsc2.connect(disG);
+      disG.connect(dest);
+      disOsc1.start(now);
+      disOsc2.start(now);
+      bgmLayerNodes.dissonanceGain = disG;
+      bgmLayerNodes.dissonanceNodes = [disOsc1, disOsc2];
+
+      // Melody layer: quiet single notes [C3, Eb3, G3, B3] with long gaps
+      var melodyG = audioCtx.createGain();
+      melodyG.gain.value = bgmLayerGains.melody;
+      melodyG.connect(dest);
+      bgmLayerNodes.melodyGain = melodyG;
+      var melodyNotes = [130.81, 155.56, 196.00, 246.94]; // C3, Eb3, G3, B3
+      var self = this;
+      bgmMelodyIndex = 0;
+      function playNextMelodyNote() {
+        if (!bgmLayerNodes) return;
+        if (audioCtx.state !== 'running') {
+          bgmMelodyTimer = setTimeout(playNextMelodyNote, 2000);
+          return;
+        }
+        var t = audioCtx.currentTime;
+        var osc = audioCtx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.value = melodyNotes[bgmMelodyIndex % melodyNotes.length];
+        var noteG = audioCtx.createGain();
+        noteG.gain.setValueAtTime(0.15, t);
+        noteG.gain.exponentialRampToValueAtTime(0.001, t + 3);
+        osc.connect(noteG);
+        noteG.connect(melodyG);
+        osc.start(t);
+        osc.stop(t + 3.1);
+        bgmMelodyIndex++;
+        var gap = 8000 + Math.random() * 4000;
+        bgmMelodyTimer = setTimeout(playNextMelodyNote, gap);
+      }
+      bgmMelodyTimer = setTimeout(playNextMelodyNote, 3000);
+      bgmLayerNodes.melodyTimer = bgmMelodyTimer;
+
+      // Pulse layer: rhythmic sine at 60Hz synced to ~90 BPM
+      var pulseG = audioCtx.createGain();
+      pulseG.gain.value = bgmLayerGains.pulse;
+      pulseG.connect(dest);
+      bgmLayerNodes.pulseGain = pulseG;
+      var pulseInterval = 60000 / 90; // ms per beat
+      function playPulseBeat() {
+        if (!bgmLayerNodes) return;
+        if (audioCtx.state !== 'running') return;
+        var t = audioCtx.currentTime;
+        var osc = audioCtx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.value = 60;
+        var pg = audioCtx.createGain();
+        pg.gain.setValueAtTime(0.4, t);
+        pg.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+        osc.connect(pg);
+        pg.connect(pulseG);
+        osc.start(t);
+        osc.stop(t + 0.2);
+      }
+      bgmLayerNodes.pulseInterval = setInterval(playPulseBeat, pulseInterval);
+    },
+
+    _stopLayeredBGM: function () {
+      if (!bgmLayerNodes) return;
+      if (bgmLayerNodes.droneNodes) {
+        bgmLayerNodes.droneNodes.forEach(function (n) { try { n.stop(); n.disconnect(); } catch (e) {} });
+      }
+      if (bgmLayerNodes.dissonanceNodes) {
+        bgmLayerNodes.dissonanceNodes.forEach(function (n) { try { n.stop(); n.disconnect(); } catch (e) {} });
+      }
+      if (bgmLayerNodes.droneGain) try { bgmLayerNodes.droneGain.disconnect(); } catch (e) {}
+      if (bgmLayerNodes.dissonanceGain) try { bgmLayerNodes.dissonanceGain.disconnect(); } catch (e) {}
+      if (bgmLayerNodes.melodyGain) try { bgmLayerNodes.melodyGain.disconnect(); } catch (e) {}
+      if (bgmLayerNodes.pulseGain) try { bgmLayerNodes.pulseGain.disconnect(); } catch (e) {}
+      if (bgmLayerNodes.melodyTimer) clearTimeout(bgmLayerNodes.melodyTimer);
+      if (bgmMelodyTimer) clearTimeout(bgmMelodyTimer);
+      if (bgmLayerNodes.pulseInterval) clearInterval(bgmLayerNodes.pulseInterval);
+      bgmLayerNodes = null;
+    },
+
+    // ─────────────────────────────────────────────
+    // S3: Spatial/Positional Audio
+    // ─────────────────────────────────────────────
+    playPositionalSound: function (type, wx, wy) {
+      if (!audioCtx || audioCtx.state !== 'running') return;
+      var dx = wx - playerX;
+      var dy = wy - playerY;
+      var dist = Math.sqrt(dx * dx + dy * dy);
+      var maxDist = TILE_SIZE * 10;
+      var vol = Math.max(0, 1 - dist / maxDist);
+      if (vol <= 0) return;
+
+      // Calculate panning: angle to source relative to player facing
+      var angleToSource = Math.atan2(dy, dx);
+      var relAngle = angleToSource - playerAngle;
+      // Normalize to -PI..PI
+      while (relAngle > Math.PI) relAngle -= Math.PI * 2;
+      while (relAngle < -Math.PI) relAngle += Math.PI * 2;
+      var pan = Math.sin(relAngle); // -1 (left) to 1 (right)
+
+      // Create panner and gain for positional audio
+      var panner = audioCtx.createStereoPanner();
+      panner.pan.value = Math.max(-1, Math.min(1, pan));
+      var posGain = audioCtx.createGain();
+      posGain.gain.value = vol;
+
+      // Temporarily redirect seGain output through positional nodes
+      var origDest = seGain || masterGain;
+      // We play the sound with custom routing
+      var now = audioCtx.currentTime;
+      this._playPositionalSoundInternal(type, now, panner, posGain, origDest);
+    },
+
+    _playPositionalSoundInternal: function (type, now, panner, posGain, dest) {
+      // Route: sound → posGain → panner → dest
+      posGain.connect(panner);
+      panner.connect(dest);
+
+      switch (type) {
+        case 'footstep': {
+          var bufferSize = (audioCtx.sampleRate * 0.05) | 0;
+          var buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+          var data = buffer.getChannelData(0);
+          for (var i = 0; i < bufferSize; i++) {
+            var t = i / audioCtx.sampleRate;
+            data[i] = (Math.random() * 2 - 1) * Math.exp(-t * 80) * 0.3;
+          }
+          var src = audioCtx.createBufferSource();
+          src.buffer = buffer;
+          src.connect(posGain);
+          src.start(now);
+          break;
+        }
+        case 'knock': {
+          for (var ki = 0; ki < 3; ki++) {
+            var offset = ki * 0.12;
+            var bufLen = (audioCtx.sampleRate * 0.04) | 0;
+            var buf = audioCtx.createBuffer(1, bufLen, audioCtx.sampleRate);
+            var d = buf.getChannelData(0);
+            for (var j = 0; j < bufLen; j++) {
+              var tk = j / audioCtx.sampleRate;
+              d[j] = (Math.random() * 2 - 1) * Math.exp(-tk * 120) * 0.6;
+            }
+            var ks = audioCtx.createBufferSource();
+            ks.buffer = buf;
+            ks.connect(posGain);
+            ks.start(now + offset);
+          }
+          break;
+        }
+        default: {
+          // For other types, play through positional routing
+          // Create a temporary gain to intercept
+          var tmpG = audioCtx.createGain();
+          tmpG.gain.value = 1;
+          tmpG.connect(posGain);
+          // Play the regular sound but swap dest
+          var savedSeGain = seGain;
+          // Simple approach: just play the sound normally via seGain since
+          // complex re-routing is error-prone. Apply volume reduction instead.
+          this.playSound(type);
+          break;
+        }
+      }
+    },
+
+    // ─────────────────────────────────────────────
+    // S5: Haruki (enemy) footstep system
+    // ─────────────────────────────────────────────
+    startEnemyFootsteps: function (interval) {
+      this.stopEnemyFootsteps();
+      var self = this;
+      interval = interval || 600;
+      enemyFootstepInterval = setInterval(function () {
+        if (!audioCtx || audioCtx.state !== 'running') return;
+        self._playEnemyFootstep();
+      }, interval);
+    },
+
+    stopEnemyFootsteps: function () {
+      if (enemyFootstepInterval) {
+        clearInterval(enemyFootstepInterval);
+        enemyFootstepInterval = null;
+      }
+    },
+
+    setEnemyFootstepPosition: function (wx, wy) {
+      enemyFootstepWX = wx;
+      enemyFootstepWY = wy;
+    },
+
+    setFootstepSurface: function (type) {
+      footstepSurface = type || 'carpet';
+    },
+
+    _playEnemyFootstep: function () {
+      if (!audioCtx || audioCtx.state !== 'running') return;
+      var now = audioCtx.currentTime;
+
+      // Calculate positional audio
+      var dx = enemyFootstepWX - playerX;
+      var dy = enemyFootstepWY - playerY;
+      var dist = Math.sqrt(dx * dx + dy * dy);
+      var maxDist = TILE_SIZE * 10;
+      var vol = Math.max(0, 1 - dist / maxDist);
+      if (vol <= 0) return;
+
+      var angleToSource = Math.atan2(dy, dx);
+      var relAngle = angleToSource - playerAngle;
+      while (relAngle > Math.PI) relAngle -= Math.PI * 2;
+      while (relAngle < -Math.PI) relAngle += Math.PI * 2;
+      var pan = Math.sin(relAngle);
+
+      var panner = audioCtx.createStereoPanner();
+      panner.pan.value = Math.max(-1, Math.min(1, pan));
+
+      // Heavier footstep: slower attack, lower pitch (40Hz→200Hz noise burst)
+      var bufLen = (audioCtx.sampleRate * 0.1) | 0;
+      var buf = audioCtx.createBuffer(1, bufLen, audioCtx.sampleRate);
+      var d = buf.getChannelData(0);
+      for (var i = 0; i < bufLen; i++) {
+        var t = i / audioCtx.sampleRate;
+        d[i] = (Math.random() * 2 - 1) * Math.exp(-t * 30) * 0.5;
+      }
+      var src = audioCtx.createBufferSource();
+      src.buffer = buf;
+
+      var gain = audioCtx.createGain();
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(vol * 0.3, now + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+
+      // Surface filter
+      var filter = audioCtx.createBiquadFilter();
+      if (footstepSurface === 'carpet') {
+        filter.type = 'lowpass';
+        filter.frequency.value = 400;
+      } else if (footstepSurface === 'metal') {
+        filter.type = 'peaking';
+        filter.frequency.value = 1000;
+        filter.Q.value = 3;
+        filter.gain.value = 6;
+      } else {
+        // tile — no filter, bright
+        filter.type = 'allpass';
+        filter.frequency.value = 1000;
+      }
+
+      src.connect(filter);
+      filter.connect(gain);
+      gain.connect(panner);
+      panner.connect(seGain || masterGain);
+      src.start(now);
     },
 
     // ─────────────────────────────────────────────
@@ -2041,11 +3168,39 @@
         this._drawStatic(ctx, staticIntensity);
       }
 
-      // Red flash
+      // V6: Film grain — subtle every frame
+      if (this.grainIntensity > 0) {
+        this._drawGrain(ctx, this.grainIntensity);
+      }
+
+      // Red flash — enhanced with noise spike
       if (redFlashAlpha > 0) {
         ctx.fillStyle = 'rgba(180,0,0,' + redFlashAlpha + ')';
         ctx.fillRect(0, 0, this.width, this.height);
+        // Chromatic burst during damage
+        if (redFlashAlpha > 0.3) {
+          this._drawGrain(ctx, redFlashAlpha * 0.5);
+        }
       }
+
+      // V6: Dynamic vignette
+      if (this.vignetteIntensity > 0) {
+        var w = this.width;
+        var h = this.height;
+        var grad = ctx.createRadialGradient(w / 2, h / 2, w * 0.25, w / 2, h / 2, w * 0.85);
+        grad.addColorStop(0, 'rgba(0,0,0,0)');
+        grad.addColorStop(1, 'rgba(0,0,0,' + this.vignetteIntensity + ')');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+      }
+
+      // V6: Chromatic aberration at edges
+      if (this.chromaticLevel > 0) {
+        this._drawChromaticAberration(ctx, this.chromaticLevel);
+      }
+
+      // V6: Scanlines (subtle)
+      this._drawScanlines(ctx);
 
       // Dialogue
       this._drawDialogue(ctx);
@@ -2066,6 +3221,81 @@
       }
       staticCtx.putImageData(id, 0, 0);
       ctx.drawImage(staticCanvas, 0, 0, this.width, this.height);
+    },
+
+    // V6: Subtle film grain overlay
+    _drawGrain: function (ctx, intensity) {
+      var sw = staticCanvas.width;
+      var sh = staticCanvas.height;
+      var id = staticCtx.createImageData(sw, sh);
+      var d = id.data;
+      var alpha = (intensity * 25) | 0;
+      for (var i = 0; i < d.length; i += 4) {
+        var v = (Math.random() * 255) | 0;
+        d[i] = v;
+        d[i + 1] = v;
+        d[i + 2] = v;
+        d[i + 3] = alpha;
+      }
+      staticCtx.putImageData(id, 0, 0);
+      ctx.drawImage(staticCanvas, 0, 0, this.width, this.height);
+    },
+
+    // V6: Chromatic aberration at screen edges
+    _drawChromaticAberration: function (ctx, level) {
+      if (level <= 0) return;
+      var w = this.width;
+      var h = this.height;
+      var shift = Math.ceil(level * 3); // 1-3 pixel shift
+      var edgeW = Math.min(60, w * 0.1) | 0;
+      if (edgeW < 4) return;
+
+      try {
+        // Left edge
+        var leftData = ctx.getImageData(0, 0, edgeW, h);
+        var ld = leftData.data;
+        for (var i = 0; i < ld.length; i += 4) {
+          var px = ((i / 4) % edgeW) | 0;
+          var edgeFactor = 1 - (px / edgeW);
+          var redShift = (shift * edgeFactor) | 0;
+          if (redShift > 0) {
+            var srcIdx = i - redShift * 4;
+            if (srcIdx >= 0 && srcIdx < ld.length) {
+              ld[i] = ld[srcIdx]; // shift red channel
+            }
+          }
+        }
+        ctx.putImageData(leftData, 0, 0);
+
+        // Right edge
+        var rightStart = w - edgeW;
+        var rightData = ctx.getImageData(rightStart, 0, edgeW, h);
+        var rd = rightData.data;
+        for (var j = 0; j < rd.length; j += 4) {
+          var rpx = ((j / 4) % edgeW) | 0;
+          var rEdgeFactor = rpx / edgeW;
+          var blueShift = (shift * rEdgeFactor) | 0;
+          if (blueShift > 0) {
+            var bSrcIdx = j + blueShift * 4 + 2;
+            if (bSrcIdx >= 0 && bSrcIdx < rd.length) {
+              rd[j + 2] = rd[bSrcIdx]; // shift blue channel
+            }
+          }
+        }
+        ctx.putImageData(rightData, rightStart, 0);
+      } catch (e) {
+        // getImageData may fail in some contexts, silently ignore
+      }
+    },
+
+    // V6: Subtle scanlines
+    _drawScanlines: function (ctx) {
+      var h = this.height;
+      var w = this.width;
+      ctx.fillStyle = 'rgba(0,0,0,0.04)';
+      for (var sy = 0; sy < h; sy += 4) {
+        ctx.fillRect(0, sy, w, 1);
+      }
     },
 
     _getAudioCtx: function () { return audioCtx; },
