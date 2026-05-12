@@ -868,11 +868,11 @@
     var zBuf = engine._zBuffer;
     if (!zBuf) return;
 
-    // Distance fog — match wall fog (12 tiles)
+    // Distance fog — extended view distance for entities (20 tiles), minimum alpha 0.15
     var fogDist = transformY / ts;
-    var maxViewDist = 12;
-    var fogFactor = Math.max(0.05, 1 - fogDist / maxViewDist);
-    if (fogFactor <= 0.05) return;
+    var maxViewDist = 20;
+    var fogFactor = Math.max(0.15, 1 - fogDist / maxViewDist);
+    if (fogFactor <= 0.15 && fogDist > maxViewDist) return;
 
     // Use entity image or color rectangle
     var img = entity.sprite ? engine.images[entity.sprite] : null;
@@ -946,6 +946,20 @@
           ctx.fillRect(col2, drawStartY, 1, spriteHeight);
         }
       }
+    }
+
+    // Red glow aura around entity for visibility in dark corridors
+    if (entity.bodyColor && depthInTiles > 2) {
+      var glowRadius = spriteHeight * 0.7;
+      var glowCenterX = spriteScreenX;
+      var glowCenterY = drawStartY + spriteHeight * 0.4;
+      var glowAlpha = Math.min(0.25, fogFactor * 0.3);
+      var grad = ctx.createRadialGradient(glowCenterX, glowCenterY, 0, glowCenterX, glowCenterY, glowRadius);
+      grad.addColorStop(0, 'rgba(180,0,30,' + glowAlpha + ')');
+      grad.addColorStop(1, 'rgba(180,0,30,0)');
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = grad;
+      ctx.fillRect(glowCenterX - glowRadius, glowCenterY - glowRadius, glowRadius * 2, glowRadius * 2);
     }
 
     ctx.restore();

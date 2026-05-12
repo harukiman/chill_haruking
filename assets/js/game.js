@@ -254,13 +254,13 @@
   var haruki = {
     x: 0, y: 0,
     w: 24, h: 24,
-    speed: 90,         // patrol speed (player walk=120, sprint=200)
-    chaseSpeed: 155,    // chase speed — player can outrun with sprint
+    speed: 55,         // patrol speed (player walk=120, sprint=200)
+    chaseSpeed: 100,    // chase speed — player can outrun with sprint
     dir: 'down',
     color: '#880000',
     sprite: 'assets/img/haruki.png',
     bodyColor: true,
-    _bodyR: 35, _bodyG: 30, _bodyB: 40,
+    _bodyR: 80, _bodyG: 30, _bodyB: 50,
     active: false,
     visible: true,
     path: [],
@@ -1361,7 +1361,7 @@
     noiseTimer = 0;
     monologueTimer = 0;
     whisperCooldown = 0;
-    haruki.chaseSpeed = 155; // reset chase speed
+    haruki.chaseSpeed = 100; // reset chase speed
     haruki.spotRange = TS * 6; // reset spot range
     scriptedEvents.room404WallText = false;
     scriptedEvents.wakeUpBlurry = false;
@@ -2558,9 +2558,9 @@
     }
 
     // Haruki gets faster every minute (cap at 185)
-    if (haruki.active && haruki.chaseSpeed < 185) {
-      haruki.chaseSpeed += 2 * dt / 60;
-      if (haruki.chaseSpeed > 185) haruki.chaseSpeed = 185;
+    if (haruki.active && haruki.chaseSpeed < 130) {
+      haruki.chaseSpeed += 1.5 * dt / 60;
+      if (haruki.chaseSpeed > 130) haruki.chaseSpeed = 130;
     }
 
     // Spot range increases every 3 minutes (cap at TS*10)
@@ -2845,7 +2845,7 @@
           }
           // Increase Haruki speed
           if (haruki.active) {
-            haruki.chaseSpeed += 10;
+            haruki.chaseSpeed += 5;
           }
 
           queueDialogue([
