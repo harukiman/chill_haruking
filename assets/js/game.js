@@ -210,6 +210,8 @@
       glowPhase: 0
     };
     interactables.push(keyCardItem);
+    resetMemos();
+    resetInventory();
   }
 
   // =========================================================
@@ -318,6 +320,188 @@
   var room404DoorRef = null;
   var unlockingExit = false;
   var unlockTimer = 0;
+
+  // =========================================================
+  //  MEMO / DOCUMENT SYSTEM (E1)
+  // =========================================================
+  var memos = [
+    { id: 'memo1', gx: 2, gy: 4, collected: false,
+      title: '従業員日誌 — 4月2日',
+      text: '404号室の長期滞在客、ハルキ氏。毎晩フロントに来ては話しかけてくる。オネエ口調で馴れ馴れしい。同僚の田中さんが「あの人、目が怖い」と言っていた。気のせいだと思いたい。' },
+    { id: 'memo2', gx: 22, gy: 4, collected: false,
+      title: '苦情報告書',
+      text: '403号室の宿泊客より苦情。「隣の404号室から深夜に女性の歌声が聞こえる。壁を叩いても止まない」。確認したがハルキ氏は男性の一人客。歌声の件を問うと「あら、聞こえちゃった？うふふ」と笑うのみ。' },
+    { id: 'memo3', gx: 5, gy: 25, collected: false,
+      title: 'ハルキのメモ①',
+      text: 'あのフロントの子、今日も可愛かったわぁ♡ いつもあたしを見て怯えた顔するの。その表情がたまらないのよぉ〜。ずっとずっと、見ていたいわ。逃がさないわよ♡' },
+    { id: 'memo4', gx: 14, gy: 28, collected: false,
+      title: '支配人メモ',
+      text: 'ハルキ氏について緊急協議。従業員への付きまとい行為がエスカレート。退去勧告を検討。ただし長期契約のため法的手続きが必要。警察への相談も視野に入れる。' },
+    { id: 'memo5', gx: 22, gy: 12, collected: false,
+      title: 'ハルキのメモ②',
+      text: 'なんで避けるの？ あたしが怖いの？ そんなの悲しいわ... でも大丈夫♡ いつか分かってくれるわ。あたしの愛は本物よ。誰にも渡さない。あたしだけのもの。永遠に♡' },
+    { id: 'memo6', gx: 12, gy: 32, collected: false,
+      title: '警察報告書',
+      text: '被害者：フロント係 ○○（21歳）。加害者：宿泊客ハルキ（年齢不詳）。深夜、被害者の退勤を待ち伏せし暴行。被害者は軽傷。加害者は現場から逃走、現在も行方不明。ホテル地下への逃走経路を確認中。' },
+    { id: 'memo7', gx: 3, gy: 33, collected: false,
+      title: '整備記録 — 異音調査',
+      text: '地下倉庫エリアより異音の報告が複数。「引きずるような足音」「笑い声のような音」。調査したが原因不明。配管の老朽化による共鳴の可能性あり。...本当にそうだろうか。' },
+    { id: 'memo8', gx: 20, gy: 32, collected: false,
+      title: 'ハルキのメモ③',
+      text: 'この暗い部屋は落ち着くわぁ♡ 誰にも邪魔されない。上の世界はうるさすぎるのよ。でもね、寂しいの。次に来てくれる人は、きっとあたしのことを分かってくれるわ♡ だから待ってるの。ずっと、ずっと♡' },
+    { id: 'memo9', gx: 25, gy: 25, collected: false,
+      title: '閉鎖通知',
+      text: '度重なる事件と、加害者の未逮捕を受け、当ホテルは無期限の営業停止とする。地下フロアは封鎖。再開の見通しは立っていない。宿泊客および従業員の安全が確保できない以上、この決定は覆らない。' },
+    { id: 'memo10', gx: 7, gy: 7, collected: false,
+      title: 'リニューアルオープンのお知らせ',
+      text: 'ホテル・シャドウレスト、リニューアルオープン！ 全客室リノベーション済み。「過去の不幸な事件は全て解決済みです。安心してご利用ください」 ——支配人より。...本当に、解決したのだろうか？' }
+  ];
+
+  function resetMemos() {
+    for (var i = 0; i < memos.length; i++) {
+      memos[i].collected = false;
+    }
+  }
+
+  function getCollectedMemoCount() {
+    var count = 0;
+    for (var i = 0; i < memos.length; i++) {
+      if (memos[i].collected) count++;
+    }
+    return count;
+  }
+
+  function showToast(message) {
+    var existing = document.getElementById('gameToast');
+    if (existing) existing.remove();
+    var toast = document.createElement('div');
+    toast.id = 'gameToast';
+    toast.textContent = message;
+    toast.style.cssText = 'position:fixed;top:60px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.85);color:#e0d8c0;padding:10px 24px;border-radius:6px;font-size:14px;z-index:9999;pointer-events:none;opacity:0;transition:opacity 0.4s;border:1px solid rgba(255,220,100,0.3);';
+    document.body.appendChild(toast);
+    requestAnimationFrame(function () {
+      toast.style.opacity = '1';
+      setTimeout(function () {
+        toast.style.opacity = '0';
+        setTimeout(function () { if (toast.parentNode) toast.remove(); }, 500);
+      }, 2500);
+    });
+  }
+
+  // =========================================================
+  //  HIDING SYSTEM (G2)
+  // =========================================================
+  var hideSpots = [
+    { gx: 3, gy: 3, label: '401クローゼット' },
+    { gx: 21, gy: 3, label: '405クローゼット' },
+    { gx: 14, gy: 23, label: 'フロントデスク下' },
+    { gx: 8, gy: 25, label: '柱の影' },
+    { gx: 12, gy: 33, label: '棚の裏' },
+    { gx: 28, gy: 33, label: '箱の陰' }
+  ];
+  var isHiding = false;
+  var hideTimer = 0;
+  var maxHideTime = 15;
+  var hidingSpotRef = null;
+
+  // =========================================================
+  //  INVENTORY / ITEM SYSTEM (G3)
+  // =========================================================
+  var inventory = {
+    bottles: 0,
+    memoCount: 0,
+    hasPhoto: false
+  };
+
+  var bottleSpawns = [
+    { gx: 7, gy: 32, collected: false },
+    { gx: 17, gy: 33, collected: false },
+    { gx: 27, gy: 32, collected: false }
+  ];
+
+  var hiddenPhoto = { gx: 14, gy: 18, found: false };
+
+  function resetInventory() {
+    inventory.bottles = 0;
+    inventory.memoCount = 0;
+    inventory.hasPhoto = false;
+    for (var i = 0; i < bottleSpawns.length; i++) {
+      bottleSpawns[i].collected = false;
+    }
+    hiddenPhoto.found = false;
+  }
+
+  // =========================================================
+  //  RANDOM EVENT SYSTEM (E2)
+  // =========================================================
+  var randomEvents = {
+    lastEventTime: 0,
+    minInterval: 25,
+    maxInterval: 45,
+    nextEventTime: 0,
+    events: [
+      'tv_flicker',
+      'elevator_sound',
+      'door_slam',
+      'blackout',
+      'distant_footstep',
+      'phone_ring'
+    ]
+  };
+
+  function initRandomEvents() {
+    randomEvents.lastEventTime = 0;
+    randomEvents.nextEventTime = randomEvents.minInterval + Math.random() * (randomEvents.maxInterval - randomEvents.minInterval);
+  }
+
+  // =========================================================
+  //  GAME TIMER & DYNAMIC DIFFICULTY (G4)
+  // =========================================================
+  var gameTimer = 0;
+  var badEndingTriggered = false;
+  var difficultySpeedBoosts = 0;
+  var difficultyRangeBoosts = 0;
+  var blackoutEventTriggered = false;
+
+  // =========================================================
+  //  AI SOUND DETECTION (G1)
+  // =========================================================
+  var harukiAlertLevel = 0;
+  var noiseTimer = 0;
+
+  // =========================================================
+  //  VISION CONE (G1-3)
+  // =========================================================
+  var harukiFacingAngle = 0; // radians
+
+  // =========================================================
+  //  PLAYER MONOLOGUE SYSTEM (E5)
+  // =========================================================
+  var monologueTimer = 0;
+  var nextMonologueTime = 60;
+
+  // =========================================================
+  //  PROXIMITY WHISPER SYSTEM (E5)
+  // =========================================================
+  var whisperTimer = 0;
+  var whisperCooldown = 0;
+
+  // =========================================================
+  //  SCRIPTED EVENT FLAGS (E3)
+  // =========================================================
+  var scriptedEvents = {
+    room404WallText: false,
+    wakeUpBlurry: false,
+    wakeUpBlurTimer: 0,
+    wakeUpStagger: false,
+    wakeUpStaggerTimer: 0,
+    keyCardStinger: false,
+    preExitBlock: false,
+    preExitTimer: 0,
+    preExitCleared: false,
+    blackoutTriggered: false,
+    blackoutTimer: 0
+  };
 
   // =========================================================
   //  TITLE SCREEN LIGHTNING
@@ -926,6 +1110,22 @@
     return true;
   }
 
+  // Vision cone check (G1-3): Haruki can see player only within FOV or very close
+  function harukiCanSeePlayer(pDist) {
+    if (isHiding) return false;
+    // Very close: peripheral vision, detect regardless
+    if (pDist < TS * 2) return hasLineOfSight(haruki.x, haruki.y, player.x, player.y);
+    // Calculate angle from Haruki to player
+    var angleToPlayer = Math.atan2(player.y - haruki.y, player.x - haruki.x);
+    // Normalize angle difference
+    var diff = angleToPlayer - harukiFacingAngle;
+    while (diff > Math.PI) diff -= Math.PI * 2;
+    while (diff < -Math.PI) diff += Math.PI * 2;
+    // 120 degree FOV = 60 degrees each side
+    if (Math.abs(diff) > Math.PI / 3) return false;
+    return hasLineOfSight(haruki.x, haruki.y, player.x, player.y);
+  }
+
   // Haruki collision check: can Haruki move to this world position?
   function canHarukiMoveTo(wx, wy) {
     var hw = 10;
@@ -1138,6 +1338,29 @@
     resetDoors();
     resetItems();
 
+    // Reset all new systems
+    gameTimer = 0;
+    badEndingTriggered = false;
+    difficultySpeedBoosts = 0;
+    difficultyRangeBoosts = 0;
+    blackoutEventTriggered = false;
+    isHiding = false;
+    hideTimer = 0;
+    hidingSpotRef = null;
+    harukiAlertLevel = 0;
+    noiseTimer = 0;
+    monologueTimer = 0;
+    whisperCooldown = 0;
+    haruki.chaseSpeed = 155; // reset chase speed
+    haruki.spotRange = TS * 6; // reset spot range
+    scriptedEvents.room404WallText = false;
+    scriptedEvents.wakeUpBlurry = false;
+    scriptedEvents.wakeUpStagger = false;
+    scriptedEvents.keyCardStinger = false;
+    scriptedEvents.preExitBlock = false;
+    scriptedEvents.preExitCleared = false;
+    scriptedEvents.blackoutTriggered = false;
+
     GameEngine.startLoop('ambient');
     phoneRinging = false;
   }
@@ -1167,7 +1390,8 @@
     phaseFlags.dialogueDone = false;
 
     queueDialogue([
-      { speaker: 'あなた', text: '...お客様？ハルキ様？...誰もいない...？' }
+      { speaker: 'あなた', text: '...お客様？ハルキ様？...誰もいない...？' },
+      { speaker: 'あなた', text: '...壁に何か書いてある...「ずっと待ってたわ♡」...赤い文字...' }
     ], function () {
       phaseFlags.dialogueDone = true;
       phaseFlags.roomTimer = 0; // reset timer for exit delay
@@ -1253,12 +1477,23 @@
     var utilDoor = findDoor('utility');
     if (utilDoor) utilDoor.open = true;
 
+    // Blurry vision effect (E3)
+    scriptedEvents.wakeUpBlurry = true;
+    scriptedEvents.wakeUpBlurTimer = 3.0;
+    if (GameEngine.chromaticLevel !== undefined) GameEngine.chromaticLevel = 0.8;
+
+    // Stagger walk (E3) — reduce speed temporarily
+    scriptedEvents.wakeUpStagger = true;
+    scriptedEvents.wakeUpStaggerTimer = 5.0;
+    player.speed = 60; // half speed
+
     GameEngine.fadeFromBlack(2000, function () {
       GameEngine.startLoop('breath');
       GameEngine.startLoop('ambient');
 
       queueDialogue([
         { speaker: 'あなた', text: '...うっ...頭が...ここは...用務室...？' },
+        { speaker: 'あなた', text: '...体が重い...目がかすむ...' },
         { speaker: 'あなた', text: '...出口を見つけないと...' }
       ], function () {
         setPhase(PHASES.EXPLORE);
@@ -1279,6 +1514,27 @@
     player.flashlightRadius = 100;
     player.flashlightFlicker = 0.6;
     creepyEventTimer = 8 + Math.random() * 7;
+
+    // Initialize new systems
+    initRandomEvents();
+    gameTimer = 0;
+    badEndingTriggered = false;
+    difficultySpeedBoosts = 0;
+    difficultyRangeBoosts = 0;
+    blackoutEventTriggered = false;
+    monologueTimer = 0;
+    nextMonologueTime = 60 + Math.random() * 30;
+    whisperCooldown = 0;
+    isHiding = false;
+    hideTimer = 0;
+    hidingSpotRef = null;
+    harukiAlertLevel = 0;
+    noiseTimer = 0;
+
+    // Set BGM layers for explore
+    if (GameEngine.setBGMLayers) {
+      GameEngine.setBGMLayers({drone: 0.4, dissonance: 0.15, melody: 0.1, pulse: 0});
+    }
   }
 
   function onEnterChase1() {
@@ -1294,8 +1550,19 @@
       haruki.visible = true;
     }
     haruki.chaseIntensity = 1.0;
+    haruki.aiState = 'chase';
     haruki.path = [];
     haruki.pathTimer = 0;
+
+    // Reset pre-exit event flags
+    scriptedEvents.preExitBlock = false;
+    scriptedEvents.preExitCleared = false;
+    scriptedEvents.preExitTimer = 0;
+
+    // Set BGM layers for chase
+    if (GameEngine.setBGMLayers) {
+      GameEngine.setBGMLayers({drone: 0.5, dissonance: 0.4, melody: 0, pulse: 0.5});
+    }
 
     // Brief dialogue flash
     queueDialogue([
@@ -1325,9 +1592,44 @@
     hideActionBtn();
     GameEngine.stopAll();
     haruki.active = false;
+    if (GameEngine.stopEnemyFootsteps) GameEngine.stopEnemyFootsteps();
+
+    // Determine ending type (E4)
+    var memoCount = getCollectedMemoCount();
+    var isTrueEnding = (memoCount >= 10 && inventory.hasPhoto);
 
     GameEngine.fadeToBlack(1000, function () {
       setTimeout(function () {
+        var endScreen = document.getElementById('endingScreen');
+        if (endScreen) {
+          var endTitle = endScreen.querySelector('h1');
+          var endText = endScreen.querySelector('p');
+
+          if (isTrueEnding) {
+            // TRUE ENDING
+            if (endTitle) endTitle.textContent = '脱出成功';
+            if (endText) {
+              endText.innerHTML = 'あなたは全ての記録を持ち出した。<br><br>' +
+                'ハルキ——本名不明。3年前、このホテルに長期滞在。<br>' +
+                'フロント係への異常な執着の末、暴行事件を起こし逃走。<br>' +
+                '以来、ホテルの地下に潜み続けていた。<br><br>' +
+                '写真には、まだ普通の青年だった頃のハルキが笑っていた...<br><br>' +
+                '事件は警察に通報された。もう誰も犠牲にはならない。<br><br>' +
+                '<span style="color:#ffcc00;font-size:1.5em;">TRUE END</span>';
+            }
+          } else {
+            // NORMAL ENDING
+            if (endTitle) endTitle.textContent = '脱出成功';
+            if (endText) {
+              var endMsg = 'あなたはホテルから脱出した。<br>しかし、ハルキはまだあの暗闇の中にいる...';
+              if (memoCount > 0) {
+                endMsg += '<br><br>収集したメモ: ' + memoCount + '/10';
+              }
+              endMsg += '<br><br><span style="color:#aaa;">NORMAL END</span>';
+              endText.innerHTML = endMsg;
+            }
+          }
+        }
         showOverlay('endingScreen');
       }, 500);
     });
@@ -1339,6 +1641,18 @@
     hideActionBtn();
     GameEngine.stopAll();
     haruki.active = false;
+    isHiding = false;
+    if (GameEngine.vignetteIntensity !== undefined) GameEngine.vignetteIntensity = 0;
+    if (GameEngine.stopEnemyFootsteps) GameEngine.stopEnemyFootsteps();
+
+    // Reset game over screen text to default (in case bad ending changed it)
+    var goScreen = document.getElementById('gameOverScreen');
+    if (goScreen) {
+      var goTitle = goScreen.querySelector('h1');
+      if (goTitle) goTitle.textContent = 'GAME OVER';
+      var goSub = goScreen.querySelector('p');
+      if (goSub) goSub.textContent = '';
+    }
 
     GameEngine.playSound('static');
     GameEngine.staticEffect(1.0);
@@ -1415,6 +1729,18 @@
     if (phase === PHASES.ATTACK || phase === PHASES.TITLE ||
         phase === PHASES.GAME_OVER || phase === PHASES.ENDING) return;
     if (unlockingExit) return;
+    if (isHiding) {
+      // While hiding, only allow action button (exit hiding)
+      var input = GameEngine.input;
+      if (input.actionJustPressed && actionCallback) {
+        var cb = actionCallback;
+        hideActionBtn();
+        cb();
+      }
+      // Still update camera
+      GameEngine.setPlayerView(player.x, player.y, player.angle);
+      return;
+    }
 
     var input = GameEngine.input;
     var turnSpeed = 2.5 * lookSensitivity; // radians per second * sensitivity
@@ -1512,6 +1838,40 @@
 
     // Auto-open doors when walking near them
     checkNearbyDoors();
+
+    // --- Memo detection (E1) ---
+    if (phase === PHASES.EXPLORE || phase === PHASES.CHASE_1) {
+      checkNearbyMemos();
+    }
+
+    // --- Hiding system (G2) ---
+    if (phase === PHASES.EXPLORE || phase === PHASES.CHASE_1) {
+      updateHidingSystem(dt);
+    }
+
+    // --- Bottle pickup (G3) ---
+    if (phase === PHASES.EXPLORE || phase === PHASES.CHASE_1) {
+      checkNearbyBottles();
+    }
+
+    // --- Hidden photo (E4) ---
+    if (phase === PHASES.EXPLORE && !hiddenPhoto.found) {
+      checkHiddenPhoto();
+    }
+
+    // --- Throw bottle (G3) ---
+    if ((phase === PHASES.EXPLORE || phase === PHASES.CHASE_1) && inventory.bottles > 0 && !isHiding) {
+      checkThrowBottle();
+    }
+
+    // --- Floor surface for footsteps (Audio) ---
+    if (player.moving) {
+      var floorTile = MAP_TILES[pg.gy] && MAP_TILES[pg.gy][pg.gx];
+      var surfaceType = 'tile';
+      if (floorTile === TILE.CARPET) surfaceType = 'carpet';
+      else if (floorTile === TILE.UTILITY || (pg.gy >= 31 && floorTile === TILE.FLOOR)) surfaceType = 'tile';
+      if (GameEngine.setFootstepSurface) GameEngine.setFootstepSurface(surfaceType);
+    }
   }
 
   function checkNearbyDoors() {
@@ -1522,7 +1882,201 @@
       if (dist <= 1 && !d.locked && !d.open) {
         d.open = true;
         GameEngine.playSound('door');
+        // Alert Haruki if door opens within 5 tiles (G1)
+        if (haruki.active) {
+          var hg = wToG(haruki.x, haruki.y);
+          var hDist = Math.abs(d.gx - hg.gx) + Math.abs(d.gy - hg.gy);
+          if (hDist <= 5) {
+            harukiAlertLevel = Math.min(1.0, harukiAlertLevel + 0.4);
+          }
+        }
       }
+    }
+  }
+
+  // =========================================================
+  //  MEMO DETECTION (E1)
+  // =========================================================
+  function checkNearbyMemos() {
+    if (dialogueActive || isHiding) return;
+    var pg = wToG(player.x, player.y);
+    for (var i = 0; i < memos.length; i++) {
+      var m = memos[i];
+      if (m.collected) continue;
+      var dist = Math.abs(pg.gx - m.gx) + Math.abs(pg.gy - m.gy);
+      if (dist <= 1) {
+        if (!actionCallback) {
+          (function (memo) {
+            showActionBtn('読む', function () {
+              memo.collected = true;
+              inventory.memoCount = getCollectedMemoCount();
+              if (GameEngine.playSound) GameEngine.playSound('paper');
+              showToast('メモを入手しました (' + inventory.memoCount + '/10)');
+              queueDialogue([
+                { speaker: memo.title, text: memo.text }
+              ]);
+            });
+          })(m);
+        }
+        return;
+      }
+    }
+  }
+
+  // =========================================================
+  //  HIDING SYSTEM UPDATE (G2)
+  // =========================================================
+  function updateHidingSystem(dt) {
+    var pg = wToG(player.x, player.y);
+
+    if (isHiding) {
+      hideTimer += dt;
+      // Darken screen while hiding
+      if (GameEngine.vignetteIntensity !== undefined) {
+        GameEngine.vignetteIntensity = 0.7;
+      }
+      // After maxHideTime: cough and reveal
+      if (hideTimer >= maxHideTime) {
+        isHiding = false;
+        hideTimer = 0;
+        hidingSpotRef = null;
+        if (GameEngine.vignetteIntensity !== undefined) {
+          GameEngine.vignetteIntensity = 0;
+        }
+        queueDialogue([
+          { speaker: 'あなた', text: '（っ...！咳が...）' }
+        ]);
+        // Alert Haruki
+        if (haruki.active) {
+          harukiAlertLevel = 1.0;
+          haruki.lastSeenX = player.x;
+          haruki.lastSeenY = player.y;
+          haruki.aiState = 'chase';
+          haruki.path = [];
+          haruki.pathTimer = 0;
+        }
+        hideActionBtn();
+        return;
+      }
+      // Show exit button while hiding
+      if (!actionCallback) {
+        showActionBtn('出る', function () {
+          isHiding = false;
+          hideTimer = 0;
+          hidingSpotRef = null;
+          if (GameEngine.vignetteIntensity !== undefined) {
+            GameEngine.vignetteIntensity = 0;
+          }
+        });
+      }
+      return;
+    }
+
+    // Check if on a hide spot
+    if (!dialogueActive && !actionCallback) {
+      for (var i = 0; i < hideSpots.length; i++) {
+        var hs = hideSpots[i];
+        if (pg.gx === hs.gx && pg.gy === hs.gy) {
+          (function (spot) {
+            showActionBtn('隠れる', function () {
+              isHiding = true;
+              hideTimer = 0;
+              hidingSpotRef = spot;
+              if (GameEngine.vignetteIntensity !== undefined) {
+                GameEngine.vignetteIntensity = 0.7;
+              }
+            });
+          })(hs);
+          return;
+        }
+      }
+    }
+  }
+
+  // =========================================================
+  //  BOTTLE PICKUP (G3)
+  // =========================================================
+  function checkNearbyBottles() {
+    if (dialogueActive || isHiding || actionCallback) return;
+    var pg = wToG(player.x, player.y);
+    for (var i = 0; i < bottleSpawns.length; i++) {
+      var b = bottleSpawns[i];
+      if (b.collected) continue;
+      var dist = Math.abs(pg.gx - b.gx) + Math.abs(pg.gy - b.gy);
+      if (dist <= 1) {
+        (function (bottle) {
+          showActionBtn('拾う', function () {
+            bottle.collected = true;
+            inventory.bottles++;
+            showToast('ガラス瓶を入手 (' + inventory.bottles + ')');
+            if (GameEngine.playSound) GameEngine.playSound('door');
+          });
+        })(b);
+        return;
+      }
+    }
+  }
+
+  // =========================================================
+  //  HIDDEN PHOTO CHECK (E4)
+  // =========================================================
+  function checkHiddenPhoto() {
+    if (dialogueActive || isHiding || actionCallback) return;
+    var pg = wToG(player.x, player.y);
+    var dist = Math.abs(pg.gx - hiddenPhoto.gx) + Math.abs(pg.gy - hiddenPhoto.gy);
+    if (dist <= 1) {
+      showActionBtn('壁を調べる', function () {
+        hiddenPhoto.found = true;
+        inventory.hasPhoto = true;
+        if (GameEngine.playSound) GameEngine.playSound('stinger');
+        showToast('古い写真を発見した...');
+        queueDialogue([
+          { speaker: 'あなた', text: '...写真？...まだ普通の青年だった頃のハルキ...？' }
+        ]);
+      });
+    }
+  }
+
+  // =========================================================
+  //  THROW BOTTLE (G3)
+  // =========================================================
+  var throwActionShown = false;
+  function checkThrowBottle() {
+    // Only show throw button if no other action is shown and we have bottles
+    if (actionCallback || dialogueActive) {
+      throwActionShown = false;
+      return;
+    }
+    if (inventory.bottles > 0 && !throwActionShown) {
+      // We show the throw button passively — player can use it anytime
+      // But only when no other action is active
+    }
+  }
+
+  function throwBottle() {
+    if (inventory.bottles <= 0) return;
+    inventory.bottles--;
+    // Calculate throw target: 5 tiles in player's facing direction
+    var targetX = player.x + Math.cos(player.angle) * TS * 5;
+    var targetY = player.y + Math.sin(player.angle) * TS * 5;
+    // Clamp to map bounds
+    targetX = Math.max(TS, Math.min(targetX, (MAP_W - 1) * TS));
+    targetY = Math.max(TS, Math.min(targetY, (MAP_H - 1) * TS));
+    if (GameEngine.playPositionalSound) {
+      GameEngine.playPositionalSound('glass_rattle', targetX, targetY);
+    } else if (GameEngine.playSound) {
+      GameEngine.playSound('door'); // fallback
+    }
+    showToast('瓶を投げた (残り: ' + inventory.bottles + ')');
+    // Alert Haruki toward throw position
+    if (haruki.active) {
+      harukiAlertLevel = 1.0;
+      haruki.lastSeenX = targetX;
+      haruki.lastSeenY = targetY;
+      haruki.aiState = 'search';
+      haruki.searchTimer = 0;
+      haruki.path = [];
+      haruki.pathTimer = 0;
     }
   }
 
@@ -1532,14 +2086,90 @@
   function updateHaruki(dt) {
     if (!haruki.active) return;
 
+    // --- AUDIO INTEGRATION ---
+    if (GameEngine.startEnemyFootsteps) GameEngine.startEnemyFootsteps(0.5);
+    if (GameEngine.setEnemyFootstepPosition) GameEngine.setEnemyFootstepPosition(haruki.x, haruki.y);
+
     var hg = wToG(haruki.x, haruki.y);
     var pg = wToG(player.x, player.y);
     var pdx = player.x - haruki.x;
     var pdy = player.y - haruki.y;
     var pDist = Math.sqrt(pdx * pdx + pdy * pdy);
 
-    // Line-of-sight check to player
-    var canSeePlayer = pDist < haruki.spotRange && hasLineOfSight(haruki.x, haruki.y, player.x, player.y);
+    // --- SOUND DETECTION (G1) ---
+    // Alert level decays over time
+    harukiAlertLevel = Math.max(0, harukiAlertLevel - dt * 0.08);
+
+    // Player sprinting generates noise
+    if (sprinting && player.moving) {
+      noiseTimer -= dt;
+      if (noiseTimer <= 0) {
+        noiseTimer = 0.5;
+        var noiseDist = Math.sqrt(pdx * pdx + pdy * pdy);
+        if (noiseDist < TS * 8) {
+          harukiAlertLevel = Math.min(1.0, harukiAlertLevel + 0.3);
+        }
+      }
+    }
+
+    // Door opening near Haruki raises alert
+    // (checked in checkNearbyDoors when doors open)
+
+    // Alert level triggers
+    if (harukiAlertLevel >= 0.8 && haruki.aiState === 'patrol') {
+      haruki.aiState = 'search';
+      haruki.searchTimer = 0;
+      haruki.lastSeenX = player.x;
+      haruki.lastSeenY = player.y;
+      haruki.path = [];
+      haruki.pathTimer = 0;
+    } else if (harukiAlertLevel >= 0.5 && haruki.aiState === 'patrol') {
+      haruki.aiState = 'search';
+      haruki.searchTimer = 0;
+      haruki.lastSeenX = player.x;
+      haruki.lastSeenY = player.y;
+      haruki.path = [];
+      haruki.pathTimer = 0;
+    }
+
+    // --- VISION CONE (G1-3) ---
+    // Use vision cone for sight check instead of raw line of sight
+    var canSeePlayer = pDist < haruki.spotRange && harukiCanSeePlayer(pDist);
+
+    // --- HIDING CHECK (G2) ---
+    // If player is hiding, Haruki can't see them (already handled in harukiCanSeePlayer)
+    // But if Haruki walks within 1 tile of hide spot: 30% chance to detect
+    if (isHiding && hidingSpotRef) {
+      var hideDistX = Math.abs(hg.gx - hidingSpotRef.gx);
+      var hideDistY = Math.abs(hg.gy - hidingSpotRef.gy);
+      if (hideDistX + hideDistY <= 1) {
+        // Check if Haruki discovers player
+        if (!phaseFlags.harukiCheckingHideSpot) {
+          phaseFlags.harukiCheckingHideSpot = true;
+          phaseFlags.harukiCheckTimer = 3.0;
+          if (Math.random() < 0.3) {
+            // Will find player after check
+            phaseFlags.harukiWillFind = true;
+          } else {
+            phaseFlags.harukiWillFind = false;
+          }
+        }
+      }
+    }
+    if (phaseFlags.harukiCheckingHideSpot) {
+      phaseFlags.harukiCheckTimer -= dt;
+      if (phaseFlags.harukiCheckTimer <= 0) {
+        phaseFlags.harukiCheckingHideSpot = false;
+        if (phaseFlags.harukiWillFind && isHiding) {
+          // Found! Force unhide
+          isHiding = false;
+          hideTimer = 0;
+          hidingSpotRef = null;
+          if (GameEngine.vignetteIntensity !== undefined) GameEngine.vignetteIntensity = 0;
+          canSeePlayer = true;
+        }
+      }
+    }
 
     // --- STATE TRANSITIONS ---
     switch (haruki.aiState) {
@@ -1681,6 +2311,8 @@
         } else {
           haruki.dir = ny > 0 ? 'down' : 'up';
         }
+        // Update facing angle for vision cone
+        harukiFacingAngle = Math.atan2(ny, nx);
       }
 
       // Haruki opens closed unlocked doors he walks near
@@ -1698,14 +2330,26 @@
     var proximity = Math.max(0, 1 - pDist / maxProxDist);
     GameEngine.setProximity(proximity);
 
-    // --- CATCH check ---
-    if (pDist < haruki.catchRadius) {
+    // --- BGM layers based on AI state ---
+    if (GameEngine.setBGMLayers) {
+      if (haruki.aiState === 'chase') {
+        GameEngine.setBGMLayers({drone: 0.5, dissonance: 0.4, melody: 0, pulse: 0.5});
+      } else if (haruki.aiState === 'search') {
+        GameEngine.setBGMLayers({drone: 0.45, dissonance: 0.25, melody: 0.05, pulse: 0.15});
+      } else {
+        GameEngine.setBGMLayers({drone: 0.4, dissonance: 0.15, melody: 0.1, pulse: 0});
+      }
+    }
+
+    // --- CATCH check (skip if hiding) ---
+    if (pDist < haruki.catchRadius && !isHiding) {
       onHarukiCatchPlayer();
     }
   }
 
   function onHarukiCatchPlayer() {
     haruki.active = false;
+    if (GameEngine.stopEnemyFootsteps) GameEngine.stopEnemyFootsteps();
     GameEngine.setProximity(0);
     GameEngine.stopAll();
     GameEngine.playSound('jumpscare');
@@ -1722,6 +2366,239 @@
         setPhase(PHASES.GAME_OVER);
       }, 600);
     }
+  }
+
+  // =========================================================
+  //  RANDOM EVENT SYSTEM (E2)
+  // =========================================================
+  function updateRandomEvents(dt) {
+    if (phase !== PHASES.EXPLORE) return;
+    randomEvents.lastEventTime += dt;
+    if (randomEvents.lastEventTime < randomEvents.nextEventTime) return;
+    randomEvents.lastEventTime = 0;
+    randomEvents.nextEventTime = randomEvents.minInterval + Math.random() * (randomEvents.maxInterval - randomEvents.minInterval);
+
+    var eventType = randomEvents.events[Math.floor(Math.random() * randomEvents.events.length)];
+    switch (eventType) {
+      case 'tv_flicker':
+        if (GameEngine.playSound) GameEngine.playSound('static');
+        if (GameEngine.staticEffect) GameEngine.staticEffect(0.3);
+        setTimeout(function () {
+          if (GameEngine.staticEffect) GameEngine.staticEffect(0.08);
+        }, 2000);
+        break;
+
+      case 'elevator_sound':
+        if (GameEngine.playSound) GameEngine.playSound('elevator_hum');
+        if (GameEngine.shakeScreen) GameEngine.shakeScreen(3, 800);
+        break;
+
+      case 'door_slam':
+        // Find nearest open door behind player and close it
+        var pg = wToG(player.x, player.y);
+        var closestDoor = null;
+        var closestDist = Infinity;
+        for (var i = 0; i < doors.length; i++) {
+          if (doors[i].open && !doors[i].locked) {
+            var dd = Math.abs(doors[i].gx - pg.gx) + Math.abs(doors[i].gy - pg.gy);
+            if (dd > 1 && dd < 6 && dd < closestDist) {
+              closestDist = dd;
+              closestDoor = doors[i];
+            }
+          }
+        }
+        if (closestDoor) {
+          closestDoor.open = false;
+          if (GameEngine.playSound) GameEngine.playSound('door');
+        }
+        break;
+
+      case 'blackout':
+        if (GameEngine.vignetteIntensity !== undefined) {
+          GameEngine.vignetteIntensity = 1.0;
+          if (GameEngine.playSound) GameEngine.playSound('stinger');
+          setTimeout(function () {
+            if (GameEngine.vignetteIntensity !== undefined) GameEngine.vignetteIntensity = 0;
+          }, 5000);
+        }
+        break;
+
+      case 'distant_footstep':
+        var corridorPositions = [
+          {gx: 5, gy: 7}, {gx: 14, gy: 7}, {gx: 25, gy: 7},
+          {gx: 7, gy: 29}, {gx: 14, gy: 29}, {gx: 24, gy: 29}
+        ];
+        var rp = corridorPositions[Math.floor(Math.random() * corridorPositions.length)];
+        if (GameEngine.playPositionalSound) {
+          GameEngine.playPositionalSound('footstep', rp.gx * TS + TS / 2, rp.gy * TS + TS / 2);
+        } else if (GameEngine.playSound) {
+          GameEngine.playSound('footstep');
+        }
+        break;
+
+      case 'phone_ring':
+        // Only if player on ground floor (gy >= 20)
+        var ppg = wToG(player.x, player.y);
+        if (ppg.gy >= 20) {
+          if (GameEngine.playSound) GameEngine.playSound('phone');
+        }
+        break;
+    }
+  }
+
+  // =========================================================
+  //  PLAYER MONOLOGUE (E5)
+  // =========================================================
+  function updatePlayerMonologue(dt) {
+    if (phase !== PHASES.EXPLORE || dialogueActive || isHiding) return;
+    monologueTimer += dt;
+    if (monologueTimer < nextMonologueTime) return;
+    monologueTimer = 0;
+    nextMonologueTime = 60 + Math.random() * 30;
+
+    var thoughts;
+    if (gameTimer > 600) {
+      // More desperate after 10 minutes
+      thoughts = [
+        '（もう時間がない...早くしないと...）',
+        '（頼む...もう少しだけ持ってくれ...）',
+        '（あいつが...近づいてくる...）',
+        '（もうダメかもしれない...でも...）',
+        '（誰か...助けて...）'
+      ];
+    } else {
+      thoughts = [
+        '（早く出口を見つけないと...）',
+        '（あの声...どこから聞こえてくるんだ...）',
+        '（鍵...鍵さえあれば...）',
+        '（頼む...もう少しだけ持ってくれ...）',
+        '（なんでこんなことに...）'
+      ];
+    }
+    var thought = thoughts[Math.floor(Math.random() * thoughts.length)];
+    queueDialogue([{ speaker: 'あなた', text: thought }]);
+  }
+
+  // =========================================================
+  //  PROXIMITY WHISPERS (E5)
+  // =========================================================
+  function updateProximityWhispers(dt) {
+    if (!haruki.active || dialogueActive || isHiding) return;
+    if (haruki.aiState === 'chase') return; // no whispers during chase
+    var pdx = player.x - haruki.x;
+    var pdy = player.y - haruki.y;
+    var pDist = Math.sqrt(pdx * pdx + pdy * pdy);
+    if (pDist > TS * 3) {
+      whisperCooldown = 0;
+      return;
+    }
+    whisperCooldown += dt;
+    if (whisperCooldown < 8) return; // min 8 sec between whispers
+    whisperCooldown = 0;
+
+    var whispers = [
+      '...すぐそこにいるわ♡',
+      '...見えてるわよぉ...',
+      '...ふふっ...'
+    ];
+    var w = whispers[Math.floor(Math.random() * whispers.length)];
+    // Auto-dismiss after 2 seconds
+    GameEngine.showDialogue('ハルキ', w, function () {});
+    dialogueActive = true;
+    setTimeout(function () {
+      GameEngine.hideDialogue();
+      dialogueActive = false;
+    }, 2000);
+  }
+
+  // =========================================================
+  //  GAME TIMER & DYNAMIC DIFFICULTY UPDATE (G4)
+  // =========================================================
+  function updateGameTimer(dt) {
+    if (phase !== PHASES.EXPLORE && phase !== PHASES.CHASE_1) return;
+    gameTimer += dt;
+
+    // Bad ending at 15 minutes
+    if (gameTimer >= 900 && !badEndingTriggered) {
+      badEndingTriggered = true;
+      triggerBadEnding();
+      return;
+    }
+
+    // Haruki gets faster every minute (cap at 185)
+    if (haruki.active && haruki.chaseSpeed < 185) {
+      haruki.chaseSpeed += 2 * dt / 60;
+      if (haruki.chaseSpeed > 185) haruki.chaseSpeed = 185;
+    }
+
+    // Spot range increases every 3 minutes (cap at TS*10)
+    var targetBoosts = Math.floor(gameTimer / 180);
+    if (targetBoosts > difficultyRangeBoosts && haruki.spotRange < TS * 10) {
+      difficultyRangeBoosts = targetBoosts;
+      haruki.spotRange += TS * 0.5;
+      if (haruki.spotRange > TS * 10) haruki.spotRange = TS * 10;
+    }
+  }
+
+  function triggerBadEnding() {
+    // All lights go out
+    if (GameEngine.vignetteIntensity !== undefined) GameEngine.vignetteIntensity = 1.0;
+    if (GameEngine.playSound) GameEngine.playSound('stinger');
+
+    // Teleport Haruki to player
+    haruki.x = player.x;
+    haruki.y = player.y;
+    haruki.active = false;
+    if (GameEngine.stopEnemyFootsteps) GameEngine.stopEnemyFootsteps();
+
+    setTimeout(function () {
+      GameEngine.stopAll();
+      // Special game over
+      var goScreen = document.getElementById('gameOverScreen');
+      if (goScreen) {
+        var goTitle = goScreen.querySelector('h1');
+        if (goTitle) goTitle.textContent = '時間切れ...';
+        var goSub = goScreen.querySelector('p');
+        if (goSub) goSub.textContent = '「やっと観念したのねぇ♡ もうどこにも行かせないわ...永遠にあたしのものよ♡」';
+      }
+      hideJoystick();
+      hideStamina();
+      hideActionBtn();
+      if (GameEngine.playSound) GameEngine.playSound('static');
+      if (GameEngine.staticEffect) GameEngine.staticEffect(1.0);
+      setTimeout(function () {
+        showOverlay('gameOverScreen');
+      }, 600);
+    }, 1500);
+  }
+
+  // =========================================================
+  //  SCRIPTED BLACKOUT EVENT (E3)
+  // =========================================================
+  function updateBlackoutEvent(dt) {
+    if (phase !== PHASES.EXPLORE) return;
+    if (blackoutEventTriggered) return;
+    if (phaseTimer <= 420) return; // 7 minutes
+
+    blackoutEventTriggered = true;
+    scriptedEvents.blackoutTriggered = true;
+    scriptedEvents.blackoutTimer = 8.0;
+
+    if (GameEngine.vignetteIntensity !== undefined) GameEngine.vignetteIntensity = 1.0;
+    // Footsteps getting closer
+    var stepCount = 0;
+    var stepInterval = setInterval(function () {
+      if (GameEngine.playSound) GameEngine.playSound('footstep');
+      stepCount++;
+      if (stepCount >= 8) {
+        clearInterval(stepInterval);
+        if (GameEngine.playSound) GameEngine.playSound('stinger');
+        setTimeout(function () {
+          if (GameEngine.vignetteIntensity !== undefined) GameEngine.vignetteIntensity = 0;
+          scriptedEvents.blackoutTriggered = false;
+        }, 500);
+      }
+    }, 1000);
   }
 
   // =========================================================
@@ -1832,12 +2709,46 @@
   }
 
   function updateExplore(dt) {
+    // --- Wake-up effects (E3) ---
+    if (scriptedEvents.wakeUpBlurry) {
+      scriptedEvents.wakeUpBlurTimer -= dt;
+      if (GameEngine.chromaticLevel !== undefined) {
+        GameEngine.chromaticLevel = Math.max(0, 0.8 * (scriptedEvents.wakeUpBlurTimer / 3.0));
+      }
+      if (scriptedEvents.wakeUpBlurTimer <= 0) {
+        scriptedEvents.wakeUpBlurry = false;
+        if (GameEngine.chromaticLevel !== undefined) GameEngine.chromaticLevel = 0;
+      }
+    }
+    if (scriptedEvents.wakeUpStagger) {
+      scriptedEvents.wakeUpStaggerTimer -= dt;
+      if (scriptedEvents.wakeUpStaggerTimer <= 0) {
+        scriptedEvents.wakeUpStagger = false;
+        player.speed = 120; // restore normal speed
+      }
+    }
+
     // Random creepy events
     creepyEventTimer -= dt;
     if (creepyEventTimer <= 0) {
       triggerCreepyEvent();
       creepyEventTimer = 10 + Math.random() * 10;
     }
+
+    // Random event system (E2)
+    updateRandomEvents(dt);
+
+    // Game timer & difficulty (G4)
+    updateGameTimer(dt);
+
+    // Player monologue (E5)
+    updatePlayerMonologue(dt);
+
+    // Proximity whispers (E5)
+    updateProximityWhispers(dt);
+
+    // Blackout event at 7 minutes (E3)
+    updateBlackoutEvent(dt);
 
     // Flashlight flicker variation
     player.flashlightFlicker = 0.3 + Math.sin(phaseTimer * 2.5) * 0.15;
@@ -1885,7 +2796,7 @@
     if (haruki.active) {
       updateHaruki(dt);
 
-      // Periodic shouts from Haruki
+      // Periodic shouts from Haruki (E5 expanded to 15)
       if (!phaseFlags.harukiShoutTimer) phaseFlags.harukiShoutTimer = 12 + Math.random() * 8;
       phaseFlags.harukiShoutTimer -= dt;
       if (phaseFlags.harukiShoutTimer <= 0 && !dialogueActive) {
@@ -1898,7 +2809,14 @@
           '出てきなさいよぉ...怒るわよぉ？',
           'あら〜...こっちかしらぁ？',
           'もぉ〜...じらさないでよぉ〜♡',
-          'あなたの匂い...するわよぉ〜うふふふ'
+          'あなたの匂い...するわよぉ〜うふふふ',
+          'ねぇねぇ♡ あたしと遊びましょうよぉ〜',
+          'この暗闇の中、あたしだけがあなたを見てるのよぉ♡',
+          'どこに隠れても無駄よぉ？ あなたの匂い、分かるもの♡',
+          '昔ね、ここに素敵な人がいたの...あなたも同じ匂いがするわぁ♡',
+          'うふふ...足音が聞こえるわ。近いわねぇ♡',
+          '出口なんてないわよぉ？ ここはあたしたちの世界♡',
+          '怖がらないでぇ♡ あたしは優しいわよぉ...最初はね♡'
         ];
         var shout = shouts[Math.floor(Math.random() * shouts.length)];
         queueDialogue([{ speaker: 'ハルキ', text: shout }]);
@@ -1915,6 +2833,17 @@
           keyCardItem.collected = true;
           player.hasKey = true;
           phaseFlags.keyActionShown = false;
+
+          // Key card stinger event (E3)
+          if (GameEngine.playSound) GameEngine.playSound('stinger');
+          if (haruki.active && GameEngine.playPositionalSound) {
+            GameEngine.playPositionalSound('jumpscare', haruki.x, haruki.y);
+          }
+          // Increase Haruki speed
+          if (haruki.active) {
+            haruki.chaseSpeed += 10;
+          }
+
           queueDialogue([
             { speaker: 'あなた', text: 'カードキーを見つけた！これで出口を...' }
           ], function () {
@@ -1932,8 +2861,14 @@
 
   function updateChase1(dt) {
     updateHaruki(dt);
+    updateGameTimer(dt);
 
-    // Periodic chase shouts
+    // Set BGM layers for chase
+    if (GameEngine.setBGMLayers) {
+      GameEngine.setBGMLayers({drone: 0.5, dissonance: 0.4, melody: 0, pulse: 0.5});
+    }
+
+    // Periodic chase shouts (E5 expanded to 12)
     if (!phaseFlags.harukiShoutTimer) phaseFlags.harukiShoutTimer = 8 + Math.random() * 5;
     phaseFlags.harukiShoutTimer -= dt;
     if (phaseFlags.harukiShoutTimer <= 0 && !dialogueActive) {
@@ -1944,7 +2879,13 @@
         '待ちなさいよぉ〜！あたしを置いていかないでぇ！',
         'あはははっ！楽しいわねぇ〜このかくれんぼ！',
         'そっちに行ったわねぇ〜♡',
-        'ねぇ...ずっと一緒にいましょうよぉ〜'
+        'ねぇ...ずっと一緒にいましょうよぉ〜',
+        '逃げても無駄よぉ〜♡ あたしの方が速いんだからぁ！',
+        'きゃはは！走ってる姿も可愛いわぁ♡',
+        '捕まえたらぎゅーってしてあげるわ♡ 骨が折れるくらいにね♡',
+        'お願い待ってぇ！あたしを一人にしないでぇ！',
+        'あはっ！心臓の音が聞こえるわ！ドキドキしてるのねぇ♡',
+        'もうすぐ...もうすぐよぉ♡ あたしの手が届くわ！'
       ];
       var s = chaseShouts[Math.floor(Math.random() * chaseShouts.length)];
       queueDialogue([{ speaker: 'ハルキ', text: s }]);
@@ -1953,8 +2894,39 @@
     // Flashlight flicker intensifies
     player.flashlightFlicker = 0.4 + Math.sin(phaseTimer * 4) * 0.2;
 
-    // Check if player reaches exit area
+    // --- Pre-exit event (E3): Haruki teleport block ---
     var pg = wToG(player.x, player.y);
+    if (!scriptedEvents.preExitBlock && !scriptedEvents.preExitCleared && player.hasKey) {
+      var exitDistG = Math.abs(pg.gx - exitDoor.gx) + Math.abs(pg.gy - exitDoor.gy);
+      if (exitDistG <= 3 && pg.gy >= 34) {
+        scriptedEvents.preExitBlock = true;
+        scriptedEvents.preExitTimer = 5.0;
+        // Teleport Haruki between player and exit
+        var blockGx = Math.min(28, Math.max(26, pg.gx));
+        var blockGy = Math.min(38, pg.gy + 1);
+        var blockPos = gToW(blockGx, blockGy);
+        haruki.x = blockPos.x;
+        haruki.y = blockPos.y;
+        haruki.path = [];
+        haruki.pathTimer = 2;
+        if (GameEngine.playSound) GameEngine.playSound('stinger');
+        queueDialogue([
+          { speaker: 'ハルキ', text: 'どこに行くのぉ？ ここから出さないわよぉ♡' }
+        ]);
+      }
+    }
+    if (scriptedEvents.preExitBlock) {
+      scriptedEvents.preExitTimer -= dt;
+      if (scriptedEvents.preExitTimer <= 0) {
+        scriptedEvents.preExitBlock = false;
+        scriptedEvents.preExitCleared = true;
+        // Haruki resumes normal chase
+        haruki.path = [];
+        haruki.pathTimer = 0;
+      }
+    }
+
+    // Check if player reaches exit area
     if (pg.gy >= 36 && pg.gx >= 25 && pg.gx <= 28) {
       // Near exit door
       var dist = Math.abs(pg.gx - exitDoor.gx) + Math.abs(pg.gy - exitDoor.gy);
@@ -2071,36 +3043,75 @@
   }
 
   function drawItems(ctx) {
-    if (!keyCardItem || keyCardItem.collected) return;
+    // Draw key card
+    if (keyCardItem && !keyCardItem.collected) {
+      keyCardItem.glowPhase += 0.05;
+      var pulse = 0.6 + Math.sin(keyCardItem.glowPhase) * 0.4;
 
-    // Update glow animation
-    keyCardItem.glowPhase += 0.05;
-    var pulse = 0.6 + Math.sin(keyCardItem.glowPhase) * 0.4;
+      var glowEntity = {
+        x: keyCardItem.wx,
+        y: keyCardItem.wy,
+        w: 30,
+        h: 60,
+        color: 'rgba(255,220,50,' + (0.5 * pulse) + ')',
+        visible: true
+      };
+      GameEngine.drawEntity(glowEntity);
 
-    // Large glowing pillar (taller, brighter)
-    var glowEntity = {
-      x: keyCardItem.wx,
-      y: keyCardItem.wy,
-      w: 30,
-      h: 60,
-      color: 'rgba(255,220,50,' + (0.5 * pulse) + ')',
-      visible: true
-    };
-    GameEngine.drawEntity(glowEntity);
+      var itemEntity = {
+        x: keyCardItem.wx,
+        y: keyCardItem.wy,
+        w: 22,
+        h: 22,
+        color: 'rgb(255,' + ((200 + 55 * pulse) | 0) + ',0)',
+        visible: true
+      };
+      GameEngine.drawEntity(itemEntity);
 
-    // Key card object (bright golden)
-    var itemEntity = {
-      x: keyCardItem.wx,
-      y: keyCardItem.wy,
-      w: 22,
-      h: 22,
-      color: 'rgb(255,' + ((200 + 55 * pulse) | 0) + ',0)',
-      visible: true
-    };
-    GameEngine.drawEntity(itemEntity);
+      if (GameEngine.drawFloorGlow) {
+        GameEngine.drawFloorGlow(keyCardItem.wx, keyCardItem.wy, keyCardItem.glowPhase);
+      }
+    }
 
-    // Floor glow with key icon projected onto the ground
-    GameEngine.drawFloorGlow(keyCardItem.wx, keyCardItem.wy, keyCardItem.glowPhase);
+    // Draw uncollected memos as small glowing items
+    for (var mi = 0; mi < memos.length; mi++) {
+      var m = memos[mi];
+      if (m.collected) continue;
+      var mwx = m.gx * TS + TS / 2;
+      var mwy = m.gy * TS + TS / 2;
+      var memoEntity = {
+        x: mwx, y: mwy, w: 16, h: 16,
+        color: 'rgba(220,200,160,0.7)',
+        visible: true
+      };
+      GameEngine.drawEntity(memoEntity);
+    }
+
+    // Draw uncollected bottles as items
+    for (var bi = 0; bi < bottleSpawns.length; bi++) {
+      var b = bottleSpawns[bi];
+      if (b.collected) continue;
+      var bwx = b.gx * TS + TS / 2;
+      var bwy = b.gy * TS + TS / 2;
+      var bottleEntity = {
+        x: bwx, y: bwy, w: 12, h: 20,
+        color: 'rgba(100,180,200,0.7)',
+        visible: true
+      };
+      GameEngine.drawEntity(bottleEntity);
+    }
+
+    // Draw hidden photo interactable (faint glow)
+    if (!hiddenPhoto.found && (phase === PHASES.EXPLORE)) {
+      var phwx = hiddenPhoto.gx * TS + TS / 2;
+      var phwy = hiddenPhoto.gy * TS + TS / 2;
+      var photoEntity = {
+        x: phwx, y: phwy, w: 8, h: 8,
+        color: 'rgba(255,255,200,0.3)',
+        visible: true
+      };
+      GameEngine.drawEntity(photoEntity);
+    }
   }
 
   function drawHarukiEntity(ctx) {
@@ -2306,6 +3317,14 @@
     updateLightning(dt);
     updatePlayer(dt);
     updatePhase(dt);
+
+    // Update HUD elements for bottle count
+    if (phase === PHASES.EXPLORE || phase === PHASES.CHASE_1) {
+      var bottleHud = document.getElementById('bottleCount');
+      if (bottleHud) {
+        bottleHud.textContent = inventory.bottles > 0 ? '瓶: ' + inventory.bottles : '';
+      }
+    }
   }
 
   // =========================================================
@@ -2363,6 +3382,92 @@
     // Load the map
     var mapData = buildMapData();
     GameEngine.loadMap(mapData);
+
+    // --- FLOOR COLORS ---
+    if (GameEngine.floorColors) {
+      for (var fy = 0; fy < MAP_H; fy++) {
+        for (var fx = 0; fx < MAP_W; fx++) {
+          var ft = MAP_TILES[fy][fx];
+          var fc = null;
+          if (ft === TILE.CARPET) {
+            fc = {r:60, g:30, b:25}; // deep red carpet
+          } else if (ft === TILE.ROOM404) {
+            fc = {r:50, g:15, b:15}; // blood-tinted
+          } else if (ft === TILE.UTILITY) {
+            fc = {r:45, g:50, b:48}; // cold gray-green
+          } else if (ft === TILE.FRONT_DESK) {
+            fc = {r:50, g:35, b:25}; // warm carpet
+          } else if (ft === TILE.FLOOR && fy >= 31) {
+            fc = {r:55, g:40, b:30}; // storage: rusty brown
+          }
+          if (fc) {
+            GameEngine.floorColors[fy * 1000 + fx] = fc;
+          }
+        }
+      }
+    }
+
+    // --- POINT LIGHTS ---
+    if (GameEngine.addPointLight) {
+      var lightIdx = 0;
+      // Upper corridor lights (row 7-8)
+      for (var lx = 2; lx < MAP_W - 2; lx += 4) {
+        var isCorridorTile = MAP_TILES[7][lx] === TILE.CARPET || MAP_TILES[7][lx] === TILE.FLOOR;
+        if (isCorridorTile) {
+          GameEngine.addPointLight('light_' + lightIdx++, lx, 7, {
+            radius: 3, r: 255, g: 230, b: 180, intensity: 0.6,
+            flicker: 2 + Math.random() * 3, phase: Math.random() * 6.28
+          });
+        }
+      }
+      // Ground floor corridor lights (rows 22-27)
+      for (var lx2 = 2; lx2 < MAP_W - 2; lx2 += 4) {
+        var isGroundTile = MAP_TILES[25][lx2] !== TILE.WALL;
+        if (isGroundTile) {
+          GameEngine.addPointLight('light_' + lightIdx++, lx2, 25, {
+            radius: 3, r: 255, g: 230, b: 180, intensity: 0.6,
+            flicker: 2 + Math.random() * 3, phase: Math.random() * 6.28
+          });
+        }
+      }
+      // Back corridor lights (rows 29-30)
+      for (var lx3 = 2; lx3 < MAP_W - 2; lx3 += 4) {
+        GameEngine.addPointLight('light_' + lightIdx++, lx3, 29, {
+          radius: 3, r: 255, g: 230, b: 180, intensity: 0.5,
+          flicker: 3 + Math.random() * 4, phase: Math.random() * 6.28
+        });
+      }
+      // Utility/storage dimmer lights with more flicker
+      var storageLights = [{gx:2, gy:33}, {gx:8, gy:33}, {gx:13, gy:33}, {gx:18, gy:33}, {gx:23, gy:33}, {gx:27, gy:33}];
+      for (var sl = 0; sl < storageLights.length; sl++) {
+        GameEngine.addPointLight('light_' + lightIdx++, storageLights[sl].gx, storageLights[sl].gy, {
+          radius: 2, r: 200, g: 180, b: 150, intensity: 0.35,
+          flicker: 5 + Math.random() * 5, phase: Math.random() * 6.28
+        });
+      }
+      // Stairway lights
+      GameEngine.addPointLight('light_' + lightIdx++, 14, 16, {
+        radius: 3, r: 220, g: 200, b: 170, intensity: 0.4,
+        flicker: 4 + Math.random() * 3, phase: Math.random() * 6.28
+      });
+      GameEngine.addPointLight('light_' + lightIdx++, 14, 19, {
+        radius: 3, r: 220, g: 200, b: 170, intensity: 0.4,
+        flicker: 4 + Math.random() * 3, phase: Math.random() * 6.28
+      });
+    }
+
+    // --- DOOR STYLES ---
+    if (GameEngine.doorStyles) {
+      // Utility / storage doors: steel
+      var steelDoors = ['utility', 'storage1', 'storage2', 'storage3'];
+      for (var sd = 0; sd < doors.length; sd++) {
+        if (steelDoors.indexOf(doors[sd].label) >= 0) {
+          GameEngine.doorStyles[doors[sd].gx + ',' + doors[sd].gy] = 'steel';
+        }
+      }
+      // Exit door: emergency
+      GameEngine.doorStyles[exitDoor.gx + ',' + exitDoor.gy] = 'emergency';
+    }
 
     // Tell raycaster which tiles are solid (block rays)
     GameEngine.isTileSolid = function (tile, gx, gy) {
@@ -2537,6 +3642,15 @@
 
     // Settings / pause
     bindSettingsButton();
+
+    // Throw bottle on 'T' key press or via touch
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 't' || e.key === 'T') {
+        if ((phase === PHASES.EXPLORE || phase === PHASES.CHASE_1) && inventory.bottles > 0 && !isHiding && !dialogueActive) {
+          throwBottle();
+        }
+      }
+    });
   }
 
   // =========================================================
