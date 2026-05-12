@@ -260,12 +260,6 @@
     var maxViewDist = 12;
     var fogFactor = Math.max(0.05, 1 - dist / maxViewDist);
 
-    // Flashlight flicker only slightly dims
-    if (currentFlashlightFlicker > 0) {
-      var flickerAdjust = currentFlashlightFlicker * (Math.random() * 0.15);
-      fogFactor *= (1 - flickerAdjust);
-    }
-
     // V5: Point light contributions
     if (mapX !== undefined && mapY !== undefined && engine.pointLights && engine.pointLights.length > 0) {
       var hitWX = (mapX + 0.5) * TILE_SIZE;
@@ -505,6 +499,11 @@
     var mapH = map.height;
     var ts = TILE_SIZE;
 
+    // Per-frame flicker value (consistent across all strips)
+    var frameFlicker = currentFlashlightFlicker > 0
+      ? (1 - currentFlashlightFlicker * (0.05 + Math.sin(performance.now() * 0.03) * 0.1))
+      : 1;
+
     // Apply shake to angle for camera wobble
     var renderAngle = playerAngle + shakeOffsetX * 0.01;
 
@@ -636,11 +635,7 @@
 
       var wallH = drawEnd - drawStart;
       var fogDim = Math.max(0.05, 1 - correctedDist / 12);
-      var flickDim = 1;
-      if (currentFlashlightFlicker > 0) {
-        flickDim = 1 - currentFlashlightFlicker * (Math.random() * 0.15);
-      }
-      var totalDim = fogDim * flickDim;
+      var totalDim = fogDim * frameFlicker;
 
       // --- Door rendering (tile 2, 6, 9) ---
       if (hitTile === 2 || hitTile === 6 || hitTile === 9) {
@@ -691,15 +686,22 @@
       for (var fy = fWallBottom; fy < h; fy += 2) { // every 2nd pixel row
         var fyDenom = fy - halfH;
         if (fyDenom <= 0) continue;
-        var fRowDist = halfH / fyDenom;
+        var fRowDist = halfH / fyDenom; // perpendicular distance
         if (fRowDist <= 0.01) continue;
+        var fRayDist = fRowDist / cosCorrect; // actual distance along ray
         var fDistTiles = fRowDist;
         if (fDistTiles > 8) break; // skip floor beyond 8 tiles
 
-        var fFloorX = playerX / ts + fCosA * fRowDist;
-        var fFloorY = playerY / ts + fSinA * fRowDist;
+        var fFloorX = playerX / ts + fCosA * fRayDist;
+        var fFloorY = playerY / ts + fSinA * fRayDist;
         var fgx = Math.floor(fFloorX);
         var fgy = Math.floor(fFloorY);
+
+        // Skip floor outside map bounds
+        if (fgx < 0 || fgx >= mapW || fgy < 0 || fgy >= mapH) continue;
+        // Skip floor pixels that land on solid tiles (seeing through walls)
+        var fTile = tiles[fgy][fgx];
+        if (engine.isTileSolid && engine.isTileSolid(fTile, fgx, fgy)) continue;
 
         // Default: burgundy carpet
         var fR = 60, fG = 25, fB = 22;
@@ -757,15 +759,21 @@
       for (var cy = fWallTop; cy >= 0; cy -= 2) {
         var cyDenom = halfH - cy;
         if (cyDenom <= 0) continue;
-        var cRowDist = halfH / cyDenom;
+        var cRowDist = halfH / cyDenom; // perpendicular distance
         if (cRowDist <= 0.01) continue;
+        var cRayDist = cRowDist / cosCorrect; // actual distance along ray
         var cDistTiles = cRowDist;
         if (cDistTiles > 8) break;
 
-        var cFloorX = playerX / ts + fCosA * cRowDist;
-        var cFloorY = playerY / ts + fSinA * cRowDist;
+        var cFloorX = playerX / ts + fCosA * cRayDist;
+        var cFloorY = playerY / ts + fSinA * cRayDist;
         var cgx = Math.floor(cFloorX);
         var cgy = Math.floor(cFloorY);
+
+        // Skip ceiling outside map or on solid tiles
+        if (cgx < 0 || cgx >= mapW || cgy < 0 || cgy >= mapH) continue;
+        var cTile = tiles[cgy][cgx];
+        if (engine.isTileSolid && engine.isTileSolid(cTile, cgx, cgy)) continue;
 
         // Default ceiling: dark warm tone
         var cR = 30, cG = 24, cB = 20;
@@ -864,9 +872,6 @@
     var fogDist = transformY / ts;
     var maxViewDist = 12;
     var fogFactor = Math.max(0.05, 1 - fogDist / maxViewDist);
-    if (currentFlashlightFlicker > 0) {
-      fogFactor *= (1 - currentFlashlightFlicker * (Math.random() * 0.15));
-    }
     if (fogFactor <= 0.05) return;
 
     // Use entity image or color rectangle
