@@ -1998,6 +1998,21 @@
         case 'clock_tick':
           this._playClockTick(now);
           break;
+        case 'ui_tap':
+          this._playUiTap(now);
+          break;
+        case 'ui_tab':
+          this._playUiTab(now);
+          break;
+        case 'phone_open':
+          this._playPhoneOpen(now);
+          break;
+        case 'phone_close':
+          this._playPhoneClose(now);
+          break;
+        case 'paper_close':
+          this._playPaperClose(now);
+          break;
         case 'elevator_hum':
           this._playElevatorHum(now);
           break;
@@ -2921,6 +2936,98 @@
       gain.connect(dest);
       osc.start(now);
       osc.stop(now + 0.03);
+    },
+
+    // ── UI sound effects ──
+    // Tap: soft mid-range click, used for general buttons
+    _playUiTap: function (now) {
+      var dest = seGain || masterGain;
+      var osc = audioCtx.createOscillator();
+      var gain = audioCtx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(900, now);
+      osc.frequency.exponentialRampToValueAtTime(450, now + 0.04);
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
+      osc.connect(gain);
+      gain.connect(dest);
+      osc.start(now);
+      osc.stop(now + 0.08);
+    },
+
+    // Tab / sub-toggle: brighter, shorter
+    _playUiTab: function (now) {
+      var dest = seGain || masterGain;
+      var osc = audioCtx.createOscillator();
+      var gain = audioCtx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(1500, now);
+      osc.frequency.exponentialRampToValueAtTime(1100, now + 0.03);
+      gain.gain.setValueAtTime(0.08, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+      osc.connect(gain);
+      gain.connect(dest);
+      osc.start(now);
+      osc.stop(now + 0.06);
+    },
+
+    // Phone open: vintage-flip swell (rising chord pad)
+    _playPhoneOpen: function (now) {
+      var dest = seGain || masterGain;
+      var freqs = [330, 440, 660];
+      for (var i = 0; i < freqs.length; i++) {
+        var o = audioCtx.createOscillator();
+        var g = audioCtx.createGain();
+        o.type = 'sine';
+        o.frequency.setValueAtTime(freqs[i] * 0.7, now);
+        o.frequency.linearRampToValueAtTime(freqs[i], now + 0.18);
+        g.gain.setValueAtTime(0.0, now);
+        g.gain.linearRampToValueAtTime(0.08, now + 0.05);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
+        o.connect(g);
+        g.connect(dest);
+        o.start(now);
+        o.stop(now + 0.35);
+      }
+    },
+
+    // Phone close: descending whoosh
+    _playPhoneClose: function (now) {
+      var dest = seGain || masterGain;
+      var o = audioCtx.createOscillator();
+      var g = audioCtx.createGain();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(880, now);
+      o.frequency.exponentialRampToValueAtTime(220, now + 0.18);
+      g.gain.setValueAtTime(0.10, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.20);
+      o.connect(g);
+      g.connect(dest);
+      o.start(now);
+      o.stop(now + 0.22);
+    },
+
+    // Note close / page-flip
+    _playPaperClose: function (now) {
+      var dest = seGain || masterGain;
+      var bufLen = (audioCtx.sampleRate * 0.08) | 0;
+      var buf = audioCtx.createBuffer(1, bufLen, audioCtx.sampleRate);
+      var d = buf.getChannelData(0);
+      for (var i = 0; i < bufLen; i++) {
+        var t = i / audioCtx.sampleRate;
+        d[i] = (Math.random() - 0.5) * Math.exp(-t * 22);
+      }
+      var src = audioCtx.createBufferSource();
+      src.buffer = buf;
+      var filt = audioCtx.createBiquadFilter();
+      filt.type = 'highpass';
+      filt.frequency.value = 1500;
+      var g = audioCtx.createGain();
+      g.gain.value = 0.18;
+      src.connect(filt);
+      filt.connect(g);
+      g.connect(dest);
+      src.start(now);
     },
 
     _playElevatorHum: function (now) {

@@ -1609,8 +1609,18 @@
       return;
     }
     // Note viewer → any button closes (truly any controller button)
+    // Gate: the same press that opened the note (拾う) must not close it.
+    // Wait for the open-grace period, AND for the button to first be released
+    // (so close requires a fresh press, not the still-held pickup button).
     var nveEl = el('noteViewerOverlay');
     if (nveEl && nveEl.style.display !== 'none') {
+      var sinceOpen = performance.now() - _noteViewerOpenedAt;
+      if (sinceOpen < NOTE_INPUT_LOCK_MS) {
+        // Force: any button held during grace counts as still-held; mark as pressed
+        // so we don't fire close right after grace ends from the same press.
+        if (anyBtn) gp._menuClosePressed = true;
+        return;
+      }
       if (anyBtn && !gp._menuClosePressed) {
         gp._menuClosePressed = true;
         var closeNoteBtn = el('closeNoteBtn');
@@ -1847,11 +1857,12 @@
     pop.addEventListener('click', closeFn);
     pop.addEventListener('touchstart', closeFn);
     window._discoveryCloseFn = closeFn;
-    // Safety: forced close after 12s (ignores canClose gate)
+    // Auto-dismiss after 2.6s so non-blocking pop-ups don't litter the screen.
+    // (Game is not paused, so the user keeps moving — they don't need to tap.)
     _discoveryTimer = setTimeout(function () {
       canClose = true;
       closeFn();
-    }, 12000);
+    }, 2600);
   }
 
   // Encounter cinematic for entity first sighting
@@ -1983,6 +1994,11 @@
     var def = LEVELS[levelId];
     if (!def) {
       console.error('Unknown level', levelId);
+      // Recover from a state stuck in LOADING — fall back to title so the
+      // player isn't softlocked on a black screen if level progression bug fires.
+      if (state === ST.LOADING) {
+        try { returnToTitle(); } catch (e) {}
+      }
       return;
     }
     currentLevel = levelId;
@@ -2471,7 +2487,8 @@
     if (phoneOpen) return true;
     if (miniGameOpen) return true;
     if (_inCinematic) return true;
-    if (_discoveryActive) return true;
+    // Discovery popup (item/entity-found) is informational — does NOT pause anymore.
+    // Only the note viewer (text reader) pauses the game.
     var nv_ = el('noteViewerOverlay');
     if (nv_ && nv_.style.display !== 'none') return true;
     var iu_ = el('itemUseModal');
@@ -4111,11 +4128,15 @@
   //  ACTION (red button): pick up, open door, no-clip
   // ============================================================
   function handleAction() {
+    if (!currentMap || !currentMap.tiles) return;
     var gx = Math.floor(player.x / TS);
     var gy = Math.floor(player.y / TS);
-
-    // Check current tile
-    var t = currentMap.tiles[gy][gx];
+    // Out-of-bounds guard: if player has somehow been pushed outside the map
+    // (no-clip glitch, collision miss), bail safely instead of crashing.
+    if (gy < 0 || gx < 0 || gy >= currentMap.height || gx >= currentMap.width) return;
+    var row = currentMap.tiles[gy];
+    if (!row) return;
+    var t = row[gx];
 
     // No-clip exit
     if (t === 3) {
@@ -4356,16 +4377,31 @@
       lifetimeNoteTitles[note.title] = true;
       try { localStorage.setItem('thebackrooms_lifetime_notes_v1', JSON.stringify(lifetimeNoteTitles)); } catch (e) {}
     }
-    if (isNew) showDiscovery('📄', 'ノート発見', note.title);
+    // Skip the brief discoveryPopup for notes — the note viewer IS the main UI.
+    // (Stacking both makes the screen messy + redundant.)
     showNoteViewer(note.title, note.text);
     if (audioInitialized) GameEngine.playSound('paper');
     if (navigator.vibrate) navigator.vibrate(15);
   }
 
+  // Open time of the note viewer — used to gate close input so the same
+  // button press that opens (拾う) doesn't immediately close it on the next frame.
+  var _noteViewerOpenedAt = 0;
+  var NOTE_INPUT_LOCK_MS = 700;
   function showNoteViewer(title, text) {
     el('noteTitle').textContent = title;
     el('noteText').textContent = text;
     showOverlay('noteViewerOverlay');
+    _noteViewerOpenedAt = performance.now();
+    var closeBtn = el('closeNoteBtn');
+    if (closeBtn) {
+      closeBtn.disabled = true;
+      closeBtn.style.opacity = '0.4';
+      setTimeout(function () {
+        closeBtn.disabled = false;
+        closeBtn.style.opacity = '';
+      }, NOTE_INPUT_LOCK_MS);
+    }
   }
 
   function tryNoClip() {
@@ -5801,6 +5837,10 @@
   //  DEATH / ENDING
   // ============================================================
   function die(causeId, sub) {
+    // Guard against re-entry. Multiple drain sources (entity touch + env SAN drain)
+    // can fire the same-frame die() trigger, leading to double-count stats and
+    // overlay stacking. Once we're in DEAD/ENDED, do not re-run death sequence.
+    if (state === ST.DEAD || state === ST.ENDED) return;
     state = ST.DEAD;
     stats.totalDeaths++;
     saveStats();
@@ -5987,11 +6027,14 @@
     if (state !== ST.PLAYING) return;
     phoneOpen = true;
     refreshPhoneUI();
+    try { refreshDpadConfigUI(); } catch (e) {}
     showOverlay('phoneOverlay');
+    if (audioInitialized) GameEngine.playSound('phone_open');
   }
   function closePhone() {
     phoneOpen = false;
     hideOverlay('phoneOverlay');
+    if (audioInitialized) GameEngine.playSound('phone_close');
   }
 
   function switchTab(name) {
@@ -6057,6 +6100,7 @@
         saveDpadAssignments();
         updateDpadHud();
         refreshDpadConfigUI();
+        if (audioInitialized) GameEngine.playSound('ui_tab');
       });
     }
     var selects2 = document.querySelectorAll('.dpad-slot-select');
@@ -6068,6 +6112,7 @@
         dpadAssignments[dpadMode][d] = v;
         saveDpadAssignments();
         updateDpadHud();
+        if (audioInitialized) GameEngine.playSound('ui_tap');
       });
     }
   }
@@ -6801,6 +6846,20 @@
     // Stop title BGM
     GameEngine.stopLoop('classical');
     GameEngine.stopLoop('wind');
+    // Clean leftover state from a previous run that may still be lingering
+    // (entities animating during intro cinematic, dead-stuck cinematic flag,
+    //  discovery popup, etc.). Without this, after ending → 新規ゲーム the
+    //  player can be killed during the FPS opening.
+    entities = [];
+    _inCinematic = false;
+    _discoveryActive = false;
+    if (typeof window._discoveryCloseFn === 'function') {
+      try { window._discoveryCloseFn(); } catch (e) {}
+      window._discoveryCloseFn = null;
+    }
+    floatingMapOpen = false;
+    var fmEl = el('floatingMap'); if (fmEl) fmEl.style.display = 'none';
+    var _dh2 = el('dpadHud'); if (_dh2) _dh2.style.display = 'none';
 
     var diff = DIFFICULTIES[currentDifficulty] || DIFFICULTIES.normal;
     player.hpMax = Math.round(100 * diff.hpMul);
@@ -7019,6 +7078,7 @@
     el('floatingMapBtn').addEventListener('click', function () {
       floatingMapOpen = !floatingMapOpen;
       el('floatingMap').style.display = floatingMapOpen ? 'flex' : 'none';
+      if (audioInitialized) GameEngine.playSound('ui_tap');
       if (navigator.vibrate) navigator.vibrate(8);
     });
 
@@ -7035,6 +7095,7 @@
         panel.classList.remove('show');
         setTimeout(function () { panel.style.display = 'none'; }, 300);
       }
+      if (audioInitialized) GameEngine.playSound('ui_tap');
       if (navigator.vibrate) navigator.vibrate(8);
     });
     var fmOpacity = el('floatingMapOpacity');
@@ -7056,17 +7117,25 @@
     tabBtns.forEach(function (b) {
       b.addEventListener('click', function () {
         switchTab(b.getAttribute('data-tab'));
+        if (audioInitialized) GameEngine.playSound('ui_tab');
         if (navigator.vibrate) navigator.vibrate(8);
       });
     });
 
     el('closeNoteBtn').addEventListener('click', function () {
       hideOverlay('noteViewerOverlay');
+      if (audioInitialized) GameEngine.playSound('paper_close');
     });
 
     // Item use modal
-    el('itemUseConfirmBtn').addEventListener('click', confirmItemUse);
-    el('itemUseCancelBtn').addEventListener('click', closeItemUseModal);
+    el('itemUseConfirmBtn').addEventListener('click', function () {
+      if (audioInitialized) GameEngine.playSound('ui_tap');
+      confirmItemUse();
+    });
+    el('itemUseCancelBtn').addEventListener('click', function () {
+      if (audioInitialized) GameEngine.playSound('ui_tap');
+      closeItemUseModal();
+    });
 
     // Mini-game controls
     el('minigameActionBtn').addEventListener('click', function () {
@@ -7539,6 +7608,8 @@
         // Already initialized — but iOS may have re-suspended audioCtx.
         try { GameEngine.initAudio(); } catch (e) {} // idempotent + re-resumes
       }
+      // Tap SE for any title-screen action (start, settings, difficulty, etc.)
+      try { if (audioInitialized) GameEngine.playSound('ui_tap'); } catch (e) {}
       stage = 'switch:' + action;
       switch (action) {
         case 'start': stage = 'startNewGame'; startNewGame(); break;
