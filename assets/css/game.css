@@ -754,6 +754,15 @@ button {
   opacity: 1;
 }
 
+/* Scene 0: real-time FPS corridor canvas */
+.intro-scene-fps { background: #000; }
+.intro-fps-canvas {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  display: block;
+  image-rendering: pixelated;
+}
+
 /* Scene 1: Night BACK-ALLEY POV (narrow, brick walls on sides) */
 #introScene1 .intro-sky {
   position: absolute;

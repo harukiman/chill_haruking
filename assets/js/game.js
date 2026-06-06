@@ -1228,6 +1228,9 @@
   var readNotes = {};        // {levelId: {gx_gy: true}}
   var pickupSpots = {};      // {gx_gy: itemId} (this level)
   var noteSpots = {};        // {gx_gy: noteObj}
+  // Parallel render lists with precomputed world coords (avoid per-frame split).
+  var pickupRenderList = []; // [{key, wx, wy, itemId}]
+  var noteRenderList = [];   // [{key, wx, wy}]
   var doorStates = {};       // {gx_gy: {open}}
 
   // D-pad quick-use assignments (per mode)
@@ -1945,6 +1948,7 @@
     // Assign random item types from level pool to item spots
     var pool = LEVEL_ITEM_POOLS[levelId] || ['almond_water'];
     pickupSpots = {};
+    pickupRenderList = [];
     for (var i = 0; i < parsed.itemSpots.length; i++) {
       var spot = parsed.itemSpots[i];
       var key = gridKey(spot.gx, spot.gy);
@@ -1952,11 +1956,13 @@
       if (pickedUpItems[levelId] && pickedUpItems[levelId][key]) continue;
       var itemId = pool[Math.floor(Math.random() * pool.length)];
       pickupSpots[key] = itemId;
+      pickupRenderList.push({ key: key, wx: spot.gx * TS + TS / 2, wy: spot.gy * TS + TS / 2, itemId: itemId });
     }
 
     // Assign notes randomly from pool (every run shows different notes)
     var notesPool = NOTES_POOL[levelId] || [];
     noteSpots = {};
+    noteRenderList = [];
     // Shuffle copy
     var shuffledPool = notesPool.slice();
     for (var sh = shuffledPool.length - 1; sh > 0; sh--) {
@@ -1967,6 +1973,7 @@
       var ns = parsed.noteSpots[ni];
       var nkey = gridKey(ns.gx, ns.gy);
       noteSpots[nkey] = shuffledPool[ni];
+      noteRenderList.push({ key: nkey, wx: ns.gx * TS + TS / 2, wy: ns.gy * TS + TS / 2 });
     }
 
     return parsed;
@@ -5606,22 +5613,16 @@
 
     // Draw item / note / exit sprites (custom visible)
     var glowPhase = performance.now() * 0.003;
-    for (var key in pickupSpots) {
-      var parts = key.split('_');
-      var gx = parseInt(parts[0], 10);
-      var gy = parseInt(parts[1], 10);
-      var wx = gx * TS + TS / 2;
-      var wy = gy * TS + TS / 2;
-      drawWorldPickup(ctx, wx, wy, glowPhase, '#88c050', '📦', pickupSpots[key]);
+    for (var pi = 0; pi < pickupRenderList.length; pi++) {
+      var prl = pickupRenderList[pi];
+      if (!pickupSpots[prl.key]) continue; // already picked up
+      drawWorldPickup(ctx, prl.wx, prl.wy, glowPhase, '#88c050', '📦', prl.itemId);
     }
-    for (var nkey in noteSpots) {
-      if (readNotes[currentLevel] && readNotes[currentLevel][nkey]) continue;
-      var nparts = nkey.split('_');
-      var ngx = parseInt(nparts[0], 10);
-      var ngy = parseInt(nparts[1], 10);
-      var nwx = ngx * TS + TS / 2;
-      var nwy = ngy * TS + TS / 2;
-      drawWorldPickup(ctx, nwx, nwy, glowPhase + 1, '#5a82c8', '📄', null);
+    var readNotesLvl = readNotes[currentLevel];
+    for (var nli = 0; nli < noteRenderList.length; nli++) {
+      var nrl = noteRenderList[nli];
+      if (readNotesLvl && readNotesLvl[nrl.key]) continue;
+      drawWorldPickup(ctx, nrl.wx, nrl.wy, glowPhase + 1, '#5a82c8', '📄', null);
     }
     // No-clip exit (large beam)
     if (currentMap.noclipExits) {
@@ -6572,6 +6573,119 @@
   //  TITLE / NEW GAME
   // ============================================================
   // Intro cinematic — first-person POV with 3 scenes
+  // Mini self-contained raycaster for the intro FPS shot.
+  // Renders a straight yellow Backrooms-style corridor and animates the camera
+  // forward for `duration` ms. No dependence on GameEngine state.
+  function runIntroFpsScene(duration, onDone) {
+    var cvs = el('introFpsCanvas');
+    if (!cvs) { if (onDone) onDone(); return; }
+    var ctx = cvs.getContext('2d');
+    var dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    function resize() {
+      cvs.width = Math.floor(cvs.clientWidth * dpr);
+      cvs.height = Math.floor(cvs.clientHeight * dpr);
+    }
+    resize();
+    var startT = performance.now();
+    var cancelled = false;
+    var rafId = 0;
+    // Corridor map: 1 = wall, 0 = floor. Player walks along Y+ down a 3-wide corridor.
+    var MAP_W = 5, MAP_H = 80;
+    var map = new Uint8Array(MAP_W * MAP_H);
+    for (var my = 0; my < MAP_H; my++) {
+      for (var mx = 0; mx < MAP_W; mx++) {
+        var t = (mx === 0 || mx === MAP_W - 1) ? 1 : 0;
+        // Occasional doorway alcoves left/right for visual interest
+        if ((my % 9 === 0) && my > 4 && my < MAP_H - 4) {
+          if (mx === 0 || mx === MAP_W - 1) t = 0;
+        }
+        map[my * MAP_W + mx] = t;
+      }
+    }
+    var FOV = Math.PI / 3;
+    function step(now) {
+      if (cancelled) return;
+      var t = (now - startT) / duration; // 0..1
+      if (t >= 1) {
+        if (onDone) onDone();
+        return;
+      }
+      var w = cvs.width, h = cvs.height;
+      // Camera position: center of corridor in X, advancing in Y
+      var px = (MAP_W / 2);
+      var py = 1 + (MAP_H - 4) * t;
+      // Subtle head bob
+      var bobY = Math.sin(now * 0.012) * 0.04;
+      var bobX = Math.sin(now * 0.006) * 0.02;
+      px += bobX;
+      var camAngle = Math.PI / 2; // facing +Y
+      // Ceiling + floor gradient (yellow Backrooms vibe)
+      ctx.fillStyle = '#3d3008';
+      ctx.fillRect(0, 0, w, h / 2);
+      ctx.fillStyle = '#1a1408';
+      ctx.fillRect(0, h / 2, w, h / 2);
+      // Cast rays
+      var stripW = 4;
+      var rays = Math.ceil(w / stripW);
+      for (var i = 0; i < rays; i++) {
+        var sx = i * stripW;
+        var rayAng = camAngle - FOV / 2 + (i / rays) * FOV;
+        var rcos = Math.cos(rayAng), rsin = Math.sin(rayAng);
+        // DDA
+        var mapX = Math.floor(px), mapY = Math.floor(py);
+        var ddx = Math.abs(1 / rcos) || 1e9;
+        var ddy = Math.abs(1 / rsin) || 1e9;
+        var stepX, stepY, sdX, sdY;
+        if (rcos < 0) { stepX = -1; sdX = (px - mapX) * ddx; }
+        else          { stepX = 1;  sdX = (mapX + 1 - px) * ddx; }
+        if (rsin < 0) { stepY = -1; sdY = (py - mapY) * ddy; }
+        else          { stepY = 1;  sdY = (mapY + 1 - py) * ddy; }
+        var hit = 0, side = 0, safety = 64;
+        while (!hit && safety-- > 0) {
+          if (sdX < sdY) { sdX += ddx; mapX += stepX; side = 0; }
+          else           { sdY += ddy; mapY += stepY; side = 1; }
+          if (mapX < 0 || mapY < 0 || mapX >= MAP_W || mapY >= MAP_H) { hit = 1; break; }
+          if (map[mapY * MAP_W + mapX] === 1) hit = 1;
+        }
+        var dist;
+        if (side === 0) dist = (mapX - px + (1 - stepX) / 2) / rcos;
+        else            dist = (mapY - py + (1 - stepY) / 2) / rsin;
+        dist = Math.max(0.1, dist);
+        var wallH = Math.min(h * 4, h / dist);
+        var drawStart = (h - wallH) / 2 + bobY * h;
+        // Wallpaper color: Backrooms yellow, dimmer on far walls, slight side shading
+        var fog = Math.max(0.18, 1 - dist / 30);
+        var base = side === 1 ? 0.78 : 1.0;
+        var r = Math.floor(212 * fog * base);
+        var g = Math.floor(170 * fog * base);
+        var b = Math.floor(58 * fog * base);
+        ctx.fillStyle = 'rgb(' + r + ',' + g + ',' + b + ')';
+        ctx.fillRect(sx, drawStart, stripW + 1, wallH);
+        // Horizontal seam every ~8 tiles for floor pattern hint
+        var seamY = h / 2 + (h / dist) * 0.42 + bobY * h;
+        ctx.fillStyle = 'rgba(80,55,18,' + (0.4 * fog).toFixed(3) + ')';
+        ctx.fillRect(sx, seamY, stripW + 1, 1);
+      }
+      // Flicker overlay
+      var flicker = (Math.random() < 0.04) ? 0.25 : 0.05;
+      ctx.fillStyle = 'rgba(255,240,170,' + flicker + ')';
+      ctx.fillRect(0, 0, w, h);
+      // Vignette
+      var grd = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.25,
+                                          w / 2, h / 2, Math.max(w, h) * 0.7);
+      grd.addColorStop(0, 'rgba(0,0,0,0)');
+      grd.addColorStop(1, 'rgba(0,0,0,0.85)');
+      ctx.fillStyle = grd;
+      ctx.fillRect(0, 0, w, h);
+      rafId = requestAnimationFrame(step);
+    }
+    rafId = requestAnimationFrame(step);
+    return function cancel() {
+      cancelled = true;
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }
+
   function playIntroCinematic(onDone) {
     showOverlay('introOverlay');
     var eyes = el('introEyes');
@@ -6579,14 +6693,16 @@
     var lineEl = el('introLine');
     lineEl.textContent = '';
     lineEl.classList.remove('show');
+    var s0 = el('introScene0');
     var s1 = el('introScene1');
     var s2 = el('introScene2');
     var s3 = el('introScene3');
-    [s1, s2, s3].forEach(function (s) { s.classList.remove('active'); });
+    [s0, s1, s2, s3].forEach(function (s) { if (s) s.classList.remove('active'); });
     if (audioInitialized) GameEngine.startLoop('wind');
 
     var cancelled = false;
     var footstepTimer = null;
+    var fpsCancel = null;
     function startFootsteps() {
       if (!audioInitialized) return;
       footstepTimer = setInterval(function () {
@@ -6612,6 +6728,7 @@
       if (cancelled) return;
       cancelled = true;
       stopFootsteps();
+      if (fpsCancel) { try { fpsCancel(); } catch (e) {} fpsCancel = null; }
       hideOverlay('introOverlay');
       if (audioInitialized) GameEngine.stopLoop('wind');
       try { el('introSkipBtn').removeEventListener('click', skipHandler); } catch (e) {}
@@ -6652,11 +6769,19 @@
       if (audioInitialized) GameEngine.playSound('thunder');
     }, 6500);
 
-    // Eyes hint to open — but FINAL frame waits for tap
+    // Scene 0 (FPS): yellow corridor walk — proves "you're in the Backrooms"
     setTimeout(function () {
       if (cancelled) return;
-      eyes.classList.add('partial');
-      setLine('[ 画面をタップして開始 ]');
+      s3.classList.remove('active');
+      if (s0) s0.classList.add('active');
+      startFootsteps();
+      setLine('— 立ち上がる。果てしなく続く、黄色い廊下。');
+      fpsCancel = runIntroFpsScene(4500, function () {
+        if (cancelled) return;
+        stopFootsteps();
+        eyes.classList.add('partial');
+        setLine('[ 画面をタップして開始 ]');
+      });
     }, 8500);
     // No auto-finish — user taps overlay or skip button to advance
     // Safety net: auto-finish after 30s if no tap

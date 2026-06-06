@@ -610,22 +610,26 @@
     var renderAngle = playerAngle + shakeOffsetX * 0.01;
 
     // ── Theme-driven ceiling/floor backdrop ───────────────
+    // Gradients are expensive to construct (one alloc + 3 color parses each).
+    // Reuse the same CanvasGradient until theme or height changes.
     var themeBg = engine.theme && engine.theme.bg;
-    var ceilStops = (themeBg && themeBg.ceiling) || ['#181614', '#262018', '#302a20'];
-    var floorStops = (themeBg && themeBg.floor) || ['#1c1210', '#2d1815', '#3a2018'];
-
-    var ceilGrad = ctx.createLinearGradient(0, 0, 0, h / 2);
-    ceilGrad.addColorStop(0, ceilStops[0]);
-    ceilGrad.addColorStop(0.7, ceilStops[1] || ceilStops[0]);
-    ceilGrad.addColorStop(1, ceilStops[2] || ceilStops[1] || ceilStops[0]);
-    ctx.fillStyle = ceilGrad;
+    var bgCache = engine._bgGradCache;
+    if (!bgCache || bgCache.themeBg !== themeBg || bgCache.h !== h || bgCache.w !== w) {
+      var ceilStops = (themeBg && themeBg.ceiling) || ['#181614', '#262018', '#302a20'];
+      var floorStops = (themeBg && themeBg.floor) || ['#1c1210', '#2d1815', '#3a2018'];
+      var ceilGrad = ctx.createLinearGradient(0, 0, 0, h / 2);
+      ceilGrad.addColorStop(0, ceilStops[0]);
+      ceilGrad.addColorStop(0.7, ceilStops[1] || ceilStops[0]);
+      ceilGrad.addColorStop(1, ceilStops[2] || ceilStops[1] || ceilStops[0]);
+      var floorGrad = ctx.createLinearGradient(0, h / 2, 0, h);
+      floorGrad.addColorStop(0, floorStops[0]);
+      floorGrad.addColorStop(0.3, floorStops[1] || floorStops[0]);
+      floorGrad.addColorStop(1, floorStops[2] || floorStops[1] || floorStops[0]);
+      bgCache = engine._bgGradCache = { themeBg: themeBg, h: h, w: w, ceil: ceilGrad, floor: floorGrad };
+    }
+    ctx.fillStyle = bgCache.ceil;
     ctx.fillRect(0, 0, w, h / 2);
-
-    var floorGrad = ctx.createLinearGradient(0, h / 2, 0, h);
-    floorGrad.addColorStop(0, floorStops[0]);
-    floorGrad.addColorStop(0.3, floorStops[1] || floorStops[0]);
-    floorGrad.addColorStop(1, floorStops[2] || floorStops[1] || floorStops[0]);
-    ctx.fillStyle = floorGrad;
+    ctx.fillStyle = bgCache.floor;
     ctx.fillRect(0, h / 2, w, h / 2);
 
     // Precompute light grid once per frame
