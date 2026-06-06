@@ -1581,8 +1581,8 @@
       }, 3500);
     }
 
-    // Save automatically on level start
-    saveGame();
+    // Save automatically on level start (normal mode only)
+    if (gameMode === 'normal') saveGame();
   }
 
   var TUT_HINTS = [
@@ -1992,7 +1992,8 @@
     try {
       localStorage.setItem(ACH_KEY, JSON.stringify(unlockedAchievements));
     } catch (e) { /* ignore */ }
-    saveGame();
+    // Only persist run save in normal mode (avoid endless mode polluting normal save)
+    if (gameMode === 'normal') saveGame();
   }
 
   function loadAchievements() {
@@ -4853,9 +4854,9 @@
       }
     });
 
-    // Auto-save every 30s
+    // Auto-save every 30s (only normal mode — endless should not persist mid-run)
     setInterval(function () {
-      if (state === ST.PLAYING) saveGame();
+      if (state === ST.PLAYING && gameMode === 'normal') saveGame();
     }, 30000);
 
     // Konami code on title screen (↑↑↓↓←→←→BA) → grants starter pack
