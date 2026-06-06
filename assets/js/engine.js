@@ -1783,8 +1783,9 @@
               var deltaX = touch.clientX - lookLastX;
               lookLastX = touch.clientX;
               // Accumulate per-frame look impulse (consumed by game loop).
-              // 1 px swipe = ~0.012 rad (~0.7°), tuned for natural feel.
-              self.input.lookImpulse = (self.input.lookImpulse || 0) + deltaX * 0.012;
+              // 1 px swipe = ~0.008 rad. Sens multiplier applied in game.js update.
+              // 400px swipe ≈ 3.2 rad ≈ 183°. Comfortable for full turn-around in one swipe.
+              self.input.lookImpulse = (self.input.lookImpulse || 0) + deltaX * 0.008;
               // Visual stick for feedback (clamped)
               var s = calcStick(touch, lookCenterX, lookCenterY);
               rightThumb.style.transform = 'translate(' + s.thumbX + 'px, ' + s.thumbY + 'px)';
