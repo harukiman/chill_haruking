@@ -5543,6 +5543,23 @@
     loadTutorialDone();
     loadEndlessBest();
     loadStats();
+
+    // First touch on title initializes audio AND starts title BGM
+    var titleScr = el('titleScreen');
+    if (titleScr) {
+      var initOnTouch = function () {
+        if (!audioInitialized) {
+          GameEngine.initAudio();
+          audioInitialized = true;
+          // Start title BGM (wind drone)
+          setTimeout(function () {
+            if (state === ST.TITLE) GameEngine.startLoop('wind');
+          }, 200);
+        }
+      };
+      titleScr.addEventListener('touchstart', initOnTouch, { passive: true });
+      titleScr.addEventListener('click', initOnTouch);
+    }
     bindEvents();
     updateTitleButtons();
     showOverlay('titleScreen');
