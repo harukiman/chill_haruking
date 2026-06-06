@@ -1451,6 +1451,14 @@
     var anyClose = (pauseBtn && pauseBtn.pressed) || (phoneBtnRaw && phoneBtnRaw.pressed);
     var anyConfirm = actionBtnRaw && actionBtnRaw.pressed;
 
+    // Global lock: any overlay close path can set window._gpGlobalLockUntil
+    // to suppress the still-held button from confirming a title menu item.
+    if (window._gpGlobalLockUntil && performance.now() < window._gpGlobalLockUntil) {
+      gp._titleConfirm = true;
+      gp._cursorClick = true;
+      gp._menuClosePressed = true;
+      return;
+    }
     // Input lockout: after closing a menu, ignore action button for 400ms
     // (prevents the same press from triggering title nav / game start)
     if (gp._inputLockUntil && performance.now() < gp._inputLockUntil) {
@@ -1758,7 +1766,11 @@
       gp._r1Pressed = false;
     }
     // D-pad: quick-use assigned items (mode-specific)
+    // Debounce: 250ms cooldown on the same direction so high-FPS rigs and
+    // accidental held inputs don't multi-trigger item consumption.
     if (!gp._dpadHeld) gp._dpadHeld = { up: false, down: false, left: false, right: false };
+    if (!gp._dpadLastFire) gp._dpadLastFire = { up: 0, down: 0, left: 0, right: 0 };
+    var nowMs = performance.now();
     var dpadMap = [{ btn: 12, dir: 'up' }, { btn: 13, dir: 'down' },
                    { btn: 14, dir: 'left' }, { btn: 15, dir: 'right' }];
     for (var dpi = 0; dpi < dpadMap.length; dpi++) {
@@ -1766,8 +1778,11 @@
       var dpDir = dpadMap[dpi].dir;
       if (dbtn && dbtn.pressed && !gp._dpadHeld[dpDir]) {
         gp._dpadHeld[dpDir] = true;
-        var assignedId = (dpadAssignments[dpadMode] || {})[dpDir];
-        if (assignedId) quickUseAssignedItem(assignedId);
+        if (nowMs - gp._dpadLastFire[dpDir] >= 250) {
+          gp._dpadLastFire[dpDir] = nowMs;
+          var assignedId = (dpadAssignments[dpadMode] || {})[dpDir];
+          if (assignedId) quickUseAssignedItem(assignedId);
+        }
       } else if (!(dbtn && dbtn.pressed)) {
         gp._dpadHeld[dpDir] = false;
       }
@@ -2073,6 +2088,17 @@
     if (def.entities) {
       for (var ei = 0; ei < def.entities.length; ei++) {
         var ent = def.entities[ei];
+        // Per-type HP base so CHAOS / NORMAL difficulty actually scales.
+        var hpBase = ({
+          hound: 60,
+          skinstealer: 80,
+          smiler: 90,
+          partygoer: 50,
+          boss: 200
+        })[ent.type] || 100;
+        var diffMul = (DIFFICULTIES[currentDifficulty] && DIFFICULTIES[currentDifficulty].hpMul) || 1;
+        // Enemy HP scales inversely to player hpMul — harder diff = tougher enemies.
+        var enemyHp = Math.round(hpBase * (2 - diffMul));
         entities.push({
           type: ent.type,
           x: ent.gx * TS + TS / 2,
@@ -2083,7 +2109,8 @@
           targetX: ent.gx * TS + TS / 2,
           targetY: ent.gy * TS + TS / 2,
           alive: true,
-          hp: 100,
+          hp: enemyHp,
+          hpMax: enemyHp,
           color: getEntityColor(ent.type),
           bodyColor: '#000000'
         });
@@ -7277,6 +7304,46 @@
       if (state === ST.PLAYING && gameMode === 'normal') saveGame();
     }, 30000);
 
+    // Pause / phone toggle: ESC or P. In-game = open phone (game pauses).
+    // While an overlay is open, ESC closes it. Tab = floating map. M = map.
+    window.addEventListener('keydown', function (e) {
+      // Don't hijack typing in inputs (e.g. settings sliders)
+      var tgt = e.target;
+      if (tgt && (tgt.tagName === 'INPUT' || tgt.tagName === 'SELECT' || tgt.tagName === 'TEXTAREA')) return;
+      if (e.key === 'Escape') {
+        // Close any open overlay in priority order
+        var nv = el('noteViewerOverlay');
+        if (nv && nv.style.display !== 'none' && nv.style.display !== '') {
+          // Respect the input-lock so the same Escape that opened it isn't bound
+          if (performance.now() - _noteViewerOpenedAt >= NOTE_INPUT_LOCK_MS) {
+            el('closeNoteBtn').click();
+          }
+          return;
+        }
+        var iu = el('itemUseModal');
+        if (iu && iu.style.display !== 'none' && iu.style.display !== '') {
+          closeItemUseModal(); return;
+        }
+        if (phoneOpen) { closePhone(); return; }
+        var ts = el('titleSettingsOverlay');
+        if (ts && ts.style.display !== 'none' && ts.style.display !== '') {
+          window.__titleAction && window.__titleAction('closeSettings'); return;
+        }
+        var tut = el('tutorialOverlay');
+        if (tut && tut.style.display !== 'none' && tut.style.display !== '') {
+          hideOverlay('tutorialOverlay'); return;
+        }
+        // No overlay open & in-game → open phone (= pause)
+        if (state === ST.PLAYING) { openPhone(); }
+        return;
+      }
+      if ((e.key === 'p' || e.key === 'P') && state === ST.PLAYING) {
+        if (phoneOpen) closePhone();
+        else openPhone();
+        return;
+      }
+    });
+
     // Konami code on title screen (↑↑↓↓←→←→BA) → grants starter pack
     var konami = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];
     var ki = 0;
@@ -7633,7 +7700,12 @@
           try { if (typeof closePhone === 'function') closePhone(); } catch (e) {}
           showOverlay('titleSettingsOverlay');
           break;
-        case 'closeSettings': stage = 'closeSettings'; hideOverlay('titleSettingsOverlay'); break;
+        case 'closeSettings':
+          stage = 'closeSettings';
+          hideOverlay('titleSettingsOverlay');
+          // Prevent the same press/tap from bleeding into the title menu under it.
+          window._gpGlobalLockUntil = performance.now() + 450;
+          break;
         case 'reset':
           stage = 'reset';
           if (!confirm('全データ削除しますか?')) return;
