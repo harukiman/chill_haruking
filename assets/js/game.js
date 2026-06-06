@@ -1085,7 +1085,13 @@
       { title: '駅員ノート',
         text: '"乗客 0 / 降客 ∞"\n"次の列車: もうすぐ"\n"次の次の列車: もう来ない"' },
       { title: '時刻表',
-        text: '12:00\n00:00\n??:??\n\n次の到着時刻は表記されていない。\n"列車は always 通ります" と注釈がある。' }
+        text: '12:00\n00:00\n??:??\n\n次の到着時刻は表記されていない。\n"列車は always 通ります" と注釈がある。' },
+      { title: '車掌の記録',
+        text: '車掌室で発見された手帳:\n\n"今日も乗客はいなかった。\n運転手もいなかった。\n線路は私の意思に従って動いている。\n\nそれでも、列車は時刻通りに走る。\n— 何故、走り続けるのか、私には分からない。"' },
+      { title: 'プラットフォームの落書き',
+        text: '"次の列車を待っている人へ\n\n来ません。\nどんなに待っても来ません。\nでも、列車の音はします。\nそれは、お前の心臓の音です。"' },
+      { title: 'M.E.G. 危険等級審議',
+        text: '"Level ! の真の危険は列車ではない。\n列車を「見られる」ことだ。\n\n通過する列車を直視した者の魂は、\n列車に乗せられて、どこかへ運ばれる。\n\n伏せろ。決して、見るな。"' }
     ],
     12: [
       { title: 'Fun =)',
@@ -1093,7 +1099,15 @@
       { title: '招待状',
         text: '宛先: 全 no-clipper 様\n本日のパーティは無料です。\nお帰りも無料です — できれば。' },
       { title: 'コンフェッティ',
-        text: '床に散らばる紙片を拾った。\n読めない言語で何かが書かれている。\n— だが、自分の名前だけはハッキリと読めた。' }
+        text: '床に散らばる紙片を拾った。\n読めない言語で何かが書かれている。\n— だが、自分の名前だけはハッキリと読めた。' },
+      { title: 'パーティの主催者',
+        text: '"このパーティは、6,247 日前から開催中。\n主催者: 不明。\nゲスト: 432 名 (うち生存: 不明)。\n音楽: ループ中。\n\nお祝いの理由: お前が来たこと。"' },
+      { title: 'ケーキの中の手紙',
+        text: 'ピンクのケーキを切ると、中から紙が出てきた。\n\n"おめでとう。\n君はパーティに最後に到着した客だ。\nだから、君がケーキを食べる役。\n\n食べないと、君が食べられる。\n選んで。"' },
+      { title: 'カラオケの歌詞',
+        text: 'ステージ上のマイクから、歌が流れている。\n歌詞は変わり続けている。\n\n"ハッピーバースデー、ディア [プレイヤー名]\nハッピーバースデー、トゥーユー\n\nまだ生きてる?\nお祝いするよ、何度でも♪"' },
+      { title: 'パーティが終わらない理由',
+        text: 'M.E.G. 文化観察記録:\n"Level Fun =) は、誰かの最高の誕生日の記憶から生まれた。\n\nその誰かは、もう存在しない。\nだが、記憶が階層を維持し続けている。\n\nパーティが終わるには、その誰かを思い出してあげる必要がある。\nだが、誰も覚えていない。\n— だから、永遠に続く。"' }
     ],
     9: [
       { title: '郊外の終わり',
@@ -1101,7 +1115,15 @@
       { title: 'THE END',
         text: '黒い扉を見つけたら、それが終点だ。\nそこを開けば「TRUE END」へ到達できる。\nだが、開けないという選択肢もある。' },
       { title: 'THE ARCHITECT',
-        text: 'この階層を構築・支配する存在。\n王冠を被った人型。\n3 つの段階で本性を見せる。\n\nフェーズ 1: 観察。徘徊。\nフェーズ 2: 接近。突進。\nフェーズ 3: 分裂。影を生み出す。\n\n— 倒さなくても TRUE END は見られる。だが、奴を倒した者だけが、本当の終わりを知る。' }
+        text: 'この階層を構築・支配する存在。\n王冠を被った人型。\n3 つの段階で本性を見せる。\n\nフェーズ 1: 観察。徘徊。\nフェーズ 2: 接近。突進。\nフェーズ 3: 分裂。影を生み出す。\n\n— 倒さなくても TRUE END は見られる。だが、奴を倒した者だけが、本当の終わりを知る。' },
+      { title: '隣家のポストカード',
+        text: '"親愛なる隣人へ\n\n今日はお会いできて嬉しかったです。\nまたお茶でもどうですか?\n\n追伸: 私のことを覚えていてくれて嬉しい。\nあなた以前の隣人は、皆、忘れてしまったから。"\n\n— 隣の家から、明日も毎日届く。' },
+      { title: '芝生の手紙',
+        text: '芝生の上に、整然と並べられた小石。\nメッセージを綴っている:\n\n"ここはアメリカの郊外じゃない。\nここは「郊外の概念」そのもの。\n\nだから誰でも、ここで\n自分の故郷を見ることができる。\n\n見えたあなたの故郷を、忘れないように。"' },
+      { title: 'THE ARCHITECT の手記',
+        text: 'M.E.G. 入手の重大資料:\n\n"私は Level 9 を建てた者。\n人間だった頃の最後の願いは、\n「平穏な郊外で老後を過ごしたい」だった。\n\nだから、ここを永遠の郊外にした。\n人々を迎え入れた。\n\nだが、誰も帰らない。\nだから、私が引き留めている、と思われている。\n\n— 違う。彼らが、帰りたくないのだ。"' },
+      { title: '満月の不在',
+        text: 'この階層に月は無い。\nだが、月が「あった」場所には、\n大きな黒い円が浮かんでいる。\n\n直視すると、自分の影が伸びる。\n影は、自分より大きく、自分を見つめ返す。\n\n— あれは月の不在ではない。\n  月の代わりに、何かが見ているのだ。' }
     ]
   };
 
@@ -1184,6 +1206,9 @@
     totalNotesRead: 0,
     totalDistanceWalked: 0
   };
+
+  // Lifetime collected note titles (used for TRUE+ END unique collection)
+  var lifetimeNoteTitles = {};
 
   var entitySeenTypes = {}; // {type: true}
 
@@ -2110,6 +2135,8 @@
       }
       var es = localStorage.getItem(ENT_SEEN_KEY);
       if (es) entitySeenTypes = JSON.parse(es) || {};
+      var ln = localStorage.getItem('thebackrooms_lifetime_notes_v1');
+      if (ln) lifetimeNoteTitles = JSON.parse(ln) || {};
     } catch (e) { /* ignore */ }
   }
 
@@ -3108,6 +3135,11 @@
       });
       readNotes[currentLevel][gridKey(gx, gy)] = true;
       stats.totalNotesRead++;
+      // Lifetime unique-title tracking
+      if (!lifetimeNoteTitles[note.title]) {
+        lifetimeNoteTitles[note.title] = true;
+        try { localStorage.setItem('thebackrooms_lifetime_notes_v1', JSON.stringify(lifetimeNoteTitles)); } catch (e) {}
+      }
       saveStats();
     }
     showNoteViewer(note.title, note.text);
@@ -4257,13 +4289,16 @@
       for (var lk in NOTES_POOL) totalNotes += NOTES_POOL[lk].length;
       // Count total achievements
       var totalAch = Object.keys(ACHIEVEMENTS).length;
-      var hasAllNotes = discoveredNotes.length >= totalNotes;
+      // TRUE+ END uses lifetime collection (across multiple runs)
+      var lifetimeCount = Object.keys(lifetimeNoteTitles).length;
+      var hasAllNotes = lifetimeCount >= totalNotes;
       var hasAllAch = Object.keys(unlockedAchievements).length >= totalAch - 1;
       var runSummary =
         '<hr style="border:none;border-top:1px solid #483910;margin:14px 0;">' +
         '<div style="font-size:11px;color:#b09040;letter-spacing:0.15em;line-height:1.8;">' +
         '生存: ' + formatTime(playTime) + '<br>' +
-        'ノート: ' + discoveredNotes.length + ' / ' + totalNotes + '<br>' +
+        '本ラン ノート: ' + discoveredNotes.length + '<br>' +
+        '通算 ユニーク ノート: ' + lifetimeCount + ' / ' + totalNotes + '<br>' +
         'アチーブ: ' + Object.keys(unlockedAchievements).length + ' / ' + totalAch + '<br>' +
         '難易度: ' + (DIFFICULTIES[currentDifficulty] ? DIFFICULTIES[currentDifficulty].name : 'NORMAL') +
         '</div>';
@@ -4484,10 +4519,11 @@
       })();
       var totalNotesAvailable = 0;
       for (var lk2 in NOTES_POOL) totalNotesAvailable += NOTES_POOL[lk2].length;
+      var lifetimeNotesCount = Object.keys(lifetimeNoteTitles).length;
       var trackProgress = {
         five_clears: clearsNow + ' / 5',
         all_clears: clearsNow + ' / 12',
-        collect_10_notes: notesNow + ' / 10',
+        collect_10_notes: notesNow + ' / 10  (累積 ' + lifetimeNotesCount + ' / ' + totalNotesAvailable + ')',
         inventory_full: invNow + ' / 6',
         collect_all_items: itemsAllTime + ' / ' + Object.keys(ITEMS).length,
         endless_5_floors: endlessFloor + ' / 5',
