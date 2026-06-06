@@ -1542,19 +1542,31 @@
       if (currentAmbient) GameEngine.startLoop(currentAmbient);
     }
 
+    // Force canvas resize before/during overlays (iOS Safari dynamic viewport fix)
+    forceCanvasResize();
+
     // Loading screen — then Level Reach cinematic before play
     if (!instant) {
       showLoadingScreen(def);
       setTimeout(function () {
         hideOverlay('loadingScreen');
+        forceCanvasResize();
         // Show level reach cinematic
         playLevelReachCinematic(def, function () {
+          forceCanvasResize();
           startPlaying();
         });
       }, 900);
     } else {
+      forceCanvasResize();
       startPlaying();
     }
+  }
+
+  function forceCanvasResize() {
+    if (GameEngine._resize) GameEngine._resize();
+    // Also dispatch global resize event for any other listeners
+    try { window.dispatchEvent(new Event('resize')); } catch (e) {}
   }
 
   function playLevelReachCinematic(def, onDone) {
@@ -1565,6 +1577,7 @@
     if (audioInitialized) GameEngine.playSound('stinger');
     setTimeout(function () {
       hideOverlay('levelReachCinematic');
+      forceCanvasResize();
       onDone();
     }, 2400);
   }
@@ -1770,6 +1783,9 @@
 
   function startPlaying() {
     state = ST.PLAYING;
+    // Force canvas resize (fix: top-left only bug after overlays)
+    if (GameEngine._resize) GameEngine._resize();
+    window.dispatchEvent(new Event('resize'));
     // Show in-game HUD
     el('vitalBars').classList.add('show');
     el('joystickArea').style.display = '';
@@ -1815,7 +1831,7 @@
     '左スティックで移動。右スティックで視点を回せ。',
     '同時に動かしてダッシュ。STA を消費する。',
     '黄色いアイテム/ノートを見つけたら 赤ボタンで拾え。',
-    '黄色の▲ no-clip 地点を探せ。壁の隙間に隠れていることも。',
+    '黄色の▲ は出口の目印。近づいて赤ボタンで先へ進む。',
     '右上のスマホでステータス・マップ・記録を確認できる。'
   ];
 
@@ -3864,17 +3880,92 @@
 
     // Per-type shape drawing
     if (e.type === 'hound') {
-      // Low quadruped: dark mass at bottom 50% of sprite, with eyes
-      var bodyY = startY + spriteH * 0.5;
-      var bodyH = spriteH * 0.45;
-      drawShapedSprite(ctx, startX, bodyY, spriteW, bodyH, screenX, depthTiles, zBuf, w,
-        '#2a1810', '#150c08');
-      // Eyes (red dots)
-      var eyeY = startY + spriteH * 0.45;
-      var eyeSize = Math.max(2, spriteH * 0.03);
-      ctx.fillStyle = 'rgba(255,40,40,' + fogFactor + ')';
-      drawSpriteDot(ctx, screenX - spriteW * 0.12, eyeY, eyeSize, zBuf, w, depthTiles);
-      drawSpriteDot(ctx, screenX + spriteW * 0.12, eyeY, eyeSize, zBuf, w, depthTiles);
+      // Realistic quadruped: humanoid head + dog body
+      // 1) Body (lower 55%)
+      var bodyY = startY + spriteH * 0.45;
+      var bodyH = spriteH * 0.4;
+      var bodyW = spriteW * 0.7;
+      var bodyX = screenX - bodyW / 2;
+      drawShapedSprite(ctx, bodyX, bodyY, bodyW, bodyH, screenX, depthTiles, zBuf, w,
+        '#3a1f10', '#180a05');
+      // 2) Head (humanoid, upper portion)
+      var headH = spriteH * 0.4;
+      var headW = spriteW * 0.55;
+      var headX = screenX - headW / 2;
+      var headY = startY + spriteH * 0.1;
+      drawShapedSprite(ctx, headX, headY, headW, headH, screenX, depthTiles, zBuf, w,
+        '#5a3220', '#2a1810');
+      // 3) Snout (extends forward — thin rect at bottom of head)
+      var snoutH = spriteH * 0.08;
+      var snoutW = spriteW * 0.3;
+      var snoutX = screenX - snoutW / 2;
+      var snoutY = headY + headH * 0.65;
+      ctx.fillStyle = 'rgba(35,18,8,' + fogFactor + ')';
+      for (var snc = Math.floor(snoutX); snc < snoutX + snoutW; snc++) {
+        if (snc < 0 || snc >= w) continue;
+        if (zBuf[snc] > depthTiles) ctx.fillRect(snc, snoutY, 1, snoutH);
+      }
+      // 4) Teeth (white, smaller than snout)
+      ctx.fillStyle = 'rgba(220,210,190,' + fogFactor + ')';
+      var teethY = snoutY + snoutH * 0.4;
+      var teethW = snoutW * 0.7;
+      var teethStart = screenX - teethW / 2;
+      for (var ttc = Math.floor(teethStart); ttc < teethStart + teethW; ttc++) {
+        if (ttc < 0 || ttc >= w) continue;
+        if (zBuf[ttc] > depthTiles && ((ttc - Math.floor(teethStart)) % 3 < 2)) {
+          ctx.fillRect(ttc, teethY, 1, snoutH * 0.5);
+        }
+      }
+      // 5) Glowing red eyes (large)
+      var eyeY = headY + headH * 0.32;
+      var eyeSize = Math.max(2, spriteH * 0.035);
+      // Eye glow
+      var eyeCol = Math.round(screenX);
+      if (eyeCol >= 0 && eyeCol < w && zBuf[eyeCol] > depthTiles) {
+        ctx.fillStyle = 'rgba(255,0,0,' + Math.min(0.4, fogFactor * 0.6) + ')';
+        var eyeGlowR = spriteW * 0.15;
+        var eGrad = ctx.createRadialGradient(screenX, eyeY, 0, screenX, eyeY, eyeGlowR);
+        eGrad.addColorStop(0, 'rgba(255,30,30,0.5)');
+        eGrad.addColorStop(1, 'rgba(255,0,0,0)');
+        ctx.fillStyle = eGrad;
+        ctx.fillRect(screenX - eyeGlowR, eyeY - eyeGlowR, eyeGlowR * 2, eyeGlowR * 2);
+      }
+      ctx.fillStyle = 'rgba(255,30,30,' + fogFactor + ')';
+      drawSpriteDot(ctx, screenX - spriteW * 0.13, eyeY, eyeSize, zBuf, w, depthTiles);
+      drawSpriteDot(ctx, screenX + spriteW * 0.13, eyeY, eyeSize, zBuf, w, depthTiles);
+      // Iris glow (inner white)
+      ctx.fillStyle = 'rgba(255,200,80,' + (fogFactor * 0.7) + ')';
+      drawSpriteDot(ctx, screenX - spriteW * 0.13, eyeY, eyeSize * 0.4, zBuf, w, depthTiles);
+      drawSpriteDot(ctx, screenX + spriteW * 0.13, eyeY, eyeSize * 0.4, zBuf, w, depthTiles);
+      // 6) Legs (4 vertical lines below body)
+      ctx.strokeStyle = 'rgba(25,12,5,' + fogFactor + ')';
+      ctx.lineWidth = Math.max(1.5, spriteH * 0.015);
+      for (var lg = 0; lg < 4; lg++) {
+        var lgX = screenX + (lg - 1.5) * bodyW * 0.18;
+        var lgCol = Math.round(lgX);
+        if (lgCol < 0 || lgCol >= w) continue;
+        if (zBuf[lgCol] > depthTiles) {
+          ctx.beginPath();
+          ctx.moveTo(lgX, bodyY + bodyH * 0.9);
+          ctx.lineTo(lgX + (lg < 2 ? -3 : 3), bodyY + bodyH + spriteH * 0.13);
+          ctx.stroke();
+        }
+      }
+      // 7) Ears (peaked at top of head)
+      ctx.fillStyle = 'rgba(30,15,8,' + fogFactor + ')';
+      var earCol1 = Math.round(screenX - spriteW * 0.18);
+      var earCol2 = Math.round(screenX + spriteW * 0.18);
+      [earCol1, earCol2].forEach(function (ec) {
+        if (ec < 0 || ec >= w) return;
+        if (zBuf[ec] > depthTiles) {
+          ctx.beginPath();
+          ctx.moveTo(ec, headY + 2);
+          ctx.lineTo(ec - 4, headY - spriteH * 0.06);
+          ctx.lineTo(ec + 4, headY - spriteH * 0.06);
+          ctx.closePath();
+          ctx.fill();
+        }
+      });
     } else if (e.type === 'smiler') {
       // Floating smile in darkness — only teeth visible
       var smileY = startY + spriteH * 0.45;
@@ -4538,7 +4629,7 @@
     var showAct = false;
     var label = '調べる';
 
-    if (here === 3) { showAct = true; label = 'NoClip'; }
+    if (here === 3) { showAct = true; label = '降りる'; }
     else if (here === 11) {
       var safeKey2 = currentLevel + '_' + key;
       if (LEVEL_MINIGAMES[currentLevel] && !mgPlayedAt[safeKey2]) {
@@ -4557,7 +4648,7 @@
       if (ft === 2) { showAct = true; label = 'ドア'; }
       else if (ft === 5 && pickupSpots[fkey]) { showAct = true; label = '拾う'; }
       else if (ft === 6 && noteSpots[fkey] && !(readNotes[currentLevel] && readNotes[currentLevel][fkey])) { showAct = true; label = '読む'; }
-      else if (ft === 3) { showAct = true; label = 'NoClip'; }
+      else if (ft === 3) { showAct = true; label = '降りる'; }
     }
 
     // Skip DOM update if state hasn't changed (perf)
@@ -5322,15 +5413,15 @@
     skipHandler = finish;
     el('introSkipBtn').addEventListener('click', skipHandler);
 
-    // Scene 1: night street walking
+    // Scene 1: night back-alley walking
     setTimeout(function () {
       if (cancelled) return;
       s1.classList.add('active');
       startFootsteps();
       setLine('...深夜、会社からの帰り道。');
     }, 800);
-    setTimeout(function () { if (!cancelled) setLine('いつもの裏路地、いつもの壁紙。'); }, 4500);
-    setTimeout(function () { if (!cancelled) setLine('何も変わらないはずだった、今日も。'); }, 8200);
+    setTimeout(function () { if (!cancelled) setLine('いつもの裏路地。'); }, 4500);
+    setTimeout(function () { if (!cancelled) setLine('壁にもたれて、ため息を一つ。'); }, 8200);
 
     // Scene 2: wallpaper closeup
     setTimeout(function () {
@@ -5850,6 +5941,28 @@
       titleScr.addEventListener('touchstart', initOnTouch, { passive: true });
       titleScr.addEventListener('click', initOnTouch);
     }
+
+    // iOS Safari dynamic viewport: periodic canvas resize check
+    // (address bar appearing/disappearing changes innerHeight)
+    var lastInnerH = window.innerHeight;
+    var lastInnerW = window.innerWidth;
+    setInterval(function () {
+      if (window.innerHeight !== lastInnerH || window.innerWidth !== lastInnerW) {
+        lastInnerH = window.innerHeight;
+        lastInnerW = window.innerWidth;
+        if (GameEngine._resize) GameEngine._resize();
+      }
+    }, 500);
+
+    // Also resize on visibility change (orientation/tab back)
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden && GameEngine._resize) {
+        setTimeout(GameEngine._resize.bind(GameEngine), 100);
+      }
+    });
+    window.addEventListener('orientationchange', function () {
+      setTimeout(function () { if (GameEngine._resize) GameEngine._resize(); }, 200);
+    });
     bindEvents();
     updateTitleButtons();
     showOverlay('titleScreen');

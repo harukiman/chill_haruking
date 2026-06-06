@@ -327,46 +327,77 @@ body {
   opacity: 1;
 }
 
-/* Scene 1: Night street POV */
+/* Scene 1: Night BACK-ALLEY POV (narrow, brick walls on sides) */
 #introScene1 .intro-sky {
   position: absolute;
   top: 0; left: 0; right: 0;
-  height: 60%;
-  background: linear-gradient(180deg, #0a0e1c 0%, #1a1e35 50%, #2a2840 100%);
+  height: 35%;
+  background: linear-gradient(180deg, #050810 0%, #0a0c1c 60%, #0e1024 100%);
 }
 #introScene1 .intro-sky::before {
   content: '';
   position: absolute;
-  top: 10%;
+  top: 15%;
   left: 50%;
   transform: translateX(-50%);
-  width: 30px;
-  height: 30px;
-  background: radial-gradient(circle, rgba(220, 220, 240, 0.6) 0%, transparent 70%);
+  width: 24px;
+  height: 24px;
+  background: radial-gradient(circle, rgba(200, 200, 220, 0.4) 0%, transparent 70%);
   border-radius: 50%;
-  box-shadow: 0 0 60px rgba(220, 220, 240, 0.3);
+  box-shadow: 0 0 50px rgba(200, 200, 220, 0.2);
+}
+/* Brick walls on left/right (alley walls) */
+#introScene1 .intro-sky::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg,
+      #0a0805 0%, #1a1408 10%, transparent 20%,
+      transparent 80%, #1a1408 90%, #0a0805 100%);
 }
 #introScene1 .intro-ground {
   position: absolute;
   bottom: 0; left: 0; right: 0;
-  height: 40%;
+  height: 65%;
   background: linear-gradient(180deg, #1a1812 0%, #0a0805 100%);
-  perspective: 600px;
+  perspective: 500px;
   perspective-origin: center 0%;
+  overflow: hidden;
 }
 #introScene1 .intro-ground::before {
   content: '';
   position: absolute;
   inset: 0;
   background:
-    repeating-linear-gradient(180deg, transparent 0px, transparent 20px, rgba(150, 130, 80, 0.15) 20px, rgba(150, 130, 80, 0.15) 22px);
-  transform: rotateX(85deg);
+    /* Cobblestone pattern */
+    repeating-linear-gradient(0deg, rgba(80, 65, 40, 0.25) 0px, rgba(80, 65, 40, 0.25) 1px, transparent 1px, transparent 25px),
+    repeating-linear-gradient(90deg, rgba(80, 65, 40, 0.15) 0px, rgba(80, 65, 40, 0.15) 1px, transparent 1px, transparent 30px);
+  transform: rotateX(80deg);
   transform-origin: center 0%;
-  animation: introWalk 1.5s linear infinite;
+  animation: introWalk 1.2s linear infinite;
+}
+/* Side walls of the alley (brick) */
+#introScene1 .intro-ground::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg,
+      rgba(40, 25, 12, 0.85) 0%,
+      rgba(60, 40, 20, 0.7) 8%,
+      transparent 25%,
+      transparent 75%,
+      rgba(60, 40, 20, 0.7) 92%,
+      rgba(40, 25, 12, 0.85) 100%),
+    repeating-linear-gradient(0deg,
+      rgba(120, 90, 50, 0.05) 0px, rgba(120, 90, 50, 0.05) 8px,
+      transparent 8px, transparent 16px);
+  pointer-events: none;
 }
 @keyframes introWalk {
-  0%   { transform: rotateX(85deg) translateY(0); }
-  100% { transform: rotateX(85deg) translateY(22px); }
+  0%   { transform: rotateX(80deg) translateY(0); }
+  100% { transform: rotateX(80deg) translateY(25px); }
 }
 #introScene1 .intro-streetlights {
   position: absolute;
