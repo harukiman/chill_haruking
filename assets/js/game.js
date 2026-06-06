@@ -1843,9 +1843,15 @@
         }
       }
     }
-    GameEngine.vignetteIntensity = (theme.vignette || 0.3) + (1 - sanRatio) * 0.4 + harukiNear * 0.3;
-    GameEngine.chromaticLevel = (theme.chromatic || 0) + (1 - sanRatio) * 0.4 + harukiNear * 0.4;
-    GameEngine.grainIntensity = (theme.grain || 0.3) + (1 - sanRatio) * 0.2 + harukiNear * 0.2;
+    if (gfxQuality === 'low') {
+      GameEngine.vignetteIntensity = 0.15 + (1 - sanRatio) * 0.15;
+      GameEngine.chromaticLevel = 0;
+      GameEngine.grainIntensity = 0.05;
+    } else {
+      GameEngine.vignetteIntensity = (theme.vignette || 0.3) + (1 - sanRatio) * 0.4 + harukiNear * 0.3;
+      GameEngine.chromaticLevel = (theme.chromatic || 0) + (1 - sanRatio) * 0.4 + harukiNear * 0.4;
+      GameEngine.grainIntensity = (theme.grain || 0.3) + (1 - sanRatio) * 0.2 + harukiNear * 0.2;
+    }
 
     // SAN whisper on low SAN
     if (sanRatio < 0.4 && Math.random() < 0.0015 && audioInitialized) {
@@ -2100,6 +2106,16 @@
     currentDifficulty = id;
     localStorage.setItem(DIFF_KEY, id);
     toast('難易度: ' + DIFFICULTIES[id].name);
+  }
+
+  function applyGfxQuality() {
+    if (gfxQuality === 'low') {
+      // Reduce post-effects globally
+      GameEngine.grainIntensity = 0.05;
+      GameEngine.chromaticLevel = 0;
+      GameEngine.vignetteIntensity = 0.15;
+      // Disable particle generation in low mode (handled in onUpdate guard)
+    }
   }
 
   function showAchievementToast(ach) {
@@ -4016,8 +4032,8 @@
       updatePlayer(dt);
       updateEntities(dt);
       GameEngine.updateParticles(dt);
-      // Random dust particles
-      if (Math.random() < 0.03) {
+      // Random dust particles (skip in LOW quality)
+      if (gfxQuality !== 'low' && Math.random() < 0.03) {
         var pAng = Math.random() * Math.PI * 2;
         var pDist = 100 + Math.random() * 150;
         GameEngine.addParticle('dust', player.x + Math.cos(pAng) * pDist, player.y + Math.sin(pAng) * pDist);
@@ -4864,6 +4880,22 @@
         updateTitleButtons();
       }
     });
+    // GFX quality toggle
+    var gfxBtn = el('gfxQualityBtn');
+    if (gfxBtn) {
+      // Load saved
+      gfxQuality = localStorage.getItem(GFX_KEY) === 'low' ? 'low' : 'high';
+      gfxBtn.textContent = gfxQuality === 'high' ? 'HIGH' : 'LOW';
+      gfxBtn.addEventListener('click', function () {
+        gfxQuality = (gfxQuality === 'high') ? 'low' : 'high';
+        localStorage.setItem(GFX_KEY, gfxQuality);
+        gfxBtn.textContent = gfxQuality === 'high' ? 'HIGH' : 'LOW';
+        applyGfxQuality();
+        toast('グラフィック品質: ' + (gfxQuality === 'high' ? 'HIGH' : 'LOW'));
+      });
+      applyGfxQuality();
+    }
+
     el('optReturnTitleBtn').addEventListener('click', function () {
       if (confirm('進捗を保存してタイトルへ戻りますか?')) {
         saveGame();
