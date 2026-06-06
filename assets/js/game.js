@@ -3141,12 +3141,12 @@
       });
       readNotes[currentLevel][gridKey(gx, gy)] = true;
       stats.totalNotesRead++;
-      // Lifetime unique-title tracking
-      if (!lifetimeNoteTitles[note.title]) {
-        lifetimeNoteTitles[note.title] = true;
-        try { localStorage.setItem('thebackrooms_lifetime_notes_v1', JSON.stringify(lifetimeNoteTitles)); } catch (e) {}
-      }
       saveStats();
+    }
+    // Lifetime unique-title tracking (always update, regardless of tile read state)
+    if (!lifetimeNoteTitles[note.title]) {
+      lifetimeNoteTitles[note.title] = true;
+      try { localStorage.setItem('thebackrooms_lifetime_notes_v1', JSON.stringify(lifetimeNoteTitles)); } catch (e) {}
     }
     showNoteViewer(note.title, note.text);
     if (audioInitialized) GameEngine.playSound('paper');
