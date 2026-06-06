@@ -1430,38 +1430,60 @@ body {
 /* ============================================================
  *  NOTE VIEWER (full memo)
  * ============================================================ */
+#noteViewerOverlay {
+  z-index: 75 !important;  /* above phoneOverlay (60), itemUseModal (67) */
+  background: rgba(0, 0, 0, 0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
 .note-panel {
-  background: #1c1604;
-  border: 1px solid #786020;
-  width: 86vw;
-  max-width: 420px;
-  max-height: 80vh;
-  padding: 20px;
+  background: linear-gradient(180deg, #221a08 0%, #15100a 100%);
+  border: 1px solid rgba(212, 179, 64, 0.4);
+  width: 92vw;
+  max-width: 480px;
+  max-height: 88vh;
+  padding: 22px 20px 18px;
   position: relative;
   display: flex;
   flex-direction: column;
+  border-radius: 16px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(240, 220, 138, 0.1);
 }
 .note-title {
-  font-size: 14px;
-  letter-spacing: 0.2em;
-  color: #d4b340;
+  font-size: 17px;
+  letter-spacing: 0.18em;
+  color: #f0dc8a;
   margin-bottom: 10px;
   font-family: 'Times New Roman', serif;
+  font-weight: 600;
+  text-shadow: 0 0 6px rgba(212, 179, 64, 0.3);
 }
 .note-divider {
   height: 1px;
-  background: linear-gradient(90deg, transparent, #786020, transparent);
+  background: linear-gradient(90deg, transparent, rgba(212, 179, 64, 0.5), transparent);
   margin-bottom: 14px;
 }
 .note-text {
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0;
   color: #e8e0c0;
   font-size: 14px;
-  line-height: 1.8;
+  line-height: 1.85;
   white-space: pre-wrap;
+  word-wrap: break-word;
   overflow-y: auto;
   margin-bottom: 14px;
   -webkit-overflow-scrolling: touch;
+  padding-right: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: #786020 transparent;
+}
+.note-text::-webkit-scrollbar {
+  width: 4px;
+}
+.note-text::-webkit-scrollbar-thumb {
+  background: rgba(120, 96, 32, 0.6);
+  border-radius: 2px;
 }
 .note-close-btn {
   align-self: stretch;
