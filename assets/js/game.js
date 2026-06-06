@@ -1573,6 +1573,7 @@
   function updatePlayer(dt) {
     if (state !== ST.PLAYING) return;
     if (phoneOpen) return;
+    if (miniGameOpen) return;
 
     var inp = GameEngine.input;
     var sens = 2.5 * (parseInt(localStorage.getItem('bk_sens') || '100', 10) / 100);
@@ -2848,6 +2849,7 @@
   function updateEntities(dt) {
     if (state !== ST.PLAYING) return;
     if (phoneOpen) return;
+    if (miniGameOpen) return;
     var diffE = DIFFICULTIES[currentDifficulty] || DIFFICULTIES.normal;
     var sMul = diffE.enemySpeedMul;
     var entitySoundMap = {
@@ -3471,13 +3473,24 @@
     el('actionBtn').style.display = 'none';
     el('phoneBtn').style.display = 'none';
     el('floorHUD').style.display = 'none';
-    var subText = sub;
+    // Build run summary
+    var summary = [sub];
+    var clears = 0;
+    for (var ck in clearedLevels) if (clearedLevels[ck]) clears++;
+    summary.push('生存時間: ' + formatTime(playTime));
+    summary.push('現在階層: ' + (currentLevelDef ? currentLevelDef.name : 'LV?'));
+    summary.push('クリアした階層: ' + clears);
+    summary.push('ノート: ' + discoveredNotes.length);
     if (gameMode === 'endless') {
       saveEndlessBest();
-      subText = 'ENDLESS 終了\nFloor: ' + endlessFloor + ' / Score: ' + endlessScore +
-               (endlessScore === endlessBestScore ? ' (NEW BEST!)' : '\nBest: ' + endlessBestScore);
+      summary.push('ENDLESS Floor: ' + endlessFloor);
+      summary.push('Score: ' + endlessScore +
+                   (endlessScore === endlessBestScore ? ' (★ NEW BEST!)' : ' (Best: ' + endlessBestScore + ')'));
     }
-    el('gameoverSub').textContent = subText;
+    var sumEl = el('gameoverSub');
+    if (sumEl) {
+      sumEl.innerHTML = summary.map(function (s) { return s; }).join('<br>');
+    }
     GameEngine.stopAll();
     GameEngine.fadeToBlack(800, function () {
       showOverlay('gameOverScreen');
