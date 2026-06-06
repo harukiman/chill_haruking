@@ -1421,6 +1421,41 @@
     // Reset close press tracking when no buttons held
     if (!anyClose) gp._menuClosePressed = false;
 
+    // Title screen — D-pad up/down to navigate, action to confirm
+    if (state === ST.TITLE) {
+      var ts = el('titleScreen');
+      if (ts && ts.style.display !== 'none') {
+        var btns = ts.querySelectorAll('.title-menu .menu-btn');
+        var visBtns = [];
+        for (var bi = 0; bi < btns.length; bi++) {
+          if (btns[bi].offsetParent !== null) visBtns.push(btns[bi]);
+        }
+        if (visBtns.length > 0) {
+          if (gp._titleIdx === undefined) gp._titleIdx = 0;
+          var dpadUp = (gp.buttons[12] && gp.buttons[12].pressed) || (gp.axes[1] || 0) < -0.5;
+          var dpadDown = (gp.buttons[13] && gp.buttons[13].pressed) || (gp.axes[1] || 0) > 0.5;
+          if (dpadDown && !gp._titleNav) {
+            gp._titleNav = true;
+            gp._titleIdx = (gp._titleIdx + 1) % visBtns.length;
+          } else if (dpadUp && !gp._titleNav) {
+            gp._titleNav = true;
+            gp._titleIdx = (gp._titleIdx - 1 + visBtns.length) % visBtns.length;
+          } else if (!dpadUp && !dpadDown) {
+            gp._titleNav = false;
+          }
+          for (var bi2 = 0; bi2 < visBtns.length; bi2++) {
+            visBtns[bi2].style.outline = (bi2 === gp._titleIdx) ? '2px solid #d4b340' : '';
+          }
+          if (anyConfirm && !gp._titleConfirm) {
+            gp._titleConfirm = true;
+            visBtns[gp._titleIdx].click();
+          }
+          if (!anyConfirm) gp._titleConfirm = false;
+        }
+      }
+      return;
+    }
+
     if (state !== ST.PLAYING || phoneOpen || miniGameOpen) return;
     // Left stick: movement
     // BUGFIX: 以前は dead zone 以内で input がクリアされず最後の値が残り続け、
