@@ -800,23 +800,75 @@
         if (p.radioOn) { p.radioOn = false; toast('ラジオ OFF'); }
         else { p.radioOn = true; toast('ラジオ ON — エンティティ警告'); }
       }
+    },
+    flare: {
+      id: 'flare', name: 'フレア',
+      icon: '🔥', desc: '点火。周囲6マスのエンティティを4秒スタン。HP+10。',
+      effect: function (p) {
+        var stunRange = 6 * TS;
+        var stunned = 0;
+        for (var i = 0; i < entities.length; i++) {
+          var e = entities[i];
+          if (!e.alive) continue;
+          var dx = e.x - p.x, dy = e.y - p.y;
+          var d = Math.sqrt(dx * dx + dy * dy);
+          if (d < stunRange) {
+            e.stunned = true;
+            e.stunTimer = 4;
+            stunned++;
+          }
+        }
+        p.hp = Math.min(p.hpMax, p.hp + 10);
+        if (audioInitialized) GameEngine.playSound('jumpscare');
+        GameEngine.redFlash();
+        GameEngine.shakeScreen(6, 0.3);
+        toast(stunned > 0 ? ('フレア発火! ' + stunned + '体スタン') : 'フレア発火 (影響なし)');
+      }
+    },
+    mirror: {
+      id: 'mirror', name: 'ひび割れた鏡',
+      icon: '🪞', desc: 'Skin-Stealer に対して非常に有効。1回使い切り。',
+      effect: function (p) {
+        var reflected = 0;
+        for (var i = 0; i < entities.length; i++) {
+          var e = entities[i];
+          if (!e.alive) continue;
+          if (e.type === 'skinstealer') {
+            e.alive = false; // banished
+            reflected++;
+          }
+        }
+        if (audioInitialized) GameEngine.playSound('static');
+        toast(reflected > 0 ? ('鏡が反射! Skin-Stealer ' + reflected + '体消滅') : '鏡を構えたが反応なし');
+      }
+    },
+    almond_milk: {
+      id: 'almond_milk', name: 'アーモンドミルク',
+      icon: '🥛', desc: '最高級品。HP/SAN/STA を全回復。',
+      effect: function (p) {
+        p.hp = p.hpMax;
+        p.san = p.sanMax;
+        p.stam = p.stamMax;
+        toast('全回復!');
+        if (audioInitialized) GameEngine.playSound('item_get');
+      }
     }
   };
 
   // ── ITEMS POOL BY LEVEL ─────────────────────────────────
   var LEVEL_ITEM_POOLS = {
-    0: ['almond_water', 'bandage', 'flashlight'],
-    1: ['almond_water', 'bandage', 'energy_bar', 'keycard'],
-    2: ['almond_water', 'bandage', 'energy_bar'],
-    3: ['almond_water', 'bandage', 'flashlight', 'radio'],
-    4: ['almond_water', 'keycard', 'energy_bar', 'radio'],
-    5: ['almond_water', 'voucher', 'bandage', 'energy_bar'],
-    6: ['almond_water', 'flashlight', 'bandage'],
-    7: ['energy_bar', 'almond_water'],
-    8: ['almond_water', 'bandage', 'radio'],
-    11: ['almond_water', 'flashlight', 'energy_bar'],
-    12: ['almond_water', 'energy_bar', 'voucher', 'bandage'],
-    9: ['almond_water', 'voucher', 'bandage', 'energy_bar', 'radio']
+    0: ['almond_water', 'bandage', 'flashlight', 'almond_milk'],
+    1: ['almond_water', 'bandage', 'energy_bar', 'keycard', 'flare'],
+    2: ['almond_water', 'bandage', 'energy_bar', 'flare'],
+    3: ['almond_water', 'bandage', 'flashlight', 'radio', 'flare'],
+    4: ['almond_water', 'keycard', 'energy_bar', 'radio', 'mirror'],
+    5: ['almond_water', 'voucher', 'bandage', 'energy_bar', 'flare'],
+    6: ['almond_water', 'flashlight', 'bandage', 'flare'],
+    7: ['energy_bar', 'almond_water', 'flare'],
+    8: ['almond_water', 'bandage', 'radio', 'mirror', 'flare'],
+    11: ['almond_water', 'flashlight', 'energy_bar', 'flare'],
+    12: ['almond_water', 'energy_bar', 'voucher', 'bandage', 'flare'],
+    9: ['almond_water', 'voucher', 'bandage', 'energy_bar', 'radio', 'almond_milk']
   };
 
   // ── NOTES ───────────────────────────────────────────────
@@ -954,6 +1006,20 @@
   // Save key
   var SAVE_KEY = 'thebackrooms_save_v1';
   var ACH_KEY = 'thebackrooms_ach_v1';
+  var BEST_KEY = 'thebackrooms_best_v1';
+  var DIFF_KEY = 'thebackrooms_diff_v1';
+
+  // Difficulty modes (multipliers applied to SAN drain + enemy speed)
+  var DIFFICULTIES = {
+    easy:   { name: 'EASY',   sanMul: 0.5,  enemySpeedMul: 0.7,  hpMul: 1.5 },
+    normal: { name: 'NORMAL', sanMul: 1.0,  enemySpeedMul: 1.0,  hpMul: 1.0 },
+    hard:   { name: 'HARD',   sanMul: 1.5,  enemySpeedMul: 1.3,  hpMul: 0.7 },
+    chaos:  { name: 'CHAOS',  sanMul: 2.5,  enemySpeedMul: 1.8,  hpMul: 0.5 }
+  };
+  var currentDifficulty = 'normal';
+
+  // Best times per level (sec) — persists across runs
+  var bestTimes = {};
 
   // ============================================================
   //  UTILITY
@@ -1440,11 +1506,13 @@
       unlockAchievement('found_safe_zone');
     }
 
-    // SAN drain per level
+    // SAN drain per level (modulated by difficulty)
     var theme = THEMES[currentLevelDef.theme];
     var sanDrain = (theme && theme.sanDrain) || 0.5;
     // Faster if in dark / no flashlight on Level 6
     if (currentLevel === 6 && !player.flashlightOn) sanDrain *= 2;
+    var diff = DIFFICULTIES[currentDifficulty] || DIFFICULTIES.normal;
+    sanDrain *= diff.sanMul;
     player.san = Math.max(0, player.san - sanDrain * dt);
 
     // Stamina regen
@@ -1593,6 +1661,24 @@
       var s = localStorage.getItem(ACH_KEY);
       if (s) unlockedAchievements = JSON.parse(s) || {};
     } catch (e) { unlockedAchievements = {}; }
+  }
+
+  function loadBestTimes() {
+    try {
+      var s = localStorage.getItem(BEST_KEY);
+      if (s) bestTimes = JSON.parse(s) || {};
+    } catch (e) { bestTimes = {}; }
+  }
+
+  function loadDifficulty() {
+    var s = localStorage.getItem(DIFF_KEY);
+    if (s && DIFFICULTIES[s]) currentDifficulty = s;
+  }
+  function setDifficulty(id) {
+    if (!DIFFICULTIES[id]) return;
+    currentDifficulty = id;
+    localStorage.setItem(DIFF_KEY, id);
+    toast('難易度: ' + DIFFICULTIES[id].name);
   }
 
   function showAchievementToast(ach) {
@@ -2268,6 +2354,12 @@
 
   function tryNoClip() {
     var nextLevel = getNextLevel(currentLevel);
+    // Record best time
+    if (!bestTimes[currentLevel] || inLevelTime < bestTimes[currentLevel]) {
+      bestTimes[currentLevel] = inLevelTime;
+      try { localStorage.setItem(BEST_KEY, JSON.stringify(bestTimes)); } catch (e) {}
+      toast('Best time! ' + formatTime(inLevelTime));
+    }
     if (nextLevel === null) {
       triggerEnding('truend');
       return;
@@ -2314,11 +2406,20 @@
   function updateEntities(dt) {
     if (state !== ST.PLAYING) return;
     if (phoneOpen) return;
+    var diffE = DIFFICULTIES[currentDifficulty] || DIFFICULTIES.normal;
+    var sMul = diffE.enemySpeedMul;
 
     for (var i = 0; i < entities.length; i++) {
       var e = entities[i];
       if (!e.alive) continue;
       e.stateTimer += dt;
+
+      // Stun handling
+      if (e.stunned) {
+        e.stunTimer -= dt;
+        if (e.stunTimer <= 0) e.stunned = false;
+        else continue; // skip AI while stunned
+      }
 
       var dx = player.x - e.x;
       var dy = player.y - e.y;
@@ -2330,7 +2431,7 @@
         if (distP < 6 * TS && (GameEngine.input.sprint || e.state === 'chase')) {
           e.state = 'chase';
           // Pathfind: simple move toward player
-          var spd = 90;
+          var spd = 90 * sMul;
           var stepX = (dx / distP) * spd * dt;
           var stepY = (dy / distP) * spd * dt;
           var nx = e.x + stepX;
@@ -2339,7 +2440,7 @@
           if (isWalkable(e.x, ny)) e.y = ny;
         } else if (distP > 10 * TS) {
           e.state = 'wander';
-          wanderEntity(e, dt, 35);
+          wanderEntity(e, dt, 35 * sMul);
         } else {
           e.state = 'idle';
         }
@@ -2351,7 +2452,7 @@
           var seenAngle = Math.atan2(-dy, -dx);
           e.angle = seenAngle;
           // Slow drift toward
-          var spd2 = 25;
+          var spd2 = 25 * sMul;
           var stepX2 = (dx / distP) * spd2 * dt;
           var stepY2 = (dy / distP) * spd2 * dt;
           if (isWalkable(e.x + stepX2, e.y)) e.x += stepX2;
@@ -2373,7 +2474,7 @@
           GameEngine.shakeScreen(8, 0.6);
           player.san = Math.max(0, player.san - 15);
         } else if (e.state === 'reveal') {
-          var spd3 = 70;
+          var spd3 = 70 * sMul;
           var stepX3 = (dx / distP) * spd3 * dt;
           var stepY3 = (dy / distP) * spd3 * dt;
           if (isWalkable(e.x + stepX3, e.y)) e.x += stepX3;
@@ -2382,7 +2483,7 @@
         }
       } else if (e.type === 'partygoer') {
         // Wanders, attacks if too close
-        wanderEntity(e, dt, 40);
+        wanderEntity(e, dt, 40 * sMul);
         if (distP < 1.5 * TS) {
           attackPlayer(15 * dt);
         }
@@ -2822,7 +2923,10 @@
       el('statTimeText').textContent = formatTime(playTime);
       var clears = 0;
       for (var k in clearedLevels) if (clearedLevels[k]) clears++;
-      el('statProgText').textContent = 'クリア: ' + clears + ' / 12 階層';
+      var diffName = DIFFICULTIES[currentDifficulty] ? DIFFICULTIES[currentDifficulty].name : 'NORMAL';
+      var bestSec = bestTimes[currentLevel];
+      var bestStr = bestSec ? formatTime(bestSec) : '--';
+      el('statProgText').innerHTML = 'クリア: ' + clears + ' / 12 階層<br>難易度: ' + diffName + '<br>本階層ベスト: ' + bestStr;
     }
 
     // INVENTORY
@@ -3059,7 +3163,9 @@
     state = ST.LOADING;
     hideOverlay('titleScreen');
 
-    player.hp = player.hpMax = 100;
+    var diff = DIFFICULTIES[currentDifficulty] || DIFFICULTIES.normal;
+    player.hpMax = Math.round(100 * diff.hpMul);
+    player.hp = player.hpMax;
     player.san = player.sanMax = 100;
     player.stam = player.stamMax = 100;
     player.inventory = {};
@@ -3124,6 +3230,8 @@
   function updateTitleButtons() {
     var cont = el('continueBtn');
     if (cont) cont.style.display = hasSave() ? '' : 'none';
+    var diff = el('difficultyBtn');
+    if (diff) diff.textContent = '難易度: ' + (DIFFICULTIES[currentDifficulty] ? DIFFICULTIES[currentDifficulty].name : 'NORMAL');
   }
 
   // ============================================================
@@ -3132,6 +3240,13 @@
   function bindEvents() {
     el('startBtn').addEventListener('click', startNewGame);
     el('continueBtn').addEventListener('click', continueGame);
+    el('difficultyBtn').addEventListener('click', function () {
+      var order = ['easy', 'normal', 'hard', 'chaos'];
+      var idx = order.indexOf(currentDifficulty);
+      var next = order[(idx + 1) % order.length];
+      setDifficulty(next);
+      el('difficultyBtn').textContent = '難易度: ' + DIFFICULTIES[next].name;
+    });
     el('controlsBtn').addEventListener('click', function () {
       showOverlay('tutorialOverlay');
     });
@@ -3276,6 +3391,8 @@
     GameEngine.onRender = onRender;
 
     loadAchievements();
+    loadBestTimes();
+    loadDifficulty();
     bindEvents();
     updateTitleButtons();
     showOverlay('titleScreen');
