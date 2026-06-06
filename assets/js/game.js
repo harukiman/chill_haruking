@@ -3405,7 +3405,9 @@
     vending: {
       title: '自動販売機',
       subtitle: 'タップしてリールを回転 → 3 個のアイテム獲得',
-      itemPool: ['almond_water', 'almond_water', 'almond_water', 'bandage', 'bandage', 'energy_bar', 'flashlight'],
+      // Adds weapons as rare drops so mini-games feel rewarding.
+      itemPool: ['almond_water', 'bandage', 'energy_bar', 'flashlight',
+                 'pistol', 'pistol', 'shotgun', 'katana', 'revolver'],
       init: function () {
         mgState = {
           reels: [0, 0, 0],
@@ -3609,23 +3611,24 @@
     memory: {
       title: 'カード合わせ',
       subtitle: '同じ絵柄のペアを全て揃えろ',
-      icons: ['🥤', '🩹', '🍫', '🔦', '🔑', '📻'],
+      icons: ['🥤', '🩹', '🍫', '🔦', '🔑', '📻', '🔥', '🪞'],
       init: function () {
-        // 4 pairs = 8 cards (3 pairs from 6 icons)
-        var pool = MINI_GAMES.memory.icons.slice(0, 4); // 4 pairs
-        var cards = pool.concat(pool); // 8 cards
-        // Shuffle
+        // Harder: 6 pairs (12 cards), tighter attempt budget.
+        var pool = MINI_GAMES.memory.icons.slice(0, 6); // 6 pairs
+        var cards = pool.concat(pool); // 12 cards
         for (var i = cards.length - 1; i > 0; i--) {
           var j = Math.floor(Math.random() * (i + 1));
           var tmp = cards[i]; cards[i] = cards[j]; cards[j] = tmp;
         }
+        var revealed = [];
+        for (var ri = 0; ri < cards.length; ri++) revealed.push(false);
         mgState = {
           cards: cards,
-          revealed: [false, false, false, false, false, false, false, false],
+          revealed: revealed,
           flipped: [],
           matchedCount: 0,
           attempts: 0,
-          maxAttempts: 12,
+          maxAttempts: 14,
           phase: 'play',
           flipBackTimer: 0
         };
@@ -3639,7 +3642,7 @@
       onTap: function (cx, cy, w, h) {
         if (mgState.phase !== 'play') return;
         if (mgState.flipped.length >= 2) return;
-        var cols = 4, rows = 2;
+        var cols = 4, rows = 3;
         var gridY = 50;
         var gridH = h - 100;
         var cardW = (w - 40) / cols;
@@ -3664,13 +3667,13 @@
                 mgState.revealed[b] = true;
                 mgState.matchedCount++;
                 mgState.flipped = [];
-                if (mgState.matchedCount >= 4) {
+                if (mgState.matchedCount >= 6) {
                   mgState.phase = 'win';
                   setMGStatus('クリア! 試行 ' + mgState.attempts + ' 回');
                   // Reward: random useful item
-                  var rewardId = ['almond_water', 'bandage', 'energy_bar'][Math.floor(Math.random() * 3)];
+                  var rewardId = ['pistol', 'shotgun', 'katana', 'flare'][Math.floor(Math.random() * 4)];
                   player.inventory[rewardId] = (player.inventory[rewardId] || 0) + 2;
-                  toast(ITEMS[rewardId].name + ' ×2 入手');
+                  toast('★ ' + ITEMS[rewardId].name + ' ×2 入手');
                   unlockAchievement('won_minigame');
                   if (audioInitialized) GameEngine.playSound('item_get');
                   setMGAction('終了', 'green');
@@ -3700,12 +3703,12 @@
       draw: function (ctx, w, h) {
         ctx.fillStyle = '#0d0c08';
         ctx.fillRect(0, 0, w, h);
-        var cols = 4, rows = 2;
+        var cols = 4, rows = 3;
         var gridY = 50;
         var gridH = h - 100;
         var cardW = (w - 40) / cols;
         var cardH = gridH / rows;
-        for (var i = 0; i < 8; i++) {
+        for (var i = 0; i < mgState.cards.length; i++) {
           var r = Math.floor(i / cols);
           var c = i % cols;
           var x = 20 + c * cardW + 4;
@@ -3812,12 +3815,13 @@
             mgState.phase = 'win';
             setMGStatus('クリア! 報酬獲得');
             setMGAction('終了', 'green');
-            var rewards = ['flare', 'almond_water', 'energy_bar'];
+            // Upgraded reward pool — mini-games are harder now so the prizes are weapons.
+            var rewards = ['katana', 'pistol', 'flare', 'shotgun', 'revolver', 'almond_milk'];
             var rwd = rewards[Math.floor(Math.random() * rewards.length)];
             player.inventory[rwd] = (player.inventory[rwd] || 0) + 1;
-            toast(ITEMS[rwd].name + ' を入手');
+            toast('★ ' + ITEMS[rwd].name + ' を入手');
             unlockAchievement('won_minigame');
-            if (audioInitialized) GameEngine.playSound('item_get');
+            if (audioInitialized) GameEngine.playSound('level_clear');
           }
         } else {
           mgState.snake.pop();
@@ -3901,12 +3905,12 @@
                 mgState.phase = 'win';
                 setMGStatus('正解! 解読成功!');
                 setMGAction('終了', 'green');
-                var rewards = ['almond_milk', 'voucher', 'flare'];
+                var rewards = ['revolver', 'katana', 'almond_milk', 'shotgun', 'mirror'];
                 var rwd = rewards[Math.floor(Math.random() * rewards.length)];
                 player.inventory[rwd] = (player.inventory[rwd] || 0) + 1;
-                toast(ITEMS[rwd].name + ' を入手');
+                toast('★ ' + ITEMS[rwd].name + ' を入手');
                 unlockAchievement('won_minigame');
-                if (audioInitialized) GameEngine.playSound('item_get');
+                if (audioInitialized) GameEngine.playSound('level_clear');
               } else {
                 mgState.phase = 'lose';
                 setMGStatus('不正解。正解: ' + mgState.original);
