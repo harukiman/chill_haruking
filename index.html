@@ -20,7 +20,7 @@
   <meta name="twitter:title" content="THE BACKROOMS — featuring HARUKI">
   <meta name="twitter:description" content="一人称モバイル探索ホラー。Level 0 から no-clip で階層を降下。壁の向こうにカレが待つ。">
   <title>THE BACKROOMS</title>
-  <link rel="stylesheet" href="assets/css/game.css?v=77">
+  <link rel="stylesheet" href="assets/css/game.css?v=78">
 </head>
 <body oncontextmenu="return false;">
 
@@ -70,6 +70,9 @@
   })();
   </script>
 
+  <!-- FPS indicator (toggleable via settings, off by default) -->
+  <p id="fpsIndicator" style="position:fixed;top:calc(env(safe-area-inset-top, 8px) + 38px);right:12px;background:rgba(0,0,0,0.6);color:#88c050;font-size:11px;padding:3px 8px;border-radius:4px;letter-spacing:0.1em;z-index:5;display:none;pointer-events:none;">— FPS</p>
+
   <!-- Game Canvas -->
   <canvas id="gameCanvas"></canvas>
 
@@ -118,7 +121,7 @@
     <button id="titleReloadBtn" class="title-reload-btn" type="button" onclick="window.__hardReload&&window.__hardReload()">↻ 再読込</button>
     <div id="tapToStartHint" class="tap-to-start-hint hidden"></div>
     <p class="copyright">THE BACKROOMS — featuring HARUKI &copy; 2026</p>
-    <p class="version-text" id="versionText">ver 5.9 (Settings Scroll Force)</p>
+    <p class="version-text" id="versionText">ver 6.0 (FPS Counter + Auto-Downgrade)</p>
     <p class="title-ach-counter" id="titleAchCounter"></p>
     <p id="jsLoadedDiag" style="position:absolute;bottom:4px;right:4px;font-size:9px;color:#806020;letter-spacing:0.1em;z-index:5;">JS ?</p>
   </div>
@@ -158,6 +161,10 @@
         <div class="ts-row ts-toggle-row">
           <span>振動</span>
           <button id="tsVibrateToggle" type="button" class="ts-toggle">ON</button>
+        </div>
+        <div class="ts-row ts-toggle-row">
+          <span>FPS 表示</span>
+          <button id="tsFpsToggle" type="button" class="ts-toggle off">OFF</button>
         </div>
       </div>
       <div class="ts-section">
@@ -683,8 +690,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="assets/js/engine.js?v=77"></script>
-  <script src="assets/js/game.js?v=77"></script>
+  <script src="assets/js/engine.js?v=78"></script>
+  <script src="assets/js/game.js?v=78"></script>
 
   <!-- POST-LOAD VERIFICATION + DIRECT BINDING FALLBACK
        After game.js IIFE runs, this script confirms __titleAction is the real one.

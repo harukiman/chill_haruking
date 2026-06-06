@@ -2585,6 +2585,29 @@
       }
     }
 
+    // FPS indicator + auto-downgrade if sustained low FPS
+    var fpsEl = el('fpsIndicator');
+    if (fpsEl && fpsEl.style.display !== 'none' && GameEngine._fpsEma) {
+      var fps = Math.round(GameEngine._fpsEma);
+      fpsEl.textContent = fps + ' FPS';
+      fpsEl.style.color = fps >= 55 ? '#88c050' : fps >= 35 ? '#d4b340' : '#ff6040';
+    }
+    // Auto-downgrade: if FPS < 25 sustained for 8s, force LOW quality.
+    if (GameEngine._fpsEma && gfxQuality === 'high') {
+      if (GameEngine._fpsEma < 25) {
+        player._lowFpsAccum = (player._lowFpsAccum || 0) + 1 / 60;
+        if (player._lowFpsAccum > 8) {
+          gfxQuality = 'low';
+          try { localStorage.setItem(GFX_KEY, 'low'); } catch (e) {}
+          if (typeof applyGfxQuality === 'function') applyGfxQuality();
+          toast('低 FPS 検出 — グラフィック品質を LOW に自動切替');
+          player._lowFpsAccum = 0;
+        }
+      } else {
+        player._lowFpsAccum = 0;
+      }
+    }
+
     // Spatial audio cue: occasional positional whisper/breath from nearest threat
     if (audioInitialized && nearestThreat && typeof GameEngine.playPositional === 'function') {
       player._spatialCueTimer = (player._spatialCueTimer || 0) - (1 / 60);
@@ -6743,6 +6766,21 @@
         localStorage.setItem('bk_vibrate', vibOn ? '1' : '0');
         tsVib.textContent = vibOn ? 'ON' : 'OFF';
         tsVib.classList.toggle('off', !vibOn);
+      });
+    }
+    var tsFps = el('tsFpsToggle');
+    if (tsFps) {
+      var fpsOn = localStorage.getItem('bk_fps') === '1';
+      tsFps.textContent = fpsOn ? 'ON' : 'OFF';
+      tsFps.classList.toggle('off', !fpsOn);
+      var fpsInd = el('fpsIndicator');
+      if (fpsInd) fpsInd.style.display = fpsOn ? 'block' : 'none';
+      tsFps.addEventListener('click', function () {
+        fpsOn = !fpsOn;
+        localStorage.setItem('bk_fps', fpsOn ? '1' : '0');
+        tsFps.textContent = fpsOn ? 'ON' : 'OFF';
+        tsFps.classList.toggle('off', !fpsOn);
+        if (fpsInd) fpsInd.style.display = fpsOn ? 'block' : 'none';
       });
     }
     // Gamepad mapping UI

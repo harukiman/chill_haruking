@@ -4179,6 +4179,9 @@
     var dt = Math.min((timestamp - lastTime) / 1000, 0.05);
     lastTime = timestamp;
 
+    // FPS tracking (exponential moving average, low cost)
+    engine._fpsEma = engine._fpsEma === undefined ? 60 : engine._fpsEma * 0.95 + (1 / Math.max(0.001, dt)) * 0.05;
+
     if (!engine.paused) {
       // Update effects
       engine._updateEffects(dt);
