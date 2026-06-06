@@ -1888,6 +1888,8 @@
         void actBtn.offsetWidth; // force reflow
         actBtn.classList.add('ripple');
       }
+      // Haptic feedback (mobile)
+      if (navigator.vibrate) navigator.vibrate(20);
     }
 
     // Update vitals UI
@@ -3508,7 +3510,10 @@
 
   function attackPlayer(dmg) {
     player.hp = Math.max(0, player.hp - dmg);
-    if (Math.random() < 0.1) GameEngine.redFlash();
+    if (Math.random() < 0.1) {
+      GameEngine.redFlash();
+      if (navigator.vibrate) navigator.vibrate(60);
+    }
   }
 
   function wanderEntity(e, dt, speed) {
