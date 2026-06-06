@@ -3800,6 +3800,26 @@
       var totalAch = Object.keys(ACHIEVEMENTS).length;
       achHeader.textContent = 'アチーブメント (' + achCount + ' / ' + totalAch + ')';
       list.appendChild(achHeader);
+      // Progress trackers per achievement (for trackable ones)
+      var clearsNow = Object.keys(clearedLevels).length;
+      var notesNow = discoveredNotes.length;
+      var invNow = Object.keys(player.inventory).length;
+      var itemsAllTime = (function () {
+        try { return Object.keys(JSON.parse(localStorage.getItem('thebackrooms_items_collected_v1') || '{}')).length; }
+        catch (e) { return 0; }
+      })();
+      var totalNotesAvailable = 0;
+      for (var lk2 in NOTES_POOL) totalNotesAvailable += NOTES_POOL[lk2].length;
+      var trackProgress = {
+        five_clears: clearsNow + ' / 5',
+        all_clears: clearsNow + ' / 12',
+        collect_10_notes: notesNow + ' / 10',
+        inventory_full: invNow + ' / 6',
+        collect_all_items: itemsAllTime + ' / ' + Object.keys(ITEMS).length,
+        endless_5_floors: endlessFloor + ' / 5',
+        endless_score_500: endlessScore + ' / 500'
+      };
+
       for (var aid in ACHIEVEMENTS) {
         var ach = ACHIEVEMENTS[aid];
         var unlocked = !!unlockedAchievements[aid];
@@ -3807,9 +3827,13 @@
         achCard.className = 'note-card';
         achCard.style.borderLeftColor = unlocked ? '#d4b340' : '#382a08';
         achCard.style.opacity = unlocked ? '1' : '0.45';
+        var status = unlocked ? '✓ 達成済み' : '未達成';
+        if (!unlocked && trackProgress[aid]) {
+          status = '進捗: ' + trackProgress[aid];
+        }
         achCard.innerHTML =
           '<div class="note-card-title">' + ach.icon + ' ' + ach.name + '</div>' +
-          '<div class="note-card-preview">' + (unlocked ? '✓ 達成済み' : '未達成') + '</div>';
+          '<div class="note-card-preview">' + status + '</div>';
         list.appendChild(achCard);
       }
     }
