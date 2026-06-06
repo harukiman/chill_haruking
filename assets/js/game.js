@@ -1776,11 +1776,23 @@
     playTime += dt;
     inLevelTime += dt;
 
-    // SAN-driven visual effects
+    // SAN-driven visual effects + HARUKI proximity bonus
     var sanRatio = player.san / player.sanMax;
-    GameEngine.vignetteIntensity = (theme.vignette || 0.3) + (1 - sanRatio) * 0.4;
-    GameEngine.chromaticLevel = (theme.chromatic || 0) + (1 - sanRatio) * 0.4;
-    GameEngine.grainIntensity = (theme.grain || 0.3) + (1 - sanRatio) * 0.2;
+    var harukiNear = 0;
+    for (var hkI = 0; hkI < entities.length; hkI++) {
+      if (entities[hkI].type === 'haruki' && entities[hkI].alive) {
+        var hkD = Math.sqrt(
+          (entities[hkI].x - player.x) * (entities[hkI].x - player.x) +
+          (entities[hkI].y - player.y) * (entities[hkI].y - player.y)
+        );
+        if (hkD < 6 * TS) {
+          harukiNear = Math.max(harukiNear, 1 - hkD / (6 * TS));
+        }
+      }
+    }
+    GameEngine.vignetteIntensity = (theme.vignette || 0.3) + (1 - sanRatio) * 0.4 + harukiNear * 0.3;
+    GameEngine.chromaticLevel = (theme.chromatic || 0) + (1 - sanRatio) * 0.4 + harukiNear * 0.4;
+    GameEngine.grainIntensity = (theme.grain || 0.3) + (1 - sanRatio) * 0.2 + harukiNear * 0.2;
 
     // SAN whisper on low SAN
     if (sanRatio < 0.4 && Math.random() < 0.0015 && audioInitialized) {
