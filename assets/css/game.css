@@ -1328,14 +1328,17 @@ body {
 .minigame-frame {
   background: linear-gradient(180deg, #1a1408 0%, #0a0804 100%);
   border: 2px solid #786020;
-  width: 92vw;
-  max-width: 380px;
-  padding: 18px;
+  width: 94vw;
+  max-width: 400px;
+  max-height: 92vh;
+  padding: 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   box-shadow: 0 0 24px rgba(212, 179, 64, 0.2);
+  border-radius: 12px;
+  overflow: hidden;
 }
 .minigame-title {
   font-family: 'Times New Roman', serif;
@@ -1356,10 +1359,11 @@ body {
   background: #050402;
   border: 1px solid #483910;
   width: 100%;
-  max-width: 320px;
+  max-width: 360px;
   aspect-ratio: 1;
   display: block;
   touch-action: none;
+  border-radius: 6px;
 }
 .minigame-status {
   min-height: 22px;
@@ -1376,17 +1380,23 @@ body {
 }
 .mg-btn {
   flex: 1;
+  min-height: 46px;
   padding: 12px;
   background: rgba(20, 14, 4, 0.85);
   color: #d4b340;
   border: 1px solid #786020;
   font-family: inherit;
-  font-size: 12px;
+  font-size: 13px;
   letter-spacing: 0.2em;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: all 0.15s;
+  border-radius: 6px;
+  -webkit-tap-highlight-color: transparent;
 }
-.mg-btn:active { background: #2a1c00; }
+.mg-btn:active {
+  background: #2a1c00;
+  transform: scale(0.97);
+}
 .mg-btn.primary {
   background: rgba(212, 179, 64, 0.2);
   color: #f0dc8a;
