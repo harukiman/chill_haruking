@@ -1415,59 +1415,116 @@
     var anyClose = (pauseBtn && pauseBtn.pressed) || (phoneBtnRaw && phoneBtnRaw.pressed);
     var anyConfirm = actionBtnRaw && actionBtnRaw.pressed;
 
-    // Phone open: pause button closes; otherwise use controller cursor.
-    if (phoneOpen) {
-      // Pause button closes phone
+    // Cursor mode for any overlay that needs UI clicks.
+    // Activates when any of these overlays is visible. Cursor moves with left stick
+    // (or D-pad), action button clicks element under cursor.
+    var cursorOverlays = ['phoneOverlay', 'titleSettingsOverlay', 'tutorialOverlay',
+                          'levelSelectOverlay', 'noteViewerOverlay'];
+    var cursorActive = false;
+    for (var coi = 0; coi < cursorOverlays.length; coi++) {
+      var coEl = el(cursorOverlays[coi]);
+      if (coEl && coEl.style.display !== 'none' && coEl.style.display !== '') {
+        cursorActive = true;
+        break;
+      }
+    }
+    if (cursorActive) {
+      // Pause button: close phone or current settings overlay
       if (pauseBtn && pauseBtn.pressed && !gp._menuClosePressed) {
         gp._menuClosePressed = true;
-        closePhone();
-        return;
+        if (phoneOpen) { closePhone(); return; }
+        var settingsEl = el('titleSettingsOverlay');
+        if (settingsEl && settingsEl.style.display !== 'none') {
+          hideOverlay('titleSettingsOverlay');
+          return;
+        }
+        var tutEl2 = el('tutorialOverlay');
+        if (tutEl2 && tutEl2.style.display !== 'none') {
+          hideOverlay('tutorialOverlay');
+          return;
+        }
+        var lvlEl = el('levelSelectOverlay');
+        if (lvlEl && lvlEl.style.display !== 'none') {
+          hideOverlay('levelSelectOverlay');
+          return;
+        }
       }
       if (!(pauseBtn && pauseBtn.pressed)) gp._menuClosePressed = false;
-      // Cursor mode
+
       var cur = el('gpCursor');
       if (cur) {
         if (cur.style.display === 'none') {
-          // Initialize cursor near center of screen
           cur._x = window.innerWidth / 2;
           cur._y = window.innerHeight / 2;
           cur.style.display = 'block';
         }
-        // Move cursor with left stick (smooth) or D-pad (fixed step)
+        // Left stick: smooth move
         var cx = gp.axes[0] || 0;
         var cy = gp.axes[1] || 0;
         var cm = Math.sqrt(cx * cx + cy * cy);
         if (cm > 0.15) {
-          var step = 8 * (1 + cm * 2); // speed scales with deflection
+          var step = 10 * (1 + cm * 2);
           cur._x += cx * step;
           cur._y += cy * step;
         }
-        // D-pad fixed step (less common but useful)
-        var dpadStep = 6;
+        // D-pad: fixed step
+        var dpadStep = 8;
         if (gp.buttons[12] && gp.buttons[12].pressed) cur._y -= dpadStep;
         if (gp.buttons[13] && gp.buttons[13].pressed) cur._y += dpadStep;
         if (gp.buttons[14] && gp.buttons[14].pressed) cur._x -= dpadStep;
         if (gp.buttons[15] && gp.buttons[15].pressed) cur._x += dpadStep;
-        // Clamp to viewport
+        // Right stick: scroll the focused scroll container at cursor
+        var sy = gp.axes[3] || 0;
+        if (Math.abs(sy) > 0.15) {
+          var scrollTarget = document.elementFromPoint(cur._x, cur._y);
+          while (scrollTarget) {
+            if (scrollTarget.scrollHeight > scrollTarget.clientHeight) {
+              scrollTarget.scrollTop += sy * 14;
+              break;
+            }
+            scrollTarget = scrollTarget.parentElement;
+          }
+        }
+        // Clamp
         cur._x = Math.max(8, Math.min(window.innerWidth - 8, cur._x));
         cur._y = Math.max(8, Math.min(window.innerHeight - 8, cur._y));
         cur.style.left = cur._x + 'px';
         cur.style.top = cur._y + 'px';
-        // Action button = click at cursor position
+        // Action: click at cursor
         if (actionBtnRaw && actionBtnRaw.pressed && !gp._cursorClick) {
           gp._cursorClick = true;
           var target = document.elementFromPoint(cur._x, cur._y);
           if (target) {
-            // Simulate click; also dispatch touchstart for mobile-style handlers
             try { target.click(); } catch (e) {}
+            // If it's a slider, simulate slight value change by axis Y
+            if (target.tagName === 'INPUT' && target.type === 'range') {
+              // Allow horizontal nav on focused slider via D-pad left/right
+            }
           }
         } else if (!(actionBtnRaw && actionBtnRaw.pressed)) {
           gp._cursorClick = false;
         }
+        // R1 / L1: nudge focused slider value if any
+        if (gp.buttons[5] && gp.buttons[5].pressed && !gp._sliderUpPressed) {
+          gp._sliderUpPressed = true;
+          var st = document.elementFromPoint(cur._x, cur._y);
+          if (st && st.tagName === 'INPUT' && st.type === 'range') {
+            st.value = Math.min(parseInt(st.max, 10), parseInt(st.value, 10) + 5);
+            st.dispatchEvent(new Event('input', { bubbles: true }));
+          }
+        } else if (!(gp.buttons[5] && gp.buttons[5].pressed)) gp._sliderUpPressed = false;
+        if (gp.buttons[4] && gp.buttons[4].pressed && !gp._sliderDownPressed) {
+          gp._sliderDownPressed = true;
+          var st2 = document.elementFromPoint(cur._x, cur._y);
+          if (st2 && st2.tagName === 'INPUT' && st2.type === 'range') {
+            st2.value = Math.max(parseInt(st2.min, 10), parseInt(st2.value, 10) - 5);
+            st2.dispatchEvent(new Event('input', { bubbles: true }));
+          }
+        } else if (!(gp.buttons[4] && gp.buttons[4].pressed)) gp._sliderDownPressed = false;
       }
       return;
     } else {
-      // Hide cursor when phone is not open
+      // Hide cursor when no cursor overlay is active
       var curHide = el('gpCursor');
       if (curHide && curHide.style.display !== 'none') curHide.style.display = 'none';
     }
@@ -1675,10 +1732,15 @@
     pop.classList.add('show');
     _discoveryActive = true;
 
-    // Tap-to-dismiss (no auto-close). Safety net: 10s timeout.
+    // Tap-to-dismiss, but ignore close input for the first 500ms.
+    // (The same gesture / button press that triggered the pickup often spills
+    //  over and would immediately dismiss the popup.)
     var closed = false;
+    var canClose = false;
+    setTimeout(function () { canClose = true; }, 500);
     var closeFn = function () {
       if (closed) return;
+      if (!canClose) return; // user is still holding the trigger gesture
       closed = true;
       pop.removeEventListener('click', closeFn);
       pop.removeEventListener('touchstart', closeFn);
@@ -1692,9 +1754,12 @@
     };
     pop.addEventListener('click', closeFn);
     pop.addEventListener('touchstart', closeFn);
-    // Expose for gamepad button-press dismissal (pollGamepad will call this)
     window._discoveryCloseFn = closeFn;
-    _discoveryTimer = setTimeout(closeFn, 10000);
+    // Safety: forced close after 12s (ignores canClose gate)
+    _discoveryTimer = setTimeout(function () {
+      canClose = true;
+      closeFn();
+    }, 12000);
   }
 
   // Encounter cinematic for entity first sighting
