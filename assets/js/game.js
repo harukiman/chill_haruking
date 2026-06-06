@@ -1965,8 +1965,11 @@
     el('touchZoneRight').style.display = '';
     el('phoneBtn').style.display = 'flex';
     el('floorHUD').style.display = '';
+    // Inline style:display:none from HTML overrides CSS class. Explicitly clear it.
     el('floatingMapBtn').classList.add('show');
+    el('floatingMapBtn').style.display = '';
     el('quickItemBtn').classList.add('show');
+    el('quickItemBtn').style.display = '';
     if (gameMode === 'endless') {
       el('floorText').textContent = 'ENDLESS F' + endlessFloor + ' / LV' + currentLevel + ' / ' + endlessScore;
     } else {
@@ -6376,6 +6379,8 @@
       });
       el('floatingMap').style.opacity = floatingMapOpacity;
     }
+    var closePhoneTop = el('closePhoneTopBtn');
+    if (closePhoneTop) closePhoneTop.addEventListener('click', function () { closePhone(); });
     el('closePhoneBtn').addEventListener('click', function () {
       closePhone();
       if (navigator.vibrate) navigator.vibrate(10);

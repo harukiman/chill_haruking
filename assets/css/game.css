@@ -2347,6 +2347,31 @@ button {
   transform: scale(0.97);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
 }
+.phone-close-top-btn {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 6px) + 10px);
+  right: 14px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(180, 30, 30, 0.85);
+  color: #fff;
+  border: 1px solid rgba(220, 60, 60, 0.9);
+  font-family: inherit;
+  font-size: 18px;
+  font-weight: bold;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 99;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation !important;
+  pointer-events: auto !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+.phone-close-top-btn:active {
+  background: rgba(220, 60, 60, 1);
+  transform: scale(0.92);
+}
 
 /* ============================================================
  *  OBJECTIVE / LEVEL HUD
