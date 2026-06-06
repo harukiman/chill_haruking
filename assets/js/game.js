@@ -1774,6 +1774,20 @@
     el('sanFill').classList.toggle('low', sanRatio0 < 0.25);
     el('stamFill').classList.toggle('low', stamRatio < 0.2);
 
+    // Threshold warnings (sound + toast on crossing 50% / 25%)
+    if (!player._lastHpRatio) player._lastHpRatio = 1;
+    if (!player._lastSanRatio) player._lastSanRatio = 1;
+    if (player._lastHpRatio >= 0.25 && hpRatio < 0.25 && audioInitialized) {
+      GameEngine.playSound('heartbeat');
+      toast('⚠ HP 25% 以下');
+    }
+    if (player._lastSanRatio >= 0.25 && sanRatio0 < 0.25 && audioInitialized) {
+      GameEngine.playSound('whisper');
+      toast('⚠ SAN 25% 以下');
+    }
+    player._lastHpRatio = hpRatio;
+    player._lastSanRatio = sanRatio0;
+
     // Flashlight effect: dynamic point light at player position
     if (player.flashlightOn) {
       var fgx = Math.floor(player.x / TS);
