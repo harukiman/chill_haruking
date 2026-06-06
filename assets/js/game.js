@@ -1713,12 +1713,15 @@
   function playLevelReachCinematic(def, onDone) {
     el('lrLevelNum').textContent = def.name;
     el('lrSubtitle').textContent = def.subtitle;
-    el('lrFlavor').textContent = (def.hint || '') + '\n\n[ 画面をタップして始める ]';
+    el('lrFlavor').textContent = (def.hint || '');
     showOverlay('levelReachCinematic');
     if (audioInitialized) GameEngine.playSound('stinger');
     var lrOverlay = el('levelReachCinematic');
-    lrOverlay.style.pointerEvents = 'auto';
+    // Auto-advance after 2.5s (no tap required). Tap optionally skips.
+    var done = false;
     var advance = function () {
+      if (done) return;
+      done = true;
       lrOverlay.removeEventListener('click', advance);
       lrOverlay.removeEventListener('touchstart', advance);
       lrOverlay.style.pointerEvents = 'none';
@@ -1726,8 +1729,10 @@
       forceCanvasResize();
       onDone();
     };
+    lrOverlay.style.pointerEvents = 'auto';
     lrOverlay.addEventListener('click', advance);
     lrOverlay.addEventListener('touchstart', advance);
+    setTimeout(advance, 2500);
   }
 
   function getEntityColor(type) {
@@ -6648,27 +6653,8 @@
     try { updateTitleButtons(); } catch (e) {}
     showOverlay('titleScreen');
 
-    // First touch on title initializes audio AND starts title BGM
-    try {
-      var titleScr = el('titleScreen');
-      if (titleScr) {
-        var initOnTouch = function () {
-          if (!audioInitialized) {
-            try { GameEngine.initAudio(); } catch (e) {}
-            audioInitialized = true;
-            setTimeout(function () {
-              if (state === ST.TITLE) {
-                try { GameEngine.startLoop('classical'); } catch (e) {}
-              }
-            }, 200);
-            var hint = el('tapToStartHint');
-            if (hint) hint.classList.add('hidden');
-          }
-        };
-        titleScr.addEventListener('touchstart', initOnTouch, { passive: true });
-        titleScr.addEventListener('click', initOnTouch);
-      }
-    } catch (e) { console.error('title touch init failed', e); }
+    // Audio init is now handled per-button click via __titleAction.
+    // No screen-wide tap requirement (removed per user request, was causing UX issues).
 
     // iOS Safari dynamic viewport: periodic canvas resize check
     try {
