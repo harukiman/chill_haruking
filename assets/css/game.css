@@ -148,6 +148,17 @@ body {
   touch-action: manipulation !important;
   pointer-events: auto !important;
 }
+/* All interactive elements should accept taps regardless of body touch-action */
+.overlay button,
+.overlay input,
+.overlay a {
+  touch-action: manipulation !important;
+  pointer-events: auto !important;
+}
+button {
+  touch-action: manipulation;
+  pointer-events: auto;
+}
 .title-bg-wallpaper {
   position: absolute;
   inset: 0;
