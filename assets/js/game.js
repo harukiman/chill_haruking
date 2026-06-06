@@ -3712,11 +3712,16 @@
           ctx.fillRect(hc, hcTop, 1, hatBase - hcTop);
         }
       }
-      // Big creepy smile
+      // Big creepy smile (per-column z-buffer)
       ctx.fillStyle = 'rgba(180,40,40,' + fogFactor + ')';
       var pgFaceY = pgY + pgH * 0.18;
       var pgSmileW = pgW * 0.5;
-      ctx.fillRect(screenX - pgSmileW / 2, pgFaceY, pgSmileW, Math.max(1, pgH * 0.04));
+      var pgSmileH = Math.max(1, pgH * 0.04);
+      var pgSmileStart = Math.max(0, Math.floor(screenX - pgSmileW / 2));
+      var pgSmileEnd = Math.min(w, Math.ceil(screenX + pgSmileW / 2));
+      for (var psc = pgSmileStart; psc < pgSmileEnd; psc++) {
+        if (zBuf[psc] > depthTiles) ctx.fillRect(psc, pgFaceY, 1, pgSmileH);
+      }
     } else if (e.type === 'crawler') {
       // Low and wide insect-like creature
       var crH = spriteH * 0.3;
@@ -3753,16 +3758,30 @@
       var wrX = screenX - wrW / 2;
       drawShapedSprite(ctx, wrX, wrY, wrW, wrH, screenX, depthTiles, zBuf, w,
         '#1a1a14', '#080805');
-      // Hollow chest cavity (pulsing)
+      // Hollow chest cavity (pulsing) — per-column z-buffer
       var pulse = 0.5 + Math.sin(performance.now() * 0.004) * 0.5;
       var chestY = wrY + wrH * 0.35;
       var chestSize = spriteW * 0.15;
       ctx.fillStyle = 'rgba(' + (100 + 80 * pulse) + ',30,30,' + fogFactor + ')';
-      var chestCol = Math.round(screenX);
-      if (chestCol >= 0 && chestCol < w && zBuf[chestCol] > depthTiles) {
+      // Sample columns across chest width
+      var chStart = Math.max(0, Math.floor(screenX - chestSize));
+      var chEnd = Math.min(w, Math.ceil(screenX + chestSize));
+      // Use clip path of visible columns + draw ellipse
+      var anyVisible = false;
+      for (var chc = chStart; chc < chEnd; chc++) {
+        if (zBuf[chc] > depthTiles) { anyVisible = true; break; }
+      }
+      if (anyVisible) {
+        ctx.save();
+        ctx.beginPath();
+        for (var chc2 = chStart; chc2 < chEnd; chc2++) {
+          if (zBuf[chc2] > depthTiles) ctx.rect(chc2, chestY - chestSize * 1.3, 1, chestSize * 2.6);
+        }
+        ctx.clip();
         ctx.beginPath();
         ctx.ellipse(screenX, chestY, chestSize, chestSize * 1.3, 0, 0, Math.PI * 2);
         ctx.fill();
+        ctx.restore();
       }
     } else if (e.type === 'haruki') {
       // HARUKI sprite — uses haruki.png head + dark body, with multi-layer enhancement
