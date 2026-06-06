@@ -726,8 +726,8 @@
          hint: '六角形のセル。吊るされた何かが揺れている。',
          intro: '甘い腐臭。蜂の巣のような部屋が並ぶ。',
          entities: [
-           { type: 'smiler', gx: 11, gy: 11 },
-           { type: 'partygoer', gx: 5, gy: 16 }
+           { type: 'smiler', gx: 8, gy: 14 },
+           { type: 'partygoer', gx: 14, gy: 8 }
          ],
          timeLimit: null },
     11: { id: 11, name: 'LEVEL !', subtitle: 'END OF THE LINE',
@@ -744,9 +744,9 @@
          intro: '陽気な音楽。だが、笑顔が多すぎる。',
          entities: [
            { type: 'partygoer', gx: 8, gy: 6 },
-           { type: 'partygoer', gx: 14, gy: 14 },
-           { type: 'partygoer', gx: 7, gy: 17 },
-           { type: 'partygoer', gx: 16, gy: 5 }
+           { type: 'partygoer', gx: 10, gy: 14 },
+           { type: 'partygoer', gx: 7, gy: 18 },
+           { type: 'partygoer', gx: 16, gy: 2 }
          ],
          timeLimit: null },
     9: { id: 9, name: 'LEVEL 9', subtitle: 'THE SUBURBS',
@@ -881,37 +881,53 @@
       { title: 'アーモンドウォーター',
         text: '見覚えのある飲み物が、見覚えのない壁に置かれている。\n飲める。普通の味だ。\n誰がここに置いたのか、考えるな。' },
       { title: '蛍光灯のリズム',
-        text: 'ハム音には法則がある。\n3 回点滅したら近くにエンティティ。\n5 回点滅したら、もう手遅れだ。' }
+        text: 'ハム音には法則がある。\n3 回点滅したら近くにエンティティ。\n5 回点滅したら、もう手遅れだ。' },
+      { title: 'ROOM 0 セッション #4521',
+        text: '"私たちは皆、最初にここに来る。\nそしてここを出ようとする。\nそして気付くんだ。\n— ここは入口でもあり、出口でもあると。"' },
+      { title: '黄色について',
+        text: '何故、Level 0 の壁紙は黄色なのか。\nそれは、人の最も古い記憶を呼び覚ます色だから。\nお前は、思い出さない方が幸せだろう。' }
     ],
     1: [
       { title: '倉庫の住人',
         text: 'Hound に注意。\n見かけたら走るな。動きで反応する。\n壁に貼り付いて呼吸を整えろ。' },
       { title: '居住可能ゾーン',
-        text: 'Level 1 は比較的安全だ。\n他の "no-clipper" と出会うこともある。\nもし出会えたら、それは幸運だ。\nもし、向こうから来たら...違うかもしれない。' }
+        text: 'Level 1 は比較的安全だ。\n他の "no-clipper" と出会うこともある。\nもし出会えたら、それは幸運だ。\nもし、向こうから来たら...違うかもしれない。' },
+      { title: 'M.E.G. 報告書',
+        text: 'Major Explorer Group:\n"Level 1 は中継地点として最適。\n安全な領域あり、定期的にアーモンドウォーターが補給される。\nだが、夜は決して訪れないことを覚悟せよ。"' },
+      { title: '空気の重さ',
+        text: 'コンクリートの匂いと、僅かなオイル。\nここは「現実」に最も近い階層だと言われている。\nだから帰りたくなる。だから危ない。' }
     ],
     2: [
       { title: '配管夢の警告',
         text: '水に長く立つな。\nSAN がゆるやかに削れる。\nそれから...足首から何かが昇ってくる気がするだろう。' },
       { title: 'Smiler',
-        text: '暗闇に白い歯だけが浮かぶ。\n見るな。目を逸らせばすり抜ける。\n見続けると...笑いに、引き込まれる。' }
+        text: '暗闇に白い歯だけが浮かぶ。\n見るな。目を逸らせばすり抜ける。\n見続けると...笑いに、引き込まれる。' },
+      { title: '腐食した詩',
+        text: '"配管は夢を見る。\n誰も流さない水を流し、\n誰も呼ばない人を呼び、\n誰も帰らない者を待つ。"' }
     ],
     3: [
       { title: '通電中',
         text: '床が黒い斑点は、まだ電流が通っている。\n触れるな。HP と SAN を一度に持っていかれる。' },
       { title: 'スパークの法則',
-        text: '火花が見えた時、もう避ける時間はない。\nだから、火花が見える前に逃げろ。' }
+        text: '火花が見えた時、もう避ける時間はない。\nだから、火花が見える前に逃げろ。' },
+      { title: '電気技師の最後の言葉',
+        text: '"発電所を見つけた。\nこれで全階層に光を戻せる。\n— だが、誰が光を消したのか、まだ分からない。"' }
     ],
     4: [
       { title: 'デスクの落書き',
         text: '"4F 第3キュービクル、奴は私だった"\n誰が書いたのか、思い出せない。\n私の字に似ている。' },
       { title: 'Skin-Stealer',
-        text: '床に倒れている同僚。\n声をかけるな。触るな。\n目を合わせるな。\n奴らはお前の皮膚を欲しがっている。' }
+        text: '床に倒れている同僚。\n声をかけるな。触るな。\n目を合わせるな。\n奴らはお前の皮膚を欲しがっている。' },
+      { title: '退職届',
+        text: '退職事由: 不在\n退職日: 不明\n署名: ____________\n\n誰の退職届だ。なぜここに。' }
     ],
     5: [
       { title: 'チェックイン用紙',
         text: 'THE HOTEL へようこそ。\n部屋は無料です。\nチェックアウトは...自由意志ではありません。' },
       { title: 'Mr. Hotel への警告',
-        text: '"スーツの男に名前を尋ねられても、答えるな。\nお前の名前を持っていかれる。"' }
+        text: '"スーツの男に名前を尋ねられても、答えるな。\nお前の名前を持っていかれる。"' },
+      { title: '404 号室',
+        text: '部屋番号 404 は決して開けないこと。\n「Page Not Found」と書かれた部屋。\n中には...何も無い。\nそれが、最も怖い。' }
     ],
     6: [
       { title: '完全な暗闇',
@@ -2662,6 +2678,24 @@
       // Default — basic blob
       drawShapedSprite(ctx, startX, startY, spriteW, spriteH, screenX, depthTiles, zBuf, w,
         e.color || '#444', '#222');
+    }
+
+    // Stun marker (animated stars above sprite)
+    if (e.stunned) {
+      var starY = startY - spriteH * 0.1;
+      var t = performance.now() * 0.006;
+      ctx.fillStyle = 'rgba(255,255,150,' + (fogFactor * 0.85) + ')';
+      ctx.font = 'bold ' + Math.max(10, spriteH * 0.15) + 'px sans-serif';
+      ctx.textAlign = 'center';
+      for (var si = 0; si < 3; si++) {
+        var ox = Math.cos(t + si * Math.PI * 2 / 3) * spriteW * 0.15;
+        var oy = Math.sin(t + si * Math.PI * 2 / 3) * spriteH * 0.05;
+        var col = Math.round(screenX + ox);
+        if (col < 0 || col >= w) continue;
+        if (zBuf[col] > depthTiles) {
+          ctx.fillText('✦', screenX + ox, starY + oy);
+        }
+      }
     }
     ctx.restore();
   }
