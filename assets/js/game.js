@@ -1434,13 +1434,13 @@
       if (currentAmbient) GameEngine.startLoop(currentAmbient);
     }
 
-    // Loading screen
+    // Loading screen — shorter for snappier feel
     if (!instant) {
       showLoadingScreen(def);
       setTimeout(function () {
         hideOverlay('loadingScreen');
         startPlaying();
-      }, 1800);
+      }, 1200);
     } else {
       startPlaying();
     }
@@ -1631,13 +1631,13 @@
       el('loadingHint').textContent = def.hint;
     }
     showOverlay('loadingScreen');
-    // Animate progress bar
+    // Animate progress bar (matches loading screen duration)
     var bar = el('loadingFill');
     if (bar) {
       bar.style.width = '0%';
       var startTime = performance.now();
       var animate = function () {
-        var elapsed = (performance.now() - startTime) / 1500;
+        var elapsed = (performance.now() - startTime) / 1100;
         bar.style.width = (Math.min(1, elapsed) * 100) + '%';
         if (elapsed < 1) requestAnimationFrame(animate);
       };
@@ -1708,8 +1708,8 @@
     txt.textContent = '[ヒント] ' + TUT_HINTS[step];
     setTimeout(function () {
       hud.style.display = 'none';
-      setTimeout(function () { showTutorialStep(step + 1); }, 2500);
-    }, 5500);
+      setTimeout(function () { showTutorialStep(step + 1); }, 1200);
+    }, 4000);
   }
 
   // ============================================================
