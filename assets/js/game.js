@@ -679,7 +679,10 @@
          rows: LV1_ROWS, theme: 1,
          hint: 'コンクリートの倉庫。時折ハウンドが徘徊する。',
          intro: '壁を抜けた...冷たいコンクリートの匂い。',
-         entities: [ { type: 'hound', gx: 14, gy: 14 } ],
+         entities: [
+           { type: 'hound', gx: 14, gy: 14 },
+           { type: 'crawler', gx: 4, gy: 18 }
+         ],
          timeLimit: null },
     2: { id: 2, name: 'LEVEL 2', subtitle: 'PIPE DREAMS',
          rows: LV2_ROWS, theme: 2,
@@ -691,7 +694,10 @@
          rows: LV3_ROWS, theme: 3,
          hint: '感電する配線あり。火花の音と暗闇。',
          intro: '焦げた匂い...バチバチと火花が散る。',
-         entities: [],
+         entities: [
+           { type: 'wretch', gx: 13, gy: 8 },
+           { type: 'wretch', gx: 2, gy: 13 }
+         ],
          timeLimit: null },
     4: { id: 4, name: 'LEVEL 4', subtitle: 'ABANDONED OFFICE',
          rows: LV4_ROWS, theme: 4,
@@ -735,7 +741,8 @@
          hint: '線路の上を歩く。遠くから何かが近づく音。',
          intro: '駅の匂い...ここで降りる客はいない。',
          entities: [
-           { type: 'hound', gx: 5, gy: 26 }
+           { type: 'hound', gx: 5, gy: 26 },
+           { type: 'crawler', gx: 7, gy: 13 }
          ],
          timeLimit: null },
     12: { id: 12, name: 'LEVEL Fun =)', subtitle: 'ETERNAL PARTY',
@@ -753,7 +760,10 @@
          rows: LV9_ROWS, theme: 9,
          hint: '永遠に続く郊外の街。THE END への扉がここに。',
          intro: '空に月はない。月のような何かがある。',
-         entities: [ { type: 'partygoer', gx: 12, gy: 12 } ],
+         entities: [
+           { type: 'boss', gx: 12, gy: 9 },
+           { type: 'crawler', gx: 5, gy: 16 }
+         ],
          timeLimit: null }
   };
 
@@ -803,10 +813,11 @@
     },
     flare: {
       id: 'flare', name: 'フレア',
-      icon: '🔥', desc: '点火。周囲6マスのエンティティを4秒スタン。HP+10。',
+      icon: '🔥', desc: '点火。周囲6マスのエンティティを4秒スタン + Boss に 50 ダメージ。HP+10。',
       effect: function (p) {
         var stunRange = 6 * TS;
         var stunned = 0;
+        var bossHit = 0;
         for (var i = 0; i < entities.length; i++) {
           var e = entities[i];
           if (!e.alive) continue;
@@ -816,30 +827,57 @@
             e.stunned = true;
             e.stunTimer = 4;
             stunned++;
+            if (e.type === 'boss') {
+              e.bossHp = (e.bossHp !== undefined ? e.bossHp : 200) - 50;
+              bossHit++;
+              if (e.bossHp <= 0) {
+                e.alive = false;
+                toast('BOSS 撃破!');
+                unlockAchievement('won_minigame');
+              }
+            }
           }
         }
         p.hp = Math.min(p.hpMax, p.hp + 10);
         if (audioInitialized) GameEngine.playSound('jumpscare');
         GameEngine.redFlash();
         GameEngine.shakeScreen(6, 0.3);
-        toast(stunned > 0 ? ('フレア発火! ' + stunned + '体スタン') : 'フレア発火 (影響なし)');
+        var msg = 'フレア発火!';
+        if (stunned > 0) msg += ' ' + stunned + '体スタン';
+        if (bossHit > 0) msg += ' BOSS HIT';
+        toast(msg);
       }
     },
     mirror: {
       id: 'mirror', name: 'ひび割れた鏡',
-      icon: '🪞', desc: 'Skin-Stealer に対して非常に有効。1回使い切り。',
+      icon: '🪞', desc: 'Skin-Stealer 消滅 + Boss に 100 ダメージ。1回使い切り。',
       effect: function (p) {
         var reflected = 0;
+        var bossDmg = 0;
         for (var i = 0; i < entities.length; i++) {
           var e = entities[i];
           if (!e.alive) continue;
           if (e.type === 'skinstealer') {
-            e.alive = false; // banished
+            e.alive = false;
             reflected++;
+          } else if (e.type === 'boss') {
+            var dx = e.x - p.x, dy = e.y - p.y;
+            var d = Math.sqrt(dx * dx + dy * dy);
+            if (d < 8 * TS) {
+              e.bossHp = (e.bossHp !== undefined ? e.bossHp : 200) - 100;
+              bossDmg++;
+              if (e.bossHp <= 0) {
+                e.alive = false;
+                toast('BOSS 撃破!');
+              }
+            }
           }
         }
         if (audioInitialized) GameEngine.playSound('static');
-        toast(reflected > 0 ? ('鏡が反射! Skin-Stealer ' + reflected + '体消滅') : '鏡を構えたが反応なし');
+        var m = '鏡を構えた';
+        if (reflected > 0) m += ' Skin-Stealer ' + reflected + '体消滅';
+        if (bossDmg > 0) m += ' BOSS HIT';
+        toast(m);
       }
     },
     almond_milk: {
@@ -2509,6 +2547,78 @@
         if (distP < 1.5 * TS) {
           attackPlayer(15 * dt);
         }
+      } else if (e.type === 'crawler') {
+        // Fast attacker that retreats after hitting
+        if (e.state === 'wait') {
+          if (e.stateTimer > 1.5) { e.state = 'lunge'; e.stateTimer = 0; }
+        } else if (e.state === 'lunge') {
+          if (distP < 8 * TS) {
+            var crSpd = 140 * sMul;
+            var stepX_c = (dx / distP) * crSpd * dt;
+            var stepY_c = (dy / distP) * crSpd * dt;
+            if (isWalkable(e.x + stepX_c, e.y)) e.x += stepX_c;
+            if (isWalkable(e.x, e.y + stepY_c)) e.y += stepY_c;
+            if (distP < 1.0 * TS) {
+              attackPlayer(22 * dt);
+              e.state = 'retreat';
+              e.stateTimer = 0;
+            }
+          } else {
+            e.state = 'wait';
+            e.stateTimer = 0;
+          }
+        } else if (e.state === 'retreat') {
+          var retSpd = 100 * sMul;
+          var rx = -(dx / distP) * retSpd * dt;
+          var ry = -(dy / distP) * retSpd * dt;
+          if (isWalkable(e.x + rx, e.y)) e.x += rx;
+          if (isWalkable(e.x, e.y + ry)) e.y += ry;
+          if (e.stateTimer > 2) { e.state = 'wait'; e.stateTimer = 0; }
+        } else {
+          e.state = 'wait';
+        }
+      } else if (e.type === 'wretch') {
+        // Stationary, leeches SAN when player in FOV
+        if (distP < 8 * TS && isFacingPlayer(e)) {
+          player.san = Math.max(0, player.san - 12 * dt);
+          if (Math.random() < 0.04 && audioInitialized) GameEngine.playSound('whisper');
+        }
+        // Direct contact damages
+        if (distP < 0.8 * TS) attackPlayer(8 * dt);
+      } else if (e.type === 'boss') {
+        // Boss: multi-phase, boss HP tracked separately
+        e.bossHp = e.bossHp !== undefined ? e.bossHp : 200;
+        // Phase determined by HP
+        var phase = 1;
+        if (e.bossHp < 130) phase = 2;
+        if (e.bossHp < 60)  phase = 3;
+        var bossSpd = (50 + phase * 25) * sMul;
+        wanderEntity(e, dt, bossSpd);
+        // Move toward player if in range
+        if (distP < 10 * TS) {
+          var bsx = (dx / distP) * bossSpd * dt;
+          var bsy = (dy / distP) * bossSpd * dt;
+          if (isWalkable(e.x + bsx, e.y)) e.x += bsx;
+          if (isWalkable(e.x, e.y + bsy)) e.y += bsy;
+        }
+        if (distP < 1.6 * TS) {
+          attackPlayer((8 + phase * 4) * dt);
+        }
+        // Phase 3: spawn shadow copies (one-time)
+        if (phase === 3 && !e._spawnedShadows) {
+          e._spawnedShadows = true;
+          for (var bsi = 0; bsi < 2; bsi++) {
+            entities.push({
+              type: 'crawler',
+              x: e.x + (Math.random() - 0.5) * 4 * TS,
+              y: e.y + (Math.random() - 0.5) * 4 * TS,
+              angle: 0, state: 'wait', stateTimer: 0,
+              alive: true, hp: 100, color: '#1a0a0a', bodyColor: '#000'
+            });
+          }
+          toast('影が分離した!');
+          if (audioInitialized) GameEngine.playSound('stinger');
+        }
       }
 
       // Common: collision with player triggers damage
@@ -2680,6 +2790,91 @@
       var pgFaceY = pgY + pgH * 0.18;
       var pgSmileW = pgW * 0.5;
       ctx.fillRect(screenX - pgSmileW / 2, pgFaceY, pgSmileW, Math.max(1, pgH * 0.04));
+    } else if (e.type === 'crawler') {
+      // Low and wide insect-like creature
+      var crH = spriteH * 0.3;
+      var crY = startY + spriteH * 0.7;
+      var crW = spriteW * 0.8;
+      var crX = screenX - crW / 2;
+      drawShapedSprite(ctx, crX, crY, crW, crH, screenX, depthTiles, zBuf, w,
+        '#3a1a0a', '#150805');
+      // Multiple eye dots
+      ctx.fillStyle = 'rgba(255,200,40,' + fogFactor + ')';
+      for (var ce = 0; ce < 4; ce++) {
+        var cdx = (ce - 1.5) * spriteW * 0.08;
+        drawSpriteDot(ctx, screenX + cdx, crY + crH * 0.3, Math.max(1, spriteH * 0.015), zBuf, w, depthTiles);
+      }
+      // Legs (lines extending)
+      ctx.strokeStyle = 'rgba(50,30,15,' + fogFactor + ')';
+      ctx.lineWidth = Math.max(1, spriteH * 0.012);
+      for (var lg = -3; lg <= 3; lg++) {
+        var lgX = screenX + lg * spriteW * 0.07;
+        var lgCol = Math.round(lgX);
+        if (lgCol < 0 || lgCol >= w) continue;
+        if (zBuf[lgCol] > depthTiles) {
+          ctx.beginPath();
+          ctx.moveTo(lgX, crY + crH * 0.5);
+          ctx.lineTo(lgX + lg * spriteW * 0.02, crY + crH);
+          ctx.stroke();
+        }
+      }
+    } else if (e.type === 'wretch') {
+      // Tall stationary husk with hollow chest
+      var wrH = spriteH * 0.9;
+      var wrY = startY + spriteH * 0.08;
+      var wrW = spriteW * 0.5;
+      var wrX = screenX - wrW / 2;
+      drawShapedSprite(ctx, wrX, wrY, wrW, wrH, screenX, depthTiles, zBuf, w,
+        '#1a1a14', '#080805');
+      // Hollow chest cavity (pulsing)
+      var pulse = 0.5 + Math.sin(performance.now() * 0.004) * 0.5;
+      var chestY = wrY + wrH * 0.35;
+      var chestSize = spriteW * 0.15;
+      ctx.fillStyle = 'rgba(' + (100 + 80 * pulse) + ',30,30,' + fogFactor + ')';
+      var chestCol = Math.round(screenX);
+      if (chestCol >= 0 && chestCol < w && zBuf[chestCol] > depthTiles) {
+        ctx.beginPath();
+        ctx.ellipse(screenX, chestY, chestSize, chestSize * 1.3, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else if (e.type === 'boss') {
+      // Large humanoid with crown and floating presence
+      var bsH = spriteH * 1.1;
+      var bsY = startY - spriteH * 0.05;
+      var bsW = spriteW * 0.6;
+      var bsX = screenX - bsW / 2;
+      drawShapedSprite(ctx, bsX, bsY, bsW, bsH, screenX, depthTiles, zBuf, w,
+        '#1c0028', '#0a0010');
+      // Crown spikes
+      ctx.fillStyle = 'rgba(212,179,64,' + fogFactor + ')';
+      for (var bks = -2; bks <= 2; bks++) {
+        var bkX = screenX + bks * bsW * 0.18;
+        var bkCol = Math.round(bkX);
+        if (bkCol < 0 || bkCol >= w) continue;
+        if (zBuf[bkCol] > depthTiles) {
+          ctx.beginPath();
+          ctx.moveTo(bkX, bsY - bsH * 0.05);
+          ctx.lineTo(bkX - 4, bsY + bsH * 0.05);
+          ctx.lineTo(bkX + 4, bsY + bsH * 0.05);
+          ctx.closePath();
+          ctx.fill();
+        }
+      }
+      // Glowing eyes
+      ctx.fillStyle = 'rgba(220,40,40,' + fogFactor + ')';
+      drawSpriteDot(ctx, screenX - bsW * 0.18, bsY + bsH * 0.18, Math.max(2, bsH * 0.025), zBuf, w, depthTiles);
+      drawSpriteDot(ctx, screenX + bsW * 0.18, bsY + bsH * 0.18, Math.max(2, bsH * 0.025), zBuf, w, depthTiles);
+      // Boss HP bar above head
+      if (e.bossHp !== undefined) {
+        var bhpRatio = Math.max(0, e.bossHp / 200);
+        var bhpY = bsY - 18;
+        var bhpW = bsW * 1.5;
+        var bhpX = screenX - bhpW / 2;
+        ctx.fillStyle = 'rgba(0,0,0,' + fogFactor * 0.8 + ')';
+        ctx.fillRect(bhpX, bhpY, bhpW, 6);
+        ctx.fillStyle = 'rgba(200,40,40,' + fogFactor + ')';
+        ctx.fillRect(bhpX, bhpY, bhpW * bhpRatio, 6);
+      }
     } else {
       // Default — basic blob
       drawShapedSprite(ctx, startX, startY, spriteW, spriteH, screenX, depthTiles, zBuf, w,
