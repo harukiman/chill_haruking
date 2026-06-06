@@ -1695,17 +1695,42 @@
 
     // Death check
     if (player.hp <= 0) {
-      die('HP消失', 'HP がゼロになった。バックルームに飲まれた...');
+      var killer = '不明';
+      if (player.inHazard) killer = '通電床のハザード';
+      else if (player.inWater) killer = '水底';
+      else if (entities.length > 0) {
+        // Find closest entity
+        var minD = Infinity, closestE = null;
+        for (var ek = 0; ek < entities.length; ek++) {
+          if (!entities[ek].alive) continue;
+          var ekDx = entities[ek].x - player.x;
+          var ekDy = entities[ek].y - player.y;
+          var ekD = Math.sqrt(ekDx * ekDx + ekDy * ekDy);
+          if (ekD < minD) { minD = ekD; closestE = entities[ek]; }
+        }
+        if (closestE && minD < 3 * TS) {
+          var iName = ENTITY_INTROS[closestE.type];
+          killer = iName ? iName.name : closestE.type;
+        }
+      }
+      die('HP消失', 'HP がゼロになった。\n死因: ' + killer);
       return;
     }
     if (player.san <= 0) {
-      die('SAN崩壊', '正気を失い、二度と戻れなくなった。');
+      die('SAN崩壊', '正気を失い、二度と戻れなくなった。\n壁紙の黄色が、最後の光景だった。');
       return;
     }
 
     // Action button: pick up items, read notes, no-clip
     if (inp.actionJustPressed) {
       handleAction();
+      // Visual ripple feedback
+      var actBtn = el('actionBtn');
+      if (actBtn) {
+        actBtn.classList.remove('ripple');
+        void actBtn.offsetWidth; // force reflow
+        actBtn.classList.add('ripple');
+      }
     }
 
     // Update vitals UI
