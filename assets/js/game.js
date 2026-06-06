@@ -792,7 +792,8 @@
     },
     flashlight: {
       id: 'flashlight', name: '懐中電灯',
-      icon: '🔦', desc: '暗いレベルで視界を広げる。',
+      icon: '🔦', desc: '暗いレベルで視界を広げる。トグル式。',
+      persistent: true,
       effect: function (p) {
         if (p.flashlightOn) { p.flashlightOn = false; toast('懐中電灯 OFF'); }
         else { p.flashlightOn = true; toast('懐中電灯 ON'); }
@@ -810,7 +811,8 @@
     },
     radio: {
       id: 'radio', name: '壊れたラジオ',
-      icon: '📻', desc: 'ノイズの中に時折声が聞こえる。エンティティを察知できる。',
+      icon: '📻', desc: 'ノイズの中に時折声が聞こえる。エンティティを察知できる。トグル式。',
+      persistent: true,
       effect: function (p) {
         if (p.radioOn) { p.radioOn = false; toast('ラジオ OFF'); }
         else { p.radioOn = true; toast('ラジオ ON — エンティティ警告'); }
@@ -4136,13 +4138,15 @@
               if (!it) return;
               if (confirm(it.name + '\n\n' + it.desc + '\n\n使用しますか?')) {
                 it.effect(player);
-                player.inventory[itemId]--;
-                if (player.inventory[itemId] <= 0) delete player.inventory[itemId];
-                player._itemsUsedThisLevel = (player._itemsUsedThisLevel || 0) + 1;
-                if (!player._itemsUsedAllRun) player._itemsUsedAllRun = {};
-                player._itemsUsedAllRun[itemId] = true;
-                if (player._itemsUsedAllRun.flare && player._itemsUsedAllRun.mirror) {
-                  unlockAchievement('use_all_weapons');
+                if (!it.persistent) {
+                  player.inventory[itemId]--;
+                  if (player.inventory[itemId] <= 0) delete player.inventory[itemId];
+                  player._itemsUsedThisLevel = (player._itemsUsedThisLevel || 0) + 1;
+                  if (!player._itemsUsedAllRun) player._itemsUsedAllRun = {};
+                  player._itemsUsedAllRun[itemId] = true;
+                  if (player._itemsUsedAllRun.flare && player._itemsUsedAllRun.mirror) {
+                    unlockAchievement('use_all_weapons');
+                  }
                 }
                 refreshPhoneUI();
               }
