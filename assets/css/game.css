@@ -1287,22 +1287,28 @@ body {
 
 .phone-close-btn {
   flex: 0 0 auto;
-  margin-top: 10px;
-  min-height: 44px;
-  padding: 10px;
-  background: rgba(20, 14, 4, 0.85);
+  margin-top: 12px;
+  min-height: 48px;
+  padding: 12px;
+  background: linear-gradient(180deg, rgba(28, 22, 8, 0.9) 0%, rgba(15, 12, 4, 0.9) 100%);
   color: #d4b340;
-  border: 1px solid #786020;
+  border: 1px solid rgba(120, 96, 32, 0.45);
   font-family: inherit;
   font-size: 13px;
-  letter-spacing: 0.3em;
+  letter-spacing: 0.35em;
+  font-weight: 600;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  border-radius: 6px;
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(240, 220, 138, 0.1);
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .phone-close-btn:active {
-  background: rgba(40, 30, 8, 0.9);
+  background: linear-gradient(180deg, rgba(40, 30, 8, 0.95) 0%, rgba(20, 16, 4, 0.95) 100%);
   transform: scale(0.97);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
 }
 
 /* ============================================================
