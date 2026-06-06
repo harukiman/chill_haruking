@@ -918,14 +918,13 @@
     var dx = entity.x - playerX;
     var dy = entity.y - playerY;
 
-    // Transform to camera space
+    // Transform to camera space (standard raycaster sprite projection)
     var renderAngle = playerAngle + shakeOffsetX * 0.01;
-    var cosA = Math.cos(-renderAngle);
-    var sinA = Math.sin(-renderAngle);
-    var transformX = dx * cosA - dy * sinA;
-    var transformY = dx * sinA + dy * cosA;
+    var cosT = Math.cos(renderAngle);
+    var sinT = Math.sin(renderAngle);
+    var transformX = -dx * sinT + dy * cosT;  // lateral (right+)
+    var transformY = dx * cosT + dy * sinT;   // depth (forward+)
 
-    // transformY = depth (forward), transformX = lateral
     if (transformY <= 0.1) return; // Behind camera
 
     var w = engine.width;
@@ -1045,10 +1044,10 @@
     var dx = wx - playerX;
     var dy = wy - playerY;
     var renderAngle = playerAngle + shakeOffsetX * 0.01;
-    var cosA = Math.cos(-renderAngle);
-    var sinA = Math.sin(-renderAngle);
-    var tX = dx * cosA - dy * sinA;
-    var tY = dx * sinA + dy * cosA;
+    var cosT = Math.cos(renderAngle);
+    var sinT = Math.sin(renderAngle);
+    var tX = -dx * sinT + dy * cosT;
+    var tY = dx * cosT + dy * sinT;
     if (tY <= 0.5) return;
 
     var w = engine.width;
@@ -1116,8 +1115,8 @@
     var h = engine.height;
     var ts = TILE_SIZE;
     var renderAngle = playerAngle + shakeOffsetX * 0.01;
-    var cosA = Math.cos(-renderAngle);
-    var sinA = Math.sin(-renderAngle);
+    var cosT = Math.cos(renderAngle);
+    var sinT = Math.sin(renderAngle);
     var zBuf = engine._zBuffer;
 
     ctx.save();
@@ -1125,8 +1124,8 @@
       var p = particles[pi];
       var dx = p.x - playerX;
       var dy = p.y - playerY;
-      var tX = dx * cosA - dy * sinA;
-      var tY = dx * sinA + dy * cosA;
+      var tX = -dx * sinT + dy * cosT;
+      var tY = dx * cosT + dy * sinT;
       if (tY <= 0.5) continue;
 
       var depthInTiles = tY / ts;
@@ -2729,7 +2728,7 @@
       hum.type = 'sine';
       hum.frequency.value = 60;
       var humG = audioCtx.createGain();
-      humG.gain.value = 0.10;
+      humG.gain.value = 0.25;
       hum.connect(humG);
       humG.connect(dest);
       hum.start();
@@ -2738,7 +2737,7 @@
       hum2.type = 'sine';
       hum2.frequency.value = 120;
       var hum2G = audioCtx.createGain();
-      hum2G.gain.value = 0.05;
+      hum2G.gain.value = 0.12;
       hum2.connect(hum2G);
       hum2G.connect(dest);
       hum2.start();
@@ -2754,7 +2753,7 @@
       bp.type = 'highpass';
       bp.frequency.value = 6000;
       var noiseG = audioCtx.createGain();
-      noiseG.gain.value = 0.04;
+      noiseG.gain.value = 0.08;
       noise.connect(bp); bp.connect(noiseG); noiseG.connect(dest);
       noise.start();
 
@@ -2801,7 +2800,7 @@
       pipeHum.type = 'triangle';
       pipeHum.frequency.value = 45;
       var pipeG = audioCtx.createGain();
-      pipeG.gain.value = 0.08;
+      pipeG.gain.value = 0.18;
       pipeHum.connect(pipeG);
       pipeG.connect(dest2);
       pipeHum.start();

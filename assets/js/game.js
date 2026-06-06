@@ -3591,10 +3591,11 @@
     var h = GameEngine.height;
     var dx = e.x - player.x;
     var dy = e.y - player.y;
-    var cosA = Math.cos(-player.angle);
-    var sinA = Math.sin(-player.angle);
-    var tX = dx * cosA - dy * sinA;
-    var tY = dx * sinA + dy * cosA;
+    // Standard raycaster sprite projection — fix from engine bug (swapped tX/tY)
+    var cosT = Math.cos(player.angle);
+    var sinT = Math.sin(player.angle);
+    var tX = -dx * sinT + dy * cosT;   // lateral (right positive)
+    var tY = dx * cosT + dy * sinT;    // depth (forward positive)
     if (tY <= 0.1) return;
     var depthTiles = tY / TS;
     var maxDist = 22;
@@ -3993,10 +3994,11 @@
     var h = GameEngine.height;
     var dx = wx - player.x;
     var dy = wy - player.y;
-    var cosA = Math.cos(-player.angle);
-    var sinA = Math.sin(-player.angle);
-    var tX = dx * cosA - dy * sinA;
-    var tY = dx * sinA + dy * cosA;
+    // Standard raycaster sprite projection
+    var cosT = Math.cos(player.angle);
+    var sinT = Math.sin(player.angle);
+    var tX = -dx * sinT + dy * cosT;
+    var tY = dx * cosT + dy * sinT;
     if (tY <= 0.5) return; // behind camera
     var depthTiles = tY / TS;
     if (depthTiles > 14) return; // too far
@@ -4115,10 +4117,10 @@
     var h = GameEngine.height;
     var dx = wx - player.x;
     var dy = wy - player.y;
-    var cosA = Math.cos(-player.angle);
-    var sinA = Math.sin(-player.angle);
-    var tX = dx * cosA - dy * sinA;
-    var tY = dx * sinA + dy * cosA;
+    var cosT = Math.cos(player.angle);
+    var sinT = Math.sin(player.angle);
+    var tX = -dx * sinT + dy * cosT;
+    var tY = dx * cosT + dy * sinT;
     if (tY <= 0.5) return;
     var depthTiles = tY / TS;
     if (depthTiles > 18) return;
