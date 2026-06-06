@@ -1081,6 +1081,31 @@
   var DIFF_KEY = 'thebackrooms_diff_v1';
   var TUT_KEY = 'thebackrooms_tut_v1';
   var ENDLESS_KEY = 'thebackrooms_endless_v1';
+  var STATS_KEY = 'thebackrooms_stats_v1';
+  var ENT_SEEN_KEY = 'thebackrooms_ent_seen_v1';
+
+  // Lifetime stats (persists across all runs)
+  var stats = {
+    totalDeaths: 0,
+    totalNoClips: 0,
+    totalRuns: 0,
+    totalPlayTime: 0,
+    totalItemsCollected: 0,
+    totalNotesRead: 0,
+    totalDistanceWalked: 0
+  };
+
+  var entitySeenTypes = {}; // {type: true}
+
+  var ENTITY_INTROS = {
+    hound: { name: 'HOUND', desc: '低い四足の捕食者。動くものに反応する。\n走るな。歩け。' },
+    smiler: { name: 'SMILER', desc: '暗闇に浮かぶ白い歯。\n見つめると意識を奪われる。' },
+    skinstealer: { name: 'SKIN-STEALER', desc: '死体のフリをして近付ける。\n触れるな。鏡が有効。' },
+    partygoer: { name: 'PARTYGOER', desc: '陽気な笑顔と帽子。\n陽気さで殴ってくる。' },
+    crawler: { name: 'CRAWLER', desc: '低くて速い。多眼。\n突進と撤退を繰り返す。' },
+    wretch: { name: 'WRETCH', desc: '動かない。だが見つめると胸の穴に SAN を吸われる。\n目を逸らせ。' },
+    boss: { name: 'THE OPERATOR', desc: '王冠を被った階層支配者。\n3 段階で姿を変える。フレア/鏡で攻撃。' }
+  };
 
   // First-run tutorial state
   var tutorialDone = false;
@@ -1853,6 +1878,25 @@
     endlessBestScore = s ? parseInt(s, 10) || 0 : 0;
   }
 
+  function loadStats() {
+    try {
+      var s = localStorage.getItem(STATS_KEY);
+      if (s) {
+        var parsed = JSON.parse(s);
+        for (var k in parsed) if (k in stats) stats[k] = parsed[k];
+      }
+      var es = localStorage.getItem(ENT_SEEN_KEY);
+      if (es) entitySeenTypes = JSON.parse(es) || {};
+    } catch (e) { /* ignore */ }
+  }
+
+  function saveStats() {
+    try {
+      localStorage.setItem(STATS_KEY, JSON.stringify(stats));
+      localStorage.setItem(ENT_SEEN_KEY, JSON.stringify(entitySeenTypes));
+    } catch (e) {}
+  }
+
   function saveEndlessBest() {
     if (endlessScore > endlessBestScore) {
       endlessBestScore = endlessScore;
@@ -1864,6 +1908,8 @@
     state = ST.LOADING;
     hideOverlay('titleScreen');
     gameMode = 'endless';
+    stats.totalRuns++;
+    saveStats();
     endlessFloor = 0;
     endlessVisitedLevels = [];
     endlessScore = 0;
@@ -2683,6 +2729,8 @@
     delete pickupSpots[gridKey(gx, gy)];
     toast(item.name + ' を入手');
     if (audioInitialized) GameEngine.playSound('item_get');
+    stats.totalItemsCollected++;
+    saveStats();
     // Track all-time collected items
     try {
       var allKey = 'thebackrooms_items_collected_v1';
@@ -2704,6 +2752,8 @@
         text: note.text
       });
       readNotes[currentLevel][gridKey(gx, gy)] = true;
+      stats.totalNotesRead++;
+      saveStats();
     }
     showNoteViewer(note.title, note.text);
     if (audioInitialized) GameEngine.playSound('paper');
@@ -2751,6 +2801,8 @@
     }
     clearedLevels[currentLevel] = true;
     unlockAchievement('first_no_clip');
+    stats.totalNoClips++;
+    saveStats();
     var clearedCount = 0;
     for (var ck in clearedLevels) if (clearedLevels[ck]) clearedCount++;
     if (clearedCount >= 5) unlockAchievement('five_clears');
@@ -2812,6 +2864,24 @@
       var e = entities[i];
       if (!e.alive) continue;
       e.stateTimer += dt;
+
+      // First-encounter intro
+      if (!entitySeenTypes[e.type] && ENTITY_INTROS[e.type]) {
+        var fcDx = e.x - player.x, fcDy = e.y - player.y;
+        var fcD = Math.sqrt(fcDx * fcDx + fcDy * fcDy);
+        if (fcD < 10 * TS) {
+          entitySeenTypes[e.type] = true;
+          saveStats();
+          var intro = ENTITY_INTROS[e.type];
+          showAchievementToast({ name: '◉ ' + intro.name + ' 出現', icon: '👁' });
+          var hudObj = el('objectiveHUD');
+          if (hudObj) {
+            hudObj.style.display = 'block';
+            el('objectiveText').textContent = '【' + intro.name + '】' + intro.desc.split('\n')[0];
+            setTimeout(function () { hudObj.style.display = 'none'; }, 6000);
+          }
+        }
+      }
 
       // Stun handling
       if (e.stunned) {
@@ -3391,6 +3461,8 @@
   // ============================================================
   function die(causeId, sub) {
     state = ST.DEAD;
+    stats.totalDeaths++;
+    saveStats();
     el('vitalBars').classList.remove('show');
     el('joystickArea').style.display = 'none';
     el('lookArea').style.display = 'none';
@@ -3530,7 +3602,18 @@
       var diffName = DIFFICULTIES[currentDifficulty] ? DIFFICULTIES[currentDifficulty].name : 'NORMAL';
       var bestSec = bestTimes[currentLevel];
       var bestStr = bestSec ? formatTime(bestSec) : '--';
-      el('statProgText').innerHTML = 'クリア: ' + clears + ' / 12 階層<br>難易度: ' + diffName + '<br>本階層ベスト: ' + bestStr;
+      var lifeStr =
+        '<hr style="border:none;border-top:1px solid #382a08;margin:10px 0;">' +
+        '<div style="font-size:10px;color:#b09040;letter-spacing:0.2em;margin-bottom:4px;">通算記録</div>' +
+        '<div style="font-size:10px;line-height:1.6;color:#d8d2bc;">' +
+        '通算ラン: ' + stats.totalRuns + ' 回<br>' +
+        '通算 no-clip: ' + stats.totalNoClips + ' 回<br>' +
+        '通算デス: ' + stats.totalDeaths + ' 回<br>' +
+        'アイテム入手: ' + stats.totalItemsCollected + ' 個<br>' +
+        'ノート閲覧: ' + stats.totalNotesRead + ' 件<br>' +
+        'ENDLESS Best: ' + endlessBestScore +
+        '</div>';
+      el('statProgText').innerHTML = 'クリア: ' + clears + ' / 12 階層<br>難易度: ' + diffName + '<br>本階層ベスト: ' + bestStr + lifeStr;
     }
 
     // INVENTORY
@@ -3825,6 +3908,8 @@
     state = ST.LOADING;
     hideOverlay('titleScreen');
     gameMode = 'normal';
+    stats.totalRuns++;
+    saveStats();
 
     var diff = DIFFICULTIES[currentDifficulty] || DIFFICULTIES.normal;
     player.hpMax = Math.round(100 * diff.hpMul);
@@ -4132,6 +4217,7 @@
     loadDifficulty();
     loadTutorialDone();
     loadEndlessBest();
+    loadStats();
     bindEvents();
     updateTitleButtons();
     showOverlay('titleScreen');
