@@ -2367,17 +2367,29 @@
   // ============================================================
   //  PLAYER UPDATE
   // ============================================================
+  // Unified pause check — game world is frozen when any of these are true.
+  // Used by updatePlayer + updateEntities to keep them consistent.
+  function _isGamePaused() {
+    if (state !== ST.PLAYING) return true;
+    if (phoneOpen) return true;
+    if (miniGameOpen) return true;
+    if (_inCinematic) return true;
+    if (_discoveryActive) return true;
+    var nv_ = el('noteViewerOverlay');
+    if (nv_ && nv_.style.display !== 'none') return true;
+    var iu_ = el('itemUseModal');
+    if (iu_ && iu_.style.display !== 'none') return true;
+    var ts_ = el('titleSettingsOverlay');
+    if (ts_ && ts_.style.display !== 'none') return true;
+    var tut_ = el('tutorialOverlay');
+    if (tut_ && tut_.style.display !== 'none') return true;
+    var lvl_ = el('levelSelectOverlay');
+    if (lvl_ && lvl_.style.display !== 'none') return true;
+    return false;
+  }
+
   function updatePlayer(dt) {
-    if (state !== ST.PLAYING) return;
-    if (phoneOpen) return;
-    if (miniGameOpen) return;
-    if (_inCinematic) return;
-    // Pause while popup/discovery/note viewer/item modal is shown
-    if (_discoveryActive) return;
-    var nv = el('noteViewerOverlay');
-    if (nv && nv.style.display !== 'none') return;
-    var iu = el('itemUseModal');
-    if (iu && iu.style.display !== 'none') return;
+    if (_isGamePaused()) return;
 
     var inp = GameEngine.input;
     var sens = 2.5 * (parseInt(localStorage.getItem('bk_sens') || '100', 10) / 100);
@@ -4320,15 +4332,7 @@
   };
 
   function updateEntities(dt) {
-    if (state !== ST.PLAYING) return;
-    if (phoneOpen) return;
-    if (miniGameOpen) return;
-    if (_inCinematic) return;
-    if (_discoveryActive) return;
-    var nv2 = el('noteViewerOverlay');
-    if (nv2 && nv2.style.display !== 'none') return;
-    var iu2 = el('itemUseModal');
-    if (iu2 && iu2.style.display !== 'none') return;
+    if (_isGamePaused()) return;
     var diffE = DIFFICULTIES[currentDifficulty] || DIFFICULTIES.normal;
     var sMul = diffE.enemySpeedMul;
 
