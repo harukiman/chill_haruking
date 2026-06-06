@@ -1318,13 +1318,19 @@
       pickupSpots[key] = itemId;
     }
 
-    // Assign notes
+    // Assign notes randomly from pool (every run shows different notes)
     var notesPool = NOTES_POOL[levelId] || [];
     noteSpots = {};
-    for (var ni = 0; ni < parsed.noteSpots.length && ni < notesPool.length; ni++) {
+    // Shuffle copy
+    var shuffledPool = notesPool.slice();
+    for (var sh = shuffledPool.length - 1; sh > 0; sh--) {
+      var jr = Math.floor(Math.random() * (sh + 1));
+      var tmp = shuffledPool[sh]; shuffledPool[sh] = shuffledPool[jr]; shuffledPool[jr] = tmp;
+    }
+    for (var ni = 0; ni < parsed.noteSpots.length && ni < shuffledPool.length; ni++) {
       var ns = parsed.noteSpots[ni];
       var nkey = gridKey(ns.gx, ns.gy);
-      noteSpots[nkey] = notesPool[ni];
+      noteSpots[nkey] = shuffledPool[ni];
     }
 
     return parsed;
