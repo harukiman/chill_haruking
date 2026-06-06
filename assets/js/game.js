@@ -1785,19 +1785,29 @@
     if (navigator.vibrate) navigator.vibrate([80, 40, 80, 40, 80]);
     // Tap-to-close (no auto-dismiss). Safety net: auto-close after 30s.
     var encOverlay = el('encounterCinematic');
+    // Clean up any leftover listeners from a previous encounter (prevent stacking).
+    if (encOverlay._cleanup) { try { encOverlay._cleanup(); } catch (e) {} }
     var encDone = false;
+    var encCanClose = false;
+    setTimeout(function () { encCanClose = true; }, 500);
     var encClose = function () {
-      if (encDone) return;
+      if (encDone || !encCanClose) return;
       encDone = true;
       encOverlay.removeEventListener('click', encClose);
       encOverlay.removeEventListener('touchstart', encClose);
+      encOverlay._cleanup = null;
       hideOverlay('encounterCinematic');
       _inCinematic = false;
+    };
+    encOverlay._cleanup = function () {
+      encDone = true;
+      encOverlay.removeEventListener('click', encClose);
+      encOverlay.removeEventListener('touchstart', encClose);
     };
     encOverlay.style.pointerEvents = 'auto';
     encOverlay.addEventListener('click', encClose);
     encOverlay.addEventListener('touchstart', encClose);
-    setTimeout(encClose, 30000);
+    setTimeout(function () { encCanClose = true; encClose(); }, 30000);
   }
 
   function toast(msg, duration) {
@@ -2019,22 +2029,32 @@
     showOverlay('levelReachCinematic');
     if (audioInitialized) GameEngine.playSound('stinger');
     var lrOverlay = el('levelReachCinematic');
+    // Clean up previous listeners (each setLevel re-uses this overlay)
+    if (lrOverlay._cleanup) { try { lrOverlay._cleanup(); } catch (e) {} }
     var done = false;
+    var canAdvance = false;
+    setTimeout(function () { canAdvance = true; }, 400);
     var advance = function () {
-      if (done) return;
+      if (done || !canAdvance) return;
       done = true;
       lrOverlay.removeEventListener('click', advance);
       lrOverlay.removeEventListener('touchstart', advance);
       lrOverlay.style.pointerEvents = 'none';
+      lrOverlay._cleanup = null;
       hideOverlay('levelReachCinematic');
       forceCanvasResize();
       onDone();
     };
+    lrOverlay._cleanup = function () {
+      done = true;
+      lrOverlay.removeEventListener('click', advance);
+      lrOverlay.removeEventListener('touchstart', advance);
+    };
     lrOverlay.style.pointerEvents = 'auto';
     lrOverlay.addEventListener('click', advance);
     lrOverlay.addEventListener('touchstart', advance);
-    // Safety net: auto-advance after 60s in case tap event doesn't reach
-    setTimeout(advance, 60000);
+    // Safety net: auto-advance after 60s
+    setTimeout(function () { canAdvance = true; advance(); }, 60000);
   }
 
   function getEntityColor(type) {
