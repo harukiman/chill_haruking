@@ -123,30 +123,41 @@
   ];
 
   // ── LEVEL 1 — HABITABLE ZONE ────────────────────────────
-  // Concrete warehouse with crates and pillars
+  // Large warehouse with M.E.G. colony (safe zone Hounds avoid)
+  // 34x32 with central M.E.G. base
   var LV1_ROWS = [
-    '######################',
-    '#P.......i.....F.....#',
-    '#.FF...........F.....#',
-    '#.FF...####....F.....#',
-    '#......#..#..........#',
-    '#......#.n#...FF.....#',
-    '#......####...FF.....#',
-    '#............F.F...n.#',
-    '#...F..FFFF..........#',
-    '#...F........FF......#',
-    '##D###.......FF......#',
-    '#....#......s........#',
-    '#.i..#......FF.......#',
-    '#....#......FF...i...#',
-    '#....D...............#',
-    '#....#....FFFF.......#',
-    '#....#....FFFF.......#',
-    '######...............#',
-    '#....................#',
-    '#....F.....X.....F...#',
-    '#......F.........F...#',
-    '######################'
+    '##################################',
+    '#P...............................#',
+    '#..FF...........n...i............#',
+    '#..FF............................#',
+    '#......######....FFF.............#',
+    '#......#....#....FFF......i......#',
+    '#......#.n..#....FFF.............#',
+    '#......#....######...............#',
+    '#......##D####...........FFFF....#',
+    '#................FFFF....FFFF....#',
+    '#......i.........FFFF............#',
+    '#..F.F.F.........................#',
+    '#..F.F.F.......#####D####........#',
+    '#..F.F.F.......#sssssssss#.......#',
+    '#..............#ssssssssss#......#',
+    '#......F.......#sssssssss#.......#',
+    '#..............#ssssssssss#......#',
+    '#......F.......#sssssssss#.......#',
+    '#..............#sssssss##........#',
+    '#..F....FF.....##D######.........#',
+    '#.F.....FF.................F.....#',
+    '#.F................F.....FF......#',
+    '#......FFFF........FF...FF.F.....#',
+    '#......FFFF........FF............#',
+    '#..F...FFFF..........n...........#',
+    '#..F.................F......i....#',
+    '#......F....X........F...........#',
+    '#......F.........FF..............#',
+    '#....................F...........#',
+    '#................................#',
+    '#......F......F........F....F....#',
+    '##################################'
   ];
 
   // ── LEVEL 2 — PIPE DREAMS ───────────────────────────────
@@ -677,11 +688,12 @@
          timeLimit: null },
     1: { id: 1, name: 'LEVEL 1', subtitle: 'HABITABLE ZONE',
          rows: LV1_ROWS, theme: 1,
-         hint: 'コンクリートの倉庫。時折ハウンドが徘徊する。',
-         intro: '壁を抜けた...冷たいコンクリートの匂い。',
+         hint: 'コンクリート倉庫。M.E.G. ベース (safe area) あり。Hound は近づけない。',
+         intro: '壁を抜けた...冷たいコンクリートの匂い。中央に M.E.G. の基地が見える。',
          entities: [
-           { type: 'hound', gx: 14, gy: 14 },
-           { type: 'crawler', gx: 4, gy: 18 }
+           { type: 'hound', gx: 5, gy: 5 },
+           { type: 'hound', gx: 25, gy: 25 },
+           { type: 'crawler', gx: 4, gy: 24 }
          ],
          timeLimit: null },
     2: { id: 2, name: 'LEVEL 2', subtitle: 'PIPE DREAMS',
@@ -3386,17 +3398,28 @@
 
       // AI by type
       if (e.type === 'hound') {
-        // Aggressive chaser. Triggers when player runs near.
-        if (distP < 6 * TS && (GameEngine.input.sprint || e.state === 'chase')) {
+        // Check if player is in safe zone — Hound can't approach
+        var pTileX = Math.floor(player.x / TS);
+        var pTileY = Math.floor(player.y / TS);
+        var pTile = currentMap.tiles[pTileY] && currentMap.tiles[pTileY][pTileX];
+        var playerInSafe = (pTile === 11);
+        // Aggressive chaser. Triggers when player runs near AND not in safe.
+        if (!playerInSafe && distP < 6 * TS && (GameEngine.input.sprint || e.state === 'chase')) {
           e.state = 'chase';
-          // Pathfind: simple move toward player
           var spd = 90 * sMul;
           var stepX = (dx / distP) * spd * dt;
           var stepY = (dy / distP) * spd * dt;
+          // Check next position is NOT safe tile (Hound avoids)
           var nx = e.x + stepX;
-          if (isWalkable(nx, e.y)) e.x = nx;
           var ny = e.y + stepY;
-          if (isWalkable(e.x, ny)) e.y = ny;
+          var checkSafe = function (cx, cy) {
+            var ctx_x = Math.floor(cx / TS);
+            var cty = Math.floor(cy / TS);
+            if (cty < 0 || cty >= currentMap.height || ctx_x < 0 || ctx_x >= currentMap.width) return true;
+            return currentMap.tiles[cty][ctx_x] === 11;
+          };
+          if (isWalkable(nx, e.y) && !checkSafe(nx, e.y)) e.x = nx;
+          if (isWalkable(e.x, ny) && !checkSafe(e.x, ny)) e.y = ny;
         } else if (distP > 10 * TS) {
           e.state = 'wander';
           wanderEntity(e, dt, 35 * sMul);
