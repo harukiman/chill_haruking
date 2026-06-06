@@ -1551,6 +1551,18 @@
       setTimeout(function () { showTutorialStep(0); }, 6000);
     }
 
+    // Lv5: first-time HARUKI subliminal flash (cinematic)
+    if (currentLevel === 5 && !unlockedAchievements.encounter_haruki) {
+      setTimeout(function () {
+        var hImg = GameEngine.images['assets/img/haruki_scary.png'] ||
+                   GameEngine.images['assets/img/haruki.png'];
+        if (hImg) {
+          GameEngine.flashImage(hImg, 250);
+          if (audioInitialized) GameEngine.playSound('stinger');
+        }
+      }, 3500);
+    }
+
     // Save automatically on level start
     saveGame();
   }
