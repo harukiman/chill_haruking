@@ -1516,10 +1516,12 @@
     if (state === ST.TITLE) {
       var ts = el('titleScreen');
       if (ts && ts.style.display !== 'none') {
-        var btns = ts.querySelectorAll('.title-menu .menu-btn');
+        // Cache button list to avoid per-frame querySelectorAll. Refresh only when
+        // visible button count changes (e.g., continue/freeRoam become visible).
+        if (!gp._titleBtns) gp._titleBtns = ts.querySelectorAll('.title-menu .menu-btn');
         var visBtns = [];
-        for (var bi = 0; bi < btns.length; bi++) {
-          if (btns[bi].offsetParent !== null) visBtns.push(btns[bi]);
+        for (var bi = 0; bi < gp._titleBtns.length; bi++) {
+          if (gp._titleBtns[bi].offsetParent !== null) visBtns.push(gp._titleBtns[bi]);
         }
         if (visBtns.length > 0) {
           if (gp._titleIdx === undefined) gp._titleIdx = 0;
@@ -6965,10 +6967,17 @@
       return false;
     };
     // Diagram live highlight: pressed button glows
+    // Only run when settings overlay is visible — early exit saves frame budget.
+    var _gpDiagElsCache = null;
     window._gpDiagramHook = function (gp) {
-      var diag = el('tsGpDiagram');
-      if (!diag) return;
-      var els = diag.querySelectorAll('[data-gp-btn]');
+      var overlay = el('titleSettingsOverlay');
+      if (!overlay || overlay.style.display === 'none') return;
+      if (!_gpDiagElsCache) {
+        var diag = el('tsGpDiagram');
+        if (!diag) return;
+        _gpDiagElsCache = diag.querySelectorAll('[data-gp-btn]');
+      }
+      var els = _gpDiagElsCache;
       for (var ei = 0; ei < els.length; ei++) {
         var b = els[ei].getAttribute('data-gp-btn');
         var pressed = false;
