@@ -2229,7 +2229,10 @@
       GameEngine.grainIntensity = 0.05;
       GameEngine.chromaticLevel = 0;
       GameEngine.vignetteIntensity = 0.15;
-      // Disable particle generation in low mode (handled in onUpdate guard)
+      // Set engine to low-quality raycasting (strip width 3)
+      if (GameEngine.theme) GameEngine.theme.lowQuality = true;
+    } else {
+      if (GameEngine.theme) GameEngine.theme.lowQuality = false;
     }
   }
 
