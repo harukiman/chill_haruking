@@ -1016,41 +1016,45 @@ body {
 .legend-enemy   { color: #c63a3a; }
 .legend-unknown { color: #483910; }
 
-/* NOTES TAB */
+/* NOTES TAB — iOS リスト風 */
 .notes-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 .note-card {
-  background: rgba(212, 179, 64, 0.06);
-  border: 1px solid #382a08;
-  border-left: 4px solid #786020;
+  background: linear-gradient(180deg, rgba(28, 22, 8, 0.7) 0%, rgba(15, 12, 4, 0.7) 100%);
+  border: 1px solid rgba(120, 96, 32, 0.25);
+  border-left: 4px solid rgba(120, 96, 32, 0.5);
   padding: 12px 14px;
   cursor: pointer;
-  transition: background 0.15s;
-  min-height: 56px;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  min-height: 60px;
   -webkit-tap-highlight-color: transparent;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
-.note-card:hover, .note-card:active {
-  background: rgba(212, 179, 64, 0.2);
-  transform: scale(0.99);
+.note-card:active {
+  background: linear-gradient(180deg, rgba(58, 46, 8, 0.85) 0%, rgba(30, 24, 4, 0.85) 100%);
+  border-left-color: #d4b340;
+  transform: scale(0.985);
 }
 .note-card-title {
-  font-size: 12px;
-  color: #d4b340;
-  letter-spacing: 0.1em;
+  font-size: 13px;
+  color: #f0dc8a;
+  letter-spacing: 0.08em;
   margin-bottom: 5px;
-  font-weight: bold;
+  font-weight: 600;
 }
 .note-card-preview {
   font-size: 11px;
-  color: #a08850;
-  line-height: 1.5;
+  color: #b09040;
+  line-height: 1.55;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  letter-spacing: 0.01em;
 }
 .notes-empty {
   text-align: center;
