@@ -149,10 +149,19 @@
   <div id="phoneOverlay" class="overlay phone-overlay" style="display:none;">
     <div class="phone-frame">
       <div class="phone-screen">
-        <!-- Status bar -->
+        <!-- Status bar (iOS-like) -->
         <div class="phone-statusbar">
-          <span id="phoneClock">00:00</span>
-          <span class="phone-battery" id="phoneBattery">█████</span>
+          <span class="phone-sb-clock" id="phoneClock">00:00</span>
+          <div class="phone-sb-indicators">
+            <span class="phone-sb-signal">●●●○○</span>
+            <span class="phone-sb-wifi">📶</span>
+            <span class="phone-sb-battery">
+              <span class="phone-sb-bat-text" id="phoneBattery">100</span>
+              <span class="phone-sb-bat-icon">
+                <span class="phone-sb-bat-fill" id="phoneBatteryFill"></span>
+              </span>
+            </span>
+          </div>
         </div>
 
         <!-- Tab content area -->

@@ -4447,12 +4447,15 @@
     var mm = ('0' + now.getMinutes()).slice(-2);
     el('phoneClock').textContent = hh + ':' + mm;
 
-    // Battery (declines with playtime)
+    // Battery (declines with playtime) — iOS-style indicator
     var batRatio = Math.max(0, 1 - playTime / 3600);
-    var bars = Math.floor(batRatio * 5);
-    var battStr = '';
-    for (var bi = 0; bi < 5; bi++) battStr += (bi < bars) ? '█' : '░';
-    el('phoneBattery').textContent = battStr;
+    el('phoneBattery').textContent = Math.floor(batRatio * 100);
+    var batFill = el('phoneBatteryFill');
+    if (batFill) {
+      batFill.style.width = (batRatio * 100) + '%';
+      batFill.classList.toggle('low', batRatio < 0.3 && batRatio >= 0.15);
+      batFill.classList.toggle('critical', batRatio < 0.15);
+    }
 
     // STATUS
     if (activeTab === 'Status') {

@@ -660,16 +660,81 @@ body {
 .phone-statusbar {
   display: flex;
   justify-content: space-between;
-  padding: 8px 18px;
-  background: #0a0905;
-  border-bottom: 1px solid #2a2200;
-  font-size: 10px;
-  color: #b09040;
-  letter-spacing: 0.1em;
+  align-items: center;
+  padding: 10px 22px 6px;
+  background: #050402;
+  border-bottom: 1px solid rgba(120, 96, 32, 0.15);
+  font-size: 13px;
+  color: #d4b340;
+  letter-spacing: 0.04em;
 }
-.phone-battery {
-  font-size: 8px;
+.phone-sb-clock {
+  font-weight: 600;
+  font-family: -apple-system, system-ui, sans-serif;
+}
+.phone-sb-indicators {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.phone-sb-signal {
+  font-size: 9px;
   letter-spacing: -0.05em;
+  color: #d4b340;
+  font-family: monospace;
+}
+.phone-sb-wifi {
+  font-size: 10px;
+  opacity: 0.7;
+}
+.phone-sb-battery {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+}
+.phone-sb-bat-text {
+  font-size: 10px;
+  font-weight: 600;
+}
+.phone-sb-bat-icon {
+  display: inline-block;
+  width: 22px;
+  height: 11px;
+  border: 1px solid #d4b340;
+  border-radius: 2.5px;
+  padding: 1px;
+  position: relative;
+}
+.phone-sb-bat-icon::after {
+  content: '';
+  position: absolute;
+  right: -2px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.5px;
+  height: 5px;
+  background: #d4b340;
+  border-radius: 0 1px 1px 0;
+}
+.phone-sb-bat-fill {
+  display: block;
+  height: 100%;
+  background: #d4b340;
+  border-radius: 1px;
+  width: 100%;
+  transition: width 0.3s, background 0.3s;
+}
+.phone-sb-bat-fill.low {
+  background: #c63a3a;
+}
+.phone-sb-bat-fill.critical {
+  background: #c63a3a;
+  animation: batPulse 1s infinite;
+}
+@keyframes batPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
 }
 
 .phone-content-area {
