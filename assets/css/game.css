@@ -1249,9 +1249,11 @@ body {
 /* PHONE TAB BAR */
 .phone-tabbar {
   display: flex;
-  background: #0a0905;
-  border-top: 1px solid #2a2200;
-  padding: 8px 4px;
+  background: rgba(10, 9, 5, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(120, 96, 32, 0.2);
+  padding: 6px 4px calc(env(safe-area-inset-bottom, 6px) + 4px);
 }
 .phone-tab-btn {
   flex: 1;
