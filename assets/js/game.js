@@ -4686,7 +4686,7 @@
 
   function startFreeRoam(levelId) {
     state = ST.LOADING;
-    gameMode = 'normal';
+    gameMode = 'freeroam';
     var diff = DIFFICULTIES[currentDifficulty] || DIFFICULTIES.normal;
     player.hpMax = Math.round(100 * diff.hpMul);
     player.hp = player.hpMax;
