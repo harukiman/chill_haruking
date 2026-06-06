@@ -956,7 +956,16 @@
   <h2>変更履歴 (抜粋)</h2>
   <table>
     <tr><th>ver</th><th>変更</th></tr>
-    <tr><td>v4.5</td><td>キャッシュ強制リフレッシュ機構 (↻ 再読込ボタン + 自動 _cb=timestamp redirect + Cache-Control meta)、body touch-action: manipulation 化 (iOS click 修正)</td></tr>
+    <tr><td>v5.4</td><td>360° look (swipe delta 方式)、設定 scroll 修正、戻る × ボタン、Lv3 BGM変更、no-clip ビーム可視距離 7 tiles</td></tr>
+    <tr><td>v5.3</td><td>encounter cinematic tap-to-close、HOUND 呼吸/目 pulse 演出</td></tr>
+    <tr><td>v5.2</td><td>quick item / floating map ボタン visible 修正 (inline style 上書き)、phone × ボタン追加</td></tr>
+    <tr><td>v5.1</td><td>gfxQuality デフォルト LOW、canvas DPR cap 1.25、ゲームパッド設定 UI、safe-area 対応</td></tr>
+    <tr><td>v5.0</td><td>raycast strip width 2→3、CSS blur フィルター削除、tap-to-start 復活</td></tr>
+    <tr><td>v4.9</td><td>★ 根本原因修正: ENTITY_SOUND_MAP の var 巻き上げで TypeError → IIFE 死亡</td></tr>
+    <tr><td>v4.8</td><td>3層タイトルボタン保証 (inline + __titleAction + post-load addEventListener)、JS load 失敗時の赤バナー</td></tr>
+    <tr><td>v4.7</td><td>JS 読込診断マーカー (右下 'JS ✓' or 'JS ?')</td></tr>
+    <tr><td>v4.6</td><td>tap 視覚フィードバック層 (黄色い円が tap 位置に瞬間表示)</td></tr>
+    <tr><td>v4.5</td><td>キャッシュ強制リフレッシュ機構 (↻ 再読込ボタン + Cache-Control meta)、body touch-action: manipulation 化</td></tr>
     <tr><td>v4.4</td><td>タップ必須機構を撤去 (loading ループ対策、levelReachCinematic を 2.5s auto-advance)</td></tr>
     <tr><td>v4.3</td><td>読み込み中表示の早期 failsafe を silent no-op に変更</td></tr>
     <tr><td>v4.2</td><td>床素材別フットステップ音 (6 surface) + 低 SAN 幻覚レイヤー (画面端ダート + 中央ささやき文字)</td></tr>
