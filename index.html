@@ -20,7 +20,7 @@
   <meta name="twitter:title" content="THE BACKROOMS — featuring HARUKI">
   <meta name="twitter:description" content="一人称モバイル探索ホラー。Level 0 から no-clip で階層を降下。壁の向こうにカレが待つ。">
   <title>THE BACKROOMS</title>
-  <link rel="stylesheet" href="assets/css/game.css?v=78">
+  <link rel="stylesheet" href="assets/css/game.css?v=79">
 </head>
 <body oncontextmenu="return false;">
 
@@ -121,7 +121,7 @@
     <button id="titleReloadBtn" class="title-reload-btn" type="button" onclick="window.__hardReload&&window.__hardReload()">↻ 再読込</button>
     <div id="tapToStartHint" class="tap-to-start-hint hidden"></div>
     <p class="copyright">THE BACKROOMS — featuring HARUKI &copy; 2026</p>
-    <p class="version-text" id="versionText">ver 6.0 (FPS Counter + Auto-Downgrade)</p>
+    <p class="version-text" id="versionText">ver 6.1 (★ Double-fire fix)</p>
     <p class="title-ach-counter" id="titleAchCounter"></p>
     <p id="jsLoadedDiag" style="position:absolute;bottom:4px;right:4px;font-size:9px;color:#806020;letter-spacing:0.1em;z-index:5;">JS ?</p>
   </div>
@@ -690,8 +690,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="assets/js/engine.js?v=78"></script>
-  <script src="assets/js/game.js?v=78"></script>
+  <script src="assets/js/engine.js?v=79"></script>
+  <script src="assets/js/game.js?v=79"></script>
 
   <!-- POST-LOAD VERIFICATION + DIRECT BINDING FALLBACK
        After game.js IIFE runs, this script confirms __titleAction is the real one.
@@ -721,24 +721,10 @@
         banner.innerHTML = 'JavaScript の読み込みに失敗しました。<br><button onclick="window.__hardReload&&window.__hardReload()" style="margin-top:8px;padding:8px 20px;background:#fff;color:#400;border:0;border-radius:6px;font-weight:bold;cursor:pointer;">↻ 強制再読込</button>';
         document.body.appendChild(banner);
       }
-      // Also direct-bind title buttons via addEventListener as a third defense layer
-      var actions = {
-        startBtn: 'start', continueBtn: 'continue', endlessBtn: 'endless',
-        freeRoamBtn: 'freeroam', difficultyBtn: 'difficulty',
-        controlsBtn: 'controls', titleSettingsBtn: 'settings',
-        titleResetBtn: 'reset', titleReloadBtn: '__reload'
-      };
-      for (var id in actions) {
-        (function (id, act) {
-          var btn = document.getElementById(id);
-          if (!btn) return;
-          btn.addEventListener('click', function (e) {
-            e.stopPropagation();
-            if (act === '__reload') { window.__hardReload && window.__hardReload(); return; }
-            if (typeof window.__titleAction === 'function') window.__titleAction(act);
-          });
-        })(id, actions[id]);
-      }
+      // NOTE: post-load addEventListener was duplicate of inline onclick, causing
+      // EVERY action to fire twice (intro started twice → race condition where game
+      // appeared frozen for non-settings actions). Removed.
+      // Inline onclick on each button is the single source of truth.
     });
   })();
   </script>
