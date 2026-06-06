@@ -1717,11 +1717,10 @@
   function playLevelReachCinematic(def, onDone) {
     el('lrLevelNum').textContent = def.name;
     el('lrSubtitle').textContent = def.subtitle;
-    el('lrFlavor').textContent = (def.hint || '');
+    el('lrFlavor').textContent = (def.hint || '') + '\n\n[ 画面をタップして始める ]';
     showOverlay('levelReachCinematic');
     if (audioInitialized) GameEngine.playSound('stinger');
     var lrOverlay = el('levelReachCinematic');
-    // Auto-advance after 2.5s (no tap required). Tap optionally skips.
     var done = false;
     var advance = function () {
       if (done) return;
@@ -1736,7 +1735,8 @@
     lrOverlay.style.pointerEvents = 'auto';
     lrOverlay.addEventListener('click', advance);
     lrOverlay.addEventListener('touchstart', advance);
-    setTimeout(advance, 2500);
+    // Safety net: auto-advance after 60s in case tap event doesn't reach
+    setTimeout(advance, 60000);
   }
 
   function getEntityColor(type) {
@@ -6066,7 +6066,7 @@
     el('introSkipBtn').addEventListener('click', skipHandler);
     el('introOverlay').addEventListener('click', skipHandler);
 
-    // Compressed cinematic — 9s total (was 23.8s). Skip anytime by tap.
+    // Cinematic plays scenes, but final frame waits for tap to proceed.
     // Scene 1: night back-alley walking (3s)
     setTimeout(function () {
       if (cancelled) return;
@@ -6095,17 +6095,15 @@
       if (audioInitialized) GameEngine.playSound('thunder');
     }, 6500);
 
-    // Eyes open → game starts (0.5s)
+    // Eyes hint to open — but FINAL frame waits for tap
     setTimeout(function () {
       if (cancelled) return;
-      setLine('');
       eyes.classList.add('partial');
-    }, 8200);
-    setTimeout(function () {
-      if (cancelled) return;
-      eyes.classList.add('open');
+      setLine('[ 画面をタップして開始 ]');
     }, 8500);
-    setTimeout(finish, 9000);
+    // No auto-finish — user taps overlay or skip button to advance
+    // Safety net: auto-finish after 30s if no tap
+    setTimeout(finish, 30000);
   }
 
   function startNewGame() {

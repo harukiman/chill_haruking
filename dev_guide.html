@@ -943,8 +943,13 @@
   </div>
 
   <div class="note">
-    <strong>監視:</strong> ~/.local/maintenance/chill_haruking_watchdog.sh が 5 分毎に最終 commit timestamp をチェックし、30 分以上 idle で macOS 通知を発火します。launchd label: <code>com.local.chill-haruking-watchdog</code>
+    <strong>監視 (1): watchdog</strong> — <code>~/.local/maintenance/chill_haruking_watchdog.sh</code>。5 分毎に最終 commit timestamp をチェックし、30 分以上 idle で macOS 通知を発火。launchd label: <code>com.local.chill-haruking-watchdog</code>
   </div>
+  <div class="note">
+    <strong>監視 (2): auditor</strong> — <code>~/.local/maintenance/chill_haruking_auditor.sh</code>。15 分毎にゲーム整合性を検査。チェック項目: ①game.js / engine.js の syntax、②HTML id 整合性 (el('xyz') で参照される ID が HTML に存在するか)、③var-hoist 違反 (UPPERCASE 変数への property assignment が宣言より前にないか)、④cache version 統一、⑤6h+ commit idle、⑥title button ID 存在確認。issue 検出時 macOS 通知。launchd label: <code>com.local.chill-haruking-auditor</code>
+  </div>
+  <div class="note warn">
+    <strong>★ 教訓 (2026-06-07): var 巻き上げによる IIFE 死亡</strong> — <code>ENTITY_SOUND_MAP.echo = {...}</code> を <code>var ENTITY_SOUND_MAP = {...}</code> より前で実行していた。var は宣言だけ巻き上げられ値は undefined のまま、property access が TypeError を投げて IIFE 全体が停止、bindEvents/init/__titleAction override が動かずタイトルボタンが完全無反応に。auditor で同種パターンを定期検出するようにした。<strong>UPPERCASE 定数オブジェクトには初期 literal にすべてのプロパティを書き、後から代入は避ける</strong>。</div>
 </section>
 
 <section id="changelog">

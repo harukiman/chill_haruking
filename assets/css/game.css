@@ -168,9 +168,7 @@ button {
     repeating-linear-gradient(0deg, rgba(212, 179, 64, 0.12) 0, rgba(212, 179, 64, 0.12) 2px, transparent 2px, transparent 8px),
     repeating-linear-gradient(90deg, rgba(212, 179, 64, 0.08) 0, rgba(212, 179, 64, 0.08) 2px, transparent 2px, transparent 8px),
     radial-gradient(ellipse at center, #4a3a14 0%, #1d1604 70%, #050300 100%);
-  filter: blur(0.5px);
-  animation: titleFlicker 5s infinite;
-  /* Explicitly behind interactive content */
+  /* removed blur filter + flicker animation for perf */
   z-index: 0;
   pointer-events: none;
 }
@@ -189,7 +187,8 @@ button {
   width: 60vw;
   max-width: 380px;
   opacity: 0.18;
-  filter: blur(2px) sepia(0.4) hue-rotate(-20deg);
+  /* lighter filter — was blur(2px) sepia(0.4) hue-rotate(-20deg) */
+  filter: sepia(0.4);
   z-index: 1;
   pointer-events: none;
   animation: harukiBreath 6s infinite ease-in-out;
@@ -409,7 +408,7 @@ button {
   height: 80px;
   background: radial-gradient(ellipse, rgba(40, 0, 0, 0.7) 0%, transparent 70%);
   opacity: 0;
-  filter: blur(2px);
+  /* filter:blur is expensive on mobile — removed for perf */
 }
 .halluc-shape.s1 {
   top: 20%;
@@ -455,7 +454,6 @@ button {
   text-shadow: 0 0 12px rgba(220, 30, 30, 0.4);
   opacity: 0;
   pointer-events: none;
-  filter: blur(1px);
   white-space: nowrap;
 }
 .halluc-text.show {

@@ -636,8 +636,9 @@
     var zBuffer = new Float32Array(w);
 
     // Cast rays
-    // Adaptive strip width: lower quality on mobile / low-FPS, 2 default, 3 if engine.theme.lowQuality
-    var stripWidth = (engine.theme && engine.theme.lowQuality) ? 3 : 2;
+    // Adaptive strip width: lower quality = wider strips = faster.
+    // Default 3 (was 2) for better mobile performance, 4 if lowQuality enabled.
+    var stripWidth = (engine.theme && engine.theme.lowQuality) ? 4 : 3;
     var numRays = Math.ceil(w / stripWidth);
 
     for (var i = 0; i < numRays; i++) {
