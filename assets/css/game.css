@@ -1024,16 +1024,17 @@ body {
   top: calc(env(safe-area-inset-top, 8px) + 56px);
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.85);
+  background: rgba(0, 0, 0, 0.88);
   border: 1px solid rgba(120, 96, 32, 0.6);
   padding: 8px 16px;
   z-index: 13;
   font-size: 12px;
   letter-spacing: 0.15em;
   color: #d4b340;
-  max-width: 78vw;
+  max-width: calc(100vw - 130px);
   text-align: center;
   line-height: 1.5;
+  border-radius: 4px;
 }
 
 .hud-floor {

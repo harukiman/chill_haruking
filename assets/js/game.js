@@ -3862,11 +3862,11 @@
     var showAct = false;
     var label = '調べる';
 
-    if (here === 3) { showAct = true; label = 'no-clip ↓'; }
+    if (here === 3) { showAct = true; label = 'NoClip'; }
     else if (here === 11) {
       var safeKey2 = currentLevel + '_' + key;
       if (LEVEL_MINIGAMES[currentLevel] && !mgPlayedAt[safeKey2]) {
-        showAct = true; label = 'プレイ';
+        showAct = true; label = 'PLAY';
       } else {
         showAct = false;
       }
@@ -3881,7 +3881,7 @@
       if (ft === 2) { showAct = true; label = 'ドア'; }
       else if (ft === 5 && pickupSpots[fkey]) { showAct = true; label = '拾う'; }
       else if (ft === 6 && noteSpots[fkey]) { showAct = true; label = '読む'; }
-      else if (ft === 3) { showAct = true; label = 'no-clip ↓'; }
+      else if (ft === 3) { showAct = true; label = 'NoClip'; }
     }
 
     if (showAct) {
