@@ -4236,6 +4236,33 @@
           '<div class="note-card-preview">' + status + '</div>';
         list.appendChild(achCard);
       }
+      // Bestiary section (encountered entities)
+      var bestHeader = document.createElement('h3');
+      bestHeader.className = 'phone-h3';
+      var encSeen = Object.keys(entitySeenTypes).length;
+      var encTotal = Object.keys(ENTITY_INTROS).length;
+      bestHeader.textContent = '遭遇エンティティ図鑑 (' + encSeen + ' / ' + encTotal + ')';
+      list.appendChild(bestHeader);
+      for (var eid in ENTITY_INTROS) {
+        var ent = ENTITY_INTROS[eid];
+        var seen = !!entitySeenTypes[eid];
+        var bestCard = document.createElement('div');
+        bestCard.className = 'note-card';
+        bestCard.style.borderLeftColor = seen ? '#c63a3a' : '#382a08';
+        bestCard.style.opacity = seen ? '1' : '0.35';
+        var bestDesc = seen ? ent.desc.replace(/\n/g, ' ') : '? ? ? — 未遭遇';
+        bestCard.innerHTML =
+          '<div class="note-card-title">👁 ' + (seen ? ent.name : '?????') + '</div>' +
+          '<div class="note-card-preview">' + bestDesc + '</div>';
+        if (seen) {
+          (function (entRef) {
+            bestCard.addEventListener('click', function () {
+              showNoteViewer(entRef.name, entRef.desc);
+            });
+          })(ent);
+        }
+        list.appendChild(bestCard);
+      }
     }
   }
 
