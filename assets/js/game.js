@@ -278,6 +278,37 @@
     '##################'
   ];
 
+  // ── LEVEL 7 — RUN FOR YOUR LIFE (chase corridor) ────────
+  // Long narrow corridor with Hound pack chasing from spawn end
+  var LV7_ROWS = [
+    '########',
+    '#P.....#',
+    '#......#',
+    '#..F...#',
+    '#......#',
+    '#......#',
+    '#......#',
+    '#....F.#',
+    '#......#',
+    '#......#',
+    '#.i....#',
+    '#......#',
+    '#......#',
+    '#..F...#',
+    '#......#',
+    '#......#',
+    '#......#',
+    '#......#',
+    '#......#',
+    '#..n...#',
+    '#......#',
+    '#......#',
+    '#......#',
+    '#......#',
+    '#.....X#',
+    '########'
+  ];
+
   // ── LEVEL 9 — THE SUBURBS (stretch, THE END exit) ───────
   // Dark suburban houses, possible THE END
   var LV9_ROWS = [
@@ -431,6 +462,25 @@
       grain: 0.3,
       chromatic: 0.1
     },
+    7: { // Run For Your Life — fast chase, red tint
+      wall: {
+        upper: { 'default': [80, 30, 30], 1: [80, 30, 30] },
+        flat: true,
+        pattern: 'concrete'
+      },
+      bg: {
+        ceiling: ['#1a0808', '#280c0c', '#3a1414'],
+        floor:   ['#100404', '#1c0a0a', '#281414']
+      },
+      floorDefault: [50, 24, 24],
+      ceilingDefault: [40, 18, 18],
+      fogDist: 10,
+      ambientLoop: 'wind',
+      sanDrain: 1.2,
+      vignette: 0.5,
+      grain: 0.5,
+      chromatic: 0.3
+    },
     6: { // Lights Out — pitch dark
       wall: {
         upper: { 'default': [60, 55, 50], 1: [60, 55, 50] },
@@ -515,6 +565,16 @@
          intro: '光が消えた。何も見えない。',
          entities: [ { type: 'hound', gx: 8, gy: 8 } ],
          timeLimit: null },
+    7: { id: 7, name: 'LEVEL 7', subtitle: 'RUN FOR YOUR LIFE',
+         rows: LV7_ROWS, theme: 7,
+         hint: '一直線の回廊。背後から複数のHoundが迫る。走れ。',
+         intro: '吠え声...近い。前へ走るしかない。',
+         entities: [
+           { type: 'hound', gx: 4, gy: 2 },
+           { type: 'hound', gx: 3, gy: 4 },
+           { type: 'hound', gx: 5, gy: 5 }
+         ],
+         timeLimit: null },
     9: { id: 9, name: 'LEVEL 9', subtitle: 'THE SUBURBS',
          rows: LV9_ROWS, theme: 9,
          hint: '永遠に続く郊外の街。THE END への扉がここに。',
@@ -578,6 +638,7 @@
     4: ['almond_water', 'keycard', 'energy_bar', 'radio'],
     5: ['almond_water', 'voucher', 'bandage', 'energy_bar'],
     6: ['almond_water', 'flashlight', 'bandage'],
+    7: ['energy_bar', 'almond_water'],
     9: ['almond_water', 'voucher', 'bandage', 'energy_bar', 'radio']
   };
 
@@ -626,6 +687,10 @@
     6: [
       { title: '完全な暗闇',
         text: '光を消した者がいる。\n誰かがこの階層を「閉じた」のだ。\n懐中電灯がなければ、5 タイル先も見えない。' }
+    ],
+    7: [
+      { title: 'Run For Your Life',
+        text: 'この階層に立ち止まった者はいない。\n走れ。\n振り返るな。\n奴らの数は、振り返るたびに増える。' }
     ],
     9: [
       { title: '郊外の終わり',
@@ -956,6 +1021,16 @@
       }
     }
     // Level 6 lights out — no lights (only flashlight)
+    else if (levelId === 7) {
+      // Run For Your Life — red emergency lights every few tiles
+      var i7 = 0;
+      for (var gy7 = 3; gy7 < m.height; gy7 += 5) {
+        GameEngine.addPointLight('l_' + (i7++), 3, gy7, {
+          radius: 3, r: 255, g: 60, b: 60, intensity: 0.55,
+          flicker: 6, phase: Math.random() * 6.28
+        });
+      }
+    }
     // Level 9 sparse very dim
     else if (levelId === 9) {
       var i9 = 0;
@@ -1369,8 +1444,8 @@
   }
 
   function getNextLevel(cur) {
-    // Normal progression: 0 → 1 → 2 → 3 → 4 → 5 → 6 → 9 → END
-    var order = [0, 1, 2, 3, 4, 5, 6, 9];
+    // Normal progression: 0 → 1 → 2 → 3 → 4 → 5 → 6 → 7 → 9 → END
+    var order = [0, 1, 2, 3, 4, 5, 6, 7, 9];
     var idx = order.indexOf(cur);
     if (idx < 0 || idx === order.length - 1) return null;
     return order[idx + 1];
@@ -1730,7 +1805,7 @@
       el('statTimeText').textContent = formatTime(playTime);
       var clears = 0;
       for (var k in clearedLevels) if (clearedLevels[k]) clears++;
-      el('statProgText').textContent = 'クリア: ' + clears + ' / 8 階層';
+      el('statProgText').textContent = 'クリア: ' + clears + ' / 9 階層';
     }
 
     // INVENTORY
