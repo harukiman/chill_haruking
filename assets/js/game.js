@@ -1551,9 +1551,15 @@
     }
 
     // Update vitals UI
-    el('hpFill').style.width = (player.hp / player.hpMax * 100) + '%';
-    el('sanFill').style.width = (player.san / player.sanMax * 100) + '%';
-    el('stamFill').style.width = (player.stam / player.stamMax * 100) + '%';
+    var hpRatio = player.hp / player.hpMax;
+    var sanRatio0 = player.san / player.sanMax;
+    var stamRatio = player.stam / player.stamMax;
+    el('hpFill').style.width = (hpRatio * 100) + '%';
+    el('sanFill').style.width = (sanRatio0 * 100) + '%';
+    el('stamFill').style.width = (stamRatio * 100) + '%';
+    el('hpFill').classList.toggle('low', hpRatio < 0.25);
+    el('sanFill').classList.toggle('low', sanRatio0 < 0.25);
+    el('stamFill').classList.toggle('low', stamRatio < 0.2);
 
     // Time
     playTime += dt;
@@ -2868,9 +2874,22 @@
 
     if (type === 'truend') {
       content.classList.add('true-ending');
-      tag.textContent = 'THE END';
-      title.textContent = 'TRUE END';
-      msg.innerHTML = 'あなたは全ての階層を踏破した。<br>黒い扉の向こうで、本当の世界が待っている。<br>...かもしれない。';
+      // Count total notes available across all levels
+      var totalNotes = 0;
+      for (var lk in NOTES_POOL) totalNotes += NOTES_POOL[lk].length;
+      // Count total achievements
+      var totalAch = Object.keys(ACHIEVEMENTS).length;
+      var hasAllNotes = discoveredNotes.length >= totalNotes;
+      var hasAllAch = Object.keys(unlockedAchievements).length >= totalAch - 1; // minus true_end itself
+      if (hasAllNotes && hasAllAch) {
+        tag.textContent = '∞∞∞';
+        title.textContent = 'TRUE+ END';
+        msg.innerHTML = 'すべてのロアを読み、すべての試練を超えた。<br><br>あなたはバックルームを「理解した」最初の存在となった。<br>壁紙の黄色が、ようやく真の色を見せる...<br><br>あなたは、新しい階層になった。';
+      } else {
+        tag.textContent = 'THE END';
+        title.textContent = 'TRUE END';
+        msg.innerHTML = 'あなたは全ての階層を踏破した。<br>黒い扉の向こうで、本当の世界が待っている。<br>...かもしれない。<br><br>ノート: ' + discoveredNotes.length + '/' + totalNotes + ' 件';
+      }
       unlockAchievement('true_end');
     } else if (type === 'frontrooms') {
       content.classList.remove('bad-ending', 'true-ending', 'lost-ending');
@@ -3106,6 +3125,58 @@
       }
     }
 
+    // Discovered items/notes/safe markers
+    for (var ikey in pickupSpots) {
+      var iparts = ikey.split('_');
+      var igx = parseInt(iparts[0], 10);
+      var igy = parseInt(iparts[1], 10);
+      if (discoveredMap[currentLevel] && discoveredMap[currentLevel][igy] && discoveredMap[currentLevel][igy][igx]) {
+        ctx.fillStyle = '#88c050';
+        ctx.beginPath();
+        ctx.arc(ox + (igx + 0.5) * ts, oy + (igy + 0.5) * ts, Math.max(1.5, ts * 0.25), 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    for (var nkey2 in noteSpots) {
+      if (readNotes[currentLevel] && readNotes[currentLevel][nkey2]) continue;
+      var nparts2 = nkey2.split('_');
+      var ngx2 = parseInt(nparts2[0], 10);
+      var ngy2 = parseInt(nparts2[1], 10);
+      if (discoveredMap[currentLevel] && discoveredMap[currentLevel][ngy2] && discoveredMap[currentLevel][ngy2][ngx2]) {
+        ctx.fillStyle = '#5a82c8';
+        ctx.fillRect(ox + (ngx2 + 0.25) * ts, oy + (ngy2 + 0.25) * ts, ts * 0.5, ts * 0.5);
+      }
+    }
+    // No-clip exits on map
+    if (currentMap.noclipExits) {
+      for (var nci = 0; nci < currentMap.noclipExits.length; nci++) {
+        var nce = currentMap.noclipExits[nci];
+        if (discoveredMap[currentLevel] && discoveredMap[currentLevel][nce.gy] && discoveredMap[currentLevel][nce.gy][nce.gx]) {
+          ctx.fillStyle = '#f0dc8a';
+          ctx.beginPath();
+          ctx.moveTo(ox + (nce.gx + 0.5) * ts, oy + (nce.gy + 0.1) * ts);
+          ctx.lineTo(ox + (nce.gx + 0.9) * ts, oy + (nce.gy + 0.9) * ts);
+          ctx.lineTo(ox + (nce.gx + 0.1) * ts, oy + (nce.gy + 0.9) * ts);
+          ctx.closePath();
+          ctx.fill();
+        }
+      }
+    }
+    // Entities on map (only nearby visible)
+    for (var ei = 0; ei < entities.length; ei++) {
+      var e = entities[ei];
+      if (!e.alive) continue;
+      var edx = e.x - player.x;
+      var edy = e.y - player.y;
+      var ed = Math.sqrt(edx * edx + edy * edy);
+      if (ed > 7 * TS && !player.radioOn) continue;
+      var egx = e.x / TS, egy = e.y / TS;
+      ctx.fillStyle = e.stunned ? '#888' : '#c63a3a';
+      ctx.beginPath();
+      ctx.arc(ox + egx * ts, oy + egy * ts, Math.max(2, ts * 0.3), 0, Math.PI * 2);
+      ctx.fill();
+    }
+
     // Player
     var pgx = (player.x / TS);
     var pgy = (player.y / TS);
@@ -3266,6 +3337,12 @@
     if (cont) cont.style.display = hasSave() ? '' : 'none';
     var diff = el('difficultyBtn');
     if (diff) diff.textContent = '難易度: ' + (DIFFICULTIES[currentDifficulty] ? DIFFICULTIES[currentDifficulty].name : 'NORMAL');
+    var ac = el('titleAchCounter');
+    if (ac) {
+      var acCount = Object.keys(unlockedAchievements).length;
+      var acTotal = Object.keys(ACHIEVEMENTS).length;
+      ac.textContent = '🏆 ' + acCount + ' / ' + acTotal;
+    }
   }
 
   // ============================================================

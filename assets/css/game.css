@@ -84,6 +84,13 @@ body {
 .vital-fill.vital-hp   { background: linear-gradient(90deg, #803030, #c63a3a); }
 .vital-fill.vital-san  { background: linear-gradient(90deg, #382878, #6a55c8); }
 .vital-fill.vital-sta  { background: linear-gradient(90deg, #4a6610, #88b033); }
+.vital-fill.low {
+  animation: vitalPulse 0.7s infinite;
+}
+@keyframes vitalPulse {
+  0%, 100% { opacity: 1; filter: brightness(1.2); box-shadow: 0 0 6px rgba(255,80,80,0.7); }
+  50%      { opacity: 0.65; filter: brightness(0.85); }
+}
 
 /* ============================================================
  *  OVERLAY (shared)
@@ -211,6 +218,18 @@ body {
   color: #483910;
   letter-spacing: 0.15em;
   z-index: 2;
+}
+.title-ach-counter {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 8px) + 8px);
+  right: 12px;
+  font-size: 10px;
+  color: #b09040;
+  letter-spacing: 0.15em;
+  z-index: 2;
+  background: rgba(0,0,0,0.5);
+  padding: 4px 10px;
+  border: 1px solid #483910;
 }
 
 /* ============================================================
@@ -710,7 +729,10 @@ body {
   color: #b09040;
 }
 .legend-player  { color: #88b033; }
-.legend-exit    { color: #d4b340; }
+.legend-exit    { color: #f0dc8a; }
+.legend-item    { color: #88c050; }
+.legend-note    { color: #5a82c8; }
+.legend-enemy   { color: #c63a3a; }
 .legend-unknown { color: #483910; }
 
 /* NOTES TAB */

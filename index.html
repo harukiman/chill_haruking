@@ -56,7 +56,8 @@
       </div>
     </div>
     <p class="copyright">THE BACKROOMS &copy; 2026</p>
-    <p class="version-text">ver 3.0 (Backrooms Edition)</p>
+    <p class="version-text" id="versionText">ver 3.0 (Backrooms Edition)</p>
+    <p class="title-ach-counter" id="titleAchCounter"></p>
   </div>
 
   <!-- Loading Screen Overlay (level transition) -->
@@ -189,9 +190,12 @@
             <p class="map-level-name" id="mapLevelName">LEVEL 0 / THE LOBBY</p>
             <canvas id="mapCanvas" class="map-canvas"></canvas>
             <div class="map-legend">
-              <span class="legend-player">■</span>現在地
-              <span class="legend-exit">▲</span>no-clip 地点
-              <span class="legend-unknown">·</span>未踏領域
+              <span class="legend-player">●</span>現在地
+              <span class="legend-exit">▲</span>no-clip
+              <span class="legend-item">●</span>アイテム
+              <span class="legend-note">■</span>ノート
+              <span class="legend-enemy">●</span>敵
+              <span class="legend-unknown">·</span>未踏
             </div>
           </div>
 
