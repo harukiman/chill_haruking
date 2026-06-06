@@ -833,7 +833,7 @@
               if (e.bossHp <= 0) {
                 e.alive = false;
                 toast('BOSS 撃破!');
-                unlockAchievement('won_minigame');
+                unlockAchievement('defeat_boss');
               }
             }
           }
@@ -869,6 +869,7 @@
               if (e.bossHp <= 0) {
                 e.alive = false;
                 toast('BOSS 撃破!');
+                unlockAchievement('defeat_boss');
               }
             }
           }
@@ -1069,11 +1070,19 @@
   var BEST_KEY = 'thebackrooms_best_v1';
   var DIFF_KEY = 'thebackrooms_diff_v1';
   var TUT_KEY = 'thebackrooms_tut_v1';
+  var ENDLESS_KEY = 'thebackrooms_endless_v1';
 
   // First-run tutorial state
   var tutorialDone = false;
   var tutorialStep = -1;
   var tutorialTimer = 0;
+
+  // Game mode
+  var gameMode = 'normal'; // 'normal' | 'endless'
+  var endlessFloor = 0;
+  var endlessVisitedLevels = [];
+  var endlessScore = 0;
+  var endlessBestScore = 0;
 
   // Difficulty modes (multipliers applied to SAN drain + enemy speed)
   var DIFFICULTIES = {
@@ -1450,7 +1459,11 @@
     el('touchZoneRight').style.display = '';
     el('phoneBtn').style.display = 'flex';
     el('floorHUD').style.display = '';
-    el('floorText').textContent = 'LV' + currentLevel;
+    if (gameMode === 'endless') {
+      el('floorText').textContent = 'ENDLESS F' + endlessFloor + ' / LV' + currentLevel + ' / ' + endlessScore;
+    } else {
+      el('floorText').textContent = 'LV' + currentLevel;
+    }
     el('objectiveHUD').style.display = '';
     el('objectiveText').textContent = currentLevelDef.intro;
     setTimeout(function () { hideOverlay('objectiveHUD'); el('objectiveHUD').style.display = 'none'; }, 5000);
@@ -1611,6 +1624,8 @@
     if (currentLevel === 6 && !player.flashlightOn) sanDrain *= 2;
     var diff = DIFFICULTIES[currentDifficulty] || DIFFICULTIES.normal;
     sanDrain *= diff.sanMul;
+    // Endless: scale per floor
+    if (gameMode === 'endless') sanDrain *= (1 + endlessFloor * 0.08);
     player.san = Math.max(0, player.san - sanDrain * dt);
 
     // Stamina regen
@@ -1776,7 +1791,15 @@
     san_zero_survive: { name: 'SAN 10% で生還', icon: '☉' },
     collect_10_notes: { name: 'ロア 10 件収集', icon: '≡' },
     inventory_full:   { name: 'インベントリ満載', icon: '▣' },
-    true_end:         { name: 'TRUE END 到達', icon: '∞' }
+    true_end:         { name: 'TRUE END 到達', icon: '∞' },
+    defeat_boss:      { name: 'BOSS 撃破', icon: '☠' },
+    endless_5_floors: { name: 'ENDLESS 5階突破', icon: '∇' },
+    endless_score_500:{ name: 'ENDLESS スコア 500', icon: '⚆' },
+    play_chaos:       { name: 'CHAOS 難易度プレイ', icon: '⚠' },
+    use_all_weapons:  { name: '全武器使用', icon: '⚔' },
+    speed_demon:      { name: 'Level 7 を 60s 以内', icon: '⚡' },
+    collect_all_items:{ name: '全 10 種類入手', icon: '◈' },
+    silent_run:       { name: '無音 (アイテム未使用) 1階クリア', icon: '◐' }
   };
 
   function unlockAchievement(id) {
@@ -1814,11 +1837,67 @@
   function loadTutorialDone() {
     tutorialDone = localStorage.getItem(TUT_KEY) === '1';
   }
+
+  function loadEndlessBest() {
+    var s = localStorage.getItem(ENDLESS_KEY);
+    endlessBestScore = s ? parseInt(s, 10) || 0 : 0;
+  }
+
+  function saveEndlessBest() {
+    if (endlessScore > endlessBestScore) {
+      endlessBestScore = endlessScore;
+      try { localStorage.setItem(ENDLESS_KEY, String(endlessBestScore)); } catch (e) {}
+    }
+  }
+
+  function startEndlessMode() {
+    state = ST.LOADING;
+    hideOverlay('titleScreen');
+    gameMode = 'endless';
+    endlessFloor = 0;
+    endlessVisitedLevels = [];
+    endlessScore = 0;
+    var diff = DIFFICULTIES[currentDifficulty] || DIFFICULTIES.normal;
+    player.hpMax = Math.round(100 * diff.hpMul);
+    player.hp = player.hpMax;
+    player.san = player.sanMax = 100;
+    player.stam = player.stamMax = 100;
+    player.inventory = {};
+    player.flashlightOn = false;
+    player.radioOn = false;
+    playTime = 0;
+    discoveredNotes = [];
+    pickedUpItems = {};
+    readNotes = {};
+    discoveredMap = {};
+    mgPlayedAt = {};
+
+    if (!audioInitialized) {
+      GameEngine.initAudio();
+      audioInitialized = true;
+    }
+    setLevel(pickNextEndlessLevel());
+  }
+
+  function pickNextEndlessLevel() {
+    var allLevels = [0, 1, 2, 3, 4, 5, 6, 7, 8, 11, 12, 9];
+    // Remove already visited this cycle
+    var avail = allLevels.filter(function (l) { return endlessVisitedLevels.indexOf(l) < 0; });
+    if (avail.length === 0) {
+      // Reset cycle but exclude current
+      endlessVisitedLevels = [currentLevel];
+      avail = allLevels.filter(function (l) { return l !== currentLevel; });
+    }
+    var pick = avail[Math.floor(Math.random() * avail.length)];
+    endlessVisitedLevels.push(pick);
+    return pick;
+  }
   function setDifficulty(id) {
     if (!DIFFICULTIES[id]) return;
     currentDifficulty = id;
     localStorage.setItem(DIFF_KEY, id);
     toast('難易度: ' + DIFFICULTIES[id].name);
+    if (id === 'chaos') unlockAchievement('play_chaos');
   }
 
   function showAchievementToast(ach) {
@@ -2594,6 +2673,16 @@
     delete pickupSpots[gridKey(gx, gy)];
     toast(item.name + ' を入手');
     if (audioInitialized) GameEngine.playSound('item_get');
+    // Track all-time collected items
+    try {
+      var allKey = 'thebackrooms_items_collected_v1';
+      var allColl = JSON.parse(localStorage.getItem(allKey) || '{}');
+      allColl[itemId] = true;
+      localStorage.setItem(allKey, JSON.stringify(allColl));
+      if (Object.keys(allColl).length >= Object.keys(ITEMS).length) {
+        unlockAchievement('collect_all_items');
+      }
+    } catch (e) {}
   }
 
   function readNote(note, gx, gy) {
@@ -2617,6 +2706,28 @@
   }
 
   function tryNoClip() {
+    // Endless mode: pick random next, increment score
+    if (gameMode === 'endless') {
+      endlessFloor++;
+      endlessScore += 100 + (discoveredNotes.length * 10) +
+                       Object.keys(player.inventory).reduce(function (sum, k) { return sum + player.inventory[k] * 5; }, 0);
+      saveEndlessBest();
+      if (endlessFloor >= 5) unlockAchievement('endless_5_floors');
+      if (endlessScore >= 500) unlockAchievement('endless_score_500');
+      toast('ENDLESS Floor ' + endlessFloor + ' / Score ' + endlessScore);
+      var nLv = pickNextEndlessLevel();
+      var flash = el('noclipFlash');
+      flash.style.display = 'block';
+      flash.classList.remove('show');
+      requestAnimationFrame(function () { flash.classList.add('show'); });
+      setTimeout(function () {
+        flash.classList.remove('show');
+        flash.style.display = 'none';
+        setLevel(nLv);
+      }, 600);
+      return;
+    }
+
     var nextLevel = getNextLevel(currentLevel);
     // Record best time
     if (!bestTimes[currentLevel] || inLevelTime < bestTimes[currentLevel]) {
@@ -2639,6 +2750,11 @@
     if (player.san < player.sanMax * 0.1) unlockAchievement('san_zero_survive');
     if (Object.keys(player.inventory).length >= 6) unlockAchievement('inventory_full');
     if (discoveredNotes.length >= 10) unlockAchievement('collect_10_notes');
+    // Speed demon: Level 7 cleared under 60s
+    if (currentLevel === 7 && inLevelTime < 60) unlockAchievement('speed_demon');
+    // Silent run: no items used (count tracked elsewhere — proxy: inventory only)
+    if (!player._itemsUsedThisLevel) unlockAchievement('silent_run');
+    player._itemsUsedThisLevel = 0;
     if (audioInitialized) {
       GameEngine.stopAll();
       // Quiet during transition
@@ -2672,6 +2788,15 @@
     if (phoneOpen) return;
     var diffE = DIFFICULTIES[currentDifficulty] || DIFFICULTIES.normal;
     var sMul = diffE.enemySpeedMul;
+    var entitySoundMap = {
+      hound: { sound: 'breath', prob: 0.008 },
+      smiler: { sound: 'lullaby', prob: 0.003 },
+      skinstealer: { sound: 'static', prob: 0.004 },
+      partygoer: { sound: 'phone', prob: 0.003 },
+      crawler: { sound: 'knock', prob: 0.006 },
+      wretch: { sound: 'whisper', prob: 0.005 },
+      boss: { sound: 'stinger', prob: 0.002 }
+    };
 
     for (var i = 0; i < entities.length; i++) {
       var e = entities[i];
@@ -2688,6 +2813,12 @@
       var dx = player.x - e.x;
       var dy = player.y - e.y;
       var distP = Math.sqrt(dx * dx + dy * dy);
+
+      // Entity-specific positional sound
+      var sndDef = entitySoundMap[e.type];
+      if (sndDef && distP < 9 * TS && audioInitialized && Math.random() < sndDef.prob) {
+        GameEngine.playPositionalSound(sndDef.sound, e.x, e.y);
+      }
 
       // AI by type
       if (e.type === 'hound') {
@@ -3253,7 +3384,13 @@
     el('actionBtn').style.display = 'none';
     el('phoneBtn').style.display = 'none';
     el('floorHUD').style.display = 'none';
-    el('gameoverSub').textContent = sub;
+    var subText = sub;
+    if (gameMode === 'endless') {
+      saveEndlessBest();
+      subText = 'ENDLESS 終了\nFloor: ' + endlessFloor + ' / Score: ' + endlessScore +
+               (endlessScore === endlessBestScore ? ' (NEW BEST!)' : '\nBest: ' + endlessBestScore);
+    }
+    el('gameoverSub').textContent = subText;
     GameEngine.stopAll();
     GameEngine.fadeToBlack(800, function () {
       showOverlay('gameOverScreen');
@@ -3407,6 +3544,12 @@
                 it.effect(player);
                 player.inventory[itemId]--;
                 if (player.inventory[itemId] <= 0) delete player.inventory[itemId];
+                player._itemsUsedThisLevel = (player._itemsUsedThisLevel || 0) + 1;
+                if (!player._itemsUsedAllRun) player._itemsUsedAllRun = {};
+                player._itemsUsedAllRun[itemId] = true;
+                if (player._itemsUsedAllRun.flare && player._itemsUsedAllRun.mirror) {
+                  unlockAchievement('use_all_weapons');
+                }
                 refreshPhoneUI();
               }
             });
@@ -3666,6 +3809,7 @@
   function startNewGame() {
     state = ST.LOADING;
     hideOverlay('titleScreen');
+    gameMode = 'normal';
 
     var diff = DIFFICULTIES[currentDifficulty] || DIFFICULTIES.normal;
     player.hpMax = Math.round(100 * diff.hpMul);
@@ -3710,6 +3854,7 @@
 
   function returnToTitle() {
     state = ST.TITLE;
+    gameMode = 'normal';
     GameEngine.stopAll();
     GameEngine.fadeFromBlack(500);
 
@@ -3783,6 +3928,7 @@
 
   function startFreeRoam(levelId) {
     state = ST.LOADING;
+    gameMode = 'normal';
     var diff = DIFFICULTIES[currentDifficulty] || DIFFICULTIES.normal;
     player.hpMax = Math.round(100 * diff.hpMul);
     player.hp = player.hpMax;
@@ -3811,6 +3957,7 @@
   function bindEvents() {
     el('startBtn').addEventListener('click', startNewGame);
     el('continueBtn').addEventListener('click', continueGame);
+    el('endlessBtn').addEventListener('click', startEndlessMode);
     el('freeRoamBtn').addEventListener('click', openLevelSelect);
     el('lvlselCloseBtn').addEventListener('click', function () {
       hideOverlay('levelSelectOverlay');
@@ -3969,6 +4116,7 @@
     loadBestTimes();
     loadDifficulty();
     loadTutorialDone();
+    loadEndlessBest();
     bindEvents();
     updateTitleButtons();
     showOverlay('titleScreen');
