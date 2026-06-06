@@ -700,9 +700,8 @@
          hint: 'コンクリート倉庫。M.E.G. ベース (safe area) あり。Hound は近づけない。',
          intro: '壁を抜けた...冷たいコンクリートの匂い。中央に M.E.G. の基地が見える。',
          entities: [
-           { type: 'hound', gx: 5, gy: 5 },
-           { type: 'hound', gx: 25, gy: 25 },
-           { type: 'crawler', gx: 4, gy: 24 }
+           { type: 'hound', gx: 28, gy: 26 },
+           { type: 'crawler', gx: 28, gy: 5 }
          ],
          timeLimit: null },
     2: { id: 2, name: 'LEVEL 2', subtitle: 'PIPE DREAMS',
@@ -1447,8 +1446,9 @@
 
   function gridKey(gx, gy) { return gx + '_' + gy; }
 
-  // Discovery popup (item/note found)
+  // Discovery popup (item/note found) — pauses game while shown
   var _discoveryTimer = null;
+  var _discoveryActive = false;
   function showDiscovery(icon, label, name) {
     var pop = el('discoveryPopup');
     if (!pop) return;
@@ -1459,11 +1459,15 @@
     pop.style.display = 'flex';
     void pop.offsetWidth; // force reflow
     pop.classList.add('show');
+    _discoveryActive = true;
     if (_discoveryTimer) clearTimeout(_discoveryTimer);
     _discoveryTimer = setTimeout(function () {
       pop.classList.remove('show');
-      setTimeout(function () { pop.style.display = 'none'; }, 400);
-    }, 1800);
+      setTimeout(function () {
+        pop.style.display = 'none';
+        _discoveryActive = false;
+      }, 400);
+    }, 1400);
   }
 
   // Encounter cinematic for entity first sighting
@@ -1696,14 +1700,21 @@
   function playLevelReachCinematic(def, onDone) {
     el('lrLevelNum').textContent = def.name;
     el('lrSubtitle').textContent = def.subtitle;
-    el('lrFlavor').textContent = def.hint || '';
+    el('lrFlavor').textContent = (def.hint || '') + '\n\n[ 画面をタップして始める ]';
     showOverlay('levelReachCinematic');
     if (audioInitialized) GameEngine.playSound('stinger');
-    setTimeout(function () {
+    var lrOverlay = el('levelReachCinematic');
+    lrOverlay.style.pointerEvents = 'auto';
+    var advance = function () {
+      lrOverlay.removeEventListener('click', advance);
+      lrOverlay.removeEventListener('touchstart', advance);
+      lrOverlay.style.pointerEvents = 'none';
       hideOverlay('levelReachCinematic');
       forceCanvasResize();
       onDone();
-    }, 2400);
+    };
+    lrOverlay.addEventListener('click', advance);
+    lrOverlay.addEventListener('touchstart', advance);
   }
 
   function getEntityColor(type) {
@@ -2028,6 +2039,12 @@
     if (phoneOpen) return;
     if (miniGameOpen) return;
     if (_inCinematic) return;
+    // Pause while popup/discovery/note viewer/item modal is shown
+    if (_discoveryActive) return;
+    var nv = el('noteViewerOverlay');
+    if (nv && nv.style.display !== 'none') return;
+    var iu = el('itemUseModal');
+    if (iu && iu.style.display !== 'none') return;
 
     var inp = GameEngine.input;
     var sens = 2.5 * (parseInt(localStorage.getItem('bk_sens') || '100', 10) / 100);
@@ -2097,12 +2114,12 @@
     player.inSafeZone = (here === 11);
 
     if (player.inHazard) {
-      player.hp = Math.max(0, player.hp - 15 * dt);
-      player.san = Math.max(0, player.san - 8 * dt);
+      player.hp = Math.max(0, player.hp - 12 * dt);
+      player.san = Math.max(0, player.san - 3 * dt);
       if (Math.random() < 0.04) GameEngine.shakeScreen(3, 0.15);
     }
     if (player.inWater) {
-      player.san = Math.max(0, player.san - 1.5 * dt);
+      player.san = Math.max(0, player.san - 0.6 * dt);
     }
     if (player.inSafeZone) {
       player.hp = Math.min(player.hpMax, player.hp + 5 * dt);
@@ -2124,15 +2141,15 @@
       setTimeout(function () { sfe2.style.display = 'none'; }, 1200);
     }
 
-    // SAN drain per level (modulated by difficulty)
+    // SAN drain per level (modulated by difficulty) — overall halved for forgiveness
     var theme = THEMES[currentLevelDef.theme];
-    var sanDrain = (theme && theme.sanDrain) || 0.5;
-    // Faster if in dark / no flashlight on Level 6
-    if (currentLevel === 6 && !player.flashlightOn) sanDrain *= 2;
+    var sanDrain = ((theme && theme.sanDrain) || 0.5) * 0.45;
+    // Faster if in dark / no flashlight on Level 6 (reduced multiplier)
+    if (currentLevel === 6 && !player.flashlightOn) sanDrain *= 1.5;
     var diff = DIFFICULTIES[currentDifficulty] || DIFFICULTIES.normal;
     sanDrain *= diff.sanMul;
-    // Endless: scale per floor
-    if (gameMode === 'endless') sanDrain *= (1 + endlessFloor * 0.08);
+    // Endless: scale per floor (slower)
+    if (gameMode === 'endless') sanDrain *= (1 + endlessFloor * 0.05);
     player.san = Math.max(0, player.san - sanDrain * dt);
 
     // Stamina regen
@@ -2413,8 +2430,8 @@
       }
     }
 
-    // Radio detection
-    if (player.radioOn && nearestDist < 12 * TS) {
+    // Always show danger indicator with intensity based on proximity
+    if (nearestDist < 12 * TS) {
       updateDangerIndicator(nearestDist);
     } else {
       hideDangerIndicator();
@@ -2451,7 +2468,10 @@
     while (rel > Math.PI) rel -= Math.PI * 2;
     while (rel < -Math.PI) rel += Math.PI * 2;
 
+    // Intensity scales with proximity (1.0 at 0 distance, 0 at 12 TS)
+    var proxRatio = Math.max(0, 1 - dist / (12 * TS));
     el('dangerIndicator').style.display = 'block';
+    el('dangerIndicator').style.opacity = (0.3 + proxRatio * 0.7);
     if (rel < -0.5) {
       el('dangerLeft').classList.add('active');
       el('dangerRight').classList.remove('active');
@@ -3826,6 +3846,11 @@
     if (phoneOpen) return;
     if (miniGameOpen) return;
     if (_inCinematic) return;
+    if (_discoveryActive) return;
+    var nv2 = el('noteViewerOverlay');
+    if (nv2 && nv2.style.display !== 'none') return;
+    var iu2 = el('itemUseModal');
+    if (iu2 && iu2.style.display !== 'none') return;
     var diffE = DIFFICULTIES[currentDifficulty] || DIFFICULTIES.normal;
     var sMul = diffE.enemySpeedMul;
 
@@ -3876,8 +3901,9 @@
         var pTileY = Math.floor(player.y / TS);
         var pTile = currentMap.tiles[pTileY] && currentMap.tiles[pTileY][pTileX];
         var playerInSafe = (pTile === 11);
-        // Aggressive chaser. Triggers when player runs near AND not in safe.
-        if (!playerInSafe && distP < 6 * TS && (GameEngine.input.sprint || e.state === 'chase')) {
+        // Aggressive chaser. Triggers ONLY when player sprints near AND not in safe.
+        // Walking quietly does NOT provoke a chase.
+        if (!playerInSafe && distP < 4 * TS && (GameEngine.input.sprint || e.state === 'chase')) {
           e.state = 'chase';
           var spd = 90 * sMul;
           var stepX = (dx / distP) * spd * dt;
@@ -3913,7 +3939,7 @@
           if (isWalkable(e.x + stepX2, e.y)) e.x += stepX2;
           if (isWalkable(e.x, e.y + stepY2)) e.y += stepY2;
           // SAN drain on direct view
-          if (isFacingPlayer(e)) player.san = Math.max(0, player.san - 8 * dt);
+          if (isFacingPlayer(e)) player.san = Math.max(0, player.san - 3 * dt);
         } else if (distP <= 1.5 * TS) {
           attackPlayer(8 * dt);
         }
@@ -3927,7 +3953,7 @@
           if (audioInitialized) GameEngine.playSound('stinger');
           toast('動いた!');
           GameEngine.shakeScreen(8, 0.6);
-          player.san = Math.max(0, player.san - 15);
+          player.san = Math.max(0, player.san - 7);
         } else if (e.state === 'reveal') {
           var spd3 = 70 * sMul;
           var stepX3 = (dx / distP) * spd3 * dt;
@@ -3982,13 +4008,13 @@
         var playerLooksAtIt = Math.abs(relAngle) < Math.PI / 5; // within ~36° cone
         e._wretchGazed = playerLooksAtIt && distP < 10 * TS;
         if (e._wretchGazed) {
-          // Player sees WRETCH — chest opens, heavy SAN drain
-          player.san = Math.max(0, player.san - 20 * dt);
+          // Player sees WRETCH — chest opens, moderate SAN drain
+          player.san = Math.max(0, player.san - 5 * dt);
           if (Math.random() < 0.06 && audioInitialized) GameEngine.playSound('whisper');
           if (Math.random() < 0.01 && audioInitialized) GameEngine.playSound('tinnitus');
         } else if (distP < 8 * TS) {
           // Player doesn't look — mild SAN drain (subconscious dread)
-          player.san = Math.max(0, player.san - 1.5 * dt);
+          player.san = Math.max(0, player.san - 0.5 * dt);
         }
         // Direct contact damages
         if (distP < 0.8 * TS) attackPlayer(8 * dt);
@@ -4022,16 +4048,16 @@
           if (isWalkable(ex, e.y)) e.x = ex;
           if (isWalkable(e.x, ey)) e.y = ey;
         }
-        // SAN drain when very close (uncanny valley effect)
+        // SAN drain when very close (uncanny valley effect — reduced)
         if (distP < 3 * TS) {
-          player.san = Math.max(0, player.san - 3 * dt);
+          player.san = Math.max(0, player.san - 1.2 * dt);
           if (Math.random() < 0.02 && audioInitialized) GameEngine.playPositionalSound('whisper', e.x, e.y);
         }
         if (distP < 0.8 * TS) attackPlayer(6 * dt);
       } else if (e.type === 'mrhotel') {
         // Stationary at first, slowly approaches when player nearby
         if (distP < 12 * TS) {
-          if (distP < 4 * TS) player.san = Math.max(0, player.san - 6 * dt);
+          if (distP < 4 * TS) player.san = Math.max(0, player.san - 2.5 * dt);
           var mhSpd = 30 * sMul;
           var mhx = (dx / distP) * mhSpd * dt;
           var mhy = (dy / distP) * mhSpd * dt;
@@ -4073,7 +4099,7 @@
             GameEngine.playPositionalSound('lullaby', e.x, e.y);
           }
           // Mild SAN drain
-          player.san = Math.max(0, player.san - 1.5 * dt);
+          player.san = Math.max(0, player.san - 0.6 * dt);
         } else {
           // Phase 3: hunting close
           e.state = 'hunting';
@@ -4082,8 +4108,8 @@
           var p3y = (dy / distP) * spdP3 * dt;
           if (isWalkable(e.x + p3x, e.y)) e.x += p3x;
           if (isWalkable(e.x, e.y + p3y)) e.y += p3y;
-          // Continuous SAN drain
-          player.san = Math.max(0, player.san - 5 * dt);
+          // Continuous SAN drain (reduced)
+          player.san = Math.max(0, player.san - 2 * dt);
           // Breath/whisper sounds
           if (Math.random() < 0.012 && audioInitialized) {
             GameEngine.playPositionalSound('whisper', e.x, e.y);
@@ -4156,14 +4182,17 @@
   function attackPlayer(dmg) {
     var prevHp = player.hp;
     player.hp = Math.max(0, player.hp - dmg);
-    if (Math.random() < 0.1) {
-      GameEngine.redFlash();
-      if (navigator.vibrate) navigator.vibrate(60);
-      // Scream/grunt on heavier hits
-      if (audioInitialized) {
-        if (dmg > 0.15 && Math.random() < 0.5) {
-          GameEngine.playSound('scream_short');
-        }
+    // Always provide damage feedback: red flash + shake + sound
+    GameEngine.redFlash();
+    if (navigator.vibrate) navigator.vibrate(40);
+    if (dmg > 0.5) {
+      GameEngine.shakeScreen(Math.min(20, dmg * 30), Math.min(0.4, dmg * 1.5));
+      if (audioInitialized && Math.random() < 0.5) GameEngine.playSound('hit');
+    }
+    // Scream/grunt on heavier hits
+    if (audioInitialized) {
+      if (dmg > 0.15 && Math.random() < 0.4) {
+        GameEngine.playSound('scream_short');
       }
     }
     // Critical scream when about to die
@@ -6176,6 +6205,8 @@
 
     el('retryBtn').addEventListener('click', function () {
       hideOverlay('gameOverScreen');
+      // Fix: ensure fade overlay is cleared (avoid stuck dark screen after retry)
+      GameEngine.fadeFromBlack(400);
       // ENDLESS death: retry starts new endless run
       if (gameMode === 'endless') {
         startEndlessMode();
