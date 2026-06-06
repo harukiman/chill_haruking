@@ -2524,6 +2524,31 @@ button {
   pointer-events: none;
 }
 
+/* Spawn-grace shield: small badge top-center during invuln window */
+.hud-spawn-grace {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 70px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(20, 60, 120, 0.55);
+  border: 1px solid #88c0ff;
+  color: #cfe7ff;
+  padding: 4px 12px;
+  border-radius: 14px;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  z-index: 13;
+  pointer-events: none;
+  display: flex; align-items: center; gap: 6px;
+  animation: sgPulse 1s ease-in-out infinite;
+  box-shadow: 0 0 12px rgba(136, 192, 255, 0.55);
+}
+.hud-spawn-grace .sg-icon { color: #ffe88a; font-size: 13px; }
+@keyframes sgPulse {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 1; }
+}
+
 /* D-pad quick-use HUD (gamepad mode only) */
 .hud-dpad {
   position: fixed;

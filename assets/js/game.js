@@ -745,11 +745,13 @@
          rows: LV7_ROWS, theme: 7,
          hint: '一直線の回廊。背後から複数のHoundが迫る。HARUKI の声も混じる。',
          intro: '吠え声...そして、女の声。前へ走るしかない。',
+         // Spawn pushed several tiles down the corridor so the player has
+         // visual + movement runway. Lv7 is "RUN FOR YOUR LIFE" — chase, not ambush.
          entities: [
-           { type: 'hound', gx: 4, gy: 2 },
-           { type: 'hound', gx: 3, gy: 4 },
-           { type: 'hound', gx: 5, gy: 5 },
-           { type: 'haruki', gx: 4, gy: 3 }
+           { type: 'hound',  gx: 4, gy: 8 },
+           { type: 'hound',  gx: 3, gy: 13 },
+           { type: 'hound',  gx: 5, gy: 17 },
+           { type: 'haruki', gx: 4, gy: 11 }
          ],
          timeLimit: null },
     8: { id: 8, name: 'LEVEL 8', subtitle: 'THE HIVE',
@@ -1203,6 +1205,10 @@
   var currentLevelDef = null;
   var playTime = 0;          // seconds since game start
   var inLevelTime = 0;       // seconds in current level
+  // Player i-frame window after entering a new level. Prevents ambush spawns
+  // (e.g. Lv7 hound cluster) from killing the player before they orient.
+  var spawnGraceUntil = 0;
+  var SPAWN_GRACE_MS = 2800;
   var visitedLevels = {};    // {levelId: true}
   var clearedLevels = {};
   var discoveredNotes = [];  // [{levelId, title, text}]
@@ -2397,6 +2403,16 @@
 
   function startPlaying() {
     state = ST.PLAYING;
+    // Give the player a brief invulnerability window to read the surroundings.
+    spawnGraceUntil = performance.now() + SPAWN_GRACE_MS;
+    var sgEl = el('spawnGraceHud');
+    if (sgEl) {
+      sgEl.style.display = 'flex';
+      setTimeout(function () {
+        var e2 = el('spawnGraceHud');
+        if (e2) e2.style.display = 'none';
+      }, SPAWN_GRACE_MS);
+    }
     // Force canvas resize (fix: top-left only bug after overlays)
     if (GameEngine._resize) GameEngine._resize();
     window.dispatchEvent(new Event('resize'));
@@ -4863,6 +4879,12 @@
   }
 
   function attackPlayer(dmg) {
+    // Spawn grace: for the first ~2.8s after entering a level, the player is
+    // i-frame so that ambush-style entity placement (e.g. Lv7 hounds packed
+    // around spawn) can't instakill before the player has even oriented.
+    if (typeof spawnGraceUntil === 'number' && performance.now() < spawnGraceUntil) {
+      return;
+    }
     var prevHp = player.hp;
     player.hp = Math.max(0, player.hp - dmg);
     // Always provide damage feedback: red flash + shake + sound
@@ -5880,6 +5902,7 @@
     el('phoneBtn').style.display = 'none';
     el('floorHUD').style.display = 'none';
     var _dh = el('dpadHud'); if (_dh) _dh.style.display = 'none';
+    var _sg = el('spawnGraceHud'); if (_sg) _sg.style.display = 'none';
     // Build run summary (convert \n in sub to <br>)
     var subHtml = sub.replace(/\n/g, '<br>');
     var summary = ['<span style="color:#ff8060;font-weight:bold;">' + subHtml + '</span>'];
@@ -6038,6 +6061,7 @@
     el('phoneBtn').style.display = 'none';
     el('floorHUD').style.display = 'none';
     var _dh = el('dpadHud'); if (_dh) _dh.style.display = 'none';
+    var _sg = el('spawnGraceHud'); if (_sg) _sg.style.display = 'none';
 
     GameEngine.fadeToBlack(1500, function () {
       showOverlay('endingScreen');
@@ -6956,6 +6980,7 @@
     el('phoneBtn').style.display = 'none';
     el('floorHUD').style.display = 'none';
     var _dh = el('dpadHud'); if (_dh) _dh.style.display = 'none';
+    var _sg = el('spawnGraceHud'); if (_sg) _sg.style.display = 'none';
     el('objectiveHUD').style.display = 'none';
 
     hideOverlay('gameOverScreen');

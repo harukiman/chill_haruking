@@ -20,7 +20,7 @@
   <meta name="twitter:title" content="THE BACKROOMS — featuring HARUKI">
   <meta name="twitter:description" content="一人称モバイル探索ホラー。Level 0 から no-clip で階層を降下。壁の向こうにカレが待つ。">
   <title>THE BACKROOMS</title>
-  <link rel="stylesheet" href="assets/css/game.css?v=95">
+  <link rel="stylesheet" href="assets/css/game.css?v=96">
 </head>
 <body oncontextmenu="return false;">
 
@@ -649,6 +649,12 @@
     <span id="floorText">LV0</span>
   </div>
 
+  <!-- Spawn grace shield indicator -->
+  <div id="spawnGraceHud" class="hud-spawn-grace" style="display:none;">
+    <span class="sg-icon">✦</span>
+    <span class="sg-text">SAFE</span>
+  </div>
+
   <!-- D-pad Quick-use HUD (gamepad mode indicator) -->
   <div id="dpadHud" class="hud-dpad" style="display:none;">
     <div class="hud-dpad-mode" id="dpadHudMode">ITEM</div>
@@ -772,8 +778,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="assets/js/engine.js?v=95"></script>
-  <script src="assets/js/game.js?v=95"></script>
+  <script src="assets/js/engine.js?v=96"></script>
+  <script src="assets/js/game.js?v=96"></script>
 
   <!-- POST-LOAD VERIFICATION + DIRECT BINDING FALLBACK
        After game.js IIFE runs, this script confirms __titleAction is the real one.
