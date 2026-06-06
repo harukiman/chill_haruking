@@ -1467,10 +1467,17 @@ body {
   #actionBtn { width: 68px; height: 68px; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
 }
 
-@media (max-height: 620px) {
-  .phone-screen { min-height: 86vh; }
+@media (max-height: 700px) {
   .game-title { font-size: 38px; }
-  .title-decoration { margin: 12px auto; }
+  .title-decoration { margin: 10px auto; }
+  .menu-btn { min-height: 42px; padding: 10px 22px; font-size: 13px; }
+  .title-menu { gap: 7px; }
+  .title-content { padding: 14px 16px; }
+}
+@media (max-height: 580px) {
+  .game-title { font-size: 32px; }
+  .game-subtitle, .game-subtitle-jp { margin-bottom: 12px; }
+  .menu-btn { min-height: 38px; padding: 8px 18px; font-size: 12px; }
 }
 
 /* Landscape — phone tabs go horizontal next to content */
