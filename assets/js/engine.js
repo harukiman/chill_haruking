@@ -2107,7 +2107,133 @@
         case 'wind':
           activeLoops[type] = this._startWindLoop();
           break;
+        case 'classical':
+          activeLoops[type] = this._startClassicalLoop();
+          break;
       }
+    },
+
+    _startClassicalLoop: function () {
+      // Procedural minor-key classical-style horror BGM
+      // Bass drone + sparse piano melody + cello pad
+      var dest = bgmGain || masterGain;
+      var ctx = audioCtx;
+      var now = ctx.currentTime;
+
+      // Bass drone (A2, 110Hz)
+      var bass = ctx.createOscillator();
+      bass.type = 'triangle';
+      bass.frequency.value = 110;
+      var bassG = ctx.createGain();
+      bassG.gain.value = 0.18;
+      bass.connect(bassG);
+      bassG.connect(dest);
+      bass.start(now);
+
+      // Subtle bass LFO for movement
+      var bassLfo = ctx.createOscillator();
+      bassLfo.type = 'sine';
+      bassLfo.frequency.value = 0.15;
+      var bassLfoG = ctx.createGain();
+      bassLfoG.gain.value = 0.04;
+      bassLfo.connect(bassLfoG);
+      bassLfoG.connect(bassG.gain);
+      bassLfo.start(now);
+
+      // Cello pad — two detuned saws around A3 (220Hz)
+      var cello1 = ctx.createOscillator();
+      cello1.type = 'sawtooth';
+      cello1.frequency.value = 220;
+      var cello2 = ctx.createOscillator();
+      cello2.type = 'sawtooth';
+      cello2.frequency.value = 222.5; // detune for chorus
+      var celloFilter = ctx.createBiquadFilter();
+      celloFilter.type = 'lowpass';
+      celloFilter.frequency.value = 700;
+      celloFilter.Q.value = 2;
+      var celloG = ctx.createGain();
+      celloG.gain.value = 0.05;
+      cello1.connect(celloFilter);
+      cello2.connect(celloFilter);
+      celloFilter.connect(celloG);
+      celloG.connect(dest);
+      cello1.start(now);
+      cello2.start(now);
+
+      // Slow filter sweep on cello for atmosphere
+      var celloSwoosh = ctx.createOscillator();
+      celloSwoosh.type = 'sine';
+      celloSwoosh.frequency.value = 0.08;
+      var celloSwooshG = ctx.createGain();
+      celloSwooshG.gain.value = 400;
+      celloSwoosh.connect(celloSwooshG);
+      celloSwooshG.connect(celloFilter.frequency);
+      celloSwoosh.start(now);
+
+      // Piano melody — minor pentatonic notes, slow tempo
+      // A minor pentatonic: A, C, D, E, G
+      var melodyNotes = [
+        220.00,  // A3
+        261.63,  // C4
+        329.63,  // E4
+        293.66,  // D4
+        246.94,  // B3
+        220.00,  // A3
+        196.00,  // G3
+        220.00   // A3
+      ];
+      var melodyG = ctx.createGain();
+      melodyG.gain.value = 0.18;
+      melodyG.connect(dest);
+      var melodyIdx = 0;
+      var melodyTempo = 3000; // 3 seconds per note (slow, somber)
+
+      function playPianoNote() {
+        if (!ctx || ctx.state !== 'running') {
+          setTimeout(playPianoNote, melodyTempo);
+          return;
+        }
+        var t = ctx.currentTime;
+        var freq = melodyNotes[melodyIdx % melodyNotes.length];
+        // Piano-like: sine + 2nd harmonic with quick decay
+        var f1 = ctx.createOscillator();
+        f1.type = 'sine';
+        f1.frequency.value = freq;
+        var f2 = ctx.createOscillator();
+        f2.type = 'sine';
+        f2.frequency.value = freq * 2;
+        var f3 = ctx.createOscillator();
+        f3.type = 'sine';
+        f3.frequency.value = freq * 3;
+        var noteG = ctx.createGain();
+        noteG.gain.setValueAtTime(0, t);
+        noteG.gain.linearRampToValueAtTime(0.5, t + 0.03);
+        noteG.gain.exponentialRampToValueAtTime(0.05, t + 2.5);
+        noteG.gain.exponentialRampToValueAtTime(0.001, t + 3.0);
+        var harmG = ctx.createGain();
+        harmG.gain.value = 0.18;
+        f2.connect(harmG);
+        f3.connect(harmG);
+        f1.connect(noteG);
+        harmG.connect(noteG);
+        noteG.connect(melodyG);
+        f1.start(t);
+        f2.start(t);
+        f3.start(t);
+        f1.stop(t + 3.1);
+        f2.stop(t + 3.1);
+        f3.stop(t + 3.1);
+        melodyIdx++;
+        setTimeout(playPianoNote, melodyTempo);
+      }
+      // Start melody after small delay
+      var melodyTimer = setTimeout(playPianoNote, 1000);
+
+      return {
+        nodes: [bass, bassLfo, cello1, cello2, celloSwoosh],
+        gain: bassG,
+        interval: melodyTimer
+      };
     },
 
     stopLoop: function (type) {

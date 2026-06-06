@@ -17,7 +17,7 @@
   <meta name="twitter:title" content="THE BACKROOMS — featuring HARUKI">
   <meta name="twitter:description" content="一人称モバイル探索ホラー。Level 0 から no-clip で階層を降下。壁の向こうにカレが待つ。">
   <title>THE BACKROOMS</title>
-  <link rel="stylesheet" href="assets/css/game.css?v=40">
+  <link rel="stylesheet" href="assets/css/game.css?v=41">
 </head>
 <body oncontextmenu="return false;">
 
@@ -67,16 +67,36 @@
     <p class="title-ach-counter" id="titleAchCounter"></p>
   </div>
 
-  <!-- Intro Cinematic Overlay (new game opening) -->
+  <!-- Intro Cinematic Overlay (first-person POV) -->
   <div id="introOverlay" class="overlay intro-overlay" style="display:none;">
+    <!-- Scene 1: Night street POV -->
+    <div class="intro-scene" id="introScene1">
+      <div class="intro-sky"></div>
+      <div class="intro-streetlights">
+        <div class="intro-streetlight l1"></div>
+        <div class="intro-streetlight l2"></div>
+        <div class="intro-streetlight l3"></div>
+      </div>
+      <div class="intro-ground"></div>
+      <div class="intro-walking">
+        <div class="intro-shoe left"></div>
+        <div class="intro-shoe right"></div>
+      </div>
+    </div>
+    <!-- Scene 2: Wall closeup -->
+    <div class="intro-scene" id="introScene2">
+      <div class="intro-wallpaper"></div>
+      <div class="intro-wallpaper-glow"></div>
+    </div>
+    <!-- Scene 3: Falling -->
+    <div class="intro-scene" id="introScene3">
+      <div class="intro-fall-blur"></div>
+    </div>
     <div class="intro-vignette"></div>
     <div class="intro-content">
       <p class="intro-line" id="introLine"></p>
     </div>
-    <div class="intro-eyes" id="introEyes">
-      <div class="intro-eye left"></div>
-      <div class="intro-eye right"></div>
-    </div>
+    <div class="intro-eyes" id="introEyes"></div>
     <button id="introSkipBtn" class="intro-skip-btn" type="button">スキップ →</button>
   </div>
 
@@ -467,8 +487,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="assets/js/engine.js?v=40"></script>
-  <script src="assets/js/game.js?v=40"></script>
+  <script src="assets/js/engine.js?v=41"></script>
+  <script src="assets/js/game.js?v=41"></script>
 
 </body>
 </html>

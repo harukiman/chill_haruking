@@ -5025,16 +5025,7 @@
   // ============================================================
   //  TITLE / NEW GAME
   // ============================================================
-  // Intro cinematic frames
-  var INTRO_LINES = [
-    { text: '', delay: 800 },
-    { text: '...深夜、いつもの帰り道。', delay: 3000 },
-    { text: '壁紙の前を、通り過ぎようとした。', delay: 3000 },
-    { text: 'その時、', delay: 2200 },
-    { text: '足元の感触が、消えた。', delay: 3200 },
-    { text: '...', delay: 2000 }
-  ];
-
+  // Intro cinematic — first-person POV with 3 scenes
   function playIntroCinematic(onDone) {
     showOverlay('introOverlay');
     var eyes = el('introEyes');
@@ -5042,47 +5033,88 @@
     var lineEl = el('introLine');
     lineEl.textContent = '';
     lineEl.classList.remove('show');
-    if (audioInitialized) {
-      GameEngine.startLoop('wind');
-    }
-    var idx = 0;
+    var s1 = el('introScene1');
+    var s2 = el('introScene2');
+    var s3 = el('introScene3');
+    [s1, s2, s3].forEach(function (s) { s.classList.remove('active'); });
+    if (audioInitialized) GameEngine.startLoop('wind');
+
     var cancelled = false;
-    function next() {
-      if (cancelled) return;
-      if (idx >= INTRO_LINES.length) {
-        // Eyes opening animation
-        eyes.classList.add('partial');
-        setTimeout(function () {
-          if (cancelled) return;
-          eyes.classList.add('open');
-          setTimeout(function () {
-            if (cancelled) return;
-            hideOverlay('introOverlay');
-            if (audioInitialized) GameEngine.stopLoop('wind');
-            onDone();
-          }, 1200);
-        }, 800);
-        return;
-      }
-      var line = INTRO_LINES[idx];
+    var footstepTimer = null;
+    function startFootsteps() {
+      if (!audioInitialized) return;
+      footstepTimer = setInterval(function () {
+        if (audioInitialized && !cancelled) {
+          GameEngine.playSound('footstep');
+        }
+      }, 500);
+    }
+    function stopFootsteps() {
+      if (footstepTimer) clearInterval(footstepTimer);
+      footstepTimer = null;
+    }
+
+    function setLine(text) {
       lineEl.classList.remove('show');
       void lineEl.offsetWidth;
-      lineEl.textContent = line.text;
+      lineEl.textContent = text;
       requestAnimationFrame(function () { lineEl.classList.add('show'); });
-      idx++;
-      setTimeout(next, line.delay);
     }
-    // Skip button
-    var skip = el('introSkipBtn');
-    var skipHandler = function () {
+
+    var skipHandler;
+    function finish() {
+      if (cancelled) return;
       cancelled = true;
+      stopFootsteps();
       hideOverlay('introOverlay');
       if (audioInitialized) GameEngine.stopLoop('wind');
-      skip.removeEventListener('click', skipHandler);
+      el('introSkipBtn').removeEventListener('click', skipHandler);
       onDone();
-    };
-    skip.addEventListener('click', skipHandler);
-    next();
+    }
+    skipHandler = finish;
+    el('introSkipBtn').addEventListener('click', skipHandler);
+
+    // Scene 1: night street walking
+    setTimeout(function () {
+      if (cancelled) return;
+      s1.classList.add('active');
+      startFootsteps();
+      setLine('...深夜、会社からの帰り道。');
+    }, 800);
+    setTimeout(function () { if (!cancelled) setLine('いつもの裏路地、いつもの壁紙。'); }, 4500);
+    setTimeout(function () { if (!cancelled) setLine('何も変わらないはずだった、今日も。'); }, 8200);
+
+    // Scene 2: wallpaper closeup
+    setTimeout(function () {
+      if (cancelled) return;
+      stopFootsteps();
+      s1.classList.remove('active');
+      s2.classList.add('active');
+      setLine('— その時、足元の感触が、消えた。');
+      if (audioInitialized) GameEngine.playSound('static');
+    }, 12000);
+    setTimeout(function () { if (!cancelled) setLine('壁の中に、落ちた。'); }, 15500);
+
+    // Scene 3: falling
+    setTimeout(function () {
+      if (cancelled) return;
+      s2.classList.remove('active');
+      s3.classList.add('active');
+      setLine('黄色い、無限の、壁紙の世界へ。');
+      if (audioInitialized) GameEngine.playSound('thunder');
+    }, 18500);
+
+    // Eyes open → game starts
+    setTimeout(function () {
+      if (cancelled) return;
+      setLine('');
+      eyes.classList.add('partial');
+    }, 22000);
+    setTimeout(function () {
+      if (cancelled) return;
+      eyes.classList.add('open');
+    }, 22600);
+    setTimeout(finish, 23800);
   }
 
   function startNewGame() {
@@ -5096,6 +5128,7 @@
       audioInitialized = true;
     }
     // Stop title BGM
+    GameEngine.stopLoop('classical');
     GameEngine.stopLoop('wind');
 
     var diff = DIFFICULTIES[currentDifficulty] || DIFFICULTIES.normal;
@@ -5155,10 +5188,10 @@
     gameMode = 'normal';
     GameEngine.stopAll();
     GameEngine.fadeFromBlack(500);
-    // Title BGM (if audio init'd)
+    // Title BGM (classical)
     if (audioInitialized) {
       setTimeout(function () {
-        if (state === ST.TITLE) GameEngine.startLoop('wind');
+        if (state === ST.TITLE) GameEngine.startLoop('classical');
       }, 300);
     }
 
@@ -5551,9 +5584,9 @@
         if (!audioInitialized) {
           GameEngine.initAudio();
           audioInitialized = true;
-          // Start title BGM (wind drone)
+          // Start title BGM (classical horror-style)
           setTimeout(function () {
-            if (state === ST.TITLE) GameEngine.startLoop('wind');
+            if (state === ST.TITLE) GameEngine.startLoop('classical');
           }, 200);
         }
       };
