@@ -1837,6 +1837,21 @@
       }, 3500);
     }
 
+    // Lv9: dramatic Boss introduction (delayed 4s after entering)
+    if (currentLevel === 9 && !unlockedAchievements.defeat_boss) {
+      setTimeout(function () {
+        if (state !== ST.PLAYING) return;
+        // Flash + stinger + shake for "Boss reveals" impact
+        GameEngine.redFlash();
+        GameEngine.shakeScreen(12, 0.8);
+        if (audioInitialized) {
+          GameEngine.playSound('stinger');
+          GameEngine.playSound('thunder');
+        }
+        toast('— THE ARCHITECT が目を覚ました');
+      }, 4000);
+    }
+
     // Save automatically on level start (normal mode only)
     if (gameMode === 'normal') saveGame();
   }
@@ -1982,6 +1997,20 @@
       player.hp = Math.min(player.hpMax, player.hp + 5 * dt);
       player.san = Math.min(player.sanMax, player.san + 5 * dt);
       unlockAchievement('found_safe_zone');
+      // Safe zone visual effect
+      if (!player._safeZoneActive) {
+        player._safeZoneActive = true;
+        var sfe = el('safeZoneEffect');
+        sfe.style.display = 'block';
+        requestAnimationFrame(function () { sfe.classList.add('active'); });
+        if (audioInitialized) GameEngine.playSound('item_get');
+        toast('セーフエリア — 回復中');
+      }
+    } else if (player._safeZoneActive) {
+      player._safeZoneActive = false;
+      var sfe2 = el('safeZoneEffect');
+      sfe2.classList.remove('active');
+      setTimeout(function () { sfe2.style.display = 'none'; }, 1200);
     }
 
     // SAN drain per level (modulated by difficulty)
@@ -6060,6 +6089,9 @@
           setTimeout(function () {
             if (state === ST.TITLE) GameEngine.startLoop('classical');
           }, 200);
+          // Hide tap hint
+          var hint = el('tapToStartHint');
+          if (hint) hint.classList.add('hidden');
         }
       };
       titleScr.addEventListener('touchstart', initOnTouch, { passive: true });

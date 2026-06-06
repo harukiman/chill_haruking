@@ -298,6 +298,24 @@ body {
   background: rgba(80, 0, 0, 0.7);
   transform: scale(0.95);
 }
+.tap-to-start-hint {
+  position: absolute;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 12px;
+  letter-spacing: 0.3em;
+  color: #b09040;
+  text-align: center;
+  z-index: 2;
+  animation: tapHintBlink 1.5s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes tapHintBlink {
+  0%, 100% { opacity: 0.4; }
+  50%      { opacity: 1; }
+}
+.tap-to-start-hint.hidden { display: none; }
 
 /* ============================================================
  *  INTRO CINEMATIC (first-person POV movie)
@@ -1165,6 +1183,29 @@ body {
 @keyframes sanEffectShift {
   0%, 100% { filter: blur(0px) hue-rotate(0deg); }
   50%      { filter: blur(2px) hue-rotate(20deg); }
+}
+
+/* Safe zone warm glow */
+.screen-effect-safe {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 7;
+  background: radial-gradient(ellipse at center,
+    rgba(255, 220, 150, 0.08) 0%,
+    rgba(255, 200, 100, 0.05) 40%,
+    transparent 80%);
+  opacity: 0;
+  transition: opacity 1.2s ease-in-out;
+  mix-blend-mode: screen;
+}
+.screen-effect-safe.active {
+  opacity: 1;
+  animation: safeGlow 4s ease-in-out infinite;
+}
+@keyframes safeGlow {
+  0%, 100% { opacity: 0.9; transform: scale(1); }
+  50%      { opacity: 1; transform: scale(1.05); }
 }
 
 /* ============================================================
