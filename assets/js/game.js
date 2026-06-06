@@ -1100,6 +1100,9 @@
   var ENDLESS_KEY = 'thebackrooms_endless_v1';
   var STATS_KEY = 'thebackrooms_stats_v1';
   var ENT_SEEN_KEY = 'thebackrooms_ent_seen_v1';
+  var GFX_KEY = 'thebackrooms_gfx_v1';
+
+  var gfxQuality = 'high'; // 'high' | 'low'
 
   // Lifetime stats (persists across all runs)
   var stats = {
@@ -3753,9 +3756,11 @@
     ctx.fillStyle = beamGrad;
     ctx.fillRect(screenX - beamW / 2, beamY, beamW, beamH);
 
-    // Floating icon at chest height
+    // Floating icon just above ground (follows floor projection)
     ctx.globalAlpha = fogFactor;
-    var iconY = h / 2 + Math.sin(phase * 2) * iconSize * 0.15;
+    // Icon hovers slightly above where it sits on floor
+    var iconBaseY = groundY - iconSize * 0.4;
+    var iconY = iconBaseY + Math.sin(phase * 2) * iconSize * 0.12;
     ctx.font = 'bold ' + iconSize + 'px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
