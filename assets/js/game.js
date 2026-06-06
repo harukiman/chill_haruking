@@ -1415,11 +1415,22 @@
     var anyClose = (pauseBtn && pauseBtn.pressed) || (phoneBtnRaw && phoneBtnRaw.pressed);
     var anyConfirm = actionBtnRaw && actionBtnRaw.pressed;
 
+    // Input lockout: after closing a menu, ignore action button for 400ms
+    // (prevents the same press from triggering title nav / game start)
+    if (gp._inputLockUntil && performance.now() < gp._inputLockUntil) {
+      // Allow menu close (pause) but block action/start firing
+      if (actionBtnRaw && actionBtnRaw.pressed) {
+        gp._titleConfirm = true; // pre-set so we don't fire on lock release
+        gp._cursorClick = true;
+      }
+    }
+
     // Cursor mode for any overlay that needs UI clicks.
     // Activates when any of these overlays is visible. Cursor moves with left stick
     // (or D-pad), action button clicks element under cursor.
+    // noteViewerOverlay handled separately as any-button-close
     var cursorOverlays = ['phoneOverlay', 'titleSettingsOverlay', 'tutorialOverlay',
-                          'levelSelectOverlay', 'noteViewerOverlay'];
+                          'levelSelectOverlay'];
     var cursorActive = false;
     for (var coi = 0; coi < cursorOverlays.length; coi++) {
       var coEl = el(cursorOverlays[coi]);
@@ -1436,16 +1447,19 @@
         var settingsEl = el('titleSettingsOverlay');
         if (settingsEl && settingsEl.style.display !== 'none') {
           hideOverlay('titleSettingsOverlay');
+          gp._inputLockUntil = performance.now() + 400;
           return;
         }
         var tutEl2 = el('tutorialOverlay');
         if (tutEl2 && tutEl2.style.display !== 'none') {
           hideOverlay('tutorialOverlay');
+          gp._inputLockUntil = performance.now() + 400;
           return;
         }
         var lvlEl = el('levelSelectOverlay');
         if (lvlEl && lvlEl.style.display !== 'none') {
           hideOverlay('levelSelectOverlay');
+          gp._inputLockUntil = performance.now() + 400;
           return;
         }
       }
