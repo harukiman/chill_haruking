@@ -841,6 +841,7 @@
     flare: {
       id: 'flare', name: 'フレア',
       icon: '🔥', desc: '点火。周囲6マスのエンティティを4秒スタン + Boss に 50 ダメージ。HP+10。',
+      category: 'weapon',
       effect: function (p) {
         var stunRange = 6 * TS;
         var stunned = 0;
@@ -878,6 +879,7 @@
     mirror: {
       id: 'mirror', name: 'ひび割れた鏡',
       icon: '🪞', desc: 'Skin-Stealer 消滅 + Boss に 100 ダメージ。1回使い切り。',
+      category: 'weapon',
       effect: function (p) {
         var reflected = 0;
         var bossDmg = 0;
@@ -1228,6 +1230,37 @@
   var noteSpots = {};        // {gx_gy: noteObj}
   var doorStates = {};       // {gx_gy: {open}}
 
+  // D-pad quick-use assignments (per mode)
+  var dpadAssignments = { weapon: { up: '', down: '', left: '', right: '' },
+                          item:   { up: '', down: '', left: '', right: '' } };
+  var dpadMode = 'item'; // 'weapon' | 'item'
+  function loadDpadAssignments() {
+    try {
+      var raw = localStorage.getItem('bk_dpad_assignments_v1');
+      if (raw) {
+        var p = JSON.parse(raw);
+        if (p && typeof p === 'object') {
+          ['weapon', 'item'].forEach(function (mk) {
+            if (p[mk] && typeof p[mk] === 'object') {
+              ['up', 'down', 'left', 'right'].forEach(function (d) {
+                if (typeof p[mk][d] === 'string') dpadAssignments[mk][d] = p[mk][d];
+              });
+            }
+          });
+        }
+      }
+      var m = localStorage.getItem('bk_dpad_mode_v1');
+      if (m === 'weapon' || m === 'item') dpadMode = m;
+    } catch (e) {}
+  }
+  function saveDpadAssignments() {
+    try {
+      localStorage.setItem('bk_dpad_assignments_v1', JSON.stringify(dpadAssignments));
+      localStorage.setItem('bk_dpad_mode_v1', dpadMode);
+    } catch (e) {}
+  }
+  loadDpadAssignments();
+
   // Audio
   var audioInitialized = false;
   var currentAmbient = null;
@@ -1515,6 +1548,21 @@
               // Allow horizontal nav on focused slider via D-pad left/right
             }
           }
+          // If the click caused all cursor overlays to close, lock input briefly
+          // so the still-held action button does NOT fall through to the title
+          // menu (which would auto-confirm "START"). Title-settings close bug fix.
+          var stillCursorActive = false;
+          for (var coj = 0; coj < cursorOverlays.length; coj++) {
+            var coEl2 = el(cursorOverlays[coj]);
+            if (coEl2 && coEl2.style.display !== 'none' && coEl2.style.display !== '') {
+              stillCursorActive = true;
+              break;
+            }
+          }
+          if (!stillCursorActive) {
+            gp._inputLockUntil = performance.now() + 500;
+            gp._titleConfirm = true;
+          }
         } else if (!(actionBtnRaw && actionBtnRaw.pressed)) {
           gp._cursorClick = false;
         }
@@ -1557,15 +1605,16 @@
       if (!(pauseBtn && pauseBtn.pressed)) gp._menuClosePressed = false;
       return;
     }
-    // Note viewer → any button closes
+    // Note viewer → any button closes (truly any controller button)
     var nveEl = el('noteViewerOverlay');
     if (nveEl && nveEl.style.display !== 'none') {
-      if ((anyConfirm || anyClose) && !gp._menuClosePressed) {
+      if (anyBtn && !gp._menuClosePressed) {
         gp._menuClosePressed = true;
         var closeNoteBtn = el('closeNoteBtn');
         if (closeNoteBtn) closeNoteBtn.click();
+        gp._inputLockUntil = performance.now() + 400;
       }
-      if (!anyConfirm && !anyClose) gp._menuClosePressed = false;
+      if (!anyBtn) gp._menuClosePressed = false;
       return;
     }
     // Tutorial overlay → close
@@ -1683,6 +1732,32 @@
       }
     } else if (!(flareBtn && flareBtn.pressed)) {
       gp._flarePressed = false;
+    }
+    // R1: toggle D-pad mode (weapon ⇄ item)
+    var r1Btn = gp.buttons[5];
+    if (r1Btn && r1Btn.pressed && !gp._r1Pressed) {
+      gp._r1Pressed = true;
+      dpadMode = (dpadMode === 'weapon') ? 'item' : 'weapon';
+      saveDpadAssignments();
+      toast(dpadMode === 'weapon' ? '武器モード' : 'アイテムモード');
+      updateDpadHud();
+    } else if (!(r1Btn && r1Btn.pressed)) {
+      gp._r1Pressed = false;
+    }
+    // D-pad: quick-use assigned items (mode-specific)
+    if (!gp._dpadHeld) gp._dpadHeld = { up: false, down: false, left: false, right: false };
+    var dpadMap = [{ btn: 12, dir: 'up' }, { btn: 13, dir: 'down' },
+                   { btn: 14, dir: 'left' }, { btn: 15, dir: 'right' }];
+    for (var dpi = 0; dpi < dpadMap.length; dpi++) {
+      var dbtn = gp.buttons[dpadMap[dpi].btn];
+      var dpDir = dpadMap[dpi].dir;
+      if (dbtn && dbtn.pressed && !gp._dpadHeld[dpDir]) {
+        gp._dpadHeld[dpDir] = true;
+        var assignedId = (dpadAssignments[dpadMode] || {})[dpDir];
+        if (assignedId) quickUseAssignedItem(assignedId);
+      } else if (!(dbtn && dbtn.pressed)) {
+        gp._dpadHeld[dpDir] = false;
+      }
     }
   }
   // Poll gamepad each frame via existing engine update hook
@@ -2288,6 +2363,7 @@
     el('floatingMapBtn').style.display = '';
     el('quickItemBtn').classList.add('show');
     el('quickItemBtn').style.display = '';
+    updateDpadHud();
     if (gameMode === 'endless') {
       el('floorText').textContent = 'ENDLESS F' + endlessFloor + ' / LV' + currentLevel + ' / ' + endlessScore;
     } else {
@@ -3848,6 +3924,47 @@
     b.textContent = label;
     b.classList.remove('primary');
     if (type === 'green') b.classList.add('primary');
+  }
+
+  // Update the on-screen D-pad HUD (mode + 4 slots)
+  function updateDpadHud() {
+    var hud = el('dpadHud');
+    if (!hud) return;
+    if (!gamepadConnected || state !== ST.PLAYING) {
+      hud.style.display = 'none';
+      return;
+    }
+    hud.style.display = 'block';
+    var modeEl = el('dpadHudMode');
+    if (modeEl) modeEl.textContent = dpadMode === 'weapon' ? '武器' : 'アイテム';
+    var slots = dpadAssignments[dpadMode] || {};
+    var dirIds = ['Up', 'Down', 'Left', 'Right'];
+    for (var i = 0; i < dirIds.length; i++) {
+      var slotEl = el('dpadSlot' + dirIds[i]);
+      if (!slotEl) continue;
+      var id = slots[dirIds[i].toLowerCase()];
+      if (id && ITEMS[id]) {
+        slotEl.textContent = ITEMS[id].icon;
+        slotEl.classList.remove('empty');
+        slotEl.title = ITEMS[id].name + (player.inventory[id] ? ' ×' + player.inventory[id] : ' (未所持)');
+      } else {
+        slotEl.textContent = '';
+        slotEl.classList.add('empty');
+        slotEl.title = '未割当';
+      }
+    }
+  }
+
+  // D-pad quick-use: skip the confirm modal and use directly
+  function quickUseAssignedItem(itemId) {
+    if (!itemId || !ITEMS[itemId]) return;
+    if (state !== ST.PLAYING || phoneOpen || miniGameOpen) return;
+    if (!player.inventory[itemId]) {
+      toast(ITEMS[itemId].name + ': 未所持');
+      return;
+    }
+    _pendingItemId = itemId;
+    confirmItemUse();
   }
 
   // Item use custom modal
@@ -5694,6 +5811,7 @@
     el('actionBtn').style.display = 'none';
     el('phoneBtn').style.display = 'none';
     el('floorHUD').style.display = 'none';
+    var _dh = el('dpadHud'); if (_dh) _dh.style.display = 'none';
     // Build run summary (convert \n in sub to <br>)
     var subHtml = sub.replace(/\n/g, '<br>');
     var summary = ['<span style="color:#ff8060;font-weight:bold;">' + subHtml + '</span>'];
@@ -5851,6 +5969,7 @@
     el('actionBtn').style.display = 'none';
     el('phoneBtn').style.display = 'none';
     el('floorHUD').style.display = 'none';
+    var _dh = el('dpadHud'); if (_dh) _dh.style.display = 'none';
 
     GameEngine.fadeToBlack(1500, function () {
       showOverlay('endingScreen');
@@ -5886,7 +6005,70 @@
       if (b.getAttribute('data-tab') === name) b.classList.add('active');
       else b.classList.remove('active');
     });
+    if (name === 'Options') refreshDpadConfigUI();
     refreshPhoneUI();
+  }
+
+  // Populate the D-pad config selects in the Options tab and bind handlers.
+  // Idempotent — safe to call every time the Options tab opens.
+  var _dpadConfigBound = false;
+  function refreshDpadConfigUI() {
+    // Build option list once per render: all known items grouped by category
+    var ownedKeys = Object.keys(player.inventory);
+    function buildOptions(currentId) {
+      var html = '<option value="">未割当</option>';
+      var weaponHtml = '', itemHtml = '';
+      var iterIds = Object.keys(ITEMS);
+      for (var i = 0; i < iterIds.length; i++) {
+        var iid = iterIds[i];
+        var it = ITEMS[iid];
+        var owned = ownedKeys.indexOf(iid) >= 0;
+        var label = it.icon + ' ' + it.name + (owned ? ' (×' + player.inventory[iid] + ')' : '');
+        var sel = (iid === currentId) ? ' selected' : '';
+        var opt = '<option value="' + iid + '"' + sel + '>' + label + '</option>';
+        if (it.category === 'weapon') weaponHtml += opt;
+        else itemHtml += opt;
+      }
+      html += '<optgroup label="武器">' + weaponHtml + '</optgroup>';
+      html += '<optgroup label="アイテム">' + itemHtml + '</optgroup>';
+      return html;
+    }
+    var selects = document.querySelectorAll('.dpad-slot-select');
+    for (var si = 0; si < selects.length; si++) {
+      var sEl = selects[si];
+      var dir = sEl.getAttribute('data-dpad-dir');
+      var slots = dpadAssignments[dpadMode] || {};
+      sEl.innerHTML = buildOptions(slots[dir] || '');
+    }
+    // Mode tab visual state
+    var modeTabs = document.querySelectorAll('.dpad-mode-tab');
+    for (var mi = 0; mi < modeTabs.length; mi++) {
+      modeTabs[mi].classList.toggle('active', modeTabs[mi].getAttribute('data-dpad-mode') === dpadMode);
+    }
+    if (_dpadConfigBound) return;
+    _dpadConfigBound = true;
+    // Bind once
+    for (var bi = 0; bi < modeTabs.length; bi++) {
+      modeTabs[bi].addEventListener('click', function (ev) {
+        var m = ev.currentTarget.getAttribute('data-dpad-mode');
+        if (m !== 'weapon' && m !== 'item') return;
+        dpadMode = m;
+        saveDpadAssignments();
+        updateDpadHud();
+        refreshDpadConfigUI();
+      });
+    }
+    var selects2 = document.querySelectorAll('.dpad-slot-select');
+    for (var ssi = 0; ssi < selects2.length; ssi++) {
+      selects2[ssi].addEventListener('change', function (ev) {
+        var d = ev.currentTarget.getAttribute('data-dpad-dir');
+        var v = ev.currentTarget.value;
+        if (!dpadAssignments[dpadMode]) dpadAssignments[dpadMode] = {};
+        dpadAssignments[dpadMode][d] = v;
+        saveDpadAssignments();
+        updateDpadHud();
+      });
+    }
   }
 
   function refreshPhoneUI() {
@@ -6562,6 +6744,7 @@
     el('actionBtn').style.display = 'none';
     el('phoneBtn').style.display = 'none';
     el('floorHUD').style.display = 'none';
+    var _dh = el('dpadHud'); if (_dh) _dh.style.display = 'none';
     el('objectiveHUD').style.display = 'none';
 
     hideOverlay('gameOverScreen');

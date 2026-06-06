@@ -20,7 +20,7 @@
   <meta name="twitter:title" content="THE BACKROOMS — featuring HARUKI">
   <meta name="twitter:description" content="一人称モバイル探索ホラー。Level 0 から no-clip で階層を降下。壁の向こうにカレが待つ。">
   <title>THE BACKROOMS</title>
-  <link rel="stylesheet" href="assets/css/game.css?v=90">
+  <link rel="stylesheet" href="assets/css/game.css?v=91">
 </head>
 <body oncontextmenu="return false;">
 
@@ -572,6 +572,23 @@
             </div>
 
             <div class="settings-section">
+              <div class="settings-section-title">十字キー割当 (ゲームパッド)</div>
+              <div class="settings-card dpad-config">
+                <div class="dpad-mode-tabs">
+                  <button type="button" class="dpad-mode-tab active" data-dpad-mode="item">アイテムモード</button>
+                  <button type="button" class="dpad-mode-tab" data-dpad-mode="weapon">武器モード</button>
+                </div>
+                <p class="dpad-hint">R1 でゲーム中にモード切替。所持品から選択。</p>
+                <div class="dpad-slots">
+                  <div class="dpad-slot-row"><span class="dpad-slot-label">↑</span><select class="dpad-slot-select" data-dpad-dir="up"></select></div>
+                  <div class="dpad-slot-row"><span class="dpad-slot-label">↓</span><select class="dpad-slot-select" data-dpad-dir="down"></select></div>
+                  <div class="dpad-slot-row"><span class="dpad-slot-label">←</span><select class="dpad-slot-select" data-dpad-dir="left"></select></div>
+                  <div class="dpad-slot-row"><span class="dpad-slot-label">→</span><select class="dpad-slot-select" data-dpad-dir="right"></select></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-section">
               <div class="settings-section-title">詳細</div>
               <div class="settings-card">
                 <button id="optTitleSettingsBtn" type="button" class="settings-row settings-action" onclick="window.__titleAction&&window.__titleAction('settingsFromPhone')">
@@ -626,6 +643,18 @@
   <!-- Floor/Level Indicator HUD -->
   <div id="floorHUD" class="hud-floor" style="display:none;">
     <span id="floorText">LV0</span>
+  </div>
+
+  <!-- D-pad Quick-use HUD (gamepad mode indicator) -->
+  <div id="dpadHud" class="hud-dpad" style="display:none;">
+    <div class="hud-dpad-mode" id="dpadHudMode">ITEM</div>
+    <div class="hud-dpad-grid">
+      <div class="hud-dpad-slot hud-dpad-up"    id="dpadSlotUp"></div>
+      <div class="hud-dpad-slot hud-dpad-left"  id="dpadSlotLeft"></div>
+      <div class="hud-dpad-slot hud-dpad-right" id="dpadSlotRight"></div>
+      <div class="hud-dpad-slot hud-dpad-down"  id="dpadSlotDown"></div>
+    </div>
+    <div class="hud-dpad-hint">R1 切替</div>
   </div>
 
   <!-- Danger Indicator (directional) -->
@@ -739,8 +768,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="assets/js/engine.js?v=90"></script>
-  <script src="assets/js/game.js?v=90"></script>
+  <script src="assets/js/engine.js?v=91"></script>
+  <script src="assets/js/game.js?v=91"></script>
 
   <!-- POST-LOAD VERIFICATION + DIRECT BINDING FALLBACK
        After game.js IIFE runs, this script confirms __titleAction is the real one.

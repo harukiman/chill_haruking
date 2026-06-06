@@ -2515,6 +2515,97 @@ button {
   pointer-events: none;
 }
 
+/* D-pad quick-use HUD (gamepad mode only) */
+.hud-dpad {
+  position: fixed;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 70px);
+  left: 12px;
+  width: 92px;
+  background: rgba(0, 0, 0, 0.62);
+  border: 1px solid #483910;
+  padding: 4px 6px 6px;
+  z-index: 12;
+  color: #d4b340;
+  pointer-events: none;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+}
+.hud-dpad-mode {
+  text-align: center;
+  font-size: 10px;
+  font-weight: bold;
+  color: #f0c850;
+  padding: 1px 0 3px;
+  border-bottom: 1px solid #483910;
+  margin-bottom: 3px;
+}
+.hud-dpad-grid {
+  display: grid;
+  grid-template-columns: 22px 22px 22px;
+  grid-template-rows: 22px 22px 22px;
+  justify-content: center;
+  gap: 2px;
+}
+.hud-dpad-slot {
+  background: #1a1408;
+  border: 1px solid #806020;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+  line-height: 1;
+}
+.hud-dpad-up    { grid-column: 2; grid-row: 1; }
+.hud-dpad-left  { grid-column: 1; grid-row: 2; }
+.hud-dpad-right { grid-column: 3; grid-row: 2; }
+.hud-dpad-down  { grid-column: 2; grid-row: 3; }
+.hud-dpad-hint {
+  text-align: center;
+  margin-top: 3px;
+  font-size: 8px;
+  color: #806020;
+}
+.hud-dpad-slot.empty { opacity: 0.3; }
+
+/* D-pad config UI in phone OPTIONS tab */
+.dpad-config { padding: 8px 10px; }
+.dpad-mode-tabs {
+  display: flex; gap: 4px; margin-bottom: 6px;
+}
+.dpad-mode-tab {
+  flex: 1;
+  background: #1a1408;
+  border: 1px solid #483910;
+  color: #806020;
+  font-size: 11px;
+  padding: 6px 8px;
+  cursor: pointer;
+  letter-spacing: 0.1em;
+}
+.dpad-mode-tab.active {
+  background: #2a2010;
+  border-color: #d4b340;
+  color: #f0c850;
+}
+.dpad-hint { font-size: 10px; color: #806020; margin: 0 0 6px; }
+.dpad-slots { display: flex; flex-direction: column; gap: 4px; }
+.dpad-slot-row {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(0,0,0,0.4);
+  padding: 4px 6px;
+  border: 1px solid #322610;
+}
+.dpad-slot-label {
+  font-size: 16px; color: #d4b340;
+  width: 18px; text-align: center;
+}
+.dpad-slot-select {
+  flex: 1;
+  background: #1a1408;
+  border: 1px solid #483910;
+  color: #d4b340;
+  font-size: 12px;
+  padding: 4px 6px;
+}
+
 /* ============================================================
  *  DANGER INDICATOR
  * ============================================================ */
