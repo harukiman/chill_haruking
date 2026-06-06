@@ -415,7 +415,7 @@
     '#..#..D....D.i#....D..D..#',
     '#..####....####....####..#',
     '#........................#',
-    '#........................#',
+    '#............s...........#',
     '#........................#',
     '#..####....####....####..#',
     '#..#FF#....#..#....#FF#..#',
@@ -2031,6 +2031,7 @@
     1: 'lockpick',
     5: 'memory',
     8: 'snake',
+    9: 'cipher',
     12: 'pong'
   };
 
@@ -2491,6 +2492,124 @@
         ctx.beginPath();
         ctx.arc(ox + mgState.food.x * cs + cs / 2, oy + mgState.food.y * cs + cs / 2, cs * 0.35, 0, Math.PI * 2);
         ctx.fill();
+      }
+    },
+
+    // ── CIPHER DECODER ──
+    cipher: {
+      title: '暗号解読',
+      subtitle: 'シーザー暗号を解読 (シフト = 数字キーから推測)',
+      words: ['BACKROOMS', 'NOCLIP', 'ALMOND', 'OPERATOR', 'HOUND', 'PARTYGOER', 'WRETCH', 'CRAWLER', 'SMILER', 'HOTEL'],
+      init: function () {
+        var pool = MINI_GAMES.cipher.words;
+        var word = pool[Math.floor(Math.random() * pool.length)];
+        var shift = 3 + Math.floor(Math.random() * 5); // 3-7
+        var encoded = '';
+        for (var i = 0; i < word.length; i++) {
+          var c = word.charCodeAt(i) - 65;
+          encoded += String.fromCharCode(((c + shift) % 26) + 65);
+        }
+        mgState = {
+          phase: 'play',
+          original: word,
+          encoded: encoded,
+          shift: shift,
+          guessIdx: 0,
+          guessed: '',
+          alphabet: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+          timeLeft: 30,
+          letterButtons: []
+        };
+        setMGAction('閉じる', 'gray');
+        setMGStatus('暗号: ' + encoded + ' (シフト=' + shift + ')');
+      },
+      action: function () { closeMiniGame(); },
+      onTap: function (cx, cy, w, h) {
+        if (mgState.phase !== 'play') return;
+        // Detect tap on letter buttons
+        for (var i = 0; i < mgState.letterButtons.length; i++) {
+          var b = mgState.letterButtons[i];
+          if (cx >= b.x && cx <= b.x + b.w && cy >= b.y && cy <= b.y + b.h) {
+            mgState.guessed += b.letter;
+            mgState.guessIdx++;
+            if (audioInitialized) GameEngine.playSound('clock_tick');
+            if (mgState.guessIdx >= mgState.original.length) {
+              if (mgState.guessed === mgState.original) {
+                mgState.phase = 'win';
+                setMGStatus('正解! 解読成功!');
+                setMGAction('終了', 'green');
+                var rewards = ['almond_milk', 'voucher', 'flare'];
+                var rwd = rewards[Math.floor(Math.random() * rewards.length)];
+                player.inventory[rwd] = (player.inventory[rwd] || 0) + 1;
+                toast(ITEMS[rwd].name + ' を入手');
+                unlockAchievement('won_minigame');
+                if (audioInitialized) GameEngine.playSound('item_get');
+              } else {
+                mgState.phase = 'lose';
+                setMGStatus('不正解。正解: ' + mgState.original);
+                setMGAction('終了', 'red');
+              }
+            } else {
+              setMGStatus('入力: ' + mgState.guessed + '_');
+            }
+            break;
+          }
+        }
+      },
+      update: function (dt) {
+        if (mgState.phase !== 'play') return;
+        mgState.timeLeft -= dt;
+        if (mgState.timeLeft <= 0) {
+          mgState.phase = 'lose';
+          setMGStatus('時間切れ! 正解: ' + mgState.original);
+          setMGAction('終了', 'red');
+        }
+      },
+      draw: function (ctx, w, h) {
+        ctx.fillStyle = '#0d0c08';
+        ctx.fillRect(0, 0, w, h);
+        // Encoded word at top
+        ctx.font = 'bold 22px monospace';
+        ctx.fillStyle = '#d4b340';
+        ctx.textAlign = 'center';
+        ctx.fillText(mgState.encoded, w / 2, 40);
+        // Shift hint
+        ctx.font = '12px monospace';
+        ctx.fillStyle = '#b09040';
+        ctx.fillText('SHIFT = ' + mgState.shift, w / 2, 60);
+        // Guess display
+        ctx.font = 'bold 18px monospace';
+        ctx.fillStyle = '#88c050';
+        ctx.fillText(mgState.guessed + (mgState.phase === 'play' ? '_' : ''), w / 2, 88);
+        // Timer
+        ctx.font = '10px monospace';
+        ctx.fillStyle = mgState.timeLeft < 10 ? '#c63a3a' : '#786020';
+        ctx.fillText('TIME ' + Math.ceil(mgState.timeLeft) + 's', w / 2, 106);
+        // Letter buttons (A-Z grid)
+        var cols = 6;
+        var rows = 5;  // 26 letters / 6 = 4.33 → 5 rows (last row partial)
+        var gridY = 120;
+        var btnW = (w - 30) / cols;
+        var btnH = (h - gridY - 16) / rows;
+        mgState.letterButtons = [];
+        for (var li = 0; li < 26; li++) {
+          var letter = mgState.alphabet[li];
+          var r = Math.floor(li / cols);
+          var c = li % cols;
+          var bx = 15 + c * btnW;
+          var by = gridY + r * btnH;
+          mgState.letterButtons.push({ letter: letter, x: bx + 2, y: by + 2, w: btnW - 4, h: btnH - 4 });
+          ctx.fillStyle = '#1a1408';
+          ctx.fillRect(bx + 2, by + 2, btnW - 4, btnH - 4);
+          ctx.strokeStyle = '#382a08';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(bx + 2, by + 2, btnW - 4, btnH - 4);
+          ctx.font = 'bold 14px monospace';
+          ctx.fillStyle = '#d4b340';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(letter, bx + btnW / 2, by + btnH / 2);
+        }
       }
     },
 
