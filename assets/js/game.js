@@ -436,6 +436,34 @@
     '##########################'
   ];
 
+  // ── LEVEL 13 — THE LIBRARY ─────────────────────────────
+  // Dense bookshelf maze with reading rooms and a central reference desk.
+  // Lots of narrow aisles to break up the "long corridor" feel.
+  var LV13_ROWS = [
+    '############################',
+    '#P.........................#',
+    '#.FFFFF..FFFFF..FFFFF..FFF.#',
+    '#.F...F..F...F..F...F..F.F.#',
+    '#.F.i.F..F.n.F..F...F..F.F.#',
+    '#.F...D..D...D..D...D..D.F.#',
+    '#.FFFFF..FFFFF..FFFFF..FFF.#',
+    '#..........................#',
+    '#..FFFFFFFFFF...FFFFFFFFF..#',
+    '#..F............F........F.#',
+    '#..F..i..n.....F..s......F.#',
+    '#..F............F........F.#',
+    '#..FFFFFFFFFFFFFFFFFFFFFFF.#',
+    '#..........................#',
+    '#.FFF..FFFFF..FFFFF..FFFFF.#',
+    '#.F.F..F...F..F...F..F...F.#',
+    '#.F.F..D.n.D..D.i.D..D...D.#',
+    '#.F.F..F...F..F...F..F...F.#',
+    '#.FFF..FFFFF..FFFFF..FFFFF.#',
+    '#..........................#',
+    '#..........X...............#',
+    '############################'
+  ];
+
   // ── LEVEL THEMES (palette per level) ────────────────────
   var THEMES = {
   // Override theme ambient loops with refined per-level BGM
@@ -783,6 +811,16 @@
            { type: 'partygoer', gx: 16, gy: 2 }
          ],
          timeLimit: null },
+    13: { id: 13, name: 'LEVEL 13', subtitle: 'THE LIBRARY',
+          rows: LV13_ROWS, theme: 5,
+          hint: '無限の書架。本に触れると過去のささやきが聞こえる。',
+          intro: '紙の匂い。誰も読まない文献が、私たちを読んでいる。',
+          entities: [
+            { type: 'smiler', gx: 14, gy: 12 },
+            { type: 'partygoer', gx: 5, gy: 16 },
+            { type: 'hound', gx: 24, gy: 4 }
+          ],
+          timeLimit: null },
     9: { id: 9, name: 'LEVEL 9', subtitle: 'THE SUBURBS',
          rows: LV9_ROWS, theme: 9,
          hint: 'BOSS を倒さなければ THE END の扉は開かない。武器を集めろ。',
@@ -1088,7 +1126,8 @@
     12: ['almond_water', 'energy_bar', 'voucher', 'bandage', 'flare', 'antacid', 'pistol', 'revolver'],
     // Lv9: final-boss arena — extra firepower available.
     9: ['almond_water', 'voucher', 'bandage', 'energy_bar', 'almond_milk', 'lockpick',
-        'pistol', 'shotgun', 'katana', 'revolver']
+        'pistol', 'shotgun', 'katana', 'revolver'],
+    13: ['almond_water', 'energy_bar', 'compass', 'flare', 'pistol', 'katana']
   };
 
   // ── NOTES ───────────────────────────────────────────────
@@ -4667,7 +4706,7 @@
 
   function getNextLevel(cur) {
     // Normal progression: 0→1→2→3→4→5→6→7→8→!→Fun→9→END
-    var order = [0, 1, 2, 3, 4, 5, 6, 7, 8, 11, 12, 9];
+    var order = [0, 1, 2, 3, 4, 5, 6, 7, 8, 11, 12, 13, 9];
     var idx = order.indexOf(cur);
     if (idx < 0 || idx === order.length - 1) return null;
     return order[idx + 1];
@@ -6842,10 +6881,16 @@
     var ctx = cvs.getContext('2d');
     var dpr = Math.min(window.devicePixelRatio || 1, 1.5);
     function resize() {
-      cvs.width = Math.floor(cvs.clientWidth * dpr);
-      cvs.height = Math.floor(cvs.clientHeight * dpr);
+      // Fall back to viewport dims if clientWidth is 0 (parent layout not done yet)
+      var cw = cvs.clientWidth || window.innerWidth;
+      var ch = cvs.clientHeight || window.innerHeight;
+      cvs.width = Math.max(320, Math.floor(cw * dpr));
+      cvs.height = Math.max(240, Math.floor(ch * dpr));
     }
     resize();
+    // Re-resize a frame later in case parent layout was racing
+    requestAnimationFrame(resize);
+    window.addEventListener('resize', resize);
     var startT = performance.now();
     var cancelled = false;
     var rafId = 0;
@@ -6943,6 +6988,7 @@
     return function cancel() {
       cancelled = true;
       if (rafId) cancelAnimationFrame(rafId);
+      try { window.removeEventListener('resize', resize); } catch (e) {}
     };
   }
 
@@ -7002,46 +7048,35 @@
 
     // Cinematic plays scenes, but final frame waits for tap to proceed.
     // Scene 1: night back-alley walking (3s)
+    // Scene 0 (FPS) is now the PRIMARY background — runs the whole intro.
+    // Text + brief CSS scenes layer on top so the moving footage is always visible.
     setTimeout(function () {
       if (cancelled) return;
-      s1.classList.add('active');
-      startFootsteps();
-      setLine('...深夜、会社からの帰り道。');
-    }, 300);
-    setTimeout(function () { if (!cancelled) setLine('いつもの裏路地。'); }, 2200);
-
-    // Scene 2: wallpaper closeup (3s)
-    setTimeout(function () {
-      if (cancelled) return;
-      stopFootsteps();
-      s1.classList.remove('active');
-      s2.classList.add('active');
-      setLine('— 足元の感触が、消えた。');
-      if (audioInitialized) GameEngine.playSound('static');
-    }, 4000);
-
-    // Scene 3: falling (2.5s)
-    setTimeout(function () {
-      if (cancelled) return;
-      s2.classList.remove('active');
-      s3.classList.add('active');
-      setLine('黄色い、無限の、壁紙の世界へ。');
-      if (audioInitialized) GameEngine.playSound('thunder');
-    }, 6500);
-
-    // Scene 0 (FPS): yellow corridor walk — proves "you're in the Backrooms"
-    setTimeout(function () {
-      if (cancelled) return;
-      s3.classList.remove('active');
       if (s0) s0.classList.add('active');
       startFootsteps();
-      setLine('— 立ち上がる。果てしなく続く、黄色い廊下。');
-      fpsCancel = runIntroFpsScene(4500, function () {
+      setLine('...深夜、会社からの帰り道。');
+      // Long-running FPS walk for the full intro length
+      fpsCancel = runIntroFpsScene(11000, function () {
         if (cancelled) return;
         stopFootsteps();
         eyes.classList.add('partial');
         setLine('[ 画面をタップして開始 ]');
       });
+    }, 200);
+    setTimeout(function () { if (!cancelled) setLine('いつもの裏路地 — の、はずだった。'); }, 2400);
+    setTimeout(function () {
+      if (cancelled) return;
+      setLine('— 足元の感触が、消えた。');
+      if (audioInitialized) GameEngine.playSound('static');
+    }, 4500);
+    setTimeout(function () {
+      if (cancelled) return;
+      setLine('黄色い、無限の、壁紙の世界へ。');
+      if (audioInitialized) GameEngine.playSound('thunder');
+    }, 7000);
+    setTimeout(function () {
+      if (cancelled) return;
+      setLine('— 立ち上がる。果てしなく続く、黄色い廊下。');
     }, 8500);
     // No auto-finish — user taps overlay or skip button to advance
     // Safety net: auto-finish after 30s if no tap
@@ -7188,7 +7223,7 @@
   function openLevelSelect() {
     var grid = el('lvlselGrid');
     grid.innerHTML = '';
-    var order = [0, 1, 2, 3, 4, 5, 6, 7, 8, 11, 12, 9];
+    var order = [0, 1, 2, 3, 4, 5, 6, 7, 8, 11, 12, 13, 9];
     for (var i = 0; i < order.length; i++) {
       var lvId = order[i];
       var def = LEVELS[lvId];
