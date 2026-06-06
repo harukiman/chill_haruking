@@ -6051,11 +6051,14 @@
       stopFootsteps();
       hideOverlay('introOverlay');
       if (audioInitialized) GameEngine.stopLoop('wind');
-      el('introSkipBtn').removeEventListener('click', skipHandler);
+      try { el('introSkipBtn').removeEventListener('click', skipHandler); } catch (e) {}
+      try { el('introOverlay').removeEventListener('click', skipHandler); } catch (e) {}
       onDone();
     }
     skipHandler = finish;
+    // Multiple ways to skip: button OR tap anywhere on the overlay
     el('introSkipBtn').addEventListener('click', skipHandler);
+    el('introOverlay').addEventListener('click', skipHandler);
 
     // Scene 1: night back-alley walking
     setTimeout(function () {
@@ -6677,6 +6680,16 @@
       });
     } catch (e) { console.error('viewport setup failed', e); }
   }
+
+  // Diagnostic: indicate that game.js IIFE has reached this point and __titleAction
+  // is being overridden with the real implementation. Sets a visible marker.
+  try {
+    var diag = document.getElementById('jsLoadedDiag');
+    if (diag) {
+      diag.textContent = 'JS ✓';
+      diag.style.color = '#88c050';
+    }
+  } catch (e) {}
 
   // Global title action façade — used by inline onclick attrs as a robust fallback
   // so title buttons always work even if addEventListener fails for any reason.
