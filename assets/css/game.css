@@ -1816,36 +1816,42 @@ body {
   position: fixed;
   top: calc(env(safe-area-inset-top, 8px) + 10px);
   left: 50%;
-  transform: translateX(-50%) translateY(-100%);
-  background: linear-gradient(180deg, #2a1c00, #0a0805);
-  border: 1px solid #d4b340;
-  box-shadow: 0 0 20px rgba(212, 179, 64, 0.5);
-  padding: 10px 16px;
+  transform: translateX(-50%) translateY(-150%);
+  background: linear-gradient(180deg, rgba(58, 42, 8, 0.95) 0%, rgba(20, 16, 4, 0.95) 100%);
+  border: 1px solid rgba(212, 179, 64, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 8px 28px rgba(212, 179, 64, 0.25), inset 0 1px 0 rgba(240, 220, 138, 0.2);
+  padding: 12px 18px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   z-index: 70;
-  min-width: 240px;
-  max-width: 80vw;
-  transition: transform 0.35s ease-out;
+  min-width: 260px;
+  max-width: 86vw;
+  border-radius: 14px;
+  transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .achievement-toast.show {
   transform: translateX(-50%) translateY(0);
 }
 .ach-icon {
-  font-size: 28px;
+  font-size: 32px;
+  filter: drop-shadow(0 0 8px rgba(212, 179, 64, 0.5));
 }
 .ach-body { flex: 1; }
 .ach-label {
   font-size: 9px;
   color: #b09040;
   letter-spacing: 0.3em;
+  text-transform: uppercase;
 }
 .ach-name {
-  font-size: 12px;
+  font-size: 13px;
   color: #f0dc8a;
   font-weight: bold;
-  margin-top: 2px;
+  margin-top: 3px;
+  text-shadow: 0 0 6px rgba(212, 179, 64, 0.3);
 }
 
 /* ============================================================
