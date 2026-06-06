@@ -3578,13 +3578,17 @@
       var smileW = spriteW * 0.4;
       var smileH = spriteH * 0.08;
       var sStartX = screenX - smileW / 2;
-      // Glow
-      var gradRad = spriteW * 0.4;
-      var grad = ctx.createRadialGradient(screenX, smileY, 0, screenX, smileY, gradRad);
-      grad.addColorStop(0, 'rgba(220,220,220,' + (0.3 * fogFactor) + ')');
-      grad.addColorStop(1, 'rgba(220,220,220,0)');
-      ctx.fillStyle = grad;
-      ctx.fillRect(screenX - gradRad, smileY - gradRad, gradRad * 2, gradRad * 2);
+      // Glow — only if center column visible (avoid showing through walls)
+      var smilerCenterCol = Math.round(screenX);
+      var smilerCenterVisible = smilerCenterCol >= 0 && smilerCenterCol < w && zBuf[smilerCenterCol] > depthTiles;
+      if (smilerCenterVisible) {
+        var gradRad = spriteW * 0.4;
+        var grad = ctx.createRadialGradient(screenX, smileY, 0, screenX, smileY, gradRad);
+        grad.addColorStop(0, 'rgba(220,220,220,' + (0.3 * fogFactor) + ')');
+        grad.addColorStop(1, 'rgba(220,220,220,0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(screenX - gradRad, smileY - gradRad, gradRad * 2, gradRad * 2);
+      }
       // Teeth (white blocks)
       ctx.fillStyle = 'rgba(245,245,235,' + fogFactor + ')';
       var teethCount = 8;
@@ -3713,15 +3717,19 @@
       var hkBodyW = spriteW * 0.5;
       var hkBodyX = screenX - hkBodyW / 2;
 
-      // Compute visibility ratio (for aura culling — auras only drawn if mostly visible)
+      // Compute visibility ratio (for aura culling — auras only drawn if center + majority visible)
       var auraCenterCol = Math.round(screenX);
       var auraHalfW = Math.floor(hkSpriteH * 0.7);
-      var auraVisible = false;
-      // Sample 5 columns across aura width
-      for (var avs = -2; avs <= 2; avs++) {
-        var avc = Math.min(w - 1, Math.max(0, auraCenterCol + avs * (auraHalfW / 2)));
-        if (zBuf[avc] > depthTiles) { auraVisible = true; break; }
+      var auraVisCount = 0;
+      var auraSamples = 9;
+      var auraSampleStep = (auraHalfW * 2) / (auraSamples - 1);
+      for (var avs = 0; avs < auraSamples; avs++) {
+        var avc = Math.min(w - 1, Math.max(0, Math.round(auraCenterCol - auraHalfW + avs * auraSampleStep)));
+        if (zBuf[avc] > depthTiles) auraVisCount++;
       }
+      // Aura draws only if majority (>60%) visible AND center column visible
+      var centerVisible = zBuf[auraCenterCol] && zBuf[auraCenterCol] > depthTiles;
+      var auraVisible = centerVisible && auraVisCount >= Math.ceil(auraSamples * 0.6);
 
       // Pre-aura: large dark red halo (skip if mostly occluded)
       if (depthTiles > 1 && auraVisible) {
