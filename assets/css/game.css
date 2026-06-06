@@ -173,6 +173,7 @@ body {
   z-index: 2;
   padding: 20px 16px;
   max-width: 92vw;
+  width: 100%;
 }
 .title-pre {
   font-size: 10px;
