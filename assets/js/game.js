@@ -1068,6 +1068,12 @@
   var ACH_KEY = 'thebackrooms_ach_v1';
   var BEST_KEY = 'thebackrooms_best_v1';
   var DIFF_KEY = 'thebackrooms_diff_v1';
+  var TUT_KEY = 'thebackrooms_tut_v1';
+
+  // First-run tutorial state
+  var tutorialDone = false;
+  var tutorialStep = -1;
+  var tutorialTimer = 0;
 
   // Difficulty modes (multipliers applied to SAN drain + enemy speed)
   var DIFFICULTIES = {
@@ -1449,8 +1455,40 @@
     el('objectiveText').textContent = currentLevelDef.intro;
     setTimeout(function () { hideOverlay('objectiveHUD'); el('objectiveHUD').style.display = 'none'; }, 5000);
 
+    // First-time tutorial trigger (only Lv0, first run)
+    if (currentLevel === 0 && !tutorialDone) {
+      tutorialStep = 0;
+      tutorialTimer = 6;
+      setTimeout(function () { showTutorialStep(0); }, 6000);
+    }
+
     // Save automatically on level start
     saveGame();
+  }
+
+  var TUT_HINTS = [
+    '左スティックで移動。右スティックで視点を回せ。',
+    '同時に動かしてダッシュ。STA を消費する。',
+    '黄色いアイテム/ノートを見つけたら 赤ボタンで拾え。',
+    '黄色の▲ no-clip 地点を探せ。壁の隙間に隠れていることも。',
+    '右上のスマホでステータス・マップ・記録を確認できる。'
+  ];
+
+  function showTutorialStep(step) {
+    if (tutorialDone) return;
+    if (step >= TUT_HINTS.length) {
+      tutorialDone = true;
+      localStorage.setItem(TUT_KEY, '1');
+      return;
+    }
+    var hud = el('objectiveHUD');
+    var txt = el('objectiveText');
+    hud.style.display = 'block';
+    txt.textContent = '[ヒント] ' + TUT_HINTS[step];
+    setTimeout(function () {
+      hud.style.display = 'none';
+      setTimeout(function () { showTutorialStep(step + 1); }, 2500);
+    }, 5500);
   }
 
   // ============================================================
@@ -1771,6 +1809,10 @@
   function loadDifficulty() {
     var s = localStorage.getItem(DIFF_KEY);
     if (s && DIFFICULTIES[s]) currentDifficulty = s;
+  }
+
+  function loadTutorialDone() {
+    tutorialDone = localStorage.getItem(TUT_KEY) === '1';
   }
   function setDifficulty(id) {
     if (!DIFFICULTIES[id]) return;
@@ -3926,6 +3968,7 @@
     loadAchievements();
     loadBestTimes();
     loadDifficulty();
+    loadTutorialDone();
     bindEvents();
     updateTitleButtons();
     showOverlay('titleScreen');
