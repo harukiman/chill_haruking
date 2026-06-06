@@ -20,7 +20,7 @@
   <meta name="twitter:title" content="THE BACKROOMS — featuring HARUKI">
   <meta name="twitter:description" content="一人称モバイル探索ホラー。Level 0 から no-clip で階層を降下。壁の向こうにカレが待つ。">
   <title>THE BACKROOMS</title>
-  <link rel="stylesheet" href="assets/css/game.css?v=65">
+  <link rel="stylesheet" href="assets/css/game.css?v=66">
 </head>
 <body oncontextmenu="return false;">
 
@@ -118,7 +118,7 @@
     <button id="titleReloadBtn" class="title-reload-btn" type="button" onclick="window.__hardReload&&window.__hardReload()">↻ 再読込</button>
     <div id="tapToStartHint" class="tap-to-start-hint hidden"></div>
     <p class="copyright">THE BACKROOMS — featuring HARUKI &copy; 2026</p>
-    <p class="version-text" id="versionText">ver 4.7 (JS Loaded Diag)</p>
+    <p class="version-text" id="versionText">ver 4.8 (3-layer Title Binding)</p>
     <p class="title-ach-counter" id="titleAchCounter"></p>
     <p id="jsLoadedDiag" style="position:absolute;bottom:4px;right:4px;font-size:9px;color:#806020;letter-spacing:0.1em;z-index:5;">JS ?</p>
   </div>
@@ -656,8 +656,58 @@
   </div>
 
   <!-- Scripts -->
-  <script src="assets/js/engine.js?v=65"></script>
-  <script src="assets/js/game.js?v=65"></script>
+  <script src="assets/js/engine.js?v=66"></script>
+  <script src="assets/js/game.js?v=66"></script>
+
+  <!-- POST-LOAD VERIFICATION + DIRECT BINDING FALLBACK
+       After game.js IIFE runs, this script confirms __titleAction is the real one.
+       If it's still the no-op failsafe (meaning game.js failed), this binds basic
+       direct handlers so users at least get a page reload option. -->
+  <script>
+  (function () {
+    function ready(cb) {
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', cb);
+      else cb();
+    }
+    ready(function () {
+      // Check if game.js loaded successfully
+      var diag = document.getElementById('jsLoadedDiag');
+      var loaded = diag && diag.textContent.indexOf('✓') !== -1;
+      if (!loaded) {
+        // game.js IIFE didn't complete — show user a clear error + reload button
+        if (diag) {
+          diag.textContent = 'JS ✗ LOAD FAIL';
+          diag.style.color = '#ff4040';
+          diag.style.fontSize = '12px';
+          diag.style.fontWeight = 'bold';
+        }
+        // Add visible error banner
+        var banner = document.createElement('div');
+        banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#400;color:#fff;padding:14px;text-align:center;z-index:99999;font-size:14px;line-height:1.5;';
+        banner.innerHTML = 'JavaScript の読み込みに失敗しました。<br><button onclick="window.__hardReload&&window.__hardReload()" style="margin-top:8px;padding:8px 20px;background:#fff;color:#400;border:0;border-radius:6px;font-weight:bold;cursor:pointer;">↻ 強制再読込</button>';
+        document.body.appendChild(banner);
+      }
+      // Also direct-bind title buttons via addEventListener as a third defense layer
+      var actions = {
+        startBtn: 'start', continueBtn: 'continue', endlessBtn: 'endless',
+        freeRoamBtn: 'freeroam', difficultyBtn: 'difficulty',
+        controlsBtn: 'controls', titleSettingsBtn: 'settings',
+        titleResetBtn: 'reset', titleReloadBtn: '__reload'
+      };
+      for (var id in actions) {
+        (function (id, act) {
+          var btn = document.getElementById(id);
+          if (!btn) return;
+          btn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            if (act === '__reload') { window.__hardReload && window.__hardReload(); return; }
+            if (typeof window.__titleAction === 'function') window.__titleAction(act);
+          });
+        })(id, actions[id]);
+      }
+    });
+  })();
+  </script>
 
 </body>
 </html>
