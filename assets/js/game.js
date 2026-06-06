@@ -1118,15 +1118,15 @@
   var entitySeenTypes = {}; // {type: true}
 
   var ENTITY_INTROS = {
-    hound: { name: 'HOUND', desc: '低い四足の捕食者。動くものに反応する。\n走るな。歩け。' },
-    smiler: { name: 'SMILER', desc: '暗闇に浮かぶ白い歯。\n見つめると意識を奪われる。' },
-    skinstealer: { name: 'SKIN-STEALER', desc: '死体のフリをして近付ける。\n触れるな。鏡が有効。' },
-    partygoer: { name: 'PARTYGOER', desc: '陽気な笑顔と帽子。\n陽気さで殴ってくる。' },
-    crawler: { name: 'CRAWLER', desc: '低くて速い。多眼。\n突進と撤退を繰り返す。' },
-    wretch: { name: 'WRETCH', desc: '動かない。だが見つめると胸の穴に SAN を吸われる。\n目を逸らせ。' },
-    boss: { name: 'THE OPERATOR', desc: '王冠を被った階層支配者。\n3 段階で姿を変える。フレア/鏡で攻撃。' },
-    mrhotel: { name: 'MR. HOTEL', desc: 'シルクハットの男。顔は無い。\n4 マス以内で SAN を継続的に削る。' },
-    haruki: { name: 'HARUKI', desc: '前のホテルから no-clip した存在。\nお前と同じ。だが、戻ろうとしない。\n追ってくる理由は、ただ "あなただから"。' }
+    hound: { name: 'HOUND', desc: 'バックルーム公式分類 Class 3。\n低い四足の捕食者で人間の頭部を持つ。\n動くものに反応するため、走らずゆっくり歩け。' },
+    smiler: { name: 'SMILER', desc: 'バックルーム公式分類 Class 2。\n暗闇に浮かぶ無数の白い歯と目だけが見える。\n直視せず、視線を逸らせばすり抜ける。\n見つめ続けると引き込まれる。' },
+    skinstealer: { name: 'SKIN-STEALER', desc: 'バックルーム公式分類 Class 4。\nLevel 4 オフィスに棲息。\n死体や同僚の皮を被って近付き、触れた者の皮を奪う。\n鏡を使えば本性を晒し、消滅させられる。' },
+    partygoer: { name: 'PARTYGOER', desc: 'バックルーム公式分類 Class 3。\nLevel Fun=) の住人。塗装された笑顔と三角帽。\n陽気な暴力でお前を「祝う」。フレアで一時退避可能。' },
+    crawler: { name: 'CRAWLER', desc: 'バックルーム公式分類 Class 2。\n複数の眼と長い四肢。配管や狭い空間を好む。\n静止 → 突進 → 撤退の三段階を繰り返す。' },
+    wretch: { name: 'WRETCH', desc: 'バックルーム公式分類 Class 3 (Watcher 型)。\n動かないが、視線を合わせた者の SAN を胸の空洞へ吸い込む。\n目を逸らせば実害は無い。' },
+    boss: { name: 'THE ARCHITECT', desc: 'バックルーム公式分類 Class 5 (Apex)。\nLevel 9 The Suburbs を構築・管理する存在。\n王冠と赤い目。3 段階で攻撃パターンが変化する。\nフレア (50dmg) / 鏡 (100dmg) で抵抗可能。' },
+    mrhotel: { name: 'MR. HOTEL', desc: 'バックルーム公式分類 Class 4。\nLevel 5 ホテルの「支配人」。シルクハットに顔の無いスーツ。\n名前を尋ねられても答えるな。盗まれる。\n4 マス以内で SAN を継続吸引。' },
+    haruki: { name: 'HARUKI', desc: '非公式。前ホテルからの no-clipper。\nお前を追って壁の向こうまで来た存在。\n姿は不定形だが、お前の最も恐ろしい記憶として現れる。\n電話のベルが近接の兆候。' }
   };
 
   // First-run tutorial state
@@ -3568,46 +3568,86 @@
         ctx.fill();
       }
     } else if (e.type === 'haruki') {
-      // HARUKI sprite — uses haruki.png head, dark body
-      var hkSpriteH = spriteH * 1.0;
-      var hkSpriteY = startY;
-      var hkBodyW = spriteW * 0.45;
+      // HARUKI sprite — uses haruki.png head + dark body, with multi-layer enhancement
+      var hkSpriteH = spriteH * 1.05;
+      var hkSpriteY = startY - spriteH * 0.025;
+      var hkBodyW = spriteW * 0.5;
       var hkBodyX = screenX - hkBodyW / 2;
-      // Dark body
+
+      // Pre-aura: large dark red halo (behind everything)
+      if (depthTiles > 1) {
+        ctx.globalAlpha = Math.min(0.45, fogFactor * 0.6);
+        var preAuraR = hkSpriteH * 0.7;
+        var preGrad = ctx.createRadialGradient(screenX, hkSpriteY + hkSpriteH * 0.5, 0,
+                                                 screenX, hkSpriteY + hkSpriteH * 0.5, preAuraR);
+        preGrad.addColorStop(0, 'rgba(180,20,20,0.6)');
+        preGrad.addColorStop(0.5, 'rgba(120,10,10,0.3)');
+        preGrad.addColorStop(1, 'rgba(80,0,0,0)');
+        ctx.fillStyle = preGrad;
+        ctx.fillRect(screenX - preAuraR, hkSpriteY + hkSpriteH * 0.5 - preAuraR, preAuraR * 2, preAuraR * 2);
+        ctx.globalAlpha = fogFactor;
+      }
+
+      // Dark body shadow
       drawShapedSprite(ctx, hkBodyX, hkSpriteY + hkSpriteH * 0.35, hkBodyW, hkSpriteH * 0.65,
-        screenX, depthTiles, zBuf, w, '#1a0808', '#080000');
-      // Head: use haruki.png or haruki_scary.png when close
+        screenX, depthTiles, zBuf, w, '#1a0808', '#000');
+
+      // Head: haruki_scary.png when close (< 3 tiles), haruki.png otherwise
       var useImg = depthTiles < 3
         ? (GameEngine.images['assets/img/haruki_scary.png'] || GameEngine.images['assets/img/haruki.png'])
         : GameEngine.images['assets/img/haruki.png'];
+
       if (useImg) {
-        var headW = spriteW * 0.55;
-        var headH = hkSpriteH * 0.45;
+        var headW = spriteW * 0.6;
+        var headH = hkSpriteH * 0.48;
         var headX = screenX - headW / 2;
         var headY = hkSpriteY;
         var startCol = Math.max(0, Math.floor(headX));
         var endCol = Math.min(w, Math.ceil(headX + headW));
+        // Draw image columns with z-buffer occlusion
         for (var col = startCol; col < endCol; col++) {
           if (zBuf[col] > depthTiles) {
             var srcX = ((col - headX) / headW) * useImg.width;
             ctx.drawImage(useImg, srcX, 0, 1, useImg.height, col, headY, 1, headH);
           }
         }
+        // Red multiply overlay on head (enhance scariness)
+        ctx.save();
+        ctx.globalCompositeOperation = 'multiply';
+        ctx.globalAlpha = depthTiles < 3 ? 0.6 : 0.35;
+        ctx.fillStyle = 'rgb(255,140,140)';
+        ctx.fillRect(headX, headY, headW, headH);
+        ctx.restore();
+        // Red highlight overlay (eyes / mouth glow)
+        ctx.save();
+        ctx.globalCompositeOperation = 'screen';
+        ctx.globalAlpha = Math.min(0.4, fogFactor * 0.5);
+        var glowGrad = ctx.createRadialGradient(
+          screenX, headY + headH * 0.4, 0,
+          screenX, headY + headH * 0.4, headH * 0.5
+        );
+        glowGrad.addColorStop(0, 'rgba(255,40,40,0.7)');
+        glowGrad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = glowGrad;
+        ctx.fillRect(headX, headY, headW, headH);
+        ctx.restore();
       } else {
         // Fallback: red blob head
-        drawShapedSprite(ctx, screenX - spriteW * 0.2, hkSpriteY, spriteW * 0.4, hkSpriteH * 0.4,
+        drawShapedSprite(ctx, screenX - spriteW * 0.25, hkSpriteY, spriteW * 0.5, hkSpriteH * 0.45,
           screenX, depthTiles, zBuf, w, '#883030', '#330000');
       }
-      // Red glow aura (like original haruki)
-      if (depthTiles > 1.5) {
-        ctx.globalAlpha = Math.min(0.4, fogFactor * 0.5);
-        var auraR = hkSpriteH * 0.5;
-        var grad = ctx.createRadialGradient(screenX, hkSpriteY + hkSpriteH * 0.5, 0,
-                                              screenX, hkSpriteY + hkSpriteH * 0.5, auraR);
-        grad.addColorStop(0, 'rgba(200,30,30,0.5)');
-        grad.addColorStop(1, 'rgba(200,30,30,0)');
-        ctx.fillStyle = grad;
-        ctx.fillRect(screenX - auraR, hkSpriteY + hkSpriteH * 0.5 - auraR, auraR * 2, auraR * 2);
+
+      // Outer rim aura (subtle pulse)
+      if (depthTiles > 1.2) {
+        var rimPulse = 0.7 + Math.sin(performance.now() * 0.004) * 0.3;
+        ctx.globalAlpha = Math.min(0.35, fogFactor * 0.45 * rimPulse);
+        var rimR = hkSpriteH * 0.55;
+        var rimGrad = ctx.createRadialGradient(screenX, hkSpriteY + hkSpriteH * 0.4, rimR * 0.6,
+                                                  screenX, hkSpriteY + hkSpriteH * 0.4, rimR);
+        rimGrad.addColorStop(0, 'rgba(0,0,0,0)');
+        rimGrad.addColorStop(1, 'rgba(255,30,30,0.6)');
+        ctx.fillStyle = rimGrad;
+        ctx.fillRect(screenX - rimR, hkSpriteY + hkSpriteH * 0.4 - rimR, rimR * 2, rimR * 2);
         ctx.globalAlpha = fogFactor;
       }
     } else if (e.type === 'mrhotel') {
