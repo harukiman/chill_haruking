@@ -4152,8 +4152,13 @@
           if (!item) continue;
           var slot = document.createElement('div');
           slot.className = 'inv-slot';
+          // Mark persistent items + show ON/OFF state for toggle items
+          var stateMark = '';
+          if (item.id === 'flashlight') stateMark = '<span class="inv-state ' + (player.flashlightOn ? 'on' : 'off') + '">' + (player.flashlightOn ? 'ON' : 'OFF') + '</span>';
+          if (item.id === 'radio') stateMark = '<span class="inv-state ' + (player.radioOn ? 'on' : 'off') + '">' + (player.radioOn ? 'ON' : 'OFF') + '</span>';
           slot.innerHTML = '<span style="font-size:28px;">' + item.icon + '</span>' +
-            (cnt > 1 ? '<span class="inv-count">' + cnt + '</span>' : '') +
+            (item.persistent ? '<span class="inv-perm">∞</span>' : (cnt > 1 ? '<span class="inv-count">' + cnt + '</span>' : '')) +
+            stateMark +
             '<span class="inv-name">' + item.name.slice(0, 6) + '</span>';
           (function (itemId) {
             slot.addEventListener('click', function () {

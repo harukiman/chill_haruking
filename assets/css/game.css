@@ -797,6 +797,27 @@ body {
   min-width: 18px;
   text-align: center;
 }
+.inv-slot .inv-perm {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  font-size: 13px;
+  font-weight: bold;
+  color: #d4b340;
+}
+.inv-slot .inv-state {
+  position: absolute;
+  bottom: 16px;
+  left: 4px;
+  right: 4px;
+  text-align: center;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  padding: 1px 0;
+  border-radius: 2px;
+}
+.inv-slot .inv-state.on  { background: rgba(80, 160, 50, 0.9); color: #fff; }
+.inv-slot .inv-state.off { background: rgba(60, 60, 60, 0.8); color: #aaa; }
 .inv-empty {
   grid-column: 1 / -1;
   text-align: center;
