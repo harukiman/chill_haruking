@@ -3907,16 +3907,25 @@
       ctx.fillStyle = 'rgba(220,40,40,' + fogFactor + ')';
       drawSpriteDot(ctx, screenX - bsW * 0.18, bsY + bsH * 0.18, Math.max(2, bsH * 0.025), zBuf, w, depthTiles);
       drawSpriteDot(ctx, screenX + bsW * 0.18, bsY + bsH * 0.18, Math.max(2, bsH * 0.025), zBuf, w, depthTiles);
-      // Boss HP bar above head
+      // Boss HP bar above head (per-column occlusion)
       if (e.bossHp !== undefined) {
         var bhpRatio = Math.max(0, e.bossHp / 200);
         var bhpY = bsY - 18;
         var bhpW = bsW * 1.5;
         var bhpX = screenX - bhpW / 2;
-        ctx.fillStyle = 'rgba(0,0,0,' + fogFactor * 0.8 + ')';
-        ctx.fillRect(bhpX, bhpY, bhpW, 6);
+        var bhpStart = Math.max(0, Math.floor(bhpX));
+        var bhpEnd = Math.min(w, Math.ceil(bhpX + bhpW));
+        // Background
+        ctx.fillStyle = 'rgba(0,0,0,' + fogFactor * 0.85 + ')';
+        for (var bhc = bhpStart; bhc < bhpEnd; bhc++) {
+          if (zBuf[bhc] > depthTiles) ctx.fillRect(bhc, bhpY, 1, 6);
+        }
+        // Fill
         ctx.fillStyle = 'rgba(200,40,40,' + fogFactor + ')';
-        ctx.fillRect(bhpX, bhpY, bhpW * bhpRatio, 6);
+        var bhpFillEnd = bhpStart + Math.floor((bhpEnd - bhpStart) * bhpRatio);
+        for (var bhc2 = bhpStart; bhc2 < bhpFillEnd; bhc2++) {
+          if (zBuf[bhc2] > depthTiles) ctx.fillRect(bhc2, bhpY, 1, 6);
+        }
       }
     } else {
       // Default — basic blob
@@ -3992,8 +4001,9 @@
     }
     if (visibleCount === 0) return; // fully occluded by walls
 
-    var fogFactor = Math.max(0.55, 1 - depthTiles / 14);
-    var pulse = 0.7 + Math.sin(phase) * 0.3;
+    // Full opacity (fogFactor min 0.85) — items should not look transparent
+    var fogFactor = Math.max(0.85, 1 - depthTiles / 14);
+    var pulse = 0.88 + Math.sin(phase) * 0.12;
     var groundY = h / 2 + (h * 0.5) / depthTiles;
     var iconBaseY = groundY - iconSize * 0.4;
     var iconY = iconBaseY + Math.sin(phase * 2) * iconSize * 0.12;
@@ -4009,7 +4019,7 @@
     var oGroundOff = iconSize * 0.4 + Math.sin(phase * 2) * iconSize * 0.12;
     var oGroundY = offSize / 2 + oGroundOff;
     var ringR = Math.max(4, iconSize * 0.5);
-    octx.globalAlpha = 0.85 * pulse;
+    octx.globalAlpha = pulse;
     var grad = octx.createRadialGradient(oCenterX, oGroundY, 0, oCenterX, oGroundY, ringR);
     grad.addColorStop(0, color);
     grad.addColorStop(1, 'transparent');
@@ -4017,24 +4027,36 @@
     octx.beginPath();
     octx.arc(oCenterX, oGroundY, ringR, 0, Math.PI * 2);
     octx.fill();
-    // Beam
-    octx.globalAlpha = 0.4 * pulse;
-    var beamW = Math.max(2, iconSize * 0.12);
+    // Beam (more visible)
+    octx.globalAlpha = 0.7 * pulse;
+    var beamW = Math.max(2, iconSize * 0.14);
     var beamH = iconSize * 1.6;
     var beamGrad = octx.createLinearGradient(oCenterX, oGroundY - beamH, oCenterX, oGroundY);
     beamGrad.addColorStop(0, 'rgba(0,0,0,0)');
+    beamGrad.addColorStop(0.5, color);
     beamGrad.addColorStop(1, color);
     octx.fillStyle = beamGrad;
     octx.fillRect(oCenterX - beamW / 2, oGroundY - beamH, beamW, beamH);
-    // Icon with outline
+    // Solid black background plate behind icon for full opacity
+    octx.globalAlpha = 0.92;
+    var plateR = iconSize * 0.55;
+    var plateGrad = octx.createRadialGradient(oCenterX, offSize / 2, 0, oCenterX, offSize / 2, plateR);
+    plateGrad.addColorStop(0, 'rgba(0, 0, 0, 0.85)');
+    plateGrad.addColorStop(0.7, 'rgba(0, 0, 0, 0.6)');
+    plateGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    octx.fillStyle = plateGrad;
+    octx.beginPath();
+    octx.arc(oCenterX, offSize / 2, plateR, 0, Math.PI * 2);
+    octx.fill();
+    // Icon with strong outline
     octx.globalAlpha = 1;
     octx.font = 'bold ' + iconSize + 'px sans-serif';
     octx.textAlign = 'center';
     octx.textBaseline = 'middle';
-    octx.fillStyle = 'rgba(0,0,0,0.85)';
-    for (var ox = -1; ox <= 1; ox++) for (var oy = -1; oy <= 1; oy++) {
+    octx.fillStyle = 'rgba(0,0,0,1)';
+    for (var ox = -2; ox <= 2; ox++) for (var oy = -2; oy <= 2; oy++) {
       if (ox === 0 && oy === 0) continue;
-      octx.fillText(displayIcon, oCenterX + ox, offSize / 2 + ox + oy);
+      octx.fillText(displayIcon, oCenterX + ox, offSize / 2 + oy);
     }
     octx.fillStyle = color;
     octx.fillText(displayIcon, oCenterX, offSize / 2);
@@ -5009,13 +5031,20 @@
       hideOverlay('tutorialOverlay');
     });
 
-    el('phoneBtn').addEventListener('click', openPhone);
-    el('closePhoneBtn').addEventListener('click', closePhone);
+    el('phoneBtn').addEventListener('click', function () {
+      openPhone();
+      if (navigator.vibrate) navigator.vibrate(10);
+    });
+    el('closePhoneBtn').addEventListener('click', function () {
+      closePhone();
+      if (navigator.vibrate) navigator.vibrate(10);
+    });
 
     var tabBtns = document.querySelectorAll('.phone-tab-btn');
     tabBtns.forEach(function (b) {
       b.addEventListener('click', function () {
         switchTab(b.getAttribute('data-tab'));
+        if (navigator.vibrate) navigator.vibrate(8);
       });
     });
 
