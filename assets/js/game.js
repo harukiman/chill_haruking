@@ -1292,6 +1292,7 @@
     player._trainTimer = 0;
     player._lastHpRatio = player.hp / player.hpMax;
     player._lastSanRatio = player.san / player.sanMax;
+    player._noClipping = false;
     GameEngine.setPlayerView(player.x, player.y, player.angle);
 
     // Entities for this level
@@ -3030,6 +3031,8 @@
   }
 
   function tryNoClip() {
+    if (player._noClipping) return; // prevent rapid-tap re-entry
+    player._noClipping = true;
     // Endless mode: pick random next, increment score
     if (gameMode === 'endless') {
       endlessFloor++;
