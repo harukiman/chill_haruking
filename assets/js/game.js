@@ -3713,8 +3713,18 @@
       var hkBodyW = spriteW * 0.5;
       var hkBodyX = screenX - hkBodyW / 2;
 
-      // Pre-aura: large dark red halo (behind everything)
-      if (depthTiles > 1) {
+      // Compute visibility ratio (for aura culling — auras only drawn if mostly visible)
+      var auraCenterCol = Math.round(screenX);
+      var auraHalfW = Math.floor(hkSpriteH * 0.7);
+      var auraVisible = false;
+      // Sample 5 columns across aura width
+      for (var avs = -2; avs <= 2; avs++) {
+        var avc = Math.min(w - 1, Math.max(0, auraCenterCol + avs * (auraHalfW / 2)));
+        if (zBuf[avc] > depthTiles) { auraVisible = true; break; }
+      }
+
+      // Pre-aura: large dark red halo (skip if mostly occluded)
+      if (depthTiles > 1 && auraVisible) {
         ctx.globalAlpha = Math.min(0.45, fogFactor * 0.6);
         var preAuraR = hkSpriteH * 0.7;
         var preGrad = ctx.createRadialGradient(screenX, hkSpriteY + hkSpriteH * 0.5, 0,
@@ -3743,41 +3753,27 @@
         var headY = hkSpriteY;
         var startCol = Math.max(0, Math.floor(headX));
         var endCol = Math.min(w, Math.ceil(headX + headW));
-        // Draw image columns with z-buffer occlusion
+        // Draw image columns with z-buffer occlusion (no full-rect overlays to avoid wall tinting)
         for (var col = startCol; col < endCol; col++) {
           if (zBuf[col] > depthTiles) {
             var srcX = ((col - headX) / headW) * useImg.width;
             ctx.drawImage(useImg, srcX, 0, 1, useImg.height, col, headY, 1, headH);
+            // Per-column red tint via direct alpha-multiplied fill
+            ctx.save();
+            ctx.globalAlpha = (depthTiles < 3 ? 0.35 : 0.18) * fogFactor;
+            ctx.fillStyle = 'rgba(180,30,30,1)';
+            ctx.fillRect(col, headY, 1, headH);
+            ctx.restore();
           }
         }
-        // Red multiply overlay on head (enhance scariness)
-        ctx.save();
-        ctx.globalCompositeOperation = 'multiply';
-        ctx.globalAlpha = depthTiles < 3 ? 0.6 : 0.35;
-        ctx.fillStyle = 'rgb(255,140,140)';
-        ctx.fillRect(headX, headY, headW, headH);
-        ctx.restore();
-        // Red highlight overlay (eyes / mouth glow)
-        ctx.save();
-        ctx.globalCompositeOperation = 'screen';
-        ctx.globalAlpha = Math.min(0.4, fogFactor * 0.5);
-        var glowGrad = ctx.createRadialGradient(
-          screenX, headY + headH * 0.4, 0,
-          screenX, headY + headH * 0.4, headH * 0.5
-        );
-        glowGrad.addColorStop(0, 'rgba(255,40,40,0.7)');
-        glowGrad.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.fillStyle = glowGrad;
-        ctx.fillRect(headX, headY, headW, headH);
-        ctx.restore();
       } else {
         // Fallback: red blob head
         drawShapedSprite(ctx, screenX - spriteW * 0.25, hkSpriteY, spriteW * 0.5, hkSpriteH * 0.45,
           screenX, depthTiles, zBuf, w, '#883030', '#330000');
       }
 
-      // Outer rim aura (subtle pulse)
-      if (depthTiles > 1.2) {
+      // Outer rim aura (subtle pulse) — also only if mostly visible
+      if (depthTiles > 1.2 && auraVisible) {
         var rimPulse = 0.7 + Math.sin(performance.now() * 0.004) * 0.3;
         ctx.globalAlpha = Math.min(0.35, fogFactor * 0.45 * rimPulse);
         var rimR = hkSpriteH * 0.55;
