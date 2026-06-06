@@ -1726,10 +1726,10 @@
     // Death check
     if (player.hp <= 0) {
       var killer = '不明';
+      var killerType = null;
       if (player.inHazard) killer = '通電床のハザード';
       else if (player.inWater) killer = '水底';
       else if (entities.length > 0) {
-        // Find closest entity
         var minD = Infinity, closestE = null;
         for (var ek = 0; ek < entities.length; ek++) {
           if (!entities[ek].alive) continue;
@@ -1741,7 +1741,16 @@
         if (closestE && minD < 3 * TS) {
           var iName = ENTITY_INTROS[closestE.type];
           killer = iName ? iName.name : closestE.type;
+          killerType = closestE.type;
         }
+      }
+      // HARUKI jumpscare
+      if (killerType === 'haruki') {
+        var hImg = GameEngine.images['assets/img/haruki_scary.png'] || GameEngine.images['assets/img/haruki.png'];
+        if (hImg) GameEngine.flashImage(hImg, 1000);
+        if (audioInitialized) GameEngine.playSound('jumpscare');
+        GameEngine.redFlash();
+        GameEngine.shakeScreen(20, 0.8);
       }
       die('HP消失', 'HP がゼロになった。\n死因: ' + killer);
       return;
