@@ -4507,19 +4507,30 @@
     if (currentDifficulty === 'chaos') unlockAchievement('play_chaos');
     if (audioInitialized) {
       GameEngine.stopAll();
-      // Quiet during transition
+      // Triumphant chord stinger so clearing feels earned
+      GameEngine.playSound('level_clear');
     }
-    // No-clip flash
+    // No-clip flash — extended a beat so the celebration audio lands
     var flash = el('noclipFlash');
     flash.style.display = 'block';
     flash.classList.remove('show');
     requestAnimationFrame(function () { flash.classList.add('show'); });
+    // Particle burst at player center
+    if (GameEngine.addParticle) {
+      for (var pburst = 0; pburst < 24; pburst++) {
+        var pa = Math.random() * Math.PI * 2;
+        var pr = Math.random() * 70;
+        GameEngine.addParticle('spark',
+          player.x + Math.cos(pa) * pr,
+          player.y + Math.sin(pa) * pr);
+      }
+    }
     setTimeout(function () {
       flash.classList.remove('show');
       flash.style.display = 'none';
       setLevel(nextLevel);
-    }, 600);
-    toast('no-clip 成功!');
+    }, 900);
+    toast('★ LEVEL CLEAR ★');
   }
 
   function getNextLevel(cur) {
@@ -4885,6 +4896,11 @@
     if (typeof spawnGraceUntil === 'number' && performance.now() < spawnGraceUntil) {
       return;
     }
+    // No damage during encounter / scripted cinematics — player should never
+    // be punished for events they can't react to.
+    if (_inCinematic) return;
+    // No damage while overlays freeze gameplay (phone, settings, note viewer)
+    if (typeof _isGamePaused === 'function' && _isGamePaused()) return;
     var prevHp = player.hp;
     player.hp = Math.max(0, player.hp - dmg);
     // Always provide damage feedback: red flash + shake + sound + vital pulse

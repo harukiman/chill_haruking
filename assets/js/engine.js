@@ -2013,6 +2013,9 @@
         case 'paper_close':
           this._playPaperClose(now);
           break;
+        case 'level_clear':
+          this._playLevelClear(now);
+          break;
         case 'elevator_hum':
           this._playElevatorHum(now);
           break;
@@ -3005,6 +3008,41 @@
       g.connect(dest);
       o.start(now);
       o.stop(now + 0.22);
+    },
+
+    // Level clear stinger: rising major chord (C-E-G triumphant)
+    _playLevelClear: function (now) {
+      var dest = seGain || masterGain;
+      var chord = [261.6, 329.6, 392.0]; // C4, E4, G4
+      for (var i = 0; i < chord.length; i++) {
+        var o = audioCtx.createOscillator();
+        var g = audioCtx.createGain();
+        o.type = 'triangle';
+        o.frequency.setValueAtTime(chord[i] * 0.5, now);
+        o.frequency.linearRampToValueAtTime(chord[i], now + 0.12);
+        g.gain.setValueAtTime(0, now);
+        g.gain.linearRampToValueAtTime(0.13, now + 0.05);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+        o.connect(g);
+        g.connect(dest);
+        o.start(now);
+        o.stop(now + 1.3);
+      }
+      // Sparkle layer (high partials)
+      for (var s = 0; s < 4; s++) {
+        var o2 = audioCtx.createOscillator();
+        var g2 = audioCtx.createGain();
+        o2.type = 'sine';
+        var sparkF = 1300 + s * 380;
+        o2.frequency.setValueAtTime(sparkF, now + s * 0.06);
+        g2.gain.setValueAtTime(0, now + s * 0.06);
+        g2.gain.linearRampToValueAtTime(0.05, now + s * 0.06 + 0.02);
+        g2.gain.exponentialRampToValueAtTime(0.001, now + s * 0.06 + 0.35);
+        o2.connect(g2);
+        g2.connect(dest);
+        o2.start(now + s * 0.06);
+        o2.stop(now + s * 0.06 + 0.4);
+      }
     },
 
     // Note close / page-flip
