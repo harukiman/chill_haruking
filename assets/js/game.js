@@ -1784,7 +1784,7 @@
       var dpDir = dpadMap[dpi].dir;
       if (dbtn && dbtn.pressed && !gp._dpadHeld[dpDir]) {
         gp._dpadHeld[dpDir] = true;
-        if (nowMs - gp._dpadLastFire[dpDir] >= 250) {
+        if (nowMs - gp._dpadLastFire[dpDir] >= 120) {
           gp._dpadLastFire[dpDir] = nowMs;
           var assignedId = (dpadAssignments[dpadMode] || {})[dpDir];
           if (assignedId) quickUseAssignedItem(assignedId);
@@ -4887,8 +4887,15 @@
     }
     var prevHp = player.hp;
     player.hp = Math.max(0, player.hp - dmg);
-    // Always provide damage feedback: red flash + shake + sound
+    // Always provide damage feedback: red flash + shake + sound + vital pulse
     GameEngine.redFlash();
+    var hpFillEl = document.querySelector('.vital-fill.vital-hp');
+    if (hpFillEl) {
+      hpFillEl.classList.remove('hit');
+      // Force reflow so the animation can restart immediately on rapid hits
+      void hpFillEl.offsetWidth;
+      hpFillEl.classList.add('hit');
+    }
     if (navigator.vibrate) navigator.vibrate(40);
     if (dmg > 0.5) {
       GameEngine.shakeScreen(Math.min(20, dmg * 30), Math.min(0.4, dmg * 1.5));
