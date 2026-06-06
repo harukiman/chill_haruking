@@ -819,6 +819,17 @@
         // Default: theme-driven (else burgundy carpet)
         var defFloor = (engine.theme && engine.theme.floorDefault) || [60, 25, 22];
         var fR = defFloor[0], fG = defFloor[1], fB = defFloor[2];
+        // Safe zone tile (11): warm golden glow distinct from regular floor
+        var floorTile = tiles[fgy][fgx];
+        if (floorTile === 11) {
+          fR = 180; fG = 150; bg = 80;
+          fB = 80;
+          // Pulsing intensity
+          var safePulse = 0.85 + Math.sin(nowTime * 1.5 + (fgx + fgy) * 0.5) * 0.15;
+          fR = (fR * safePulse) | 0;
+          fG = (fG * safePulse) | 0;
+          fB = (fB * safePulse) | 0;
+        }
         var fKey = fgy * 1000 + fgx;
         if (floorColors && floorColors[fKey]) {
           var fc = floorColors[fKey];

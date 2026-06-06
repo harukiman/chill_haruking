@@ -1919,6 +1919,7 @@
     el('phoneBtn').style.display = 'flex';
     el('floorHUD').style.display = '';
     el('floatingMapBtn').classList.add('show');
+    el('quickItemBtn').classList.add('show');
     if (gameMode === 'endless') {
       el('floorText').textContent = 'ENDLESS F' + endlessFloor + ' / LV' + currentLevel + ' / ' + endlessScore;
     } else {
@@ -2159,14 +2160,8 @@
           killerType = closestE.type;
         }
       }
-      // HARUKI jumpscare
-      if (killerType === 'haruki') {
-        var hImg = GameEngine.images['assets/img/haruki_scary.png'] || GameEngine.images['assets/img/haruki.png'];
-        if (hImg) GameEngine.flashImage(hImg, 1000);
-        if (audioInitialized) GameEngine.playSound('jumpscare');
-        GameEngine.redFlash();
-        GameEngine.shakeScreen(20, 0.8);
-      }
+      // Entity-specific death scene
+      playEntityDeathScene(killerType);
       die('HP消失', 'HP がゼロになった。\n死因: ' + killer);
       return;
     }
@@ -3590,6 +3585,86 @@
     if (ft === 3) {
       tryNoClip();
       return;
+    }
+  }
+
+  function playEntityDeathScene(killerType) {
+    // Per-entity dramatic death visual
+    if (killerType === 'haruki') {
+      var hImg = GameEngine.images['assets/img/haruki_scary.png'] || GameEngine.images['assets/img/haruki.png'];
+      if (hImg) GameEngine.flashImage(hImg, 1000);
+      if (audioInitialized) GameEngine.playSound('jumpscare');
+      GameEngine.redFlash();
+      GameEngine.shakeScreen(20, 0.8);
+    } else if (killerType === 'hound') {
+      GameEngine.redFlash();
+      GameEngine.shakeScreen(18, 0.6);
+      if (audioInitialized) {
+        GameEngine.playSound('scream');
+        GameEngine.playSound('hit');
+      }
+    } else if (killerType === 'smiler') {
+      // Eerie smile zoom
+      if (audioInitialized) {
+        GameEngine.playSound('lullaby');
+        GameEngine.playSound('whisper');
+      }
+      GameEngine.staticEffect(0.8);
+      setTimeout(function () { GameEngine.staticEffect(0); }, 1500);
+    } else if (killerType === 'skinstealer') {
+      // Skin-stealing — static + jumpscare
+      if (audioInitialized) {
+        GameEngine.playSound('static');
+        GameEngine.playSound('jumpscare');
+      }
+      GameEngine.shakeScreen(15, 1.2);
+      GameEngine.staticEffect(1);
+      setTimeout(function () { GameEngine.staticEffect(0); }, 1800);
+    } else if (killerType === 'partygoer') {
+      // Ironic party celebration
+      if (audioInitialized) {
+        GameEngine.playSound('phone');
+        GameEngine.playSound('jumpscare');
+      }
+      GameEngine.redFlash();
+      GameEngine.shakeScreen(10, 0.8);
+    } else if (killerType === 'crawler') {
+      if (audioInitialized) {
+        GameEngine.playSound('knock');
+        GameEngine.playSound('scream_short');
+      }
+      GameEngine.shakeScreen(22, 0.7);
+    } else if (killerType === 'wretch') {
+      if (audioInitialized) {
+        GameEngine.playSound('tinnitus');
+        GameEngine.playSound('whisper');
+      }
+      GameEngine.staticEffect(0.6);
+      setTimeout(function () { GameEngine.staticEffect(0); }, 1200);
+    } else if (killerType === 'boss') {
+      // Architect — dramatic
+      if (audioInitialized) {
+        GameEngine.playSound('stinger');
+        GameEngine.playSound('thunder');
+        GameEngine.playSound('scream');
+      }
+      GameEngine.redFlash();
+      GameEngine.shakeScreen(30, 1.5);
+    } else if (killerType === 'mrhotel') {
+      if (audioInitialized) {
+        GameEngine.playSound('clock_tick');
+        GameEngine.playSound('jumpscare');
+      }
+      GameEngine.shakeScreen(12, 0.8);
+    } else if (killerType === 'echo') {
+      // Hauntingly silent — just static
+      GameEngine.staticEffect(0.9);
+      if (audioInitialized) GameEngine.playSound('whisper');
+      setTimeout(function () { GameEngine.staticEffect(0); }, 1500);
+    } else {
+      // Default
+      GameEngine.redFlash();
+      GameEngine.shakeScreen(10, 0.5);
     }
   }
 
@@ -5431,6 +5506,34 @@
     }
   }
 
+  function refreshQuickItemBar() {
+    var scroll = el('quickItemScroll');
+    if (!scroll) return;
+    scroll.innerHTML = '';
+    var keys = Object.keys(player.inventory);
+    if (keys.length === 0) {
+      var emp = document.createElement('div');
+      emp.style.cssText = 'color:#786020;font-size:11px;padding:0 10px;letter-spacing:0.1em;';
+      emp.textContent = 'アイテムなし';
+      scroll.appendChild(emp);
+      return;
+    }
+    keys.forEach(function (id) {
+      var item = ITEMS[id];
+      if (!item) return;
+      var cnt = player.inventory[id];
+      var slot = document.createElement('div');
+      slot.className = 'quick-item-slot';
+      slot.innerHTML = item.icon +
+        (item.persistent ? '' : (cnt > 1 ? '<span class="qi-count">' + cnt + '</span>' : ''));
+      slot.title = item.name;
+      slot.addEventListener('click', function () {
+        openItemUseModal(id);
+      });
+      scroll.appendChild(slot);
+    });
+  }
+
   function drawFloatingMap() {
     var canvas = el('floatingMapCanvas');
     if (!canvas || !currentMap) return;
@@ -6009,6 +6112,22 @@
     el('floatingMapBtn').addEventListener('click', function () {
       floatingMapOpen = !floatingMapOpen;
       el('floatingMap').style.display = floatingMapOpen ? 'flex' : 'none';
+      if (navigator.vibrate) navigator.vibrate(8);
+    });
+
+    // Quick item bar toggle
+    var quickOpen = false;
+    el('quickItemBtn').addEventListener('click', function () {
+      quickOpen = !quickOpen;
+      var panel = el('quickItemPanel');
+      if (quickOpen) {
+        panel.style.display = 'block';
+        requestAnimationFrame(function () { panel.classList.add('show'); });
+        refreshQuickItemBar();
+      } else {
+        panel.classList.remove('show');
+        setTimeout(function () { panel.style.display = 'none'; }, 300);
+      }
       if (navigator.vibrate) navigator.vibrate(8);
     });
     var fmOpacity = el('floatingMapOpacity');
