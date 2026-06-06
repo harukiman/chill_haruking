@@ -723,12 +723,13 @@
          timeLimit: null },
     7: { id: 7, name: 'LEVEL 7', subtitle: 'RUN FOR YOUR LIFE',
          rows: LV7_ROWS, theme: 7,
-         hint: '一直線の回廊。背後から複数のHoundが迫る。走れ。',
-         intro: '吠え声...近い。前へ走るしかない。',
+         hint: '一直線の回廊。背後から複数のHoundが迫る。HARUKI の声も混じる。',
+         intro: '吠え声...そして、女の声。前へ走るしかない。',
          entities: [
            { type: 'hound', gx: 4, gy: 2 },
            { type: 'hound', gx: 3, gy: 4 },
-           { type: 'hound', gx: 5, gy: 5 }
+           { type: 'hound', gx: 5, gy: 5 },
+           { type: 'haruki', gx: 4, gy: 3 }
          ],
          timeLimit: null },
     8: { id: 8, name: 'LEVEL 8', subtitle: 'THE HIVE',
