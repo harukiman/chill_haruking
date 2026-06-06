@@ -170,6 +170,9 @@ button {
     radial-gradient(ellipse at center, #4a3a14 0%, #1d1604 70%, #050300 100%);
   filter: blur(0.5px);
   animation: titleFlicker 5s infinite;
+  /* Explicitly behind interactive content */
+  z-index: 0;
+  pointer-events: none;
 }
 
 @keyframes titleFlicker {
