@@ -767,63 +767,90 @@ body {
   margin: 16px 0 8px;
 }
 
-/* STATUS TAB */
+/* STATUS TAB — iOS ダッシュボード風 */
 .status-level-box {
-  background: rgba(212, 179, 64, 0.08);
-  border: 1px solid #483910;
-  padding: 12px;
+  background: linear-gradient(135deg, rgba(212, 179, 64, 0.15) 0%, rgba(120, 96, 32, 0.1) 100%);
+  border: 1px solid rgba(212, 179, 64, 0.25);
+  border-radius: 12px;
+  padding: 18px 16px;
   text-align: center;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
+  box-shadow: 0 2px 10px rgba(212, 179, 64, 0.08);
 }
 .status-level-num {
   font-family: 'Times New Roman', serif;
-  font-size: 22px;
+  font-size: 26px;
   font-weight: 900;
-  color: #e8d57a;
+  color: #f0dc8a;
   letter-spacing: 0.15em;
+  text-shadow: 0 0 12px rgba(212, 179, 64, 0.4);
 }
 .status-level-name {
   font-size: 10px;
-  letter-spacing: 0.35em;
+  letter-spacing: 0.4em;
   color: #b09040;
-  margin-top: 4px;
+  margin-top: 6px;
+  text-transform: uppercase;
 }
 .status-vital {
   display: grid;
   grid-template-columns: 60px 1fr 55px;
-  gap: 8px;
+  gap: 10px;
   align-items: center;
+  font-size: 12px;
+  color: #e0d8b8;
+  background: rgba(28, 22, 8, 0.5);
+  border: 1px solid rgba(120, 96, 32, 0.18);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin: 8px 0;
+}
+.status-vital span:first-child {
+  font-weight: 600;
+  letter-spacing: 0.08em;
   font-size: 11px;
-  color: #d8d2bc;
-  margin: 6px 0;
 }
 .status-bar {
-  height: 8px;
-  background: rgba(0, 0, 0, 0.6);
-  border: 1px solid #382a08;
+  height: 10px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(120, 96, 32, 0.2);
+  border-radius: 5px;
+  overflow: hidden;
 }
 .status-bar-fill {
   height: 100%;
   width: 100%;
-  transition: width 0.3s;
+  transition: width 0.3s ease;
+  border-radius: 4px;
 }
-.status-bar-fill.hp   { background: linear-gradient(90deg, #803030, #c63a3a); }
-.status-bar-fill.san  { background: linear-gradient(90deg, #382878, #6a55c8); }
-.status-bar-fill.sta  { background: linear-gradient(90deg, #4a6610, #88b033); }
+.status-bar-fill.hp   { background: linear-gradient(90deg, #c63a3a 0%, #ff5050 100%); }
+.status-bar-fill.san  { background: linear-gradient(90deg, #6a55c8 0%, #9080e0 100%); }
+.status-bar-fill.sta  { background: linear-gradient(90deg, #88b033 0%, #a8d050 100%); }
 .status-vital span:last-child {
   text-align: right;
   color: #b09040;
-  font-size: 10px;
+  font-size: 11px;
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
 }
 .status-time {
   font-family: 'Courier New', monospace;
-  font-size: 18px;
+  font-size: 22px;
   color: #d4b340;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
+  text-align: center;
+  margin: 10px 0;
+  text-shadow: 0 0 8px rgba(212, 179, 64, 0.3);
+  font-weight: 600;
 }
 .status-prog {
-  font-size: 11px;
+  font-size: 12px;
   color: #d8d2bc;
+  background: rgba(28, 22, 8, 0.5);
+  border: 1px solid rgba(120, 96, 32, 0.18);
+  border-radius: 10px;
+  padding: 12px 14px;
+  line-height: 1.7;
 }
 
 /* INVENTORY TAB */
