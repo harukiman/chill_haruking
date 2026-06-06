@@ -2056,7 +2056,7 @@
     gameMode = 'endless';
     stats.totalRuns++;
     saveStats();
-    endlessFloor = 0;
+    endlessFloor = 1;
     endlessVisitedLevels = [];
     endlessScore = 0;
     var diff = DIFFICULTIES[currentDifficulty] || DIFFICULTIES.normal;
@@ -3913,7 +3913,7 @@
   // ============================================================
   function onRender(ctx) {
     if (!currentMap) return;
-    if (state === ST.TITLE) return;
+    if (state === ST.TITLE || state === ST.ENDED || state === ST.DEAD) return;
 
     GameEngine.drawMap();
 
@@ -3953,8 +3953,8 @@
       }
     }
 
-    // Action button visibility
-    updateActionButton();
+    // Action button visibility (only during play)
+    if (state === ST.PLAYING) updateActionButton();
 
     // Dim screen if flashlight off on dark levels
     GameEngine.drawDarkness(player.x, player.y, 200, 0);
@@ -4869,7 +4869,6 @@
         if (ki === konami.length) {
           ki = 0;
           if (state === ST.TITLE) {
-            unlockAchievement('won_minigame');
             // Grant starter items on next new game via a flag
             window._konamiGranted = true;
             toast('★ KONAMI! 次のラン開始時にスタートパック付与');
@@ -4898,7 +4897,6 @@
         if (titleTaps >= 5) {
           titleTaps = 0;
           window._konamiGranted = true;
-          unlockAchievement('won_minigame');
           toast('★ 隠し効果解除! 次のランにスタートパック');
           if (audioInitialized) GameEngine.playSound('item_get');
         }
