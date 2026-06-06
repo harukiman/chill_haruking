@@ -20,7 +20,7 @@
   <meta name="twitter:title" content="THE BACKROOMS — featuring HARUKI">
   <meta name="twitter:description" content="一人称モバイル探索ホラー。Level 0 から no-clip で階層を降下。壁の向こうにカレが待つ。">
   <title>THE BACKROOMS</title>
-  <link rel="stylesheet" href="assets/css/game.css?v=62">
+  <link rel="stylesheet" href="assets/css/game.css?v=63">
 </head>
 <body oncontextmenu="return false;">
 
@@ -44,18 +44,29 @@
       window.location.replace(u.toString());
     }
   };
-  // Auto-redirect once if the URL doesn't have a recent cache-buster (forces a hard fetch
-  // on first visit after a deploy, but only redirects ONCE per session to avoid loops).
+  // Note: auto-redirect was removed because it may have caused redirect loops
+  // on some browsers. Use the manual ↻ 再読込 button instead.
+  </script>
+
+  <!-- Visual tap feedback layer — flashes wherever the user taps (diagnostic + UX) -->
+  <div id="tapFlash" style="position:fixed;width:60px;height:60px;border-radius:50%;background:radial-gradient(circle,rgba(212,179,64,0.6) 0%,transparent 70%);pointer-events:none;z-index:9999;opacity:0;transition:opacity 0.4s;display:none;"></div>
+  <script>
   (function () {
-    try {
-      var sessionFlag = 'bk_cb_done_v62';
-      if (!sessionStorage.getItem(sessionFlag) && !window.location.search.includes('_cb=')) {
-        sessionStorage.setItem(sessionFlag, '1');
-        var u = new URL(window.location.href);
-        u.searchParams.set('_cb', Date.now().toString());
-        window.location.replace(u.toString());
-      }
-    } catch (e) {}
+    var flash = null;
+    function showFlash(x, y) {
+      if (!flash) flash = document.getElementById('tapFlash');
+      if (!flash) return;
+      flash.style.display = 'block';
+      flash.style.left = (x - 30) + 'px';
+      flash.style.top = (y - 30) + 'px';
+      flash.style.opacity = '1';
+      setTimeout(function () { if (flash) flash.style.opacity = '0'; }, 50);
+      setTimeout(function () { if (flash) flash.style.display = 'none'; }, 450);
+    }
+    document.addEventListener('click', function (e) { showFlash(e.clientX, e.clientY); }, true);
+    document.addEventListener('touchstart', function (e) {
+      if (e.touches && e.touches[0]) showFlash(e.touches[0].clientX, e.touches[0].clientY);
+    }, { passive: true, capture: true });
   })();
   </script>
 
@@ -107,7 +118,7 @@
     <button id="titleReloadBtn" class="title-reload-btn" type="button" onclick="window.__hardReload&&window.__hardReload()">↻ 再読込</button>
     <div id="tapToStartHint" class="tap-to-start-hint hidden"></div>
     <p class="copyright">THE BACKROOMS — featuring HARUKI &copy; 2026</p>
-    <p class="version-text" id="versionText">ver 4.5 (Hard Reload + Touch Body)</p>
+    <p class="version-text" id="versionText">ver 4.6 (Tap Flash Diagnostic)</p>
     <p class="title-ach-counter" id="titleAchCounter"></p>
   </div>
 
@@ -644,8 +655,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="assets/js/engine.js?v=62"></script>
-  <script src="assets/js/game.js?v=62"></script>
+  <script src="assets/js/engine.js?v=63"></script>
+  <script src="assets/js/game.js?v=63"></script>
 
 </body>
 </html>

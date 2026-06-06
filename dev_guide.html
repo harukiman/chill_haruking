@@ -905,6 +905,7 @@
     <tr><td>グラフィック品質</td><td><code>thebackrooms_gfx_v1</code></td><td>high / low</td></tr>
     <tr><td>振動</td><td><code>bk_vibrate</code></td><td>1 / 0 (ON/OFF)</td></tr>
     <tr><td>ゲームパッドマップ</td><td><code>thebackrooms_gamepad_v1</code></td><td>JSON</td></tr>
+    <tr><td>フィルムグレインレベル</td><td><code>bk_grain_level</code></td><td>0-2 / 1</td></tr>
   </table>
 </section>
 
@@ -950,6 +951,11 @@
   <h2>変更履歴 (抜粋)</h2>
   <table>
     <tr><th>ver</th><th>変更</th></tr>
+    <tr><td>v4.5</td><td>キャッシュ強制リフレッシュ機構 (↻ 再読込ボタン + 自動 _cb=timestamp redirect + Cache-Control meta)、body touch-action: manipulation 化 (iOS click 修正)</td></tr>
+    <tr><td>v4.4</td><td>タップ必須機構を撤去 (loading ループ対策、levelReachCinematic を 2.5s auto-advance)</td></tr>
+    <tr><td>v4.3</td><td>読み込み中表示の早期 failsafe を silent no-op に変更</td></tr>
+    <tr><td>v4.2</td><td>床素材別フットステップ音 (6 surface) + 低 SAN 幻覚レイヤー (画面端ダート + 中央ささやき文字)</td></tr>
+    <tr><td>v4.1</td><td>body touch-action: none を override (iOS Safari の click 配信修正)、dev_guide.html 新規</td></tr>
     <tr><td>v4.0</td><td>タイトル多層防御 (inline onclick + window.__titleAction)、設定オーバーレイ追加、watchdog daemon 設置</td></tr>
     <tr><td>v3.9</td><td>空間オーディオキュー (StereoPanner で立体音響)、breath/scrape/tap 音響</td></tr>
     <tr><td>v3.8</td><td>方向警告コンパス (画面端の弧で最近接エンティティ方向)</td></tr>
