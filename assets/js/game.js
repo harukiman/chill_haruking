@@ -3778,7 +3778,22 @@
     ctx.restore();
   }
 
-  // World-space pickup renderer (replaces faint floor glow with visible floating icon + beam)
+  // Offscreen canvas for per-column z-occluded icon rendering
+  var _pickupOffCanvas = null;
+  var _pickupOffCtx = null;
+  function getPickupOffCanvas(size) {
+    if (!_pickupOffCanvas) {
+      _pickupOffCanvas = document.createElement('canvas');
+      _pickupOffCtx = _pickupOffCanvas.getContext('2d');
+    }
+    if (_pickupOffCanvas.width !== size) {
+      _pickupOffCanvas.width = size;
+      _pickupOffCanvas.height = size;
+    }
+    return _pickupOffCanvas;
+  }
+
+  // World-space pickup renderer with proper z-buffer occlusion per column
   function drawWorldPickup(ctx, wx, wy, phase, color, icon, itemId) {
     var w = GameEngine.width;
     var h = GameEngine.height;
@@ -3788,64 +3803,88 @@
     var sinA = Math.sin(-player.angle);
     var tX = dx * cosA - dy * sinA;
     var tY = dx * sinA + dy * cosA;
-    if (tY <= 0.5) return;
+    if (tY <= 0.5) return; // behind camera
     var depthTiles = tY / TS;
-    if (depthTiles > 14) return;
+    if (depthTiles > 14) return; // too far
 
     var screenX = (w / 2) * (1 + tX / tY);
-    if (screenX < -50 || screenX > w + 50) return;
+    var iconSize = Math.max(14, (h / depthTiles) * 0.18);
+    // Off-screen culling: full icon width outside view
+    if (screenX + iconSize < 0 || screenX - iconSize > w) return;
 
     var zBuf = GameEngine._zBuffer;
-    var col = Math.round(screenX);
-    if (zBuf && col >= 0 && col < w && zBuf[col] < depthTiles) return; // occluded
+    if (!zBuf) return;
+
+    // Sample multiple columns across icon width — if ALL are occluded, skip entirely
+    var halfW = iconSize * 0.5;
+    var sampleStart = Math.max(0, Math.floor(screenX - halfW));
+    var sampleEnd = Math.min(w - 1, Math.ceil(screenX + halfW));
+    if (sampleEnd <= sampleStart) return;
+    var visibleCount = 0;
+    for (var sc = sampleStart; sc <= sampleEnd; sc++) {
+      if (zBuf[sc] > depthTiles) visibleCount++;
+    }
+    if (visibleCount === 0) return; // fully occluded by walls
 
     var fogFactor = Math.max(0.25, 1 - depthTiles / 14);
-    var iconSize = Math.max(14, (h / depthTiles) * 0.18);
     var pulse = 0.7 + Math.sin(phase) * 0.3;
-
-    // Floor circle (small, on ground)
     var groundY = h / 2 + (h * 0.5) / depthTiles;
-    var ringR = Math.max(4, iconSize * 0.5);
-    ctx.save();
-    ctx.globalAlpha = fogFactor * 0.85 * pulse;
-    var grad = ctx.createRadialGradient(screenX, groundY, 0, screenX, groundY, ringR);
-    grad.addColorStop(0, color);
-    grad.addColorStop(1, 'transparent');
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.arc(screenX, groundY, ringR, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Vertical beam (attention-grabbing)
-    ctx.globalAlpha = fogFactor * 0.4 * pulse;
-    var beamW = Math.max(2, iconSize * 0.12);
-    var beamH = iconSize * 1.8;
-    var beamY = groundY - beamH;
-    var beamGrad = ctx.createLinearGradient(screenX, beamY, screenX, groundY);
-    beamGrad.addColorStop(0, 'rgba(0,0,0,0)');
-    beamGrad.addColorStop(1, color);
-    ctx.fillStyle = beamGrad;
-    ctx.fillRect(screenX - beamW / 2, beamY, beamW, beamH);
-
-    // Floating icon just above ground (follows floor projection)
-    ctx.globalAlpha = fogFactor;
-    // Icon hovers slightly above where it sits on floor
     var iconBaseY = groundY - iconSize * 0.4;
     var iconY = iconBaseY + Math.sin(phase * 2) * iconSize * 0.12;
-    ctx.font = 'bold ' + iconSize + 'px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    // Outline (dark) for legibility
-    ctx.fillStyle = 'rgba(0,0,0,0.7)';
+
+    // Render the icon to offscreen canvas, then blit column-by-column with z-buffer check
+    var displayIcon = (itemId && ITEMS[itemId]) ? ITEMS[itemId].icon : icon;
+    var offSize = Math.ceil(iconSize * 2.2);
+    var off = getPickupOffCanvas(offSize);
+    var octx = _pickupOffCtx;
+    octx.clearRect(0, 0, offSize, offSize);
+    // Ground ring (drawn into offscreen, centered)
+    var oCenterX = offSize / 2;
+    var oGroundOff = iconSize * 0.4 + Math.sin(phase * 2) * iconSize * 0.12;
+    var oGroundY = offSize / 2 + oGroundOff;
+    var ringR = Math.max(4, iconSize * 0.5);
+    octx.globalAlpha = 0.85 * pulse;
+    var grad = octx.createRadialGradient(oCenterX, oGroundY, 0, oCenterX, oGroundY, ringR);
+    grad.addColorStop(0, color);
+    grad.addColorStop(1, 'transparent');
+    octx.fillStyle = grad;
+    octx.beginPath();
+    octx.arc(oCenterX, oGroundY, ringR, 0, Math.PI * 2);
+    octx.fill();
+    // Beam
+    octx.globalAlpha = 0.4 * pulse;
+    var beamW = Math.max(2, iconSize * 0.12);
+    var beamH = iconSize * 1.6;
+    var beamGrad = octx.createLinearGradient(oCenterX, oGroundY - beamH, oCenterX, oGroundY);
+    beamGrad.addColorStop(0, 'rgba(0,0,0,0)');
+    beamGrad.addColorStop(1, color);
+    octx.fillStyle = beamGrad;
+    octx.fillRect(oCenterX - beamW / 2, oGroundY - beamH, beamW, beamH);
+    // Icon with outline
+    octx.globalAlpha = 1;
+    octx.font = 'bold ' + iconSize + 'px sans-serif';
+    octx.textAlign = 'center';
+    octx.textBaseline = 'middle';
+    octx.fillStyle = 'rgba(0,0,0,0.85)';
     for (var ox = -1; ox <= 1; ox++) for (var oy = -1; oy <= 1; oy++) {
       if (ox === 0 && oy === 0) continue;
-      ctx.fillText(icon, screenX + ox, iconY + oy);
+      octx.fillText(displayIcon, oCenterX + ox, offSize / 2 + ox + oy);
     }
-    // Item-specific icon override
-    var displayIcon = icon;
-    if (itemId && ITEMS[itemId]) displayIcon = ITEMS[itemId].icon;
-    ctx.fillStyle = color;
-    ctx.fillText(displayIcon, screenX, iconY);
+    octx.fillStyle = color;
+    octx.fillText(displayIcon, oCenterX, offSize / 2);
+
+    // Blit column by column with per-column z-buffer test
+    ctx.save();
+    ctx.globalAlpha = fogFactor;
+    var screenStartCol = Math.max(0, Math.floor(screenX - offSize / 2));
+    var screenEndCol = Math.min(w, Math.ceil(screenX + offSize / 2));
+    var blitY = iconY - offSize / 2;
+    for (var col2 = screenStartCol; col2 < screenEndCol; col2++) {
+      if (zBuf[col2] <= depthTiles) continue; // wall in front → skip this column
+      var srcCol = col2 - (screenX - offSize / 2);
+      if (srcCol < 0 || srcCol >= offSize) continue;
+      ctx.drawImage(off, srcCol, 0, 1, offSize, col2, blitY, 1, offSize);
+    }
     ctx.restore();
   }
 
