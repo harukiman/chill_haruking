@@ -2375,9 +2375,11 @@
       }
     }
 
-    // Multi-tier threat detection
+    // Multi-tier threat detection + nearest threat tracking for HUD compass
     var isBeingChased = false;
     var threatLevel = 0; // 0 = safe, 1 = uneasy, 2 = hunted, 3 = critical
+    var nearestThreat = null;
+    var nearestThreatDist = Infinity;
     for (var ceI = 0; ceI < entities.length; ceI++) {
       var ce = entities[ceI];
       if (!ce.alive) continue;
@@ -2388,6 +2390,10 @@
       if (ceD < 14 * TS) threatLevel = Math.max(threatLevel, 1);
       if (ceD < 7 * TS) threatLevel = Math.max(threatLevel, 2);
       if (ceD < 3 * TS) threatLevel = Math.max(threatLevel, 3);
+      if (ceD < nearestThreatDist) {
+        nearestThreatDist = ceD;
+        nearestThreat = ce;
+      }
       // Entity-specific chase trigger
       if (ce.type === 'hound' && ce.state === 'chase') isBeingChased = true;
       else if (ce.type === 'skinstealer' && ce.state === 'reveal') isBeingChased = true;
@@ -2398,6 +2404,10 @@
       else if (ce.type === 'mrhotel' && ceD < 4 * TS) isBeingChased = true;
       else if (ce.type === 'echo' && ceD < 3 * TS) isBeingChased = true;
     }
+    // Cache for renderer to draw directional indicator
+    player._nearestThreat = nearestThreat;
+    player._nearestThreatDist = nearestThreatDist;
+    player._threatLevel = threatLevel;
     // Apply BGM layer adjustments by threat level (live blending)
     if (audioInitialized && typeof GameEngine.setBGMLayers === 'function') {
       try {
@@ -5062,6 +5072,72 @@
 
     // Dim screen if flashlight off on dark levels
     GameEngine.drawDarkness(player.x, player.y, 200, 0);
+
+    // Directional threat indicator (red arc on screen edge pointing at nearest threat)
+    if (player._nearestThreat && player._nearestThreatDist < 14 * TS) {
+      drawThreatCompass(ctx, player._nearestThreat, player._nearestThreatDist, player._threatLevel || 0);
+    }
+  }
+
+  function drawThreatCompass(ctx, target, dist, threatLevel) {
+    var W = ctx.canvas.width;
+    var H = ctx.canvas.height;
+    var dx = target.x - player.x;
+    var dy = target.y - player.y;
+    // Player facing is angle 0 = +X. relAng = angle from player facing direction
+    var worldAng = Math.atan2(dy, dx);
+    var relAng = worldAng - player.angle;
+    // Normalize to [-PI, PI]
+    while (relAng > Math.PI) relAng -= Math.PI * 2;
+    while (relAng < -Math.PI) relAng += Math.PI * 2;
+    // Intensity based on threat tier
+    var maxDist = 14 * TS;
+    var prox = Math.max(0, 1 - dist / maxDist); // 0 far .. 1 close
+    var alpha = 0.15 + prox * 0.55;
+    if (threatLevel >= 3) alpha = Math.min(1, alpha + 0.15);
+    var pulse = 0.85 + 0.15 * Math.sin(performance.now() * 0.012 * (1 + prox * 2));
+    alpha *= pulse;
+
+    // Map relAng to screen-edge arc center.
+    // -PI/2 = left edge, +PI/2 = right edge, 0 = top center (forward), +-PI = bottom center (behind)
+    // Use a simple rectangular projection: arc placed on the edge of an ellipse
+    var cx = W / 2;
+    var cy = H / 2;
+    var rx = W * 0.42;
+    var ry = H * 0.42;
+    // Angle on ellipse: 0 = right, +PI/2 = down. Player relAng 0 = forward = up = -PI/2
+    var screenAng = relAng - Math.PI / 2;
+    var px = cx + Math.cos(screenAng) * rx;
+    var py = cy + Math.sin(screenAng) * ry;
+
+    ctx.save();
+    // Arc indicator: 30-degree arc on screen edge
+    var arcLen = (40 + prox * 30) * Math.PI / 180;
+    var arcRadius = Math.min(W, H) * 0.045;
+    ctx.lineWidth = 4 + prox * 3;
+    ctx.strokeStyle = threatLevel >= 3 ? 'rgba(220, 30, 30,' + alpha + ')'
+                    : threatLevel >= 2 ? 'rgba(230, 100, 30,' + alpha + ')'
+                    : 'rgba(220, 200, 60,' + alpha + ')';
+    ctx.shadowColor = ctx.strokeStyle;
+    ctx.shadowBlur = 16;
+    ctx.beginPath();
+    ctx.arc(px, py, arcRadius, screenAng - arcLen / 2 + Math.PI, screenAng + arcLen / 2 + Math.PI);
+    ctx.stroke();
+
+    // Small triangular tip pointing inward (toward screen center)
+    var inwardX = px - Math.cos(screenAng) * (arcRadius - 6);
+    var inwardY = py - Math.sin(screenAng) * (arcRadius - 6);
+    ctx.fillStyle = ctx.strokeStyle;
+    ctx.shadowBlur = 10;
+    ctx.beginPath();
+    ctx.translate(inwardX, inwardY);
+    ctx.rotate(screenAng + Math.PI);
+    ctx.moveTo(0, -4);
+    ctx.lineTo(7, 0);
+    ctx.lineTo(0, 4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
   }
 
   var _lastActState = { shown: null, label: null };
