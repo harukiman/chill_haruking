@@ -632,8 +632,15 @@
     var nowTime = typeof performance !== 'undefined' ? performance.now() / 1000 : 0;
     buildLightGrid(mapW, mapH, engine.pointLights, engine.ceilingLights, nowTime);
 
-    // Z-buffer for sprite clipping
-    var zBuffer = new Float32Array(w);
+    // Z-buffer for sprite clipping. Reuse the same Float32Array across frames
+    // (only reallocate when width changes) to reduce GC pressure on mobile.
+    var zBuffer;
+    if (engine._zBufferCache && engine._zBufferCache.length === w) {
+      zBuffer = engine._zBufferCache;
+    } else {
+      zBuffer = new Float32Array(w);
+      engine._zBufferCache = zBuffer;
+    }
 
     // Cast rays
     // Adaptive strip width: lower quality = wider strips = faster.
