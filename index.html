@@ -17,7 +17,7 @@
   <meta name="twitter:title" content="THE BACKROOMS — featuring HARUKI">
   <meta name="twitter:description" content="一人称モバイル探索ホラー。Level 0 から no-clip で階層を降下。壁の向こうにカレが待つ。">
   <title>THE BACKROOMS</title>
-  <link rel="stylesheet" href="assets/css/game.css?v=57">
+  <link rel="stylesheet" href="assets/css/game.css?v=58">
 </head>
 <body oncontextmenu="return false;">
 
@@ -95,7 +95,7 @@
     <button id="titleResetBtn" class="title-reset-btn" type="button" onclick="window.__titleAction&&window.__titleAction('reset')">⚠ 全データ削除</button>
     <div id="tapToStartHint" class="tap-to-start-hint">画面をタップして開始</div>
     <p class="copyright">THE BACKROOMS — featuring HARUKI &copy; 2026</p>
-    <p class="version-text" id="versionText">ver 4.1 (Touch Fix + Dev Guide)</p>
+    <p class="version-text" id="versionText">ver 4.2 (Surfaces + Hallucinations)</p>
     <p class="title-ach-counter" id="titleAchCounter"></p>
   </div>
 
@@ -308,6 +308,13 @@
   <div id="hpScreenEffect" class="screen-effect-hp" style="display:none;"></div>
   <div id="sanScreenEffect" class="screen-effect-san" style="display:none;"></div>
   <div id="safeZoneEffect" class="screen-effect-safe" style="display:none;"></div>
+  <!-- Low-SAN hallucination layer (flickers shapes at screen edges) -->
+  <div id="hallucinationLayer" class="hallucination-layer" style="display:none;">
+    <div class="halluc-shape s1"></div>
+    <div class="halluc-shape s2"></div>
+    <div class="halluc-shape s3"></div>
+    <div class="halluc-text" id="hallucText"></div>
+  </div>
 
   <!-- Phone Button (opens smartphone UI) -->
   <button id="phoneBtn" type="button" class="phone-btn" aria-label="スマホ" style="display:none;">
@@ -625,8 +632,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="assets/js/engine.js?v=57"></script>
-  <script src="assets/js/game.js?v=57"></script>
+  <script src="assets/js/engine.js?v=58"></script>
+  <script src="assets/js/game.js?v=58"></script>
 
 </body>
 </html>

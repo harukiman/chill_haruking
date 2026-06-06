@@ -1593,6 +1593,19 @@
     GameEngine.chromaticLevel = theme.chromatic || 0;
     GameEngine.vignetteIntensity = theme.vignette || 0.3;
 
+    // Surface-aware footsteps by level theme
+    // 0 lobby=carpet, 1 habitable=concrete, 2 pipes=water (with reset to metal on dry tiles),
+    // 3 electrical=metal, 4 office=carpet, 5 hotel=carpet, 6 dark=concrete, 7 hallway=concrete,
+    // 8 hive=wood, 9 suburbs=gravel, 11 train=metal, 12 fun=wood
+    var SURFACE_BY_LEVEL = {
+      0: 'carpet', 1: 'concrete', 2: 'water', 3: 'metal', 4: 'carpet',
+      5: 'carpet', 6: 'concrete', 7: 'concrete', 8: 'wood', 9: 'gravel',
+      11: 'metal', 12: 'wood'
+    };
+    if (typeof GameEngine.setPlayerFootSurface === 'function') {
+      GameEngine.setPlayerFootSurface(SURFACE_BY_LEVEL[levelId] || 'carpet');
+    }
+
     // Door states for this level
     doorStates = {};
     for (var dy = 0; dy < currentMap.height; dy++) {
@@ -2408,6 +2421,31 @@
     player._nearestThreat = nearestThreat;
     player._nearestThreatDist = nearestThreatDist;
     player._threatLevel = threatLevel;
+
+    // Low-SAN hallucination layer: activate when SAN < 35%, intensify below 15%
+    var sanRatio = player.san / player.sanMax;
+    var hLayer = el('hallucinationLayer');
+    if (hLayer) {
+      if (sanRatio < 0.35 && state === ST.PLAYING) {
+        if (hLayer.style.display === 'none') hLayer.style.display = 'block';
+        // Periodic text whisper flash
+        player._hallucTextTimer = (player._hallucTextTimer || 0) - (1 / 60);
+        if (player._hallucTextTimer <= 0) {
+          var interval = sanRatio < 0.15 ? 6 + Math.random() * 4 : 12 + Math.random() * 8;
+          player._hallucTextTimer = interval;
+          var msgs = ['見ているぞ', 'もう逃げられない', 'こっちだ', 'カレが来る', 'まだここにいる', '振り向くな'];
+          var txt = el('hallucText');
+          if (txt) {
+            txt.textContent = msgs[Math.floor(Math.random() * msgs.length)];
+            txt.classList.remove('show');
+            void txt.offsetWidth; // restart animation
+            txt.classList.add('show');
+          }
+        }
+      } else {
+        if (hLayer.style.display !== 'none') hLayer.style.display = 'none';
+      }
+    }
 
     // Spatial audio cue: occasional positional whisper/breath from nearest threat
     if (audioInitialized && nearestThreat && typeof GameEngine.playPositional === 'function') {

@@ -2553,22 +2553,62 @@
 
     // --- Sound implementations ---
 
+    // Surface-aware footstep — uses playerFootstepSurface set by game.js
     _playFootstep: function (now) {
       var dest = seGain || masterGain;
-      var bufferSize = audioCtx.sampleRate * 0.05;
+      var surface = this._playerFootSurface || 'carpet';
+      var decay, peakAmp, filterFreq, filterType, dur, jitter;
+      switch (surface) {
+        case 'concrete':
+          // Sharp, bright tap
+          decay = 110; peakAmp = 0.36; filterFreq = 2200; filterType = 'highpass'; dur = 0.06; jitter = 0.03;
+          break;
+        case 'metal':
+          // Ring with metallic resonance
+          decay = 50; peakAmp = 0.32; filterFreq = 1200; filterType = 'bandpass'; dur = 0.10; jitter = 0.02;
+          break;
+        case 'water':
+          // Wet splash, low pitched
+          decay = 25; peakAmp = 0.34; filterFreq = 600; filterType = 'lowpass'; dur = 0.18; jitter = 0.04;
+          break;
+        case 'wood':
+          // Hollow thump
+          decay = 70; peakAmp = 0.30; filterFreq = 800; filterType = 'lowpass'; dur = 0.08; jitter = 0.02;
+          break;
+        case 'gravel':
+          // Crunchy with longer tail
+          decay = 35; peakAmp = 0.32; filterFreq = 1800; filterType = 'highpass'; dur = 0.14; jitter = 0.05;
+          break;
+        case 'carpet':
+        default:
+          // Muted soft step
+          decay = 80; peakAmp = 0.22; filterFreq = 800; filterType = 'lowpass'; dur = 0.05; jitter = 0.015;
+      }
+      var bufferSize = (audioCtx.sampleRate * dur) | 0;
       var buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
       var data = buffer.getChannelData(0);
       for (var i = 0; i < bufferSize; i++) {
         var t = i / audioCtx.sampleRate;
-        data[i] = (Math.random() * 2 - 1) * Math.exp(-t * 80) * 0.3;
+        data[i] = (Math.random() * 2 - 1) * Math.exp(-t * decay) * peakAmp;
       }
       var src = audioCtx.createBufferSource();
       src.buffer = buffer;
+      var filter = audioCtx.createBiquadFilter();
+      filter.type = filterType;
+      filter.frequency.value = filterFreq;
+      filter.Q.value = 2;
       var gain = audioCtx.createGain();
+      // Random small pitch jitter so steps don't sound identical
+      try { src.playbackRate.value = 1 + (Math.random() - 0.5) * jitter; } catch (e) {}
       gain.gain.value = 0.15;
-      src.connect(gain);
+      src.connect(filter);
+      filter.connect(gain);
       gain.connect(dest);
       src.start(now);
+    },
+
+    setPlayerFootSurface: function (s) {
+      this._playerFootSurface = s || 'carpet';
     },
 
     _playDoor: function (now) {
