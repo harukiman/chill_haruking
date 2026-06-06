@@ -20,7 +20,7 @@
   <meta name="twitter:title" content="THE BACKROOMS — featuring HARUKI">
   <meta name="twitter:description" content="一人称モバイル探索ホラー。Level 0 から no-clip で階層を降下。壁の向こうにカレが待つ。">
   <title>THE BACKROOMS</title>
-  <link rel="stylesheet" href="assets/css/game.css?v=81">
+  <link rel="stylesheet" href="assets/css/game.css?v=82">
 </head>
 <body oncontextmenu="return false;">
 
@@ -121,7 +121,7 @@
     <button id="titleReloadBtn" class="title-reload-btn" type="button" onclick="window.__hardReload&&window.__hardReload()">↻ 再読込</button>
     <div id="tapToStartHint" class="tap-to-start-hint hidden"></div>
     <p class="copyright">THE BACKROOMS — featuring HARUKI &copy; 2026</p>
-    <p class="version-text" id="versionText">ver 6.3 (★ Settings overlay !important fix)</p>
+    <p class="version-text" id="versionText">ver 6.4 (Gamepad UI + BGM/SE fix + any-btn cinematic)</p>
     <p class="title-ach-counter" id="titleAchCounter"></p>
     <p id="jsLoadedDiag" style="position:absolute;bottom:4px;right:4px;font-size:9px;color:#806020;letter-spacing:0.1em;z-index:5;">JS ?</p>
   </div>
@@ -170,16 +170,60 @@
       <div class="ts-section">
         <h3 class="ts-subhead">ゲームパッド (PS4/PS5/Xbox)</h3>
         <p class="ts-help">接続: <span id="tsGamepadStatus">未接続</span></p>
-        <div class="ts-gamepad-grid">
-          <div class="ts-gp-row"><label>アクション</label><input type="number" id="gpBtnAction" min="0" max="20" value="0"></div>
-          <div class="ts-gp-row"><label>スマホ</label><input type="number" id="gpBtnPhone" min="0" max="20" value="3"></div>
-          <div class="ts-gp-row"><label>フレア</label><input type="number" id="gpBtnFlare" min="0" max="20" value="2"></div>
-          <div class="ts-gp-row"><label>Sprint</label><input type="number" id="gpBtnSprint" min="0" max="20" value="6"></div>
-          <div class="ts-gp-row"><label>マップ</label><input type="number" id="gpBtnMap" min="0" max="20" value="7"></div>
-          <div class="ts-gp-row"><label>Pause</label><input type="number" id="gpBtnPause" min="0" max="20" value="9"></div>
+
+        <!-- Visual controller diagram showing current bindings -->
+        <div class="ts-gp-diagram" id="tsGpDiagram">
+          <svg viewBox="0 0 320 200" xmlns="http://www.w3.org/2000/svg">
+            <!-- Body -->
+            <path d="M40,80 Q40,40 80,40 L120,40 Q140,40 150,55 L170,55 Q180,40 200,40 L240,40 Q280,40 280,80 L290,140 Q290,180 250,180 L210,180 Q190,180 180,165 L140,165 Q130,180 110,180 L70,180 Q30,180 30,140 Z"
+                  fill="#2a2010" stroke="#806020" stroke-width="1.5"/>
+            <!-- D-pad (left side) -->
+            <rect x="60" y="90" width="14" height="36" fill="#1a1408" stroke="#806020" data-gp-btn="12+13"/>
+            <rect x="51" y="99" width="36" height="14" fill="#1a1408" stroke="#806020" data-gp-btn="14+15"/>
+            <text x="67" y="110" font-size="6" fill="#d4b340" text-anchor="middle">十字</text>
+            <!-- Face buttons (right side) -->
+            <circle cx="245" cy="80" r="11" fill="#1a1408" stroke="#a85020" stroke-width="1.5" data-gp-btn="3"/>
+            <text x="245" y="84" font-size="11" fill="#a85020" text-anchor="middle">△</text>
+            <circle cx="265" cy="100" r="11" fill="#1a1408" stroke="#c83a3a" stroke-width="1.5" data-gp-btn="1"/>
+            <text x="265" y="104" font-size="11" fill="#c83a3a" text-anchor="middle">◯</text>
+            <circle cx="225" cy="100" r="11" fill="#1a1408" stroke="#88a4ec" stroke-width="1.5" data-gp-btn="2"/>
+            <text x="225" y="104" font-size="11" fill="#88a4ec" text-anchor="middle">□</text>
+            <circle cx="245" cy="120" r="11" fill="#1a1408" stroke="#6cb09a" stroke-width="1.5" data-gp-btn="0"/>
+            <text x="245" y="124" font-size="11" fill="#6cb09a" text-anchor="middle">✕</text>
+            <!-- Shoulder buttons -->
+            <rect x="60" y="50" width="40" height="12" rx="4" fill="#1a1408" stroke="#806020" data-gp-btn="4"/>
+            <text x="80" y="58" font-size="6" fill="#d4b340" text-anchor="middle">L1</text>
+            <rect x="220" y="50" width="40" height="12" rx="4" fill="#1a1408" stroke="#806020" data-gp-btn="5"/>
+            <text x="240" y="58" font-size="6" fill="#d4b340" text-anchor="middle">R1</text>
+            <rect x="60" y="35" width="40" height="12" rx="4" fill="#1a1408" stroke="#806020" data-gp-btn="6"/>
+            <text x="80" y="43" font-size="6" fill="#d4b340" text-anchor="middle">L2</text>
+            <rect x="220" y="35" width="40" height="12" rx="4" fill="#1a1408" stroke="#806020" data-gp-btn="7"/>
+            <text x="240" y="43" font-size="6" fill="#d4b340" text-anchor="middle">R2</text>
+            <!-- Center buttons -->
+            <rect x="125" y="95" width="22" height="10" rx="3" fill="#1a1408" stroke="#806020" data-gp-btn="8"/>
+            <text x="136" y="102" font-size="5" fill="#d4b340" text-anchor="middle">SHARE</text>
+            <rect x="173" y="95" width="22" height="10" rx="3" fill="#1a1408" stroke="#806020" data-gp-btn="9"/>
+            <text x="184" y="102" font-size="5" fill="#d4b340" text-anchor="middle">OPT</text>
+            <!-- Analog sticks -->
+            <circle cx="105" cy="140" r="18" fill="#1a1408" stroke="#806020" stroke-width="1.5"/>
+            <text x="105" y="143" font-size="6" fill="#d4b340" text-anchor="middle">L stick</text>
+            <circle cx="215" cy="140" r="18" fill="#1a1408" stroke="#806020" stroke-width="1.5"/>
+            <text x="215" y="143" font-size="6" fill="#d4b340" text-anchor="middle">R stick</text>
+          </svg>
         </div>
-        <p class="ts-help" id="tsGpPressedBtn">最後に押されたボタン: -</p>
-        <button id="tsGpResetBtn" class="ts-toggle" style="margin-top:6px;">既定に戻す</button>
+        <p class="ts-help" id="tsGpPressedBtn">押下中ボタン: -</p>
+
+        <!-- Function list with assign buttons -->
+        <div class="ts-gp-funcs">
+          <div class="ts-gp-fn"><span class="fn-label">アクション</span><button type="button" class="ts-gp-assign" data-fn="action">未割当</button></div>
+          <div class="ts-gp-fn"><span class="fn-label">スマホ</span><button type="button" class="ts-gp-assign" data-fn="phone">未割当</button></div>
+          <div class="ts-gp-fn"><span class="fn-label">フレア</span><button type="button" class="ts-gp-assign" data-fn="flare">未割当</button></div>
+          <div class="ts-gp-fn"><span class="fn-label">スプリント</span><button type="button" class="ts-gp-assign" data-fn="sprint">未割当</button></div>
+          <div class="ts-gp-fn"><span class="fn-label">マップ</span><button type="button" class="ts-gp-assign" data-fn="map">未割当</button></div>
+          <div class="ts-gp-fn"><span class="fn-label">ポーズ</span><button type="button" class="ts-gp-assign" data-fn="pause">未割当</button></div>
+        </div>
+
+        <button id="tsGpResetBtn" class="ts-toggle" style="margin-top:10px;">既定に戻す</button>
       </div>
       <div class="ts-actions">
         <button class="ts-close-btn" type="button" onclick="window.__titleAction&&window.__titleAction('closeSettings')">閉じる</button>
@@ -690,8 +734,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="assets/js/engine.js?v=81"></script>
-  <script src="assets/js/game.js?v=81"></script>
+  <script src="assets/js/engine.js?v=82"></script>
+  <script src="assets/js/game.js?v=82"></script>
 
   <!-- POST-LOAD VERIFICATION + DIRECT BINDING FALLBACK
        After game.js IIFE runs, this script confirms __titleAction is the real one.

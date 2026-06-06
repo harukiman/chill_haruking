@@ -1904,7 +1904,13 @@
     // 5. AUDIO SYSTEM (Procedural via Web Audio API)
     // ─────────────────────────────────────────────
     initAudio: function () {
-      if (audioInitialized) return;
+      if (audioInitialized && audioCtx) {
+        // Re-resume if suspended (iOS sometimes re-suspends)
+        if (audioCtx.state === 'suspended') {
+          try { audioCtx.resume(); } catch (e) {}
+        }
+        return;
+      }
       try {
         var AC = window.AudioContext || window.webkitAudioContext;
         audioCtx = new AC();
@@ -1919,9 +1925,15 @@
         seGain.connect(masterGain);
         audioInitialized = true;
 
-        // Resume context if suspended (iOS)
+        // Resume context if suspended (iOS) — try multiple times
         if (audioCtx.state === 'suspended') {
-          audioCtx.resume();
+          try { audioCtx.resume(); } catch (e) {}
+          // Retry after a tick in case the first resume was racy
+          setTimeout(function () {
+            if (audioCtx && audioCtx.state === 'suspended') {
+              try { audioCtx.resume(); } catch (e) {}
+            }
+          }, 50);
         }
       } catch (e) {
         console.warn('Web Audio API not supported:', e);
@@ -1929,9 +1941,10 @@
     },
 
     playSound: function (type) {
-      if (!audioCtx || audioCtx.state === 'suspended') {
-        if (audioCtx) audioCtx.resume();
-        return;
+      if (!audioCtx) return;
+      if (audioCtx.state === 'suspended') {
+        try { audioCtx.resume(); } catch (e) {}
+        // Don't return — try to play anyway. Some browsers play even while resuming.
       }
 
       var now = audioCtx.currentTime;

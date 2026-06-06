@@ -1361,13 +1361,49 @@
     // Show last-pressed button in title settings (when settings overlay is open)
     var pressedEl = el('tsGpPressedBtn');
     if (pressedEl) {
+      var anyPressed = false;
       for (var pi = 0; pi < gp.buttons.length; pi++) {
         if (gp.buttons[pi].pressed) {
-          pressedEl.textContent = '最後に押されたボタン: ' + pi;
+          pressedEl.textContent = '押下中ボタン: ' + pi;
+          anyPressed = true;
           break;
         }
       }
+      if (!anyPressed) pressedEl.textContent = '押下中ボタン: -';
     }
+    // Gamepad diagram + assign listening hooks (when settings open)
+    if (typeof window._gpDiagramHook === 'function') {
+      try { window._gpDiagramHook(gp); } catch (e) {}
+    }
+    if (typeof window._gpListeningHook === 'function') {
+      try {
+        if (window._gpListeningHook(gp)) return; // captured a binding; skip game input
+      } catch (e) {}
+    }
+    // Any-button-press for cinematic dismissal (level reach, encounter, intro)
+    var anyBtn = false;
+    for (var abi = 0; abi < gp.buttons.length; abi++) {
+      if (gp.buttons[abi].pressed) { anyBtn = true; break; }
+    }
+    if (anyBtn && !gp._cineDismissPressed) {
+      gp._cineDismissPressed = true;
+      var lrOverlay = el('levelReachCinematic');
+      if (lrOverlay && lrOverlay.style.display !== 'none') {
+        lrOverlay.click();
+        return;
+      }
+      var encOverlay = el('encounterCinematic');
+      if (encOverlay && encOverlay.style.display !== 'none') {
+        encOverlay.click();
+        return;
+      }
+      var introOverlay = el('introOverlay');
+      if (introOverlay && introOverlay.style.display !== 'none') {
+        introOverlay.click();
+        return;
+      }
+    }
+    if (!anyBtn) gp._cineDismissPressed = false;
     // Handle menu navigation when overlays are open (close on action / phone button)
     var pauseBtn = gp.buttons[gamepadMap.pause];
     var actionBtnRaw = gp.buttons[gamepadMap.action];
@@ -6783,37 +6819,111 @@
         if (fpsInd) fpsInd.style.display = fpsOn ? 'block' : 'none';
       });
     }
-    // Gamepad mapping UI
-    var gpFields = {
-      gpBtnAction: 'action', gpBtnPhone: 'phone', gpBtnFlare: 'flare',
-      gpBtnSprint: 'sprint', gpBtnMap: 'map', gpBtnPause: 'pause'
-    };
-    function refreshGpUI() {
-      for (var elid in gpFields) {
-        var inp = el(elid);
-        if (inp) inp.value = gamepadMap[gpFields[elid]];
+    // Gamepad mapping UI — visual diagram + "press a button to assign" flow
+    var BTN_LABELS = ['✕', '◯', '□', '△', 'L1', 'R1', 'L2', 'R2',
+                       'SHARE', 'OPT', 'L3', 'R3', '↑', '↓', '←', '→', 'PS/Home'];
+    function btnLabel(idx) {
+      if (idx === undefined || idx === null || idx < 0) return '未割当';
+      return 'ボタン ' + idx + (BTN_LABELS[idx] ? ' (' + BTN_LABELS[idx] + ')' : '');
+    }
+    function refreshGpFnUI() {
+      var fnBtns = document.querySelectorAll('.ts-gp-assign');
+      for (var i = 0; i < fnBtns.length; i++) {
+        var fn = fnBtns[i].getAttribute('data-fn');
+        if (!fnBtns[i].classList.contains('listening')) {
+          fnBtns[i].textContent = btnLabel(gamepadMap[fn]);
+        }
+      }
+      // Highlight bound buttons in diagram
+      var diag = el('tsGpDiagram');
+      if (diag) {
+        var els = diag.querySelectorAll('[data-gp-btn]');
+        var bound = {};
+        for (var k in gamepadMap) { if (typeof gamepadMap[k] === 'number') bound[gamepadMap[k]] = 1; }
+        for (var ei = 0; ei < els.length; ei++) {
+          var b = els[ei].getAttribute('data-gp-btn');
+          if (b.indexOf('+') >= 0) continue; // dpad combo, skip
+          els[ei].classList.toggle('bound', !!bound[parseInt(b, 10)]);
+        }
       }
     }
-    refreshGpUI();
-    for (var elid2 in gpFields) {
-      (function (id, key) {
-        var inp = el(id);
-        if (!inp) return;
-        inp.addEventListener('input', function () {
-          var v = parseInt(inp.value, 10);
-          if (isFinite(v) && v >= 0 && v <= 20) {
-            gamepadMap[key] = v;
-            try { localStorage.setItem(GAMEPAD_KEY, JSON.stringify(gamepadMap)); } catch (e) {}
+    refreshGpFnUI();
+
+    // Assign click handler: enter listening mode, next gamepad button press = bind
+    var listeningFn = null;
+    var listeningBtn = null;
+    function startListening(fn, btn) {
+      listeningFn = fn;
+      listeningBtn = btn;
+      btn.classList.add('listening');
+      btn.textContent = '押してください...';
+    }
+    function stopListening() {
+      if (listeningBtn) {
+        listeningBtn.classList.remove('listening');
+      }
+      listeningFn = null;
+      listeningBtn = null;
+      refreshGpFnUI();
+    }
+    var assignBtns = document.querySelectorAll('.ts-gp-assign');
+    for (var ai = 0; ai < assignBtns.length; ai++) {
+      (function (btn) {
+        btn.addEventListener('click', function () {
+          var fn = btn.getAttribute('data-fn');
+          if (listeningFn === fn) {
+            // Cancel listening
+            stopListening();
+          } else {
+            if (listeningBtn) listeningBtn.classList.remove('listening');
+            startListening(fn, btn);
           }
         });
-      })(elid2, gpFields[elid2]);
+      })(assignBtns[ai]);
     }
+    // Hook into pollGamepad: when listening, capture next button press
+    window._gpListeningHook = function (gp) {
+      if (!listeningFn) return false;
+      for (var bi = 0; bi < gp.buttons.length; bi++) {
+        if (gp.buttons[bi].pressed) {
+          gamepadMap[listeningFn] = bi;
+          try { localStorage.setItem(GAMEPAD_KEY, JSON.stringify(gamepadMap)); } catch (e) {}
+          stopListening();
+          toast('「' + listeningFn + '」を ボタン ' + bi + ' に設定');
+          return true; // signal handled
+        }
+      }
+      return false;
+    };
+    // Diagram live highlight: pressed button glows
+    window._gpDiagramHook = function (gp) {
+      var diag = el('tsGpDiagram');
+      if (!diag) return;
+      var els = diag.querySelectorAll('[data-gp-btn]');
+      for (var ei = 0; ei < els.length; ei++) {
+        var b = els[ei].getAttribute('data-gp-btn');
+        var pressed = false;
+        if (b.indexOf('+') >= 0) {
+          // dpad combo
+          var parts = b.split('+');
+          for (var pi = 0; pi < parts.length; pi++) {
+            var pIdx = parseInt(parts[pi], 10);
+            if (gp.buttons[pIdx] && gp.buttons[pIdx].pressed) { pressed = true; break; }
+          }
+        } else {
+          var bIdx = parseInt(b, 10);
+          if (gp.buttons[bIdx] && gp.buttons[bIdx].pressed) pressed = true;
+        }
+        els[ei].classList.toggle('pressed', pressed);
+      }
+    };
+
     var gpReset = el('tsGpResetBtn');
     if (gpReset) {
       gpReset.addEventListener('click', function () {
         gamepadMap = Object.assign({}, DEFAULT_GAMEPAD_MAP);
         try { localStorage.setItem(GAMEPAD_KEY, JSON.stringify(gamepadMap)); } catch (e) {}
-        refreshGpUI();
+        refreshGpFnUI();
         toast('ゲームパッド設定をリセット');
       });
     }
@@ -6920,6 +7030,15 @@
         audioInitialized = true;
         var hint = el('tapToStartHint');
         if (hint) hint.classList.add('hidden');
+        // Start title BGM (classical horror loop) once audio is up
+        setTimeout(function () {
+          if (state === ST.TITLE) {
+            try { GameEngine.startLoop('classical'); } catch (e) {}
+          }
+        }, 100);
+      } else {
+        // Already initialized — but iOS may have re-suspended audioCtx.
+        try { GameEngine.initAudio(); } catch (e) {} // idempotent + re-resumes
       }
       stage = 'switch:' + action;
       switch (action) {
