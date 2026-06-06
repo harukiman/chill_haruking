@@ -17,7 +17,7 @@
   <meta name="twitter:title" content="THE BACKROOMS — featuring HARUKI">
   <meta name="twitter:description" content="一人称モバイル探索ホラー。Level 0 から no-clip で階層を降下。壁の向こうにカレが待つ。">
   <title>THE BACKROOMS</title>
-  <link rel="stylesheet" href="assets/css/game.css?v=55">
+  <link rel="stylesheet" href="assets/css/game.css?v=56">
 </head>
 <body oncontextmenu="return false;">
 
@@ -56,19 +56,62 @@
       <p class="game-subtitle-jp">壁の向こうに"カレ"が待っている...</p>
       <div class="title-decoration"></div>
       <div class="title-menu">
-        <button id="startBtn" class="menu-btn" type="button">はじめから</button>
-        <button id="continueBtn" class="menu-btn" type="button" style="display:none;">つづきから</button>
-        <button id="freeRoamBtn" class="menu-btn" type="button" style="display:none;">フリーローム</button>
-        <button id="endlessBtn" class="menu-btn" type="button">ENDLESS モード</button>
-        <button id="difficultyBtn" class="menu-btn" type="button">難易度: NORMAL</button>
-        <button id="controlsBtn" class="menu-btn" type="button">操作説明</button>
+        <button id="startBtn" class="menu-btn" type="button" onclick="window.__titleAction&&window.__titleAction('start')">はじめから</button>
+        <button id="continueBtn" class="menu-btn" type="button" style="display:none;" onclick="window.__titleAction&&window.__titleAction('continue')">つづきから</button>
+        <button id="freeRoamBtn" class="menu-btn" type="button" style="display:none;" onclick="window.__titleAction&&window.__titleAction('freeroam')">フリーローム</button>
+        <button id="endlessBtn" class="menu-btn" type="button" onclick="window.__titleAction&&window.__titleAction('endless')">ENDLESS モード</button>
+        <button id="difficultyBtn" class="menu-btn" type="button" onclick="window.__titleAction&&window.__titleAction('difficulty')">難易度: NORMAL</button>
+        <button id="controlsBtn" class="menu-btn" type="button" onclick="window.__titleAction&&window.__titleAction('controls')">操作説明</button>
+        <button id="titleSettingsBtn" class="menu-btn" type="button" onclick="window.__titleAction&&window.__titleAction('settings')">設定</button>
       </div>
     </div>
-    <button id="titleResetBtn" class="title-reset-btn" type="button">⚠ 全データ削除</button>
+    <button id="titleResetBtn" class="title-reset-btn" type="button" onclick="window.__titleAction&&window.__titleAction('reset')">⚠ 全データ削除</button>
     <div id="tapToStartHint" class="tap-to-start-hint">画面をタップして開始</div>
     <p class="copyright">THE BACKROOMS — featuring HARUKI &copy; 2026</p>
-    <p class="version-text" id="versionText">ver 3.9 (Spatial Audio)</p>
+    <p class="version-text" id="versionText">ver 4.0 (Title Settings)</p>
     <p class="title-ach-counter" id="titleAchCounter"></p>
+  </div>
+
+  <!-- Title Settings Overlay -->
+  <div id="titleSettingsOverlay" class="overlay title-settings-overlay" style="display:none;">
+    <div class="ts-card">
+      <h2 class="ts-title">SETTINGS</h2>
+      <div class="ts-section">
+        <div class="ts-row">
+          <label for="tsMasterVol">マスター音量 <span id="tsMasterVolVal">100%</span></label>
+          <input type="range" id="tsMasterVol" min="0" max="100" value="100">
+        </div>
+        <div class="ts-row">
+          <label for="tsBgmVol">BGM <span id="tsBgmVolVal">80%</span></label>
+          <input type="range" id="tsBgmVol" min="0" max="100" value="80">
+        </div>
+        <div class="ts-row">
+          <label for="tsSeVol">効果音 <span id="tsSeVolVal">100%</span></label>
+          <input type="range" id="tsSeVol" min="0" max="100" value="100">
+        </div>
+      </div>
+      <div class="ts-section">
+        <div class="ts-row">
+          <label for="tsSens">視点感度 <span id="tsSensVal">1.0×</span></label>
+          <input type="range" id="tsSens" min="50" max="200" value="100">
+        </div>
+        <div class="ts-row">
+          <label for="tsGrain">フィルムグレイン <span id="tsGrainVal">中</span></label>
+          <input type="range" id="tsGrain" min="0" max="2" value="1" step="1">
+        </div>
+        <div class="ts-row ts-toggle-row">
+          <span>グラフィック品質</span>
+          <button id="tsGfxToggle" type="button" class="ts-toggle">HIGH</button>
+        </div>
+        <div class="ts-row ts-toggle-row">
+          <span>振動</span>
+          <button id="tsVibrateToggle" type="button" class="ts-toggle">ON</button>
+        </div>
+      </div>
+      <div class="ts-actions">
+        <button class="ts-close-btn" type="button" onclick="window.__titleAction&&window.__titleAction('closeSettings')">閉じる</button>
+      </div>
+    </div>
   </div>
 
   <!-- Intro Cinematic Overlay (first-person POV) -->
@@ -555,8 +598,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="assets/js/engine.js?v=55"></script>
-  <script src="assets/js/game.js?v=55"></script>
+  <script src="assets/js/engine.js?v=56"></script>
+  <script src="assets/js/game.js?v=56"></script>
 
 </body>
 </html>

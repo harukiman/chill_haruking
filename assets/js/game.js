@@ -6499,6 +6499,65 @@
       } else { ki = 0; }
     });
 
+    // Title Settings Overlay sliders (mirror in-game phone settings)
+    function bindTitleSetting(sliderId, valEl, storageKey, fmt, onApply) {
+      var s = el(sliderId);
+      var v = el(valEl);
+      if (!s) return;
+      var stored = localStorage.getItem(storageKey);
+      if (stored !== null) s.value = parseInt(stored, 10);
+      if (v) v.textContent = fmt(s.value);
+      s.addEventListener('input', function () {
+        if (v) v.textContent = fmt(s.value);
+        try { localStorage.setItem(storageKey, s.value); } catch (e) {}
+        if (onApply) onApply(parseInt(s.value, 10));
+      });
+      if (onApply) onApply(parseInt(s.value, 10));
+    }
+    bindTitleSetting('tsMasterVol', 'tsMasterVolVal', 'bk_master_vol',
+      function (x) { return x + '%'; },
+      function (x) { try { GameEngine.setMasterVolume(x / 100); } catch (e) {} });
+    bindTitleSetting('tsBgmVol', 'tsBgmVolVal', 'bk_bgm_vol',
+      function (x) { return x + '%'; },
+      function (x) { try { GameEngine.setBgmVolume(x / 100); } catch (e) {} });
+    bindTitleSetting('tsSeVol', 'tsSeVolVal', 'bk_se_vol',
+      function (x) { return x + '%'; },
+      function (x) { try { GameEngine.setSeVolume(x / 100); } catch (e) {} });
+    bindTitleSetting('tsSens', 'tsSensVal', 'bk_sens',
+      function (x) { return (x / 100).toFixed(1) + '×'; });
+    bindTitleSetting('tsGrain', 'tsGrainVal', 'bk_grain_level',
+      function (x) { return ['オフ', '中', '高'][parseInt(x, 10)] || '中'; },
+      function (x) {
+        var map = [0, 0.4, 0.8];
+        GameEngine.grainIntensity = map[x] || 0.4;
+      });
+
+    var tsGfx = el('tsGfxToggle');
+    if (tsGfx) {
+      var gq = localStorage.getItem('thebackrooms_gfx_v1') === 'low' ? 'low' : 'high';
+      tsGfx.textContent = gq === 'high' ? 'HIGH' : 'LOW';
+      tsGfx.classList.toggle('off', gq === 'low');
+      tsGfx.addEventListener('click', function () {
+        gq = (gq === 'high') ? 'low' : 'high';
+        localStorage.setItem('thebackrooms_gfx_v1', gq);
+        tsGfx.textContent = gq === 'high' ? 'HIGH' : 'LOW';
+        tsGfx.classList.toggle('off', gq === 'low');
+        if (typeof applyGfxQuality === 'function') applyGfxQuality();
+      });
+    }
+    var tsVib = el('tsVibrateToggle');
+    if (tsVib) {
+      var vibOn = localStorage.getItem('bk_vibrate') !== '0';
+      tsVib.textContent = vibOn ? 'ON' : 'OFF';
+      tsVib.classList.toggle('off', !vibOn);
+      tsVib.addEventListener('click', function () {
+        vibOn = !vibOn;
+        localStorage.setItem('bk_vibrate', vibOn ? '1' : '0');
+        tsVib.textContent = vibOn ? 'ON' : 'OFF';
+        tsVib.classList.toggle('off', !vibOn);
+      });
+    }
+
     // 3-tap on title logo triggers same effect (mobile-friendly)
     var titleTaps = 0;
     var titleTapTimer = 0;
@@ -6594,6 +6653,44 @@
       });
     } catch (e) { console.error('viewport setup failed', e); }
   }
+
+  // Global title action façade — used by inline onclick attrs as a robust fallback
+  // so title buttons always work even if addEventListener fails for any reason.
+  window.__titleAction = function (action) {
+    try {
+      if (!audioInitialized) {
+        try { GameEngine.initAudio(); } catch (e) {}
+        audioInitialized = true;
+        var hint = el('tapToStartHint');
+        if (hint) hint.classList.add('hidden');
+      }
+      switch (action) {
+        case 'start': startNewGame(); break;
+        case 'continue': continueGame(); break;
+        case 'endless': startEndlessMode(); break;
+        case 'freeroam': openLevelSelect(); break;
+        case 'difficulty':
+          var order = ['easy', 'normal', 'hard', 'chaos'];
+          var idx = order.indexOf(currentDifficulty);
+          var nx = order[(idx + 1) % order.length];
+          setDifficulty(nx);
+          var dbtn = el('difficultyBtn');
+          if (dbtn) dbtn.textContent = '難易度: ' + DIFFICULTIES[nx].name;
+          break;
+        case 'controls': showOverlay('tutorialOverlay'); break;
+        case 'settings': showOverlay('titleSettingsOverlay'); break;
+        case 'closeSettings': hideOverlay('titleSettingsOverlay'); break;
+        case 'reset':
+          if (!confirm('全データ削除しますか?')) return;
+          if (!confirm('最終確認: 取り消せません。本当に?')) return;
+          var keys = ['thebackrooms_save_v1', 'thebackrooms_ach_v1', 'thebackrooms_best_v1', 'thebackrooms_diff_v1', 'thebackrooms_tut_v1', 'thebackrooms_endless_v1', 'thebackrooms_stats_v1', 'thebackrooms_ent_seen_v1', 'thebackrooms_lifetime_notes_v1', 'thebackrooms_items_collected_v1', 'thebackrooms_gfx_v1', 'bk_master_vol', 'bk_bgm_vol', 'bk_se_vol', 'bk_sens', 'bk_grain'];
+          keys.forEach(function (k) { try { localStorage.removeItem(k); } catch (e) {} });
+          toast('全データを削除しました');
+          setTimeout(function () { location.reload(); }, 1200);
+          break;
+      }
+    } catch (e) { console.error('titleAction failed', action, e); }
+  };
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
