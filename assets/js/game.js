@@ -1294,6 +1294,34 @@
     }, 1800);
   }
 
+  // Encounter cinematic for entity first sighting
+  var _inCinematic = false;
+  function playEncounterCinematic(entityType) {
+    var intro = ENTITY_INTROS[entityType];
+    if (!intro) return;
+    _inCinematic = true;
+    // Audio cue
+    if (audioInitialized) {
+      GameEngine.playSound('jumpscare');
+      GameEngine.shakeScreen(15, 0.6);
+    }
+    // Entity-specific icons
+    var entityIcons = {
+      hound: '🐺', smiler: '😬', skinstealer: '🧥', partygoer: '🎉',
+      crawler: '🕷', wretch: '👁', boss: '👑', mrhotel: '🎩', haruki: '👤'
+    };
+    el('encounterShape').textContent = entityIcons[entityType] || '⚠';
+    el('encounterName').textContent = intro.name;
+    el('encounterDesc').textContent = intro.desc;
+    showOverlay('encounterCinematic');
+    if (navigator.vibrate) navigator.vibrate([80, 40, 80, 40, 80]);
+    // Auto-close after 4.5s
+    setTimeout(function () {
+      hideOverlay('encounterCinematic');
+      _inCinematic = false;
+    }, 4500);
+  }
+
   function toast(msg, duration) {
     duration = duration || 2200;
     var t = el('toastNotification');
@@ -1778,6 +1806,7 @@
     if (state !== ST.PLAYING) return;
     if (phoneOpen) return;
     if (miniGameOpen) return;
+    if (_inCinematic) return;
 
     var inp = GameEngine.input;
     var sens = 2.5 * (parseInt(localStorage.getItem('bk_sens') || '100', 10) / 100);
@@ -3383,6 +3412,7 @@
     if (state !== ST.PLAYING) return;
     if (phoneOpen) return;
     if (miniGameOpen) return;
+    if (_inCinematic) return;
     var diffE = DIFFICULTIES[currentDifficulty] || DIFFICULTIES.normal;
     var sMul = diffE.enemySpeedMul;
 
@@ -3391,22 +3421,16 @@
       if (!e.alive) continue;
       e.stateTimer += dt;
 
-      // First-encounter intro
+      // First-encounter cinematic
       if (!entitySeenTypes[e.type] && ENTITY_INTROS[e.type]) {
         var fcDx = e.x - player.x, fcDy = e.y - player.y;
         var fcD = Math.sqrt(fcDx * fcDx + fcDy * fcDy);
-        if (fcD < 10 * TS) {
+        if (fcD < 8 * TS) {
           entitySeenTypes[e.type] = true;
           saveStats();
-          var intro = ENTITY_INTROS[e.type];
-          showAchievementToast({ name: '◉ ' + intro.name + ' 出現', icon: '👁' });
-          var hudObj = el('objectiveHUD');
-          if (hudObj) {
-            hudObj.style.display = 'block';
-            el('objectiveText').textContent = '【' + intro.name + '】' + intro.desc.split('\n')[0];
-            setTimeout(function () { hudObj.style.display = 'none'; }, 6000);
-          }
           if (e.type === 'haruki') unlockAchievement('encounter_haruki');
+          playEncounterCinematic(e.type);
+          return; // stop processing all entities this frame
         }
       }
 

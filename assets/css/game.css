@@ -525,6 +525,93 @@ body {
 }
 
 /* ============================================================
+ *  ENTITY ENCOUNTER CINEMATIC
+ * ============================================================ */
+#encounterCinematic {
+  background: rgba(0, 0, 0, 0.92);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 85;
+  pointer-events: none;
+}
+.encounter-bar {
+  position: absolute;
+  left: 0; right: 0;
+  height: 80px;
+  background: #000;
+  transform: translateY(-100%);
+  animation: encounterBar 0.6s ease-out forwards;
+}
+.encounter-bar.top { top: 0; }
+.encounter-bar.bottom {
+  bottom: 0;
+  top: auto;
+  transform: translateY(100%);
+}
+@keyframes encounterBar {
+  to { transform: translateY(0); }
+}
+.encounter-content {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  padding: 20px;
+  max-width: 86vw;
+  animation: encounterContentFade 1s ease-out 0.5s both;
+}
+@keyframes encounterContentFade {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.encounter-eye-wrap {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  margin: 0 auto 16px;
+}
+.encounter-eye-glow {
+  position: absolute;
+  inset: -20px;
+  background: radial-gradient(circle, rgba(220, 50, 50, 0.5) 0%, transparent 60%);
+  animation: encounterPulse 1.5s ease-in-out infinite;
+}
+@keyframes encounterPulse {
+  0%, 100% { transform: scale(0.9); opacity: 0.6; }
+  50%      { transform: scale(1.3); opacity: 1; }
+}
+.encounter-eye-shape {
+  position: absolute;
+  inset: 0;
+  font-size: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 0 12px rgba(220, 50, 50, 0.7));
+}
+.encounter-name {
+  font-family: 'Times New Roman', serif;
+  font-size: 24px;
+  letter-spacing: 0.3em;
+  color: #ff5050;
+  font-weight: bold;
+  margin-bottom: 8px;
+  text-shadow: 0 0 16px rgba(220, 50, 50, 0.6);
+  animation: encounterNameShake 0.3s ease-out 0.8s 4;
+}
+@keyframes encounterNameShake {
+  0%, 100% { transform: translateX(0); }
+  25%      { transform: translateX(-2px); }
+  75%      { transform: translateX(2px); }
+}
+.encounter-desc {
+  font-size: 13px;
+  color: #d8d2bc;
+  line-height: 1.8;
+  letter-spacing: 0.05em;
+  white-space: pre-wrap;
+}
+
+/* ============================================================
  *  LOADING SCREEN (no-clip transition)
  * ============================================================ */
 #loadingScreen {
@@ -2103,62 +2190,56 @@ body {
 /* ============================================================
  *  ACHIEVEMENT TOAST
  * ============================================================ */
-/* DISCOVERY POPUP (item/note discovery) */
+/* DISCOVERY POPUP (item/note discovery — top-right, small) */
 .discovery-popup {
   position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) scale(0.8);
-  background: linear-gradient(180deg, rgba(40, 30, 8, 0.96) 0%, rgba(20, 14, 4, 0.96) 100%);
-  border: 2px solid #d4b340;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 12px 40px rgba(212, 179, 64, 0.4), 0 0 60px rgba(212, 179, 64, 0.2);
-  padding: 20px 28px;
+  top: calc(env(safe-area-inset-top, 8px) + 60px);
+  right: 12px;
+  transform: translateX(120%);
+  background: linear-gradient(180deg, rgba(40, 30, 8, 0.95) 0%, rgba(20, 14, 4, 0.95) 100%);
+  border: 1px solid #d4b340;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), 0 0 24px rgba(212, 179, 64, 0.2);
+  padding: 8px 12px;
   display: none;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   gap: 10px;
   z-index: 78;
-  min-width: 240px;
-  max-width: 84vw;
-  border-radius: 18px;
+  min-width: 160px;
+  max-width: 70vw;
+  border-radius: 12px;
   opacity: 0;
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .discovery-popup.show {
   display: flex;
   opacity: 1;
-  transform: translate(-50%, -50%) scale(1);
+  transform: translateX(0);
 }
 .discovery-icon {
-  font-size: 56px;
+  font-size: 28px;
   line-height: 1;
-  filter: drop-shadow(0 0 16px rgba(212, 179, 64, 0.6));
-  animation: discoveryPulse 1s ease-out;
-}
-@keyframes discoveryPulse {
-  0%   { transform: scale(0.3) rotate(-15deg); }
-  60%  { transform: scale(1.2) rotate(8deg); }
-  100% { transform: scale(1) rotate(0deg); }
+  filter: drop-shadow(0 0 6px rgba(212, 179, 64, 0.5));
 }
 .discovery-body {
-  text-align: center;
+  text-align: left;
 }
 .discovery-label {
-  font-size: 10px;
-  letter-spacing: 0.4em;
+  font-size: 8px;
+  letter-spacing: 0.25em;
   color: #b09040;
   text-transform: uppercase;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 .discovery-name {
   font-family: 'Times New Roman', serif;
-  font-size: 18px;
-  letter-spacing: 0.12em;
+  font-size: 13px;
+  letter-spacing: 0.06em;
   color: #f0dc8a;
   font-weight: bold;
-  text-shadow: 0 0 8px rgba(212, 179, 64, 0.5);
+  text-shadow: 0 0 4px rgba(212, 179, 64, 0.3);
 }
 
 .achievement-toast {

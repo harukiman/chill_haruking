@@ -17,7 +17,7 @@
   <meta name="twitter:title" content="THE BACKROOMS — featuring HARUKI">
   <meta name="twitter:description" content="一人称モバイル探索ホラー。Level 0 から no-clip で階層を降下。壁の向こうにカレが待つ。">
   <title>THE BACKROOMS</title>
-  <link rel="stylesheet" href="assets/css/game.css?v=41">
+  <link rel="stylesheet" href="assets/css/game.css?v=42">
 </head>
 <body oncontextmenu="return false;">
 
@@ -98,6 +98,20 @@
     </div>
     <div class="intro-eyes" id="introEyes"></div>
     <button id="introSkipBtn" class="intro-skip-btn" type="button">スキップ →</button>
+  </div>
+
+  <!-- Entity Encounter Cinematic -->
+  <div id="encounterCinematic" class="overlay encounter-overlay" style="display:none;">
+    <div class="encounter-bar top"></div>
+    <div class="encounter-bar bottom"></div>
+    <div class="encounter-content">
+      <div class="encounter-eye-wrap">
+        <div class="encounter-eye-glow"></div>
+        <div class="encounter-eye-shape" id="encounterShape"></div>
+      </div>
+      <p class="encounter-name" id="encounterName"></p>
+      <p class="encounter-desc" id="encounterDesc"></p>
+    </div>
   </div>
 
   <!-- Loading Screen Overlay (level transition) -->
@@ -487,8 +501,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="assets/js/engine.js?v=41"></script>
-  <script src="assets/js/game.js?v=41"></script>
+  <script src="assets/js/engine.js?v=42"></script>
+  <script src="assets/js/game.js?v=42"></script>
 
 </body>
 </html>
