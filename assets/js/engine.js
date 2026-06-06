@@ -2110,7 +2110,238 @@
         case 'classical':
           activeLoops[type] = this._startClassicalLoop();
           break;
+        case 'lobby_music':
+          activeLoops[type] = this._startLobbyMusicLoop();
+          break;
+        case 'nostalgic':
+          activeLoops[type] = this._startNostalgicLoop();
+          break;
+        case 'chase':
+          activeLoops[type] = this._startChaseLoop();
+          break;
+        case 'breath_drone':
+          activeLoops[type] = this._startBreathDroneLoop();
+          break;
       }
+    },
+
+    // Old jazz lobby waltz (broken 78rpm vinyl style) for Lv5 hotel
+    _startLobbyMusicLoop: function () {
+      var dest = bgmGain || masterGain;
+      var ctx = audioCtx;
+      var now = ctx.currentTime;
+      // Vinyl crackle noise
+      var bufLen = ctx.sampleRate * 3;
+      var buf = ctx.createBuffer(1, bufLen, ctx.sampleRate);
+      var d = buf.getChannelData(0);
+      for (var i = 0; i < bufLen; i++) d[i] = (Math.random() * 2 - 1) * 0.04;
+      var crackle = ctx.createBufferSource();
+      crackle.buffer = buf; crackle.loop = true;
+      var hp = ctx.createBiquadFilter();
+      hp.type = 'highpass'; hp.frequency.value = 4000;
+      var crG = ctx.createGain(); crG.gain.value = 0.12;
+      crackle.connect(hp); hp.connect(crG); crG.connect(dest);
+      crackle.start(now);
+
+      // Waltz piano (3/4 time, Bb major key, with detuning for sad effect)
+      // Notes: Bb-D-F (Bb chord), Eb-G-Bb (Eb), F-A-C, Bb...
+      var waltzG = ctx.createGain();
+      waltzG.gain.value = 0.13;
+      // LowPass for radio/old-record feel
+      var waltzLP = ctx.createBiquadFilter();
+      waltzLP.type = 'lowpass';
+      waltzLP.frequency.value = 1200;
+      waltzG.connect(waltzLP); waltzLP.connect(dest);
+
+      // Waltz pattern (sequence of notes, 3 beats each measure)
+      // C minor waltz pattern
+      var waltzNotes = [
+        261.63, // C4 - downbeat
+        311.13, // Eb4
+        392.00, // G4
+        261.63, // C4
+        311.13, // Eb4
+        392.00, // G4
+        311.13, // Eb4
+        349.23, // F4
+        415.30, // Ab4
+        311.13, // Eb4
+        349.23, // F4
+        415.30, // Ab4
+        233.08, // Bb3
+        311.13, // Eb4
+        349.23, // F4
+        261.63, // C4
+        311.13, // Eb4
+        392.00  // G4
+      ];
+      var waltzIdx = 0;
+      var waltzTempo = 750; // 3 beats per second roughly
+
+      function playWaltzNote() {
+        if (!ctx || ctx.state !== 'running') {
+          setTimeout(playWaltzNote, waltzTempo);
+          return;
+        }
+        var t = ctx.currentTime;
+        var freq = waltzNotes[waltzIdx % waltzNotes.length];
+        // Detune slightly down for "broken record" effect
+        freq *= 0.985;
+        var osc = ctx.createOscillator();
+        osc.type = 'triangle';
+        osc.frequency.value = freq;
+        var nG = ctx.createGain();
+        // Beat 1 (down beat) gets more emphasis
+        var beatStrength = (waltzIdx % 3 === 0) ? 0.45 : 0.28;
+        nG.gain.setValueAtTime(0, t);
+        nG.gain.linearRampToValueAtTime(beatStrength, t + 0.02);
+        nG.gain.exponentialRampToValueAtTime(0.001, t + 0.65);
+        osc.connect(nG); nG.connect(waltzG);
+        osc.start(t);
+        osc.stop(t + 0.7);
+        waltzIdx++;
+        setTimeout(playWaltzNote, waltzTempo);
+      }
+      var waltzTimer = setTimeout(playWaltzNote, 800);
+
+      return {
+        nodes: [crackle],
+        gain: waltzG,
+        interval: waltzTimer
+      };
+    },
+
+    // Nostalgic suburban loop (warm but uncanny) for Lv9
+    _startNostalgicLoop: function () {
+      var dest = bgmGain || masterGain;
+      var ctx = audioCtx;
+      var now = ctx.currentTime;
+
+      // Warm pad (major chord, C-E-G)
+      var pad1 = ctx.createOscillator();
+      pad1.type = 'sine'; pad1.frequency.value = 130.81; // C3
+      var pad2 = ctx.createOscillator();
+      pad2.type = 'sine'; pad2.frequency.value = 164.81; // E3
+      var pad3 = ctx.createOscillator();
+      pad3.type = 'sine'; pad3.frequency.value = 196.00; // G3
+      var padG = ctx.createGain();
+      padG.gain.value = 0.13;
+      pad1.connect(padG); pad2.connect(padG); pad3.connect(padG); padG.connect(dest);
+      pad1.start(now); pad2.start(now); pad3.start(now);
+
+      // Slowly drifting tone
+      var drift = ctx.createOscillator();
+      drift.type = 'sine';
+      drift.frequency.value = 0.07;
+      var driftG = ctx.createGain();
+      driftG.gain.value = 6;
+      drift.connect(driftG); driftG.connect(pad2.frequency);
+      drift.start(now);
+
+      // Distant wind chimes (sparse high tones)
+      var chimeTimer = setInterval(function () {
+        if (!ctx || ctx.state !== 'running') return;
+        if (Math.random() < 0.3) {
+          var t = ctx.currentTime;
+          var freqs = [1046.50, 1318.51, 1567.98]; // C6, E6, G6
+          var freq = freqs[Math.floor(Math.random() * freqs.length)];
+          var osc = ctx.createOscillator();
+          osc.type = 'sine'; osc.frequency.value = freq;
+          var cG = ctx.createGain();
+          cG.gain.setValueAtTime(0.1, t);
+          cG.gain.exponentialRampToValueAtTime(0.001, t + 2.0);
+          osc.connect(cG); cG.connect(dest);
+          osc.start(t); osc.stop(t + 2.1);
+        }
+      }, 1500);
+
+      return {
+        nodes: [pad1, pad2, pad3, drift],
+        gain: padG,
+        interval: chimeTimer
+      };
+    },
+
+    // Fast intense chase BGM for Lv7 / boss
+    _startChaseLoop: function () {
+      var dest = bgmGain || masterGain;
+      var ctx = audioCtx;
+      var now = ctx.currentTime;
+
+      // Pulsing bass beat
+      var bass = ctx.createOscillator();
+      bass.type = 'square';
+      bass.frequency.value = 55; // Low A
+      var bassG = ctx.createGain();
+      bassG.gain.value = 0;
+      bass.connect(bassG); bassG.connect(dest);
+      bass.start(now);
+
+      // Pulse bass envelope at 140 BPM
+      var pulseInterval = setInterval(function () {
+        if (!ctx || ctx.state !== 'running') return;
+        var t = ctx.currentTime;
+        bassG.gain.setValueAtTime(0.25, t);
+        bassG.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+      }, 428); // ~140 BPM
+
+      // High string-like screech with sweep
+      var screech = ctx.createOscillator();
+      screech.type = 'sawtooth';
+      screech.frequency.value = 880;
+      var screechFilter = ctx.createBiquadFilter();
+      screechFilter.type = 'bandpass';
+      screechFilter.frequency.value = 1500;
+      screechFilter.Q.value = 6;
+      var screechG = ctx.createGain();
+      screechG.gain.value = 0.04;
+      screech.connect(screechFilter); screechFilter.connect(screechG); screechG.connect(dest);
+      screech.start(now);
+      var screechLfo = ctx.createOscillator();
+      screechLfo.type = 'sine';
+      screechLfo.frequency.value = 0.3;
+      var screechLfoG = ctx.createGain();
+      screechLfoG.gain.value = 300;
+      screechLfo.connect(screechLfoG); screechLfoG.connect(screechFilter.frequency);
+      screechLfo.start(now);
+
+      return {
+        nodes: [bass, screech, screechLfo],
+        gain: bassG,
+        interval: pulseInterval
+      };
+    },
+
+    // Subtle breath drone for added dread (Lv0 mix)
+    _startBreathDroneLoop: function () {
+      var dest = bgmGain || masterGain;
+      var ctx = audioCtx;
+      var now = ctx.currentTime;
+      // Breath cycle: in (1.5s) -> hold (0.5s) -> out (1.8s) -> hold (1.2s) = 5s
+      var bufLen = ctx.sampleRate * 5;
+      var buf = ctx.createBuffer(1, bufLen, ctx.sampleRate);
+      var d = buf.getChannelData(0);
+      for (var i = 0; i < bufLen; i++) {
+        var t = i / ctx.sampleRate;
+        var phase = (t / 5) % 1;
+        var env = 0;
+        if (phase < 0.3) env = phase / 0.3; // breath in
+        else if (phase < 0.4) env = 1; // hold
+        else if (phase < 0.76) env = (0.76 - phase) / 0.36; // breath out
+        else env = 0;
+        d[i] = (Math.random() * 2 - 1) * env * 0.35;
+      }
+      var src = ctx.createBufferSource();
+      src.buffer = buf; src.loop = true;
+      var bp = ctx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = 400;
+      bp.Q.value = 3;
+      var g = ctx.createGain();
+      g.gain.value = 0.08;
+      src.connect(bp); bp.connect(g); g.connect(dest);
+      src.start(now);
+      return { nodes: [src], gain: g };
     },
 
     _startClassicalLoop: function () {

@@ -438,6 +438,10 @@
 
   // ── LEVEL THEMES (palette per level) ────────────────────
   var THEMES = {
+  // Override theme ambient loops with refined per-level BGM
+  // (use new procedural music for richer atmosphere)
+  // We update THEMES inline below.
+
     0: { // Lobby — mustard yellow
       wall: {
         upper: { 'default': [212, 179, 64], 1: [212, 179, 64], 2: [160, 110, 50] },
@@ -456,6 +460,7 @@
       ceilingPattern: 'grid',
       fogDist: 14,
       ambientLoop: 'fluorescent',
+      bgmLoop: 'breath_drone',
       sanDrain: 0.4,
       vignette: 0.25,
       grain: 0.35,
@@ -555,6 +560,7 @@
       ceilingDefault: [30, 24, 20],
       fogDist: 14,
       ambientLoop: 'fluorescent',
+      bgmLoop: 'lobby_music',
       sanDrain: 0.5,
       vignette: 0.35,
       grain: 0.3,
@@ -671,6 +677,7 @@
       ceilingDefault: [20, 25, 40],
       fogDist: 13,
       ambientLoop: 'wind',
+      bgmLoop: 'nostalgic',
       sanDrain: 0.8,
       vignette: 0.45,
       grain: 0.3,
@@ -682,9 +689,11 @@
   var LEVELS = {
     0: { id: 0, name: 'LEVEL 0', subtitle: 'THE LOBBY',
          rows: LV0_ROWS, theme: 0,
-         hint: '黄色い壁紙の無限の部屋。湿った絨毯。蛍光灯のハム音。',
-         intro: 'no-clip して落ちた...ここはどこだ?',
-         entities: [],
+         hint: '黄色い壁紙の無限の部屋。湿った絨毯。蛍光灯のハム音。\n稀に「もう一人の自分」が現れる。',
+         intro: '壁を抜けた先...黄色い廊下が、どこまでも。',
+         entities: [
+           { type: 'echo', gx: 17, gy: 11 }
+         ],
          timeLimit: null },
     1: { id: 1, name: 'LEVEL 1', subtitle: 'HABITABLE ZONE',
          rows: LV1_ROWS, theme: 1,
@@ -1223,6 +1232,7 @@
   // Audio
   var audioInitialized = false;
   var currentAmbient = null;
+  var currentBgm = null;
 
   // Phone UI
   var phoneOpen = false;
@@ -1282,8 +1292,11 @@
     wretch: { name: 'WRETCH', desc: 'バックルーム公式分類 Class 3 (Watcher 型)。\n動かないが、視線を合わせた者の SAN を胸の空洞へ吸い込む。\n目を逸らせば実害は無い。' },
     boss: { name: 'THE ARCHITECT', desc: 'バックルーム公式分類 Class 5 (Apex)。\nLevel 9 The Suburbs を構築・管理する存在。\n王冠と赤い目。3 段階で攻撃パターンが変化する。\nフレア (50dmg) / 鏡 (100dmg) で抵抗可能。' },
     mrhotel: { name: 'MR. HOTEL', desc: 'バックルーム公式分類 Class 4。\nLevel 5 ホテルの「支配人」。シルクハットに顔の無いスーツ。\n名前を尋ねられても答えるな。盗まれる。\n4 マス以内で SAN を継続吸引。' },
-    haruki: { name: 'HARUKI', desc: '非公式。前ホテルからの no-clipper。\nお前を追って壁の向こうまで来た存在。\n姿は不定形だが、お前の最も恐ろしい記憶として現れる。\n電話のベルが近接の兆候。' }
+    haruki: { name: 'HARUKI', desc: '非公式。前ホテルからの no-clipper。\nお前を追って壁の向こうまで来た存在。\n姿は不定形だが、お前の最も恐ろしい記憶として現れる。\n電話のベルが近接の兆候。' },
+    echo: { name: 'ECHO', desc: 'バックルーム未分類。\nお前の動きを 0.6 秒遅れで完全模倣する亡霊。\n直視すると鏡を見ているような感覚に襲われ、SAN が削れる。\n振り切るには思考しない急な動きが有効。' }
   };
+  // sound map for echo
+  ENTITY_SOUND_MAP.echo = { sound: 'whisper', prob: 0.008 };
 
   // First-run tutorial state
   var tutorialDone = false;
@@ -1530,17 +1543,18 @@
     GameEngine.pointLights = [];
     addLevelLights(levelId);
 
-    // Audio: ambient loop per level
+    // Audio: stop all ambient + BGM loops, start fresh ones
     if (audioInitialized) {
-      GameEngine.stopLoop('ambient');
-      GameEngine.stopLoop('fluorescent');
-      GameEngine.stopLoop('pipe_drip');
-      GameEngine.stopLoop('electric');
-      GameEngine.stopLoop('wind');
-      if (currentAmbient) GameEngine.stopLoop(currentAmbient);
+      ['ambient', 'fluorescent', 'pipe_drip', 'electric', 'wind',
+       'classical', 'lobby_music', 'nostalgic', 'chase', 'breath_drone'].forEach(function (l) {
+        GameEngine.stopLoop(l);
+      });
       currentAmbient = theme.ambientLoop;
+      currentBgm = theme.bgmLoop;
       if (currentAmbient) GameEngine.startLoop(currentAmbient);
+      if (currentBgm) GameEngine.startLoop(currentBgm);
     }
+    player._beingChased = false;
 
     // Force canvas resize before/during overlays (iOS Safari dynamic viewport fix)
     forceCanvasResize();
@@ -2178,6 +2192,38 @@
       if (Math.random() < 0.02) {
         var pAng2 = Math.random() * Math.PI * 2;
         GameEngine.addParticle('spark', player.x + Math.cos(pAng2) * 100, player.y + Math.sin(pAng2) * 100);
+      }
+    }
+
+    // Chase BGM detection: any entity is actively chasing AND within range
+    var isBeingChased = false;
+    for (var ceI = 0; ceI < entities.length; ceI++) {
+      var ce = entities[ceI];
+      if (!ce.alive) continue;
+      var ceDx = ce.x - player.x, ceDy = ce.y - player.y;
+      var ceD = Math.sqrt(ceDx * ceDx + ceDy * ceDy);
+      if (ceD > 8 * TS) continue; // out of chase range
+      // Entity-specific chase trigger conditions
+      if (ce.type === 'hound' && ce.state === 'chase') isBeingChased = true;
+      else if (ce.type === 'skinstealer' && ce.state === 'reveal') isBeingChased = true;
+      else if (ce.type === 'partygoer' && ceD < 4 * TS) isBeingChased = true;
+      else if (ce.type === 'crawler' && ce.state === 'lunge') isBeingChased = true;
+      else if (ce.type === 'haruki' && (ce.state === 'hunting' || ce.state === 'approach')) isBeingChased = true;
+      else if (ce.type === 'boss' && ceD < 6 * TS) isBeingChased = true;
+      else if (ce.type === 'mrhotel' && ceD < 4 * TS) isBeingChased = true;
+      else if (ce.type === 'echo' && ceD < 3 * TS) isBeingChased = true;
+      if (isBeingChased) break;
+    }
+    // BGM transition (only if state changed)
+    if (audioInitialized && isBeingChased !== player._beingChased) {
+      player._beingChased = isBeingChased;
+      if (isBeingChased) {
+        if (currentBgm) GameEngine.stopLoop(currentBgm);
+        GameEngine.startLoop('chase');
+        if (navigator.vibrate) navigator.vibrate(40);
+      } else {
+        GameEngine.stopLoop('chase');
+        if (currentBgm) GameEngine.startLoop(currentBgm);
       }
     }
 
@@ -3678,13 +3724,61 @@
           e.state = 'wait';
         }
       } else if (e.type === 'wretch') {
-        // Stationary, leeches SAN when player in FOV
-        if (distP < 8 * TS && isFacingPlayer(e)) {
-          player.san = Math.max(0, player.san - 12 * dt);
-          if (Math.random() < 0.04 && audioInitialized) GameEngine.playSound('whisper');
+        // Gaze-lock mechanic: WRETCH only drains SAN when player LOOKS AT it
+        // Check if player is facing entity (entity is in player's FOV cone)
+        var pAngleToE = Math.atan2(dy, dx);
+        var relAngle = pAngleToE - player.angle;
+        while (relAngle > Math.PI) relAngle -= Math.PI * 2;
+        while (relAngle < -Math.PI) relAngle += Math.PI * 2;
+        var playerLooksAtIt = Math.abs(relAngle) < Math.PI / 5; // within ~36° cone
+        e._wretchGazed = playerLooksAtIt && distP < 10 * TS;
+        if (e._wretchGazed) {
+          // Player sees WRETCH — chest opens, heavy SAN drain
+          player.san = Math.max(0, player.san - 20 * dt);
+          if (Math.random() < 0.06 && audioInitialized) GameEngine.playSound('whisper');
+          if (Math.random() < 0.01 && audioInitialized) GameEngine.playSound('tinnitus');
+        } else if (distP < 8 * TS) {
+          // Player doesn't look — mild SAN drain (subconscious dread)
+          player.san = Math.max(0, player.san - 1.5 * dt);
         }
         // Direct contact damages
         if (distP < 0.8 * TS) attackPlayer(8 * dt);
+      } else if (e.type === 'echo') {
+        // ECHO: mimics player's exact movement, delayed by 0.6 seconds
+        // Records player position history; replays as own movement
+        if (!e._posHistory) e._posHistory = [];
+        e._posHistory.push({ x: player.x, y: player.y, t: performance.now() / 1000 });
+        // Trim history older than 1.5s
+        while (e._posHistory.length > 0 && performance.now() / 1000 - e._posHistory[0].t > 1.5) {
+          e._posHistory.shift();
+        }
+        // Find target position from 0.6s ago
+        var delaySec = 0.6;
+        var targetT = performance.now() / 1000 - delaySec;
+        var targetPos = null;
+        for (var phi = 0; phi < e._posHistory.length; phi++) {
+          if (e._posHistory[phi].t >= targetT) { targetPos = e._posHistory[phi]; break; }
+        }
+        if (targetPos) {
+          // Apply offset (e initial position remembered)
+          if (!e._initOffsetX && e._initOffsetX !== 0) {
+            // record initial offset between e and player
+            e._initOffsetX = e.x - player.x;
+            e._initOffsetY = e.y - player.y;
+          }
+          var tgtX = targetPos.x + e._initOffsetX;
+          var tgtY = targetPos.y + e._initOffsetY;
+          var ex = e.x + (tgtX - e.x) * Math.min(1, 4 * dt);
+          var ey = e.y + (tgtY - e.y) * Math.min(1, 4 * dt);
+          if (isWalkable(ex, e.y)) e.x = ex;
+          if (isWalkable(e.x, ey)) e.y = ey;
+        }
+        // SAN drain when very close (uncanny valley effect)
+        if (distP < 3 * TS) {
+          player.san = Math.max(0, player.san - 3 * dt);
+          if (Math.random() < 0.02 && audioInitialized) GameEngine.playPositionalSound('whisper', e.x, e.y);
+        }
+        if (distP < 0.8 * TS) attackPlayer(6 * dt);
       } else if (e.type === 'mrhotel') {
         // Stationary at first, slowly approaches when player nearby
         if (distP < 12 * TS) {
@@ -4206,6 +4300,36 @@
         ctx.fillRect(screenX - rimR, hkSpriteY + hkSpriteH * 0.4 - rimR, rimR * 2, rimR * 2);
         ctx.globalAlpha = fogFactor;
       }
+    } else if (e.type === 'echo') {
+      // ECHO: ghostly mirror of player — soft outline, glowing
+      var ecH = spriteH * 0.95;
+      var ecY = startY + spriteH * 0.02;
+      var ecW = spriteW * 0.42;
+      var ecX = screenX - ecW / 2;
+      // Ghostly body with translucent glow
+      drawShapedSprite(ctx, ecX, ecY + ecH * 0.3, ecW, ecH * 0.7,
+        screenX, depthTiles, zBuf, w, '#7080a0', '#3a4860');
+      // Head with blank face
+      drawShapedSprite(ctx, screenX - ecW * 0.4, ecY, ecW * 0.8, ecH * 0.35,
+        screenX, depthTiles, zBuf, w, '#8090b0', '#506070');
+      // Glowing aura (white-blue, only if center visible)
+      var ecCenterCol = Math.round(screenX);
+      if (ecCenterCol >= 0 && ecCenterCol < w && zBuf[ecCenterCol] > depthTiles) {
+        var auraR = ecH * 0.5;
+        var auraGrad = ctx.createRadialGradient(screenX, ecY + ecH * 0.45, 0,
+                                                 screenX, ecY + ecH * 0.45, auraR);
+        auraGrad.addColorStop(0, 'rgba(180, 200, 240, 0.35)');
+        auraGrad.addColorStop(1, 'rgba(180, 200, 240, 0)');
+        ctx.globalAlpha = Math.min(0.5, fogFactor * 0.6);
+        ctx.fillStyle = auraGrad;
+        ctx.fillRect(screenX - auraR, ecY + ecH * 0.45 - auraR, auraR * 2, auraR * 2);
+        ctx.globalAlpha = fogFactor;
+      }
+      // Empty eye sockets (dark dots)
+      var ecEyeY = ecY + ecH * 0.15;
+      ctx.fillStyle = 'rgba(20,30,50,' + fogFactor + ')';
+      drawSpriteDot(ctx, screenX - ecW * 0.15, ecEyeY, Math.max(2, ecH * 0.03), zBuf, w, depthTiles);
+      drawSpriteDot(ctx, screenX + ecW * 0.15, ecEyeY, Math.max(2, ecH * 0.03), zBuf, w, depthTiles);
     } else if (e.type === 'mrhotel') {
       // Tall thin man in suit, blank face
       var mhBH = spriteH * 0.95;
