@@ -1305,6 +1305,116 @@
 
   // Game mode
   var gameMode = 'normal'; // 'normal' | 'endless'
+
+  // Gamepad (PS4/PS5/Xbox) support
+  var GAMEPAD_KEY = 'thebackrooms_gamepad_v1';
+  var DEFAULT_GAMEPAD_MAP = {
+    move: 'leftstick',       // axes 0, 1
+    look: 'rightstick',      // axes 2, 3
+    action: 0,                // button 0 = X (PS) / A (Xbox)
+    phone: 3,                 // button 3 = △ (PS) / Y (Xbox)
+    flare: 2,                 // button 2 = □ (PS) / X (Xbox)
+    sprint: 6,                // L2 (PS) / LT (Xbox)
+    map: 7,                   // R2 (PS) / RT (Xbox)
+    pause: 9                  // Options (PS) / Start (Xbox)
+  };
+  var gamepadMap = DEFAULT_GAMEPAD_MAP;
+  var gamepadConnected = false;
+  function loadGamepadMap() {
+    try {
+      var s = localStorage.getItem(GAMEPAD_KEY);
+      if (s) {
+        var parsed = JSON.parse(s);
+        gamepadMap = Object.assign({}, DEFAULT_GAMEPAD_MAP, parsed);
+      }
+    } catch (e) { /* ignore */ }
+  }
+  function saveGamepadMap() {
+    try { localStorage.setItem(GAMEPAD_KEY, JSON.stringify(gamepadMap)); } catch (e) {}
+  }
+  function pollGamepad() {
+    if (!navigator.getGamepads) return;
+    var pads = navigator.getGamepads();
+    var gp = null;
+    for (var i = 0; i < pads.length; i++) {
+      if (pads[i]) { gp = pads[i]; break; }
+    }
+    if (!gp) {
+      if (gamepadConnected) {
+        gamepadConnected = false;
+        toast('コントローラ切断');
+      }
+      return;
+    }
+    if (!gamepadConnected) {
+      gamepadConnected = true;
+      toast('コントローラ接続: ' + (gp.id.split('(')[0].trim()));
+      if (audioInitialized) GameEngine.playSound('item_get');
+    }
+    if (state !== ST.PLAYING || phoneOpen || miniGameOpen) return;
+    // Left stick: movement
+    var dx = gp.axes[0] || 0;
+    var dy = gp.axes[1] || 0;
+    if (Math.abs(dx) > 0.15 || Math.abs(dy) > 0.15) {
+      GameEngine.input.dx = dx;
+      GameEngine.input.dy = dy;
+    }
+    // Right stick: look
+    var lookX = gp.axes[2] || 0;
+    if (Math.abs(lookX) > 0.15) {
+      GameEngine.input.lookDx = lookX;
+    } else {
+      GameEngine.input.lookDx = 0;
+    }
+    // Action button
+    var actionBtn = gp.buttons[gamepadMap.action];
+    if (actionBtn && actionBtn.pressed) {
+      if (!GameEngine.input.action) GameEngine.input.actionJustPressed = true;
+      GameEngine.input.action = true;
+    } else {
+      GameEngine.input.action = false;
+    }
+    // Sprint (L2)
+    var sprintBtn = gp.buttons[gamepadMap.sprint];
+    GameEngine.input.sprint = !!(sprintBtn && sprintBtn.pressed);
+    // Phone (Triangle)
+    var phoneBtn = gp.buttons[gamepadMap.phone];
+    if (phoneBtn && phoneBtn.pressed && !gp._phonePressed) {
+      gp._phonePressed = true;
+      openPhone();
+    } else if (!(phoneBtn && phoneBtn.pressed)) {
+      gp._phonePressed = false;
+    }
+    // Map toggle (R2)
+    var mapBtn = gp.buttons[gamepadMap.map];
+    if (mapBtn && mapBtn.pressed && !gp._mapPressed) {
+      gp._mapPressed = true;
+      floatingMapOpen = !floatingMapOpen;
+      el('floatingMap').style.display = floatingMapOpen ? 'flex' : 'none';
+    } else if (!(mapBtn && mapBtn.pressed)) {
+      gp._mapPressed = false;
+    }
+    // Flare quick-use (Square)
+    var flareBtn = gp.buttons[gamepadMap.flare];
+    if (flareBtn && flareBtn.pressed && !gp._flarePressed) {
+      gp._flarePressed = true;
+      if (player.inventory.flare) {
+        var flareIt = ITEMS.flare;
+        flareIt.effect(player);
+        player.inventory.flare--;
+        if (player.inventory.flare <= 0) delete player.inventory.flare;
+      }
+    } else if (!(flareBtn && flareBtn.pressed)) {
+      gp._flarePressed = false;
+    }
+  }
+  // Poll gamepad each frame via existing engine update hook
+  window.addEventListener('gamepadconnected', function (e) {
+    console.log('Gamepad connected', e.gamepad);
+  });
+  window.addEventListener('gamepaddisconnected', function () {
+    gamepadConnected = false;
+  });
   var endlessFloor = 0;
   var endlessVisitedLevels = [];
   var endlessScore = 0;
@@ -2193,7 +2303,27 @@
     }
 
     // Level-specific dynamic events
-    if (currentLevel === 3) {
+    if (currentLevel === 7) {
+      // Lv7 Run For Your Life — progressive escalation text based on progress
+      if (!player._lv7Progress) player._lv7Progress = 0;
+      var pgY7 = player.y / TS;
+      var newProgress7 = 0;
+      if (pgY7 > 5) newProgress7 = 1;
+      if (pgY7 > 10) newProgress7 = 2;
+      if (pgY7 > 15) newProgress7 = 3;
+      if (pgY7 > 20) newProgress7 = 4;
+      if (newProgress7 > player._lv7Progress) {
+        player._lv7Progress = newProgress7;
+        var lv7Lines = ['', '走れ。', '振り返るな。', 'まだ追ってくる。', 'もう少しだ。'];
+        var hudObj7 = el('objectiveHUD');
+        if (hudObj7 && lv7Lines[newProgress7]) {
+          hudObj7.style.display = 'block';
+          el('objectiveText').textContent = lv7Lines[newProgress7];
+          setTimeout(function () { hudObj7.style.display = 'none'; }, 2400);
+          if (audioInitialized) GameEngine.playSound('whisper');
+        }
+      }
+    } else if (currentLevel === 3) {
       // Electrical Station: random brief blackouts
       player._blackoutTimer = (player._blackoutTimer || 0) - dt;
       if (player._blackoutTimer <= 0) {
@@ -2206,14 +2336,29 @@
         }
       }
     } else if (currentLevel === 11) {
-      // End of the Line: train passes
+      // End of the Line: train passes — cinematic with slow-down + flash
       player._trainTimer = (player._trainTimer || 0) - dt;
       if (player._trainTimer <= 0) {
-        player._trainTimer = 16 + Math.random() * 14;
-        if (Math.random() < 0.5) {
-          GameEngine.shakeScreen(18, 3);
-          if (audioInitialized) GameEngine.playSound('thunder');
-          toast('列車が通過する...');
+        player._trainTimer = 18 + Math.random() * 16;
+        if (Math.random() < 0.55) {
+          // Distant rumble first
+          if (audioInitialized) {
+            GameEngine.playSound('thunder');
+            setTimeout(function () { if (audioInitialized) GameEngine.playSound('thunder'); }, 800);
+          }
+          // 1.5s build-up, then full pass
+          var hudObj11 = el('objectiveHUD');
+          if (hudObj11) {
+            hudObj11.style.display = 'block';
+            el('objectiveText').textContent = '列車が来る...';
+            setTimeout(function () { hudObj11.style.display = 'none'; }, 1800);
+          }
+          setTimeout(function () {
+            GameEngine.shakeScreen(22, 2.5);
+            GameEngine.flashImage(null, 100); // brief white flash
+            GameEngine.redFlash();
+            if (audioInitialized) GameEngine.playSound('static');
+          }, 1500);
         }
       }
     } else if (currentLevel === 12) {
@@ -4821,15 +4966,40 @@
   //  GAME LOOP HOOK
   // ============================================================
   function onUpdate(dt) {
+    pollGamepad();
     if (state === ST.PLAYING && !phoneOpen && !miniGameOpen) {
       updatePlayer(dt);
       updateEntities(dt);
       GameEngine.updateParticles(dt);
-      // Random dust particles (skip in LOW quality)
-      if (gfxQuality !== 'low' && Math.random() < 0.03) {
+      // Per-level ambient particles (skip in LOW quality)
+      if (gfxQuality !== 'low') {
+        var partRand = Math.random();
         var pAng = Math.random() * Math.PI * 2;
         var pDist = 100 + Math.random() * 150;
-        GameEngine.addParticle('dust', player.x + Math.cos(pAng) * pDist, player.y + Math.sin(pAng) * pDist);
+        var px_ = player.x + Math.cos(pAng) * pDist;
+        var py_ = player.y + Math.sin(pAng) * pDist;
+        if (currentLevel === 2 && partRand < 0.05) {
+          // Lv2 Pipe Dreams — water drops
+          GameEngine.addParticle('fog', px_, py_);
+        } else if (currentLevel === 3 && partRand < 0.04) {
+          // Lv3 Electrical — sparks
+          GameEngine.addParticle('spark', px_, py_);
+        } else if (currentLevel === 5 && partRand < 0.025) {
+          // Lv5 Hotel — dust motes
+          GameEngine.addParticle('dust', px_, py_);
+        } else if (currentLevel === 8 && partRand < 0.04) {
+          // Lv8 Hive — dust (representing pollen)
+          GameEngine.addParticle('dust', px_, py_);
+        } else if (currentLevel === 9 && partRand < 0.03) {
+          // Lv9 Suburbs — fireflies (sparks)
+          GameEngine.addParticle('spark', px_, py_);
+        } else if (currentLevel === 12 && partRand < 0.04) {
+          // Lv12 Fun=) — confetti (sparks)
+          GameEngine.addParticle('spark', px_, py_);
+        } else if (partRand < 0.025) {
+          // Default dust
+          GameEngine.addParticle('dust', px_, py_);
+        }
       }
     }
     if (miniGameOpen) updateMiniGame(dt);
@@ -6077,6 +6247,7 @@
     loadTutorialDone();
     loadEndlessBest();
     loadStats();
+    loadGamepadMap();
 
     // First touch on title initializes audio AND starts title BGM
     var titleScr = el('titleScreen');
