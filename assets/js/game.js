@@ -1500,6 +1500,9 @@
   function showLoadingScreen(def) {
     el('loadingLevel').textContent = def.name;
     el('loadingName').textContent = def.subtitle;
+    // Show HARUKI image only on Lv5 loading
+    var harL = el('loadingHaruki');
+    if (harL) harL.style.display = (def.id === 5) ? 'flex' : 'none';
     // 50% chance to show level hint, 50% random gameplay tip
     if (Math.random() < 0.5 && visitedLevels[def.id]) {
       el('loadingHint').textContent = 'TIP: ' + GAMEPLAY_TIPS[Math.floor(Math.random() * GAMEPLAY_TIPS.length)];
@@ -1897,7 +1900,9 @@
     use_all_weapons:  { name: '全武器使用', icon: '⚔' },
     speed_demon:      { name: 'Level 7 を 60s 以内', icon: '⚡' },
     collect_all_items:{ name: '全 10 種類入手', icon: '◈' },
-    silent_run:       { name: '無音 (アイテム未使用) 1階クリア', icon: '◐' }
+    silent_run:       { name: '無音 (アイテム未使用) 1階クリア', icon: '◐' },
+    survive_haruki:   { name: 'HARUKI を振り切る', icon: '🩸' },
+    encounter_haruki: { name: 'HARUKI と遭遇', icon: '👁' }
   };
 
   function unlockAchievement(id) {
@@ -2999,6 +3004,8 @@
     // Silent run: no items used (count tracked elsewhere — proxy: inventory only)
     if (!player._itemsUsedThisLevel) unlockAchievement('silent_run');
     player._itemsUsedThisLevel = 0;
+    // Survive HARUKI: clear Lv5
+    if (currentLevel === 5) unlockAchievement('survive_haruki');
     if (audioInitialized) {
       GameEngine.stopAll();
       // Quiet during transition
@@ -3065,6 +3072,7 @@
             el('objectiveText').textContent = '【' + intro.name + '】' + intro.desc.split('\n')[0];
             setTimeout(function () { hudObj.style.display = 'none'; }, 6000);
           }
+          if (e.type === 'haruki') unlockAchievement('encounter_haruki');
         }
       }
 
