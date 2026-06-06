@@ -1153,7 +1153,13 @@
   // ============================================================
   //  UTILITY
   // ============================================================
-  function el(id) { return document.getElementById(id); }
+  var _elCache = {};
+  function el(id) {
+    if (_elCache[id]) return _elCache[id];
+    var e = document.getElementById(id);
+    if (e) _elCache[id] = e;
+    return e;
+  }
 
   function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
 
@@ -3096,23 +3102,25 @@
   // ============================================================
   //  ENTITY AI
   // ============================================================
+  // Hoisted: avoid per-frame allocation
+  var ENTITY_SOUND_MAP = {
+    hound: { sound: 'breath', prob: 0.008 },
+    smiler: { sound: 'lullaby', prob: 0.003 },
+    skinstealer: { sound: 'static', prob: 0.004 },
+    partygoer: { sound: 'phone', prob: 0.003 },
+    crawler: { sound: 'knock', prob: 0.006 },
+    wretch: { sound: 'whisper', prob: 0.005 },
+    boss: { sound: 'stinger', prob: 0.002 },
+    mrhotel: { sound: 'clock_tick', prob: 0.012 },
+    haruki: { sound: 'phone', prob: 0.005 }
+  };
+
   function updateEntities(dt) {
     if (state !== ST.PLAYING) return;
     if (phoneOpen) return;
     if (miniGameOpen) return;
     var diffE = DIFFICULTIES[currentDifficulty] || DIFFICULTIES.normal;
     var sMul = diffE.enemySpeedMul;
-    var entitySoundMap = {
-      hound: { sound: 'breath', prob: 0.008 },
-      smiler: { sound: 'lullaby', prob: 0.003 },
-      skinstealer: { sound: 'static', prob: 0.004 },
-      partygoer: { sound: 'phone', prob: 0.003 },
-      crawler: { sound: 'knock', prob: 0.006 },
-      wretch: { sound: 'whisper', prob: 0.005 },
-      boss: { sound: 'stinger', prob: 0.002 },
-      mrhotel: { sound: 'clock_tick', prob: 0.012 },
-      haruki: { sound: 'phone', prob: 0.005 }
-    };
 
     for (var i = 0; i < entities.length; i++) {
       var e = entities[i];
@@ -3155,7 +3163,7 @@
       }
 
       // Entity-specific positional sound
-      var sndDef = entitySoundMap[e.type];
+      var sndDef = ENTITY_SOUND_MAP[e.type];
       if (sndDef && distP < 9 * TS && audioInitialized && Math.random() < sndDef.prob) {
         GameEngine.playPositionalSound(sndDef.sound, e.x, e.y);
       }
