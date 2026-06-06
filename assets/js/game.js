@@ -517,7 +517,7 @@
       floorDefault: [38, 42, 50],
       ceilingDefault: [22, 26, 34],
       fogDist: 8,
-      ambientLoop: 'electric',
+      ambientLoop: 'wind',
       sanDrain: 0.9,
       vignette: 0.55,
       grain: 0.4,
@@ -2089,6 +2089,11 @@
     var sens = 2.5 * (parseInt(localStorage.getItem('bk_sens') || '100', 10) / 100);
     var look = inp.lookDx || 0;
     player.angle += look * sens * dt;
+    // Swipe-impulse look: consume accumulated swipe delta this frame
+    if (inp.lookImpulse) {
+      player.angle += inp.lookImpulse * sens;
+      inp.lookImpulse = 0;
+    }
 
     // Movement
     var speed = 130; // pixels per second
@@ -5027,7 +5032,8 @@
     var tY = dx * cosT + dy * sinT;
     if (tY <= 0.5) return;
     var depthTiles = tY / TS;
-    if (depthTiles > 18) return;
+    // Only show beam when player is close — was 18, now 7 tiles for exploration challenge
+    if (depthTiles > 7) return;
 
     var screenX = (w / 2) * (1 + tX / tY);
     var beamWidth = Math.max(6, (h / depthTiles) * 0.12);

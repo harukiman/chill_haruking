@@ -471,8 +471,14 @@ button {
 .title-settings-overlay {
   z-index: 55;
   background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  /* removed backdrop-filter (heavy on mobile) */
+  /* Make the overlay itself scrollable when content is taller than viewport */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  /* Override .overlay flex-center: allow content to stack from top so it can scroll */
+  align-items: flex-start;
+  padding: 20px 0;
 }
 .ts-card {
   width: min(92vw, 420px);
@@ -498,6 +504,32 @@ button {
   color: #e8d57a;
   margin: 0 0 14px;
   text-shadow: 0 0 12px rgba(212, 179, 64, 0.4);
+}
+.ts-close-x {
+  position: sticky;
+  top: 0;
+  float: right;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: rgba(180, 30, 30, 0.85);
+  color: #fff;
+  border: 1px solid rgba(220, 60, 60, 0.9);
+  font-family: inherit;
+  font-size: 20px;
+  font-weight: bold;
+  line-height: 1;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation !important;
+  pointer-events: auto !important;
+  margin-bottom: -38px;
+  z-index: 10;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+.ts-close-x:active {
+  background: rgba(220, 60, 60, 1);
+  transform: scale(0.92);
 }
 .ts-section {
   border-top: 1px solid rgba(120, 96, 32, 0.3);

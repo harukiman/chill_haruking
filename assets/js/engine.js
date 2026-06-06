@@ -1778,9 +1778,15 @@
           for (var i = 0; i < e.changedTouches.length; i++) {
             var touch = e.changedTouches[i];
             if (touch.identifier === lookTouchId) {
+              // Swipe-delta mode: each touchmove rotates by delta px from last x.
+              // This gives unlimited 360° rotation: keep swiping → keep rotating.
+              var deltaX = touch.clientX - lookLastX;
+              lookLastX = touch.clientX;
+              // Accumulate per-frame look impulse (consumed by game loop).
+              // 1 px swipe = ~0.012 rad (~0.7°), tuned for natural feel.
+              self.input.lookImpulse = (self.input.lookImpulse || 0) + deltaX * 0.012;
+              // Visual stick for feedback (clamped)
               var s = calcStick(touch, lookCenterX, lookCenterY);
-              // Use horizontal as look direction
-              self.input.lookDx = s.dx;
               rightThumb.style.transform = 'translate(' + s.thumbX + 'px, ' + s.thumbY + 'px)';
             }
           }
