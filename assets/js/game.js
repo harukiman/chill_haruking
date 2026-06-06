@@ -2399,11 +2399,13 @@
       else if (ce.type === 'echo' && ceD < 3 * TS) isBeingChased = true;
     }
     // Apply BGM layer adjustments by threat level (live blending)
-    if (audioInitialized && GameEngine.setBGMLayers) {
-      var droneG = 0.06;
-      var dissG = threatLevel * 0.08;
-      var pulseG = isBeingChased ? 0.5 : threatLevel * 0.08;
-      GameEngine.setBGMLayers({ drone: droneG, dissonance: dissG, pulse: pulseG });
+    if (audioInitialized && typeof GameEngine.setBGMLayers === 'function') {
+      try {
+        var droneG = 0.06;
+        var dissG = threatLevel * 0.08;
+        var pulseG = isBeingChased ? 0.5 : threatLevel * 0.08;
+        GameEngine.setBGMLayers({ drone: droneG, dissonance: dissG, pulse: pulseG });
+      } catch (e) { /* ignore */ }
     }
     // BGM transition (chase only)
     if (audioInitialized && isBeingChased !== player._beingChased) {
@@ -6434,58 +6436,62 @@
       GameEngine.images['assets/img/haruki_scary.png'] = img;
     }).catch(function () {});
 
-    loadAchievements();
-    loadBestTimes();
-    loadDifficulty();
-    loadTutorialDone();
-    loadEndlessBest();
-    loadStats();
-    loadGamepadMap();
+    try { loadAchievements(); } catch (e) {}
+    try { loadBestTimes(); } catch (e) {}
+    try { loadDifficulty(); } catch (e) {}
+    try { loadTutorialDone(); } catch (e) {}
+    try { loadEndlessBest(); } catch (e) {}
+    try { loadStats(); } catch (e) {}
+    try { loadGamepadMap(); } catch (e) {}
+
+    // CRITICAL: bind button events FIRST so title is interactive
+    // even if any later setup throws
+    try { bindEvents(); } catch (e) { console.error('bindEvents failed', e); }
+    try { updateTitleButtons(); } catch (e) {}
+    showOverlay('titleScreen');
 
     // First touch on title initializes audio AND starts title BGM
-    var titleScr = el('titleScreen');
-    if (titleScr) {
-      var initOnTouch = function () {
-        if (!audioInitialized) {
-          GameEngine.initAudio();
-          audioInitialized = true;
-          // Start title BGM (classical horror-style)
-          setTimeout(function () {
-            if (state === ST.TITLE) GameEngine.startLoop('classical');
-          }, 200);
-          // Hide tap hint
-          var hint = el('tapToStartHint');
-          if (hint) hint.classList.add('hidden');
-        }
-      };
-      titleScr.addEventListener('touchstart', initOnTouch, { passive: true });
-      titleScr.addEventListener('click', initOnTouch);
-    }
+    try {
+      var titleScr = el('titleScreen');
+      if (titleScr) {
+        var initOnTouch = function () {
+          if (!audioInitialized) {
+            try { GameEngine.initAudio(); } catch (e) {}
+            audioInitialized = true;
+            setTimeout(function () {
+              if (state === ST.TITLE) {
+                try { GameEngine.startLoop('classical'); } catch (e) {}
+              }
+            }, 200);
+            var hint = el('tapToStartHint');
+            if (hint) hint.classList.add('hidden');
+          }
+        };
+        titleScr.addEventListener('touchstart', initOnTouch, { passive: true });
+        titleScr.addEventListener('click', initOnTouch);
+      }
+    } catch (e) { console.error('title touch init failed', e); }
 
     // iOS Safari dynamic viewport: periodic canvas resize check
-    // (address bar appearing/disappearing changes innerHeight)
-    var lastInnerH = window.innerHeight;
-    var lastInnerW = window.innerWidth;
-    setInterval(function () {
-      if (window.innerHeight !== lastInnerH || window.innerWidth !== lastInnerW) {
-        lastInnerH = window.innerHeight;
-        lastInnerW = window.innerWidth;
-        if (GameEngine._resize) GameEngine._resize();
-      }
-    }, 500);
-
-    // Also resize on visibility change (orientation/tab back)
-    document.addEventListener('visibilitychange', function () {
-      if (!document.hidden && GameEngine._resize) {
-        setTimeout(GameEngine._resize.bind(GameEngine), 100);
-      }
-    });
-    window.addEventListener('orientationchange', function () {
-      setTimeout(function () { if (GameEngine._resize) GameEngine._resize(); }, 200);
-    });
-    bindEvents();
-    updateTitleButtons();
-    showOverlay('titleScreen');
+    try {
+      var lastInnerH = window.innerHeight;
+      var lastInnerW = window.innerWidth;
+      setInterval(function () {
+        if (window.innerHeight !== lastInnerH || window.innerWidth !== lastInnerW) {
+          lastInnerH = window.innerHeight;
+          lastInnerW = window.innerWidth;
+          if (GameEngine._resize) GameEngine._resize();
+        }
+      }, 500);
+      document.addEventListener('visibilitychange', function () {
+        if (!document.hidden && GameEngine._resize) {
+          setTimeout(GameEngine._resize.bind(GameEngine), 100);
+        }
+      });
+      window.addEventListener('orientationchange', function () {
+        setTimeout(function () { if (GameEngine._resize) GameEngine._resize(); }, 200);
+      });
+    } catch (e) { console.error('viewport setup failed', e); }
   }
 
   if (document.readyState === 'loading') {
