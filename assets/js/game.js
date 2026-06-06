@@ -4140,12 +4140,20 @@
     if (ac) {
       var acCount = Object.keys(unlockedAchievements).length;
       var acTotal = Object.keys(ACHIEVEMENTS).length;
-      ac.textContent = '🏆 ' + acCount + ' / ' + acTotal;
+      var extras = [];
+      extras.push('🏆 ' + acCount + ' / ' + acTotal);
+      if (endlessBestScore > 0) extras.push('∞ ' + endlessBestScore);
+      if (stats.totalRuns > 0) extras.push('▶ ' + stats.totalRuns);
+      ac.innerHTML = extras.join('<br>');
     }
     var fr = el('freeRoamBtn');
     if (fr) {
       var anyBest = Object.keys(bestTimes).length > 0;
       fr.style.display = anyBest ? '' : 'none';
+    }
+    var eb = el('endlessBtn');
+    if (eb && endlessBestScore > 0) {
+      eb.textContent = 'ENDLESS モード (Best ' + endlessBestScore + ')';
     }
   }
 
