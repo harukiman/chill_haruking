@@ -1506,14 +1506,24 @@
     };
     el('encounterShape').textContent = entityIcons[entityType] || '⚠';
     el('encounterName').textContent = intro.name;
-    el('encounterDesc').textContent = intro.desc;
+    el('encounterDesc').textContent = intro.desc + '\n\n[ 画面をタップして閉じる ]';
     showOverlay('encounterCinematic');
     if (navigator.vibrate) navigator.vibrate([80, 40, 80, 40, 80]);
-    // Auto-close after 4.5s
-    setTimeout(function () {
+    // Tap-to-close (no auto-dismiss). Safety net: auto-close after 30s.
+    var encOverlay = el('encounterCinematic');
+    var encDone = false;
+    var encClose = function () {
+      if (encDone) return;
+      encDone = true;
+      encOverlay.removeEventListener('click', encClose);
+      encOverlay.removeEventListener('touchstart', encClose);
       hideOverlay('encounterCinematic');
       _inCinematic = false;
-    }, 4500);
+    };
+    encOverlay.style.pointerEvents = 'auto';
+    encOverlay.addEventListener('click', encClose);
+    encOverlay.addEventListener('touchstart', encClose);
+    setTimeout(encClose, 30000);
   }
 
   function toast(msg, duration) {
@@ -4396,12 +4406,18 @@
     ctx.save();
     ctx.globalAlpha = fogFactor;
 
+    // Subtle breathing oscillation per entity (low CPU cost — single sin per frame)
+    var breath = Math.sin((performance.now() + (e._breathPhase || (e._breathPhase = Math.random() * 6.28))) * 0.003) * 0.012;
+    var pulse = 0.5 + 0.5 * Math.sin(performance.now() * 0.008 + (e._eyePhase || (e._eyePhase = Math.random() * 6.28)));
+
     // Per-type shape drawing
     if (e.type === 'hound') {
       // Realistic quadruped: humanoid head + dog body
+      // Apply breathing scale to body
+      var breathScale = 1 + breath;
       // 1) Body (lower 55%)
       var bodyY = startY + spriteH * 0.45;
-      var bodyH = spriteH * 0.4;
+      var bodyH = spriteH * 0.4 * breathScale;
       var bodyW = spriteW * 0.7;
       var bodyX = screenX - bodyW / 2;
       drawShapedSprite(ctx, bodyX, bodyY, bodyW, bodyH, screenX, depthTiles, zBuf, w,
@@ -4434,16 +4450,17 @@
           ctx.fillRect(ttc, teethY, 1, snoutH * 0.5);
         }
       }
-      // 5) Glowing red eyes (large)
+      // 5) Glowing red eyes (large) — eye glow pulses with breathing
       var eyeY = headY + headH * 0.32;
-      var eyeSize = Math.max(2, spriteH * 0.035);
-      // Eye glow
+      var eyeSize = Math.max(2, spriteH * 0.035) * (1 + pulse * 0.3);
+      // Eye glow with pulse
       var eyeCol = Math.round(screenX);
       if (eyeCol >= 0 && eyeCol < w && zBuf[eyeCol] > depthTiles) {
-        ctx.fillStyle = 'rgba(255,0,0,' + Math.min(0.4, fogFactor * 0.6) + ')';
-        var eyeGlowR = spriteW * 0.15;
+        var eyeGlowR = spriteW * 0.15 * (1 + pulse * 0.35);
         var eGrad = ctx.createRadialGradient(screenX, eyeY, 0, screenX, eyeY, eyeGlowR);
-        eGrad.addColorStop(0, 'rgba(255,30,30,0.5)');
+        var pulseG = 0.5 + pulse * 0.4;
+        eGrad.addColorStop(0, 'rgba(255,30,30,' + pulseG + ')');
+        eGrad.addColorStop(0.5, 'rgba(180,0,0,' + (pulseG * 0.5) + ')');
         eGrad.addColorStop(1, 'rgba(255,0,0,0)');
         ctx.fillStyle = eGrad;
         ctx.fillRect(screenX - eyeGlowR, eyeY - eyeGlowR, eyeGlowR * 2, eyeGlowR * 2);
