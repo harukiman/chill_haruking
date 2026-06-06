@@ -1030,8 +1030,8 @@
         text: 'この街には終わりがあるという。\n最後の家のドアを開ければ、そこに...\n何があるのか、誰も戻って報告していない。' },
       { title: 'THE END',
         text: '黒い扉を見つけたら、それが終点だ。\nそこを開けば「TRUE END」へ到達できる。\nだが、開けないという選択肢もある。' },
-      { title: 'THE OPERATOR',
-        text: 'この階層を支配する存在。\n王冠を被った人型。\n3 つの段階で本性を見せる。\n\nフェーズ 1: 観察。徘徊。\nフェーズ 2: 接近。突進。\nフェーズ 3: 分裂。影を生み出す。\n\n— 倒さなくても TRUE END は見られる。だが、奴を倒した者だけが、本当の終わりを知る。' }
+      { title: 'THE ARCHITECT',
+        text: 'この階層を構築・支配する存在。\n王冠を被った人型。\n3 つの段階で本性を見せる。\n\nフェーズ 1: 観察。徘徊。\nフェーズ 2: 接近。突進。\nフェーズ 3: 分裂。影を生み出す。\n\n— 倒さなくても TRUE END は見られる。だが、奴を倒した者だけが、本当の終わりを知る。' }
     ]
   };
 
@@ -1285,6 +1285,13 @@
     player.inSafeZone = false;
     player.inHazard = false;
     player.inWater = false;
+    // Reset transient flags so next level starts with clean audio/visual state
+    player._heartbeatOn = false;
+    player._footAccum = 0;
+    player._blackoutTimer = 0;
+    player._trainTimer = 0;
+    player._lastHpRatio = player.hp / player.hpMax;
+    player._lastSanRatio = player.san / player.sanMax;
     GameEngine.setPlayerView(player.x, player.y, player.angle);
 
     // Entities for this level
