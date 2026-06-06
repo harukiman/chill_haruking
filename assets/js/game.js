@@ -5135,14 +5135,14 @@
     });
     // GFX quality toggle
     var gfxBtn = el('gfxQualityBtn');
+    var gfxValueEl = el('gfxQualityValue');
     if (gfxBtn) {
-      // Load saved
       gfxQuality = localStorage.getItem(GFX_KEY) === 'low' ? 'low' : 'high';
-      gfxBtn.textContent = gfxQuality === 'high' ? 'HIGH' : 'LOW';
+      if (gfxValueEl) gfxValueEl.textContent = gfxQuality === 'high' ? 'HIGH' : 'LOW';
       gfxBtn.addEventListener('click', function () {
         gfxQuality = (gfxQuality === 'high') ? 'low' : 'high';
         localStorage.setItem(GFX_KEY, gfxQuality);
-        gfxBtn.textContent = gfxQuality === 'high' ? 'HIGH' : 'LOW';
+        if (gfxValueEl) gfxValueEl.textContent = gfxQuality === 'high' ? 'HIGH' : 'LOW';
         applyGfxQuality();
         toast('グラフィック品質: ' + (gfxQuality === 'high' ? 'HIGH' : 'LOW'));
       });

@@ -222,43 +222,79 @@
           <!-- OPTIONS TAB -->
           <div class="phone-tab" id="phoneTabOptions" style="display:none;">
             <h2 class="phone-h2">設定</h2>
-            <div class="opt-row">
-              <label for="volumeSlider">マスター音量</label>
-              <input type="range" id="volumeSlider" min="0" max="100" value="70" class="opt-slider">
-              <span id="volumeValue" class="opt-val">70%</span>
+
+            <div class="settings-section">
+              <div class="settings-section-title">サウンド</div>
+              <div class="settings-card">
+                <div class="settings-row slider-row">
+                  <span class="settings-label">マスター音量</span>
+                  <input type="range" id="volumeSlider" min="0" max="100" value="70" class="settings-slider">
+                  <span class="settings-value" id="volumeValue">70%</span>
+                </div>
+                <div class="settings-divider"></div>
+                <div class="settings-row slider-row">
+                  <span class="settings-label">BGM/環境音</span>
+                  <input type="range" id="bgmSlider" min="0" max="100" value="90" class="settings-slider">
+                  <span class="settings-value" id="bgmValue">90%</span>
+                </div>
+                <div class="settings-divider"></div>
+                <div class="settings-row slider-row">
+                  <span class="settings-label">効果音</span>
+                  <input type="range" id="seSlider" min="0" max="100" value="80" class="settings-slider">
+                  <span class="settings-value" id="seValue">80%</span>
+                </div>
+              </div>
             </div>
-            <div class="opt-row">
-              <label for="bgmSlider">BGM/環境音</label>
-              <input type="range" id="bgmSlider" min="0" max="100" value="90" class="opt-slider">
-              <span id="bgmValue" class="opt-val">90%</span>
+
+            <div class="settings-section">
+              <div class="settings-section-title">操作 / 画面</div>
+              <div class="settings-card">
+                <div class="settings-row slider-row">
+                  <span class="settings-label">視点感度</span>
+                  <input type="range" id="sensSlider" min="30" max="200" value="100" class="settings-slider">
+                  <span class="settings-value" id="sensValue">100%</span>
+                </div>
+                <div class="settings-divider"></div>
+                <div class="settings-row slider-row">
+                  <span class="settings-label">グレイン強度</span>
+                  <input type="range" id="grainSlider" min="0" max="100" value="30" class="settings-slider">
+                  <span class="settings-value" id="grainValue">30%</span>
+                </div>
+                <div class="settings-divider"></div>
+                <button id="gfxQualityBtn" type="button" class="settings-row settings-action">
+                  <span class="settings-label">グラフィック品質</span>
+                  <span class="settings-value-pill" id="gfxQualityValue">HIGH</span>
+                </button>
+              </div>
             </div>
-            <div class="opt-row">
-              <label for="seSlider">効果音</label>
-              <input type="range" id="seSlider" min="0" max="100" value="80" class="opt-slider">
-              <span id="seValue" class="opt-val">80%</span>
+
+            <div class="settings-section">
+              <div class="settings-section-title">セーブデータ</div>
+              <div class="settings-card">
+                <button id="optSaveBtn" type="button" class="settings-row settings-action">
+                  <span class="settings-label">手動セーブ</span>
+                  <span class="settings-arrow">›</span>
+                </button>
+                <div class="settings-divider"></div>
+                <button id="optLoadBtn" type="button" class="settings-row settings-action">
+                  <span class="settings-label">ロード</span>
+                  <span class="settings-arrow">›</span>
+                </button>
+                <div class="settings-divider"></div>
+                <button id="optResetBtn" type="button" class="settings-row settings-action danger">
+                  <span class="settings-label">セーブ削除</span>
+                  <span class="settings-arrow">›</span>
+                </button>
+              </div>
             </div>
-            <div class="opt-row">
-              <label for="sensSlider">視点感度</label>
-              <input type="range" id="sensSlider" min="30" max="200" value="100" class="opt-slider">
-              <span id="sensValue" class="opt-val">100%</span>
-            </div>
-            <div class="opt-row">
-              <label for="grainSlider">グレイン強度</label>
-              <input type="range" id="grainSlider" min="0" max="100" value="30" class="opt-slider">
-              <span id="grainValue" class="opt-val">30%</span>
-            </div>
-            <div class="opt-row">
-              <label>グラフィック品質</label>
-              <button id="gfxQualityBtn" type="button" class="opt-btn" style="grid-column: span 2;">HIGH</button>
-            </div>
-            <h3 class="phone-h3">セーブ</h3>
-            <div class="opt-buttons">
-              <button id="optSaveBtn" type="button" class="opt-btn">手動セーブ</button>
-              <button id="optLoadBtn" type="button" class="opt-btn">ロード</button>
-              <button id="optResetBtn" type="button" class="opt-btn warn">セーブ削除</button>
-            </div>
-            <div class="opt-buttons">
-              <button id="optReturnTitleBtn" type="button" class="opt-btn warn">タイトルへ戻る</button>
+
+            <div class="settings-section">
+              <div class="settings-card">
+                <button id="optReturnTitleBtn" type="button" class="settings-row settings-action danger">
+                  <span class="settings-label">タイトル画面へ戻る</span>
+                  <span class="settings-arrow">›</span>
+                </button>
+              </div>
             </div>
           </div>
 
