@@ -3024,6 +3024,42 @@
     var itemId = _pendingItemId;
     var it = ITEMS[itemId];
     if (!it) { closeItemUseModal(); return; }
+    // Guard against wasting items where they have no effect
+    if (itemId === 'almond_water' && player.san >= player.sanMax) {
+      toast('SAN は既に満タン — 使用しない');
+      closeItemUseModal();
+      return;
+    }
+    if (itemId === 'bandage' && player.hp >= player.hpMax) {
+      toast('HP は既に満タン — 使用しない');
+      closeItemUseModal();
+      return;
+    }
+    if (itemId === 'energy_bar' && player.stam >= player.stamMax) {
+      toast('スタミナ満タン — 使用しない');
+      closeItemUseModal();
+      return;
+    }
+    if (itemId === 'almond_milk' && player.hp >= player.hpMax && player.san >= player.sanMax && player.stam >= player.stamMax) {
+      toast('全ステータス満タン — 使用しない');
+      closeItemUseModal();
+      return;
+    }
+    if (itemId === 'mirror') {
+      // Only allow if Skin-Stealer or Boss within range
+      var hasTarget = false;
+      for (var mi = 0; mi < entities.length; mi++) {
+        if (!entities[mi].alive) continue;
+        if (entities[mi].type !== 'skinstealer' && entities[mi].type !== 'boss') continue;
+        var mdx = entities[mi].x - player.x, mdy = entities[mi].y - player.y;
+        if (Math.sqrt(mdx * mdx + mdy * mdy) < 8 * TS) { hasTarget = true; break; }
+      }
+      if (!hasTarget) {
+        toast('鏡: 対象がいない (Skin-Stealer / Boss 8マス以内)');
+        closeItemUseModal();
+        return;
+      }
+    }
     it.effect(player);
     if (!it.persistent) {
       player.inventory[itemId]--;
@@ -4441,9 +4477,79 @@
     });
   }
 
+  function playEndingCinematic(type, onDone) {
+    // Sequence of fade lines like intro but for ending
+    showOverlay('introOverlay');
+    var eyes = el('introEyes');
+    eyes.classList.add('open'); // start with eyes open
+    var lineEl = el('introLine');
+    lineEl.textContent = '';
+    lineEl.classList.remove('show');
+    if (audioInitialized) GameEngine.startLoop('wind');
+    var lines;
+    if (type === 'truend') {
+      lines = [
+        { text: '', delay: 800 },
+        { text: 'お前は黒い扉に手をかけた。', delay: 2800 },
+        { text: '振り返れば、9 つの階層と無数の影。', delay: 3200 },
+        { text: '前を向けば、何かが待っている。', delay: 3000 },
+        { text: '扉が、開く。', delay: 2400 },
+        { text: '光、または、無。', delay: 2800 },
+        { text: '...', delay: 1600 }
+      ];
+    } else {
+      lines = [
+        { text: '', delay: 800 },
+        { text: 'お前は壁を抜けた。', delay: 2800 },
+        { text: '...', delay: 2200 }
+      ];
+    }
+    var idx = 0;
+    var cancelled = false;
+    function next() {
+      if (cancelled) return;
+      if (idx >= lines.length) {
+        // Close eyes (slide out)
+        eyes.classList.remove('open');
+        eyes.classList.remove('partial');
+        setTimeout(function () {
+          if (cancelled) return;
+          hideOverlay('introOverlay');
+          if (audioInitialized) GameEngine.stopLoop('wind');
+          onDone();
+        }, 1200);
+        return;
+      }
+      var line = lines[idx];
+      lineEl.classList.remove('show');
+      void lineEl.offsetWidth;
+      lineEl.textContent = line.text;
+      requestAnimationFrame(function () { lineEl.classList.add('show'); });
+      idx++;
+      setTimeout(next, line.delay);
+    }
+    var skip = el('introSkipBtn');
+    var skipHandler = function () {
+      cancelled = true;
+      hideOverlay('introOverlay');
+      if (audioInitialized) GameEngine.stopLoop('wind');
+      skip.removeEventListener('click', skipHandler);
+      onDone();
+    };
+    skip.addEventListener('click', skipHandler);
+    next();
+  }
+
   function triggerEnding(type) {
+    // Play cinematic first, then show ending screen
     state = ST.ENDED;
     GameEngine.stopAll();
+    playEndingCinematic(type, function () {
+      _showEndingScreen(type);
+    });
+  }
+
+  function _showEndingScreen(type) {
     var screen = el('endingScreen');
     var content = screen.querySelector('.ending-content');
     content.classList.remove('bad-ending', 'true-ending', 'lost-ending');
@@ -4989,6 +5095,8 @@
       GameEngine.initAudio();
       audioInitialized = true;
     }
+    // Stop title BGM
+    GameEngine.stopLoop('wind');
 
     var diff = DIFFICULTIES[currentDifficulty] || DIFFICULTIES.normal;
     player.hpMax = Math.round(100 * diff.hpMul);
@@ -5047,6 +5155,12 @@
     gameMode = 'normal';
     GameEngine.stopAll();
     GameEngine.fadeFromBlack(500);
+    // Title BGM (if audio init'd)
+    if (audioInitialized) {
+      setTimeout(function () {
+        if (state === ST.TITLE) GameEngine.startLoop('wind');
+      }, 300);
+    }
 
     // Hide HUD
     el('vitalBars').classList.remove('show');
