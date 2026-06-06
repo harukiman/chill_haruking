@@ -475,14 +475,16 @@ button {
   overflow-y: scroll !important;
   -webkit-overflow-scrolling: touch !important;
   touch-action: pan-y !important;
-  /* Stack content from top (override .overlay flex center) */
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  justify-content: flex-start !important;
   /* Account for safe area at top/bottom */
   padding-top: env(safe-area-inset-top, 0px);
   padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+/* Stack settings from top (override .overlay flex center) — only when actually shown */
+.title-settings-overlay[style*="display: flex"],
+.title-settings-overlay[style*="display:flex"] {
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
 }
 .ts-card {
   width: min(92vw, 420px);
