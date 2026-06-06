@@ -130,6 +130,39 @@ body {
   95%           { opacity: 0.7; filter: blur(0.8px); }
 }
 
+.title-haruki-silhouette {
+  position: absolute;
+  bottom: 20%;
+  right: -8%;
+  width: 60vw;
+  max-width: 380px;
+  opacity: 0.18;
+  filter: blur(2px) sepia(0.4) hue-rotate(-20deg);
+  z-index: 1;
+  pointer-events: none;
+  animation: harukiBreath 6s infinite ease-in-out;
+}
+.title-haruki-silhouette img {
+  width: 100%;
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 0 18px rgba(180, 30, 30, 0.5));
+}
+@keyframes harukiBreath {
+  0%, 100% { opacity: 0.12; transform: translateX(0) scale(1); }
+  50%      { opacity: 0.25; transform: translateX(-10px) scale(1.02); }
+}
+
+.game-subtitle-jp {
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  color: #786020;
+  margin-top: -16px;
+  margin-bottom: 24px;
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.9);
+  font-style: italic;
+}
+
 .title-content {
   position: relative;
   text-align: center;
@@ -331,10 +364,33 @@ body {
 /* ============================================================
  *  GAME OVER / ENDING
  * ============================================================ */
+.gameover-haruki-bg {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.18;
+  z-index: 1;
+  pointer-events: none;
+  animation: gameoverHarukiPulse 4s infinite ease-in-out;
+}
+.gameover-haruki-bg img {
+  width: 70vw;
+  max-width: 380px;
+  filter: drop-shadow(0 0 30px rgba(150, 0, 0, 0.7)) sepia(0.5);
+}
+@keyframes gameoverHarukiPulse {
+  0%, 100% { opacity: 0.15; transform: scale(1); }
+  50%      { opacity: 0.3; transform: scale(1.05); }
+}
+
 .gameover-content, .ending-content {
   text-align: center;
   padding: 24px;
   max-width: 90vw;
+  position: relative;
+  z-index: 2;
 }
 .gameover-text {
   font-family: 'Times New Roman', serif;

@@ -43,10 +43,14 @@
   <!-- Title Screen Overlay -->
   <div id="titleScreen" class="overlay">
     <div class="title-bg-wallpaper"></div>
+    <div class="title-haruki-silhouette">
+      <img src="assets/img/haruki.png" alt="HARUKI" onerror="this.style.display='none'">
+    </div>
     <div class="title-content">
       <p class="title-pre">no-clip → </p>
       <h1 class="game-title">THE<br>BACKROOMS</h1>
-      <p class="game-subtitle">無限の壁紙世界へようこそ</p>
+      <p class="game-subtitle">— featuring HARUKI —</p>
+      <p class="game-subtitle-jp">壁の向こうに、彼女が待っている</p>
       <div class="title-decoration"></div>
       <div class="title-menu">
         <button id="startBtn" class="menu-btn" type="button">はじめから</button>
@@ -85,6 +89,9 @@
 
   <!-- Game Over Screen Overlay -->
   <div id="gameOverScreen" class="overlay" style="display:none;">
+    <div class="gameover-haruki-bg">
+      <img src="assets/img/haruki_scary.png" alt="" onerror="this.style.display='none'">
+    </div>
     <div class="gameover-content">
       <h1 class="gameover-text">YOU DIED</h1>
       <p class="gameover-sub" id="gameoverSub">バックルームに飲まれた...</p>

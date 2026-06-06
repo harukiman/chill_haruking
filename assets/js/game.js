@@ -707,11 +707,12 @@
          timeLimit: null },
     5: { id: 5, name: 'LEVEL 5', subtitle: 'THE HOTEL',
          rows: LV5_ROWS, theme: 5,
-         hint: '無数の部屋とドア。Partygoers の声が聞こえる。Mr. Hotel に注意。',
-         intro: 'カーペットの廊下...どこかから笑い声。',
+         hint: '無数の部屋とドア。Partygoers と...見覚えのある追跡者の声。',
+         intro: 'カーペットの廊下...電話が、どこかで鳴っている。',
          entities: [
            { type: 'partygoer', gx: 16, gy: 10 },
-           { type: 'mrhotel', gx: 10, gy: 18 }
+           { type: 'mrhotel', gx: 10, gy: 18 },
+           { type: 'haruki', gx: 1, gy: 21 }
          ],
          timeLimit: null },
     6: { id: 6, name: 'LEVEL 6', subtitle: 'LIGHTS OUT',
@@ -927,7 +928,9 @@
       { title: 'ROOM 0 セッション #4521',
         text: '"私たちは皆、最初にここに来る。\nそしてここを出ようとする。\nそして気付くんだ。\n— ここは入口でもあり、出口でもあると。"' },
       { title: '黄色について',
-        text: '何故、Level 0 の壁紙は黄色なのか。\nそれは、人の最も古い記憶を呼び覚ます色だから。\nお前は、思い出さない方が幸せだろう。' }
+        text: '何故、Level 0 の壁紙は黄色なのか。\nそれは、人の最も古い記憶を呼び覚ます色だから。\nお前は、思い出さない方が幸せだろう。' },
+      { title: '前ホテルの噂',
+        text: 'no-clipper 同士の間に伝わる噂。\n\n"あるホテルに、追跡者がいた。\nハルキ、と呼ばれていた。\n獲物を no-clip するまで追い詰め、\n壁の向こうまで追ってきた、と。"\n\n— Level 5 で会えるかもしれない。' }
     ],
     1: [
       { title: '倉庫の住人',
@@ -939,7 +942,9 @@
       { title: '空気の重さ',
         text: 'コンクリートの匂いと、僅かなオイル。\nここは「現実」に最も近い階層だと言われている。\nだから帰りたくなる。だから危ない。' },
       { title: 'Crawler の生態',
-        text: '低く、速く、多眼。\n奴は待つ。じっと待つ。\n動きが止まったら、次の瞬間に飛びかかってくる。\n— だから、走り続けろ。' }
+        text: '低く、速く、多眼。\n奴は待つ。じっと待つ。\n動きが止まったら、次の瞬間に飛びかかってくる。\n— だから、走り続けろ。' },
+      { title: '誰かの遺書',
+        text: '"ハルキに見つかった。\nまた逃げなければ。\n壁を抜けても、追ってくる。\nここ Level 1 までは追いつかれた。\n次はもっと深くへ。"\n\n紙片はここで途切れている。' }
     ],
     2: [
       { title: '配管夢の警告',
@@ -973,7 +978,13 @@
       { title: 'Mr. Hotel への警告',
         text: '"スーツの男に名前を尋ねられても、答えるな。\nお前の名前を持っていかれる。"' },
       { title: '404 号室',
-        text: '部屋番号 404 は決して開けないこと。\n「Page Not Found」と書かれた部屋。\n中には...何も無い。\nそれが、最も怖い。' }
+        text: '部屋番号 404 は決して開けないこと。\n「Page Not Found」と書かれた部屋。\n中には...何も無い。\nそれが、最も怖い。' },
+      { title: 'HARUKI について',
+        text: '彼女はもともと、別のホテルのフロント従業員を追っていた。\nだがその獲物が壁を抜けた瞬間、\nハルキも壁を抜いた。\n— 彼女の唯一の目的は、追跡。それだけ。\n\n音は: 電話のベル。\n姿は: 暗闇から、ぼんやりと。\n対処: フレアで一時的に怯ませろ。' },
+      { title: '前ホテルの遺品',
+        text: 'フロントデスクに置かれた、別のホテルのキーホルダー。\n「6畳一間ホテル」と刻まれている。\n誰かが no-clip して持ち込んだものか?\n\n表面に、爪痕のような筋がついている。' },
+      { title: '電話が鳴る',
+        text: 'この階層では、無人の廊下に時々電話の音が響く。\n受話器は無い。\nだが、確実に聞こえる。\n\n— 出るな。\n  出れば、必ず追ってくる。' }
     ],
     6: [
       { title: '完全な暗闇',
@@ -1108,7 +1119,8 @@
     crawler: { name: 'CRAWLER', desc: '低くて速い。多眼。\n突進と撤退を繰り返す。' },
     wretch: { name: 'WRETCH', desc: '動かない。だが見つめると胸の穴に SAN を吸われる。\n目を逸らせ。' },
     boss: { name: 'THE OPERATOR', desc: '王冠を被った階層支配者。\n3 段階で姿を変える。フレア/鏡で攻撃。' },
-    mrhotel: { name: 'MR. HOTEL', desc: 'シルクハットの男。顔は無い。\n4 マス以内で SAN を継続的に削る。' }
+    mrhotel: { name: 'MR. HOTEL', desc: 'シルクハットの男。顔は無い。\n4 マス以内で SAN を継続的に削る。' },
+    haruki: { name: 'HARUKI', desc: '前のホテルから no-clip した存在。\nお前と同じ。だが、戻ろうとしない。\n追ってくる理由は、ただ "あなただから"。' }
   };
 
   // First-run tutorial state
@@ -3029,7 +3041,8 @@
       crawler: { sound: 'knock', prob: 0.006 },
       wretch: { sound: 'whisper', prob: 0.005 },
       boss: { sound: 'stinger', prob: 0.002 },
-      mrhotel: { sound: 'clock_tick', prob: 0.012 }
+      mrhotel: { sound: 'clock_tick', prob: 0.012 },
+      haruki: { sound: 'phone', prob: 0.005 }
     };
 
     for (var i = 0; i < entities.length; i++) {
@@ -3191,6 +3204,34 @@
           attackPlayer(8 * dt);
           if (Math.random() < 0.002 && audioInitialized) {
             GameEngine.playPositionalSound('whisper', e.x, e.y);
+          }
+        }
+      } else if (e.type === 'haruki') {
+        // HARUKI: persistent stalker. Faster when chasing.
+        var harSpd = (e.state === 'chase' ? 75 : 45) * sMul;
+        if (distP < 9 * TS) {
+          e.state = 'chase';
+          var hx = (dx / distP) * harSpd * dt;
+          var hy = (dy / distP) * harSpd * dt;
+          if (isWalkable(e.x + hx, e.y)) e.x += hx;
+          if (isWalkable(e.x, e.y + hy)) e.y += hy;
+          // Phone ring at edge of perception
+          if (distP > 6 * TS && Math.random() < 0.004 && audioInitialized) {
+            GameEngine.playPositionalSound('phone', e.x, e.y);
+          }
+          // SAN drain at close range
+          if (distP < 3 * TS) player.san = Math.max(0, player.san - 4 * dt);
+        } else {
+          e.state = 'wander';
+          wanderEntity(e, dt, 35 * sMul);
+        }
+        if (distP < 1.0 * TS) {
+          attackPlayer(18 * dt);
+          // Brief jumpscare
+          if (Math.random() < 0.05) {
+            var simg = GameEngine.images['assets/img/haruki_scary.png'];
+            if (simg) GameEngine.flashImage(simg, 200);
+            if (audioInitialized) GameEngine.playSound('jumpscare');
           }
         }
       } else if (e.type === 'boss') {
@@ -3444,6 +3485,49 @@
         ctx.beginPath();
         ctx.ellipse(screenX, chestY, chestSize, chestSize * 1.3, 0, 0, Math.PI * 2);
         ctx.fill();
+      }
+    } else if (e.type === 'haruki') {
+      // HARUKI sprite — uses haruki.png head, dark body
+      var hkSpriteH = spriteH * 1.0;
+      var hkSpriteY = startY;
+      var hkBodyW = spriteW * 0.45;
+      var hkBodyX = screenX - hkBodyW / 2;
+      // Dark body
+      drawShapedSprite(ctx, hkBodyX, hkSpriteY + hkSpriteH * 0.35, hkBodyW, hkSpriteH * 0.65,
+        screenX, depthTiles, zBuf, w, '#1a0808', '#080000');
+      // Head: use haruki.png or haruki_scary.png when close
+      var useImg = depthTiles < 3
+        ? (GameEngine.images['assets/img/haruki_scary.png'] || GameEngine.images['assets/img/haruki.png'])
+        : GameEngine.images['assets/img/haruki.png'];
+      if (useImg) {
+        var headW = spriteW * 0.55;
+        var headH = hkSpriteH * 0.45;
+        var headX = screenX - headW / 2;
+        var headY = hkSpriteY;
+        var startCol = Math.max(0, Math.floor(headX));
+        var endCol = Math.min(w, Math.ceil(headX + headW));
+        for (var col = startCol; col < endCol; col++) {
+          if (zBuf[col] > depthTiles) {
+            var srcX = ((col - headX) / headW) * useImg.width;
+            ctx.drawImage(useImg, srcX, 0, 1, useImg.height, col, headY, 1, headH);
+          }
+        }
+      } else {
+        // Fallback: red blob head
+        drawShapedSprite(ctx, screenX - spriteW * 0.2, hkSpriteY, spriteW * 0.4, hkSpriteH * 0.4,
+          screenX, depthTiles, zBuf, w, '#883030', '#330000');
+      }
+      // Red glow aura (like original haruki)
+      if (depthTiles > 1.5) {
+        ctx.globalAlpha = Math.min(0.4, fogFactor * 0.5);
+        var auraR = hkSpriteH * 0.5;
+        var grad = ctx.createRadialGradient(screenX, hkSpriteY + hkSpriteH * 0.5, 0,
+                                              screenX, hkSpriteY + hkSpriteH * 0.5, auraR);
+        grad.addColorStop(0, 'rgba(200,30,30,0.5)');
+        grad.addColorStop(1, 'rgba(200,30,30,0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(screenX - auraR, hkSpriteY + hkSpriteH * 0.5 - auraR, auraR * 2, auraR * 2);
+        ctx.globalAlpha = fogFactor;
       }
     } else if (e.type === 'mrhotel') {
       // Tall thin man in suit, blank face
@@ -4539,6 +4623,14 @@
     GameEngine.isWalkableHook = isWalkable;
     GameEngine.onUpdate = onUpdate;
     GameEngine.onRender = onRender;
+
+    // Preload HARUKI sprites (legacy assets - integrated into Lv5)
+    GameEngine.loadImage('assets/img/haruki.png').then(function (img) {
+      GameEngine.images['assets/img/haruki.png'] = img;
+    }).catch(function () {});
+    GameEngine.loadImage('assets/img/haruki_scary.png').then(function (img) {
+      GameEngine.images['assets/img/haruki_scary.png'] = img;
+    }).catch(function () {});
 
     loadAchievements();
     loadBestTimes();
