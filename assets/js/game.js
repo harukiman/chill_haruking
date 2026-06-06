@@ -1370,16 +1370,25 @@
     }
     if (state !== ST.PLAYING || phoneOpen || miniGameOpen) return;
     // Left stick: movement
+    // BUGFIX: 以前は dead zone 以内で input がクリアされず最後の値が残り続け、
+    // スティックを離しても滑り続ける症状があった。else 節を追加して明示的にクリア。
     var dx = gp.axes[0] || 0;
     var dy = gp.axes[1] || 0;
-    if (Math.abs(dx) > 0.15 || Math.abs(dy) > 0.15) {
-      GameEngine.input.dx = dx;
-      GameEngine.input.dy = dy;
+    var stickMag = Math.sqrt(dx * dx + dy * dy);
+    if (stickMag > 0.15) {
+      // Apply radial dead zone for smoother diagonal feel
+      var deadAdj = (stickMag - 0.15) / (1 - 0.15);
+      GameEngine.input.dx = (dx / stickMag) * deadAdj;
+      GameEngine.input.dy = (dy / stickMag) * deadAdj;
+    } else {
+      GameEngine.input.dx = 0;
+      GameEngine.input.dy = 0;
     }
     // Right stick: look
     var lookX = gp.axes[2] || 0;
     if (Math.abs(lookX) > 0.15) {
-      GameEngine.input.lookDx = lookX;
+      var lookAdj = (Math.abs(lookX) - 0.15) / (1 - 0.15);
+      GameEngine.input.lookDx = Math.sign(lookX) * lookAdj;
     } else {
       GameEngine.input.lookDx = 0;
     }
@@ -6760,13 +6769,17 @@
     } catch (e) { console.error('viewport setup failed', e); }
   }
 
-  // Diagnostic: indicate that game.js IIFE has reached this point and __titleAction
-  // is being overridden with the real implementation. Sets a visible marker.
+  // Diagnostic: indicate that game.js IIFE completed successfully.
+  // After 2s, fade out so it's not visually distracting (still queryable in DOM).
   try {
     var diag = document.getElementById('jsLoadedDiag');
     if (diag) {
       diag.textContent = 'JS ✓';
       diag.style.color = '#88c050';
+      setTimeout(function () {
+        diag.style.transition = 'opacity 0.6s';
+        diag.style.opacity = '0';
+      }, 2000);
     }
   } catch (e) {}
 
