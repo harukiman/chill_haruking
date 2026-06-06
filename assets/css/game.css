@@ -1442,6 +1442,96 @@ body {
 }
 
 /* ============================================================
+ *  ITEM USE MODAL
+ * ============================================================ */
+.item-use-overlay {
+  z-index: 67;
+  background: rgba(0, 0, 0, 0.85);
+  animation: fadeIn 0.18s ease-out;
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.item-use-frame {
+  background: linear-gradient(180deg, #1c1408 0%, #0d0a04 100%);
+  border: 1px solid #d4b340;
+  box-shadow: 0 0 30px rgba(212, 179, 64, 0.35);
+  border-radius: 14px;
+  width: 86vw;
+  max-width: 360px;
+  padding: 24px 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  animation: scaleIn 0.22s ease-out;
+}
+@keyframes scaleIn {
+  from { transform: scale(0.92); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+.item-use-icon {
+  font-size: 52px;
+  filter: drop-shadow(0 0 12px rgba(212, 179, 64, 0.6));
+  margin-bottom: 4px;
+}
+.item-use-name {
+  font-family: 'Times New Roman', serif;
+  font-size: 19px;
+  letter-spacing: 0.18em;
+  color: #e8d57a;
+  margin: 0;
+  text-align: center;
+  text-shadow: 0 0 6px rgba(212, 179, 64, 0.4);
+}
+.item-use-desc {
+  font-size: 13px;
+  color: #d8d2bc;
+  line-height: 1.6;
+  text-align: center;
+  margin: 6px 0 14px;
+  letter-spacing: 0.04em;
+}
+.item-use-buttons {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+.iu-btn {
+  flex: 1;
+  min-height: 48px;
+  padding: 12px 16px;
+  font-family: inherit;
+  font-size: 14px;
+  letter-spacing: 0.2em;
+  cursor: pointer;
+  border-radius: 6px;
+  -webkit-tap-highlight-color: transparent;
+  transition: all 0.15s;
+}
+.iu-btn.cancel {
+  background: rgba(40, 30, 8, 0.7);
+  color: #b09040;
+  border: 1px solid #483910;
+}
+.iu-btn.cancel:active {
+  background: #1c1408;
+  transform: scale(0.97);
+}
+.iu-btn.confirm {
+  background: linear-gradient(180deg, #d4b340 0%, #a08030 100%);
+  color: #0d0a04;
+  border: 1px solid #f0dc8a;
+  font-weight: bold;
+  box-shadow: 0 0 12px rgba(212, 179, 64, 0.4);
+}
+.iu-btn.confirm:active {
+  background: linear-gradient(180deg, #f0dc8a 0%, #d4b340 100%);
+  transform: scale(0.97);
+}
+
+/* ============================================================
  *  ACHIEVEMENT TOAST
  * ============================================================ */
 .achievement-toast {

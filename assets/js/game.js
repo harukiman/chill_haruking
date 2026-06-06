@@ -1892,16 +1892,26 @@
       if (navigator.vibrate) navigator.vibrate(20);
     }
 
-    // Update vitals UI
+    // Update vitals UI — only when value changed by > 0.5% (perf)
     var hpRatio = player.hp / player.hpMax;
     var sanRatio0 = player.san / player.sanMax;
     var stamRatio = player.stam / player.stamMax;
-    el('hpFill').style.width = (hpRatio * 100) + '%';
-    el('sanFill').style.width = (sanRatio0 * 100) + '%';
-    el('stamFill').style.width = (stamRatio * 100) + '%';
-    el('hpFill').classList.toggle('low', hpRatio < 0.25);
-    el('sanFill').classList.toggle('low', sanRatio0 < 0.25);
-    el('stamFill').classList.toggle('low', stamRatio < 0.2);
+    if (!player._hudCache) player._hudCache = { hp: -1, san: -1, stam: -1 };
+    if (Math.abs(hpRatio - player._hudCache.hp) > 0.005) {
+      el('hpFill').style.width = (hpRatio * 100) + '%';
+      el('hpFill').classList.toggle('low', hpRatio < 0.25);
+      player._hudCache.hp = hpRatio;
+    }
+    if (Math.abs(sanRatio0 - player._hudCache.san) > 0.005) {
+      el('sanFill').style.width = (sanRatio0 * 100) + '%';
+      el('sanFill').classList.toggle('low', sanRatio0 < 0.25);
+      player._hudCache.san = sanRatio0;
+    }
+    if (Math.abs(stamRatio - player._hudCache.stam) > 0.005) {
+      el('stamFill').style.width = (stamRatio * 100) + '%';
+      el('stamFill').classList.toggle('low', stamRatio < 0.2);
+      player._hudCache.stam = stamRatio;
+    }
 
     // Threshold warnings (sound + toast on crossing 50% / 25%)
     if (!player._lastHpRatio) player._lastHpRatio = 1;
@@ -2958,6 +2968,42 @@
     b.textContent = label;
     b.classList.remove('primary');
     if (type === 'green') b.classList.add('primary');
+  }
+
+  // Item use custom modal
+  var _pendingItemId = null;
+  function openItemUseModal(itemId) {
+    var it = ITEMS[itemId];
+    if (!it) return;
+    _pendingItemId = itemId;
+    el('itemUseIcon').textContent = it.icon;
+    el('itemUseName').textContent = it.name;
+    el('itemUseDesc').textContent = it.desc;
+    showOverlay('itemUseModal');
+  }
+  function closeItemUseModal() {
+    _pendingItemId = null;
+    hideOverlay('itemUseModal');
+  }
+  function confirmItemUse() {
+    if (!_pendingItemId) return;
+    var itemId = _pendingItemId;
+    var it = ITEMS[itemId];
+    if (!it) { closeItemUseModal(); return; }
+    it.effect(player);
+    if (!it.persistent) {
+      player.inventory[itemId]--;
+      if (player.inventory[itemId] <= 0) delete player.inventory[itemId];
+      player._itemsUsedThisLevel = (player._itemsUsedThisLevel || 0) + 1;
+      if (!player._itemsUsedAllRun) player._itemsUsedAllRun = {};
+      player._itemsUsedAllRun[itemId] = true;
+      if (player._itemsUsedAllRun.flare && player._itemsUsedAllRun.mirror) {
+        unlockAchievement('use_all_weapons');
+      }
+    }
+    if (navigator.vibrate) navigator.vibrate(30);
+    closeItemUseModal();
+    refreshPhoneUI();
   }
 
   function openMiniGame(id) {
@@ -4186,6 +4232,7 @@
     GameEngine.drawDarkness(player.x, player.y, 200, 0);
   }
 
+  var _lastActState = { shown: null, label: null };
   function updateActionButton() {
     var btn = el('actionBtn');
     if (!btn) return;
@@ -4219,11 +4266,16 @@
       else if (ft === 3) { showAct = true; label = 'NoClip'; }
     }
 
-    if (showAct) {
-      btn.style.display = 'block';
-      el('actionBtnText').textContent = label;
-    } else {
-      btn.style.display = 'none';
+    // Skip DOM update if state hasn't changed (perf)
+    if (_lastActState.shown !== showAct || _lastActState.label !== label) {
+      if (showAct) {
+        btn.style.display = 'block';
+        el('actionBtnText').textContent = label;
+      } else {
+        btn.style.display = 'none';
+      }
+      _lastActState.shown = showAct;
+      _lastActState.label = label;
     }
   }
 
@@ -4454,22 +4506,7 @@
             '<span class="inv-name">' + item.name.slice(0, 6) + '</span>';
           (function (itemId) {
             slot.addEventListener('click', function () {
-              var it = ITEMS[itemId];
-              if (!it) return;
-              if (confirm(it.name + '\n\n' + it.desc + '\n\n使用しますか?')) {
-                it.effect(player);
-                if (!it.persistent) {
-                  player.inventory[itemId]--;
-                  if (player.inventory[itemId] <= 0) delete player.inventory[itemId];
-                  player._itemsUsedThisLevel = (player._itemsUsedThisLevel || 0) + 1;
-                  if (!player._itemsUsedAllRun) player._itemsUsedAllRun = {};
-                  player._itemsUsedAllRun[itemId] = true;
-                  if (player._itemsUsedAllRun.flare && player._itemsUsedAllRun.mirror) {
-                    unlockAchievement('use_all_weapons');
-                  }
-                }
-                refreshPhoneUI();
-              }
+              openItemUseModal(itemId);
             });
           })(id);
           grid.appendChild(slot);
@@ -4979,6 +5016,10 @@
     el('closeNoteBtn').addEventListener('click', function () {
       hideOverlay('noteViewerOverlay');
     });
+
+    // Item use modal
+    el('itemUseConfirmBtn').addEventListener('click', confirmItemUse);
+    el('itemUseCancelBtn').addEventListener('click', closeItemUseModal);
 
     // Mini-game controls
     el('minigameActionBtn').addEventListener('click', function () {
