@@ -1402,6 +1402,11 @@
         introOverlay.click();
         return;
       }
+      // Discovery popup (item pickup) — dismiss with any button
+      if (_discoveryActive && typeof window._discoveryCloseFn === 'function') {
+        try { window._discoveryCloseFn(); } catch (e) {}
+        return;
+      }
     }
     if (!anyBtn) gp._cineDismissPressed = false;
     // Handle menu navigation when overlays are open (close on action / phone button)
@@ -1411,11 +1416,61 @@
     var anyClose = (pauseBtn && pauseBtn.pressed) || (phoneBtnRaw && phoneBtnRaw.pressed);
     var anyConfirm = actionBtnRaw && actionBtnRaw.pressed;
 
-    // Phone open → phone or pause closes it
-    if (phoneOpen && anyClose && !gp._menuClosePressed) {
-      gp._menuClosePressed = true;
-      closePhone();
+    // Phone open: pause button closes; otherwise use controller cursor.
+    if (phoneOpen) {
+      // Pause button closes phone
+      if (pauseBtn && pauseBtn.pressed && !gp._menuClosePressed) {
+        gp._menuClosePressed = true;
+        closePhone();
+        return;
+      }
+      if (!(pauseBtn && pauseBtn.pressed)) gp._menuClosePressed = false;
+      // Cursor mode
+      var cur = el('gpCursor');
+      if (cur) {
+        if (cur.style.display === 'none') {
+          // Initialize cursor near center of screen
+          cur._x = window.innerWidth / 2;
+          cur._y = window.innerHeight / 2;
+          cur.style.display = 'block';
+        }
+        // Move cursor with left stick (smooth) or D-pad (fixed step)
+        var cx = gp.axes[0] || 0;
+        var cy = gp.axes[1] || 0;
+        var cm = Math.sqrt(cx * cx + cy * cy);
+        if (cm > 0.15) {
+          var step = 8 * (1 + cm * 2); // speed scales with deflection
+          cur._x += cx * step;
+          cur._y += cy * step;
+        }
+        // D-pad fixed step (less common but useful)
+        var dpadStep = 6;
+        if (gp.buttons[12] && gp.buttons[12].pressed) cur._y -= dpadStep;
+        if (gp.buttons[13] && gp.buttons[13].pressed) cur._y += dpadStep;
+        if (gp.buttons[14] && gp.buttons[14].pressed) cur._x -= dpadStep;
+        if (gp.buttons[15] && gp.buttons[15].pressed) cur._x += dpadStep;
+        // Clamp to viewport
+        cur._x = Math.max(8, Math.min(window.innerWidth - 8, cur._x));
+        cur._y = Math.max(8, Math.min(window.innerHeight - 8, cur._y));
+        cur.style.left = cur._x + 'px';
+        cur.style.top = cur._y + 'px';
+        // Action button = click at cursor position
+        if (actionBtnRaw && actionBtnRaw.pressed && !gp._cursorClick) {
+          gp._cursorClick = true;
+          var target = document.elementFromPoint(cur._x, cur._y);
+          if (target) {
+            // Simulate click; also dispatch touchstart for mobile-style handlers
+            try { target.click(); } catch (e) {}
+          }
+        } else if (!(actionBtnRaw && actionBtnRaw.pressed)) {
+          gp._cursorClick = false;
+        }
+      }
       return;
+    } else {
+      // Hide cursor when phone is not open
+      var curHide = el('gpCursor');
+      if (curHide && curHide.style.display !== 'none') curHide.style.display = 'none';
     }
     // Item use modal → action confirms, pause cancels
     var iumEl = el('itemUseModal');
@@ -1608,17 +1663,31 @@
     el('discoveryName').textContent = name;
     pop.classList.remove('show');
     pop.style.display = 'flex';
+    pop.style.pointerEvents = 'auto';
     void pop.offsetWidth; // force reflow
     pop.classList.add('show');
     _discoveryActive = true;
     if (_discoveryTimer) clearTimeout(_discoveryTimer);
-    _discoveryTimer = setTimeout(function () {
+
+    // Tap-to-dismiss (no auto-close). Safety net: 10s timeout.
+    var closed = false;
+    var closeFn = function () {
+      if (closed) return;
+      closed = true;
+      pop.removeEventListener('click', closeFn);
+      pop.removeEventListener('touchstart', closeFn);
       pop.classList.remove('show');
       setTimeout(function () {
         pop.style.display = 'none';
+        pop.style.pointerEvents = 'none';
         _discoveryActive = false;
       }, 400);
-    }, 1400);
+    };
+    pop.addEventListener('click', closeFn);
+    pop.addEventListener('touchstart', closeFn);
+    // Expose for gamepad button-press dismissal (pollGamepad will call this)
+    window._discoveryCloseFn = closeFn;
+    _discoveryTimer = setTimeout(closeFn, 10000);
   }
 
   // Encounter cinematic for entity first sighting
