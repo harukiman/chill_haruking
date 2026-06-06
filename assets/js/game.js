@@ -910,23 +910,68 @@
         toast('全回復!');
         if (audioInitialized) GameEngine.playSound('item_get');
       }
+    },
+    antacid: {
+      id: 'antacid', name: 'アーモンド胃薬',
+      icon: '💊', desc: 'HP+35 & SAN+35。だが 3 秒間移動速度 70% 低下。',
+      effect: function (p) {
+        p.hp = Math.min(p.hpMax, p.hp + 35);
+        p.san = Math.min(p.sanMax, p.san + 35);
+        p._sluggishUntil = (performance.now() / 1000) + 3;
+        toast('HP+35 SAN+35 (3秒間 鈍化)');
+        if (audioInitialized) GameEngine.playSound('item_get');
+      }
+    },
+    compass: {
+      id: 'compass', name: '壊れたコンパス',
+      icon: '🧭', desc: '使用中マップ全体を表示。だが北が常に回転する。',
+      persistent: true,
+      effect: function (p) {
+        if (p.compassOn) { p.compassOn = false; toast('コンパス OFF'); }
+        else { p.compassOn = true; toast('コンパス ON — マップ全表示'); }
+      }
+    },
+    lockpick: {
+      id: 'lockpick', name: 'ロックピック',
+      icon: '🔓', desc: '錠前破りミニゲームをスキップ。または鍵付きドア解錠。',
+      effect: function (p) {
+        // Try to find a locked door adjacent to player
+        var pgx = Math.floor(p.x / TS);
+        var pgy = Math.floor(p.y / TS);
+        var opened = 0;
+        for (var ddx = -1; ddx <= 1; ddx++) for (var ddy = -1; ddy <= 1; ddy++) {
+          var dk = gridKey(pgx + ddx, pgy + ddy);
+          var ds = doorStates[dk];
+          if (ds && ds.locked) {
+            ds.locked = false;
+            ds.open = true;
+            opened++;
+          }
+        }
+        if (opened > 0) {
+          toast(opened + ' 個のドアを解錠');
+          if (audioInitialized) GameEngine.playSound('key_unlock');
+        } else {
+          toast('近くに錠付きドアなし');
+        }
+      }
     }
   };
 
   // ── ITEMS POOL BY LEVEL ─────────────────────────────────
   var LEVEL_ITEM_POOLS = {
-    0: ['almond_water', 'bandage', 'flashlight', 'almond_milk'],
-    1: ['almond_water', 'bandage', 'energy_bar', 'keycard', 'flare'],
-    2: ['almond_water', 'bandage', 'energy_bar', 'flare'],
-    3: ['almond_water', 'bandage', 'flashlight', 'radio', 'flare'],
-    4: ['almond_water', 'keycard', 'energy_bar', 'radio', 'mirror'],
-    5: ['almond_water', 'voucher', 'bandage', 'energy_bar', 'flare'],
-    6: ['almond_water', 'flashlight', 'bandage', 'flare'],
-    7: ['energy_bar', 'almond_water', 'flare'],
-    8: ['almond_water', 'bandage', 'radio', 'mirror', 'flare'],
-    11: ['almond_water', 'flashlight', 'energy_bar', 'flare'],
-    12: ['almond_water', 'energy_bar', 'voucher', 'bandage', 'flare'],
-    9: ['almond_water', 'voucher', 'bandage', 'energy_bar', 'radio', 'almond_milk']
+    0: ['almond_water', 'bandage', 'flashlight', 'almond_milk', 'antacid', 'compass'],
+    1: ['almond_water', 'bandage', 'energy_bar', 'keycard', 'flare', 'antacid', 'lockpick'],
+    2: ['almond_water', 'bandage', 'energy_bar', 'flare', 'antacid'],
+    3: ['almond_water', 'bandage', 'flashlight', 'radio', 'flare', 'lockpick'],
+    4: ['almond_water', 'keycard', 'energy_bar', 'radio', 'mirror', 'lockpick', 'antacid'],
+    5: ['almond_water', 'voucher', 'bandage', 'energy_bar', 'flare', 'compass', 'antacid'],
+    6: ['almond_water', 'flashlight', 'bandage', 'flare', 'compass'],
+    7: ['energy_bar', 'almond_water', 'flare', 'antacid'],
+    8: ['almond_water', 'bandage', 'radio', 'mirror', 'flare', 'antacid'],
+    11: ['almond_water', 'flashlight', 'energy_bar', 'flare', 'compass'],
+    12: ['almond_water', 'energy_bar', 'voucher', 'bandage', 'flare', 'antacid'],
+    9: ['almond_water', 'voucher', 'bandage', 'energy_bar', 'radio', 'almond_milk', 'antacid', 'lockpick']
   };
 
   // ── NOTES ───────────────────────────────────────────────
@@ -1497,16 +1542,31 @@
       if (currentAmbient) GameEngine.startLoop(currentAmbient);
     }
 
-    // Loading screen — shorter for snappier feel
+    // Loading screen — then Level Reach cinematic before play
     if (!instant) {
       showLoadingScreen(def);
       setTimeout(function () {
         hideOverlay('loadingScreen');
-        startPlaying();
-      }, 1200);
+        // Show level reach cinematic
+        playLevelReachCinematic(def, function () {
+          startPlaying();
+        });
+      }, 900);
     } else {
       startPlaying();
     }
+  }
+
+  function playLevelReachCinematic(def, onDone) {
+    el('lrLevelNum').textContent = def.name;
+    el('lrSubtitle').textContent = def.subtitle;
+    el('lrFlavor').textContent = def.hint || '';
+    showOverlay('levelReachCinematic');
+    if (audioInitialized) GameEngine.playSound('stinger');
+    setTimeout(function () {
+      hideOverlay('levelReachCinematic');
+      onDone();
+    }, 2400);
   }
 
   function getEntityColor(type) {
@@ -1823,6 +1883,9 @@
     if (player.inWater) speed *= 0.55;
     var sprint = inp.sprint && player.stam > 5;
     if (sprint) speed *= 1.7;
+    // Antacid sluggish penalty
+    var nowSec = performance.now() / 1000;
+    if (player._sluggishUntil && nowSec < player._sluggishUntil) speed *= 0.3;
 
     var forward = -inp.dy;
     var strafe = inp.dx;
@@ -3623,23 +3686,52 @@
           }
         }
       } else if (e.type === 'haruki') {
-        // HARUKI: persistent stalker. Faster when chasing.
-        var harSpd = (e.state === 'chase' ? 75 : 45) * sMul;
-        if (distP < 9 * TS) {
-          e.state = 'chase';
-          var hx = (dx / distP) * harSpd * dt;
-          var hy = (dy / distP) * harSpd * dt;
-          if (isWalkable(e.x + hx, e.y)) e.x += hx;
-          if (isWalkable(e.x, e.y + hy)) e.y += hy;
-          // Phone ring at edge of perception
-          if (distP > 6 * TS && Math.random() < 0.004 && audioInitialized) {
+        // HARUKI 3-phase tracking:
+        //  Phase 1 (>12 TS): 遠い - phone bell only, wanders slowly
+        //  Phase 2 (6-12 TS): 視認 - approaches with female humming
+        //  Phase 3 (<6 TS): 接触寸前 - sprint speed, breath/whisper, jumpscare risk
+        var harPhase = 1;
+        if (distP < 12 * TS) harPhase = 2;
+        if (distP < 6 * TS) harPhase = 3;
+        e._harPhase = harPhase;
+
+        if (harPhase === 1) {
+          // Phase 1: wander slowly, distant phone bell
+          e.state = 'distant';
+          wanderEntity(e, dt, 28 * sMul);
+          if (Math.random() < 0.003 && audioInitialized) {
             GameEngine.playPositionalSound('phone', e.x, e.y);
           }
-          // SAN drain at close range
-          if (distP < 3 * TS) player.san = Math.max(0, player.san - 4 * dt);
+        } else if (harPhase === 2) {
+          // Phase 2: approaching
+          e.state = 'approach';
+          var spdP2 = 50 * sMul;
+          var p2x = (dx / distP) * spdP2 * dt;
+          var p2y = (dy / distP) * spdP2 * dt;
+          if (isWalkable(e.x + p2x, e.y)) e.x += p2x;
+          if (isWalkable(e.x, e.y + p2y)) e.y += p2y;
+          if (Math.random() < 0.005 && audioInitialized) {
+            GameEngine.playPositionalSound('lullaby', e.x, e.y);
+          }
+          // Mild SAN drain
+          player.san = Math.max(0, player.san - 1.5 * dt);
         } else {
-          e.state = 'wander';
-          wanderEntity(e, dt, 35 * sMul);
+          // Phase 3: hunting close
+          e.state = 'hunting';
+          var spdP3 = 85 * sMul;
+          var p3x = (dx / distP) * spdP3 * dt;
+          var p3y = (dy / distP) * spdP3 * dt;
+          if (isWalkable(e.x + p3x, e.y)) e.x += p3x;
+          if (isWalkable(e.x, e.y + p3y)) e.y += p3y;
+          // Continuous SAN drain
+          player.san = Math.max(0, player.san - 5 * dt);
+          // Breath/whisper sounds
+          if (Math.random() < 0.012 && audioInitialized) {
+            GameEngine.playPositionalSound('whisper', e.x, e.y);
+          }
+          if (Math.random() < 0.006 && audioInitialized) {
+            GameEngine.playPositionalSound('breath', e.x, e.y);
+          }
         }
         if (distP < 1.0 * TS) {
           attackPlayer(18 * dt);
@@ -4724,6 +4816,28 @@
       batFill.style.width = (batRatio * 100) + '%';
       batFill.classList.toggle('low', batRatio < 0.3 && batRatio >= 0.15);
       batFill.classList.toggle('critical', batRatio < 0.15);
+    }
+    // Dynamic signal bars based on entity proximity
+    var sigEl = document.querySelector('.phone-sb-signal');
+    if (sigEl) {
+      var minDist = Infinity;
+      for (var sgi = 0; sgi < entities.length; sgi++) {
+        if (!entities[sgi].alive) continue;
+        var sgDx = entities[sgi].x - player.x;
+        var sgDy = entities[sgi].y - player.y;
+        var sgD = Math.sqrt(sgDx * sgDx + sgDy * sgDy);
+        if (sgD < minDist) minDist = sgD;
+      }
+      // Map distance to bars (closer = fewer bars)
+      var bars = 5;
+      if (minDist < 3 * TS) bars = 1;
+      else if (minDist < 5 * TS) bars = 2;
+      else if (minDist < 8 * TS) bars = 3;
+      else if (minDist < 12 * TS) bars = 4;
+      var sgStr = '';
+      for (var bi = 0; bi < 5; bi++) sgStr += (bi < bars) ? '●' : '○';
+      sigEl.textContent = sgStr;
+      sigEl.style.color = bars <= 2 ? '#c63a3a' : '#d4b340';
     }
 
     // STATUS

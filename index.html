@@ -17,7 +17,7 @@
   <meta name="twitter:title" content="THE BACKROOMS — featuring HARUKI">
   <meta name="twitter:description" content="一人称モバイル探索ホラー。Level 0 から no-clip で階層を降下。壁の向こうにカレが待つ。">
   <title>THE BACKROOMS</title>
-  <link rel="stylesheet" href="assets/css/game.css?v=43">
+  <link rel="stylesheet" href="assets/css/game.css?v=44">
 </head>
 <body oncontextmenu="return false;">
 
@@ -111,6 +111,19 @@
       </div>
       <p class="encounter-name" id="encounterName"></p>
       <p class="encounter-desc" id="encounterDesc"></p>
+    </div>
+  </div>
+
+  <!-- Level Reach Cinematic (brief title card) -->
+  <div id="levelReachCinematic" class="overlay level-reach-overlay" style="display:none;">
+    <div class="lr-bar top"></div>
+    <div class="lr-bar bottom"></div>
+    <div class="lr-content">
+      <p class="lr-prefix">— ENTERING —</p>
+      <h1 class="lr-level-num" id="lrLevelNum">LEVEL 0</h1>
+      <p class="lr-subtitle" id="lrSubtitle">THE LOBBY</p>
+      <div class="lr-divider"></div>
+      <p class="lr-flavor" id="lrFlavor"></p>
     </div>
   </div>
 
@@ -524,8 +537,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="assets/js/engine.js?v=43"></script>
-  <script src="assets/js/game.js?v=43"></script>
+  <script src="assets/js/engine.js?v=44"></script>
+  <script src="assets/js/game.js?v=44"></script>
 
 </body>
 </html>
