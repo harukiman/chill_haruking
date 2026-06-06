@@ -2221,6 +2221,10 @@
       el('stamFill').classList.toggle('low', stamRatio < 0.2);
       player._hudCache.stam = stamRatio;
     }
+    // Numeric vital display
+    if (el('hpNum')) el('hpNum').textContent = Math.ceil(player.hp);
+    if (el('sanNum')) el('sanNum').textContent = Math.ceil(player.san);
+    if (el('stamNum')) el('stamNum').textContent = Math.ceil(player.stam);
 
     // HP/SAN screen state effects
     var hpFx = el('hpScreenEffect');
