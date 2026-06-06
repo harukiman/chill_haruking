@@ -301,7 +301,7 @@
     '#..F.F...F.F...F.F...#',
     '#..F.F...F.F.X.F.F...#',
     '#..F.F...F.F...F.F...#',
-    '#..FFF...FFF...FFF...#',
+    '#..FFF.s.FFF...FFF...#',
     '######################'
   ];
 
@@ -933,7 +933,9 @@
       { title: 'M.E.G. 報告書',
         text: 'Major Explorer Group:\n"Level 1 は中継地点として最適。\n安全な領域あり、定期的にアーモンドウォーターが補給される。\nだが、夜は決して訪れないことを覚悟せよ。"' },
       { title: '空気の重さ',
-        text: 'コンクリートの匂いと、僅かなオイル。\nここは「現実」に最も近い階層だと言われている。\nだから帰りたくなる。だから危ない。' }
+        text: 'コンクリートの匂いと、僅かなオイル。\nここは「現実」に最も近い階層だと言われている。\nだから帰りたくなる。だから危ない。' },
+      { title: 'Crawler の生態',
+        text: '低く、速く、多眼。\n奴は待つ。じっと待つ。\n動きが止まったら、次の瞬間に飛びかかってくる。\n— だから、走り続けろ。' }
     ],
     2: [
       { title: '配管夢の警告',
@@ -949,7 +951,9 @@
       { title: 'スパークの法則',
         text: '火花が見えた時、もう避ける時間はない。\nだから、火花が見える前に逃げろ。' },
       { title: '電気技師の最後の言葉',
-        text: '"発電所を見つけた。\nこれで全階層に光を戻せる。\n— だが、誰が光を消したのか、まだ分からない。"' }
+        text: '"発電所を見つけた。\nこれで全階層に光を戻せる。\n— だが、誰が光を消したのか、まだ分からない。"' },
+      { title: 'Wretch とは',
+        text: '動かない。\nだが、視線を合わせてはいけない。\n奴の胸には穴が開いている。\nその穴は、お前の SAN を吸い込む。\n目を逸らせ。決して、見つめるな。' }
     ],
     4: [
       { title: 'デスクの落書き',
@@ -997,7 +1001,9 @@
       { title: '郊外の終わり',
         text: 'この街には終わりがあるという。\n最後の家のドアを開ければ、そこに...\n何があるのか、誰も戻って報告していない。' },
       { title: 'THE END',
-        text: '黒い扉を見つけたら、それが終点だ。\nそこを開けば「TRUE END」へ到達できる。\nだが、開けないという選択肢もある。' }
+        text: '黒い扉を見つけたら、それが終点だ。\nそこを開けば「TRUE END」へ到達できる。\nだが、開けないという選択肢もある。' },
+      { title: 'THE OPERATOR',
+        text: 'この階層を支配する存在。\n王冠を被った人型。\n3 つの段階で本性を見せる。\n\nフェーズ 1: 観察。徘徊。\nフェーズ 2: 接近。突進。\nフェーズ 3: 分裂。影を生み出す。\n\n— 倒さなくても TRUE END は見られる。だが、奴を倒した者だけが、本当の終わりを知る。' }
     ]
   };
 
@@ -1796,6 +1802,7 @@
     0: 'vending',
     1: 'lockpick',
     5: 'memory',
+    8: 'snake',
     12: 'pong'
   };
 
@@ -2133,6 +2140,129 @@
             ctx.fillText('?', x + rw / 2, y + rh / 2);
           }
         }
+      }
+    },
+
+    // ── SNAKE ──
+    snake: {
+      title: 'スネーク',
+      subtitle: 'ドットを5個食べると勝利 — タップして方向転換',
+      init: function () {
+        mgState = {
+          phase: 'play',
+          grid: 12,
+          snake: [{x: 6, y: 8}, {x: 5, y: 8}, {x: 4, y: 8}],
+          dir: {x: 1, y: 0},
+          nextDir: {x: 1, y: 0},
+          food: {x: 9, y: 4},
+          tick: 0,
+          tickRate: 0.18,
+          eaten: 0,
+          goal: 5
+        };
+        setMGAction('閉じる', 'gray');
+        setMGStatus('0 / 5');
+      },
+      action: function () { closeMiniGame(); },
+      onTap: function (cx, cy, w, h) {
+        if (mgState.phase !== 'play') return;
+        // Determine direction from tap relative to canvas center
+        var dx = cx - w / 2;
+        var dy = cy - h / 2;
+        // Disallow 180 reversal
+        if (Math.abs(dx) > Math.abs(dy)) {
+          var nd = dx > 0 ? {x: 1, y: 0} : {x: -1, y: 0};
+          if (nd.x !== -mgState.dir.x) mgState.nextDir = nd;
+        } else {
+          var nd2 = dy > 0 ? {x: 0, y: 1} : {x: 0, y: -1};
+          if (nd2.y !== -mgState.dir.y) mgState.nextDir = nd2;
+        }
+      },
+      update: function (dt) {
+        if (mgState.phase !== 'play') return;
+        mgState.tick += dt;
+        if (mgState.tick < mgState.tickRate) return;
+        mgState.tick = 0;
+        mgState.dir = mgState.nextDir;
+        var head = mgState.snake[0];
+        var nh = { x: head.x + mgState.dir.x, y: head.y + mgState.dir.y };
+        // Wall collision
+        if (nh.x < 0 || nh.y < 0 || nh.x >= mgState.grid || nh.y >= mgState.grid) {
+          mgState.phase = 'lose';
+          setMGStatus('壁にぶつかった');
+          setMGAction('終了', 'red');
+          if (audioInitialized) GameEngine.playSound('hit');
+          return;
+        }
+        // Self collision
+        for (var i = 0; i < mgState.snake.length; i++) {
+          if (mgState.snake[i].x === nh.x && mgState.snake[i].y === nh.y) {
+            mgState.phase = 'lose';
+            setMGStatus('自爆');
+            setMGAction('終了', 'red');
+            return;
+          }
+        }
+        mgState.snake.unshift(nh);
+        // Food
+        if (nh.x === mgState.food.x && nh.y === mgState.food.y) {
+          mgState.eaten++;
+          if (audioInitialized) GameEngine.playSound('clock_tick');
+          // Respawn food
+          while (true) {
+            var fx = Math.floor(Math.random() * mgState.grid);
+            var fy = Math.floor(Math.random() * mgState.grid);
+            var clash = mgState.snake.some(function (s) { return s.x === fx && s.y === fy; });
+            if (!clash) { mgState.food = { x: fx, y: fy }; break; }
+          }
+          mgState.tickRate = Math.max(0.08, mgState.tickRate * 0.9);
+          if (mgState.eaten >= mgState.goal) {
+            mgState.phase = 'win';
+            setMGStatus('クリア! 報酬獲得');
+            setMGAction('終了', 'green');
+            var rewards = ['flare', 'almond_water', 'energy_bar'];
+            var rwd = rewards[Math.floor(Math.random() * rewards.length)];
+            player.inventory[rwd] = (player.inventory[rwd] || 0) + 1;
+            toast(ITEMS[rwd].name + ' を入手');
+            unlockAchievement('won_minigame');
+            if (audioInitialized) GameEngine.playSound('item_get');
+          }
+        } else {
+          mgState.snake.pop();
+        }
+        setMGStatus(mgState.eaten + ' / ' + mgState.goal);
+      },
+      draw: function (ctx, w, h) {
+        ctx.fillStyle = '#0a0805';
+        ctx.fillRect(0, 0, w, h);
+        var cs = Math.min(w, h) / mgState.grid;
+        var ox = (w - cs * mgState.grid) / 2;
+        var oy = (h - cs * mgState.grid) / 2;
+        // Grid lines
+        ctx.strokeStyle = '#382a08';
+        ctx.lineWidth = 1;
+        for (var gi = 0; gi <= mgState.grid; gi++) {
+          ctx.beginPath();
+          ctx.moveTo(ox + gi * cs, oy);
+          ctx.lineTo(ox + gi * cs, oy + mgState.grid * cs);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(ox, oy + gi * cs);
+          ctx.lineTo(ox + mgState.grid * cs, oy + gi * cs);
+          ctx.stroke();
+        }
+        // Snake
+        for (var si = 0; si < mgState.snake.length; si++) {
+          var s = mgState.snake[si];
+          var bright = si === 0 ? '#d4b340' : '#88a040';
+          ctx.fillStyle = bright;
+          ctx.fillRect(ox + s.x * cs + 1, oy + s.y * cs + 1, cs - 2, cs - 2);
+        }
+        // Food
+        ctx.fillStyle = '#c84050';
+        ctx.beginPath();
+        ctx.arc(ox + mgState.food.x * cs + cs / 2, oy + mgState.food.y * cs + cs / 2, cs * 0.35, 0, Math.PI * 2);
+        ctx.fill();
       }
     },
 
