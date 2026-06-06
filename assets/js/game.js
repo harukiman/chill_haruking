@@ -707,9 +707,12 @@
          timeLimit: null },
     5: { id: 5, name: 'LEVEL 5', subtitle: 'THE HOTEL',
          rows: LV5_ROWS, theme: 5,
-         hint: '無数の部屋とドア。Partygoers の声が聞こえる。',
+         hint: '無数の部屋とドア。Partygoers の声が聞こえる。Mr. Hotel に注意。',
          intro: 'カーペットの廊下...どこかから笑い声。',
-         entities: [ { type: 'partygoer', gx: 16, gy: 10 } ],
+         entities: [
+           { type: 'partygoer', gx: 16, gy: 10 },
+           { type: 'mrhotel', gx: 10, gy: 18 }
+         ],
          timeLimit: null },
     6: { id: 6, name: 'LEVEL 6', subtitle: 'LIGHTS OUT',
          rows: LV6_ROWS, theme: 6,
@@ -1104,7 +1107,8 @@
     partygoer: { name: 'PARTYGOER', desc: '陽気な笑顔と帽子。\n陽気さで殴ってくる。' },
     crawler: { name: 'CRAWLER', desc: '低くて速い。多眼。\n突進と撤退を繰り返す。' },
     wretch: { name: 'WRETCH', desc: '動かない。だが見つめると胸の穴に SAN を吸われる。\n目を逸らせ。' },
-    boss: { name: 'THE OPERATOR', desc: '王冠を被った階層支配者。\n3 段階で姿を変える。フレア/鏡で攻撃。' }
+    boss: { name: 'THE OPERATOR', desc: '王冠を被った階層支配者。\n3 段階で姿を変える。フレア/鏡で攻撃。' },
+    mrhotel: { name: 'MR. HOTEL', desc: 'シルクハットの男。顔は無い。\n4 マス以内で SAN を継続的に削る。' }
   };
 
   // First-run tutorial state
@@ -2859,7 +2863,8 @@
       partygoer: { sound: 'phone', prob: 0.003 },
       crawler: { sound: 'knock', prob: 0.006 },
       wretch: { sound: 'whisper', prob: 0.005 },
-      boss: { sound: 'stinger', prob: 0.002 }
+      boss: { sound: 'stinger', prob: 0.002 },
+      mrhotel: { sound: 'clock_tick', prob: 0.012 }
     };
 
     for (var i = 0; i < entities.length; i++) {
@@ -3007,6 +3012,22 @@
         }
         // Direct contact damages
         if (distP < 0.8 * TS) attackPlayer(8 * dt);
+      } else if (e.type === 'mrhotel') {
+        // Stationary at first, slowly approaches when player nearby
+        if (distP < 12 * TS) {
+          if (distP < 4 * TS) player.san = Math.max(0, player.san - 6 * dt);
+          var mhSpd = 30 * sMul;
+          var mhx = (dx / distP) * mhSpd * dt;
+          var mhy = (dy / distP) * mhSpd * dt;
+          if (isWalkable(e.x + mhx, e.y)) e.x += mhx;
+          if (isWalkable(e.x, e.y + mhy)) e.y += mhy;
+        }
+        if (distP < 1.0 * TS) {
+          attackPlayer(8 * dt);
+          if (Math.random() < 0.002 && audioInitialized) {
+            GameEngine.playPositionalSound('whisper', e.x, e.y);
+          }
+        }
       } else if (e.type === 'boss') {
         // Boss: multi-phase, boss HP tracked separately
         e.bossHp = e.bossHp !== undefined ? e.bossHp : 200;
@@ -3258,6 +3279,39 @@
         ctx.beginPath();
         ctx.ellipse(screenX, chestY, chestSize, chestSize * 1.3, 0, 0, Math.PI * 2);
         ctx.fill();
+      }
+    } else if (e.type === 'mrhotel') {
+      // Tall thin man in suit, blank face
+      var mhBH = spriteH * 0.95;
+      var mhBY = startY + spriteH * 0.05;
+      var mhBW = spriteW * 0.32;
+      var mhBX = screenX - mhBW / 2;
+      drawShapedSprite(ctx, mhBX, mhBY, mhBW, mhBH, screenX, depthTiles, zBuf, w,
+        '#252025', '#0a0a10');
+      // Top hat
+      ctx.fillStyle = 'rgba(20,20,20,' + fogFactor + ')';
+      var hatY = mhBY - spriteH * 0.15;
+      var hatH = spriteH * 0.18;
+      var hatW = mhBW * 0.9;
+      var hatX = screenX - hatW / 2;
+      for (var mhc = Math.floor(hatX); mhc < hatX + hatW; mhc++) {
+        if (mhc < 0 || mhc >= w) continue;
+        if (zBuf[mhc] > depthTiles) ctx.fillRect(mhc, hatY, 1, hatH);
+      }
+      // Brim
+      var brimW = mhBW * 1.6;
+      var brimX = screenX - brimW / 2;
+      for (var mhbc = Math.floor(brimX); mhbc < brimX + brimW; mhbc++) {
+        if (mhbc < 0 || mhbc >= w) continue;
+        if (zBuf[mhbc] > depthTiles) ctx.fillRect(mhbc, hatY + hatH - 2, 1, 3);
+      }
+      // Blank white face
+      ctx.fillStyle = 'rgba(230,225,210,' + fogFactor + ')';
+      var faceY2 = mhBY;
+      var faceH2 = mhBH * 0.15;
+      for (var mhfc = Math.floor(mhBX); mhfc < mhBX + mhBW; mhfc++) {
+        if (mhfc < 0 || mhfc >= w) continue;
+        if (zBuf[mhfc] > depthTiles) ctx.fillRect(mhfc, faceY2, 1, faceH2);
       }
     } else if (e.type === 'boss') {
       // Large humanoid with crown and floating presence
@@ -3940,6 +3994,16 @@
     readNotes = {};
     discoveredMap = {};
     mgPlayedAt = {};
+    // Konami starter pack
+    if (window._konamiGranted) {
+      window._konamiGranted = false;
+      player.inventory.almond_water = 3;
+      player.inventory.bandage = 2;
+      player.inventory.flare = 2;
+      player.inventory.flashlight = 1;
+      player.inventory.energy_bar = 2;
+      toast('★ KONAMI スターターパック付与');
+    }
     // Note: unlockedAchievements persists across runs
 
     // Start audio context
@@ -4213,6 +4277,52 @@
     setInterval(function () {
       if (state === ST.PLAYING) saveGame();
     }, 30000);
+
+    // Konami code on title screen (↑↑↓↓←→←→BA) → grants starter pack
+    var konami = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];
+    var ki = 0;
+    window.addEventListener('keydown', function (e) {
+      var key = e.key;
+      if (key === konami[ki]) {
+        ki++;
+        if (ki === konami.length) {
+          ki = 0;
+          if (state === ST.TITLE) {
+            unlockAchievement('won_minigame');
+            // Grant starter items on next new game via a flag
+            window._konamiGranted = true;
+            toast('★ KONAMI! 次のラン開始時にスタートパック付与');
+            if (audioInitialized) GameEngine.playSound('item_get');
+          } else if (state === ST.PLAYING) {
+            // In-game: full restore
+            player.hp = player.hpMax;
+            player.san = player.sanMax;
+            player.stam = player.stamMax;
+            toast('★ KONAMI! 全回復');
+          }
+        }
+      } else { ki = 0; }
+    });
+
+    // 3-tap on title logo triggers same effect (mobile-friendly)
+    var titleTaps = 0;
+    var titleTapTimer = 0;
+    var gameTitle = document.querySelector('.game-title');
+    if (gameTitle) {
+      gameTitle.addEventListener('click', function () {
+        var now = performance.now();
+        if (now - titleTapTimer > 1200) titleTaps = 0;
+        titleTapTimer = now;
+        titleTaps++;
+        if (titleTaps >= 5) {
+          titleTaps = 0;
+          window._konamiGranted = true;
+          unlockAchievement('won_minigame');
+          toast('★ 隠し効果解除! 次のランにスタートパック');
+          if (audioInitialized) GameEngine.playSound('item_get');
+        }
+      });
+    }
   }
 
   // ============================================================
