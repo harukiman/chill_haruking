@@ -20,7 +20,7 @@
   <meta name="twitter:title" content="THE BACKROOMS — featuring HARUKI">
   <meta name="twitter:description" content="一人称モバイル探索ホラー。Level 0 から no-clip で階層を降下。壁の向こうにカレが待つ。">
   <title>THE BACKROOMS</title>
-  <link rel="stylesheet" href="assets/css/game.css?v=98">
+  <link rel="stylesheet" href="assets/css/game.css?v=99">
 </head>
 <body oncontextmenu="return false;">
 
@@ -118,6 +118,7 @@
         <button id="freeRoamBtn" class="menu-btn" type="button" style="display:none;" onclick="window.__titleAction&&window.__titleAction('freeroam')">フリーローム</button>
         <button id="endlessBtn" class="menu-btn" type="button" onclick="window.__titleAction&&window.__titleAction('endless')">ENDLESS モード</button>
         <button id="difficultyBtn" class="menu-btn" type="button" onclick="window.__titleAction&&window.__titleAction('difficulty')">難易度: NORMAL</button>
+        <button id="cheatBtn" class="menu-btn" type="button" style="display:none;" onclick="window.__titleAction&&window.__titleAction('cheat')">無双モード: OFF</button>
         <button id="controlsBtn" class="menu-btn" type="button" onclick="window.__titleAction&&window.__titleAction('controls')">操作説明</button>
         <button id="titleSettingsBtn" class="menu-btn" type="button" onclick="window.__titleAction&&window.__titleAction('settings')">設定</button>
       </div>
@@ -778,8 +779,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="assets/js/engine.js?v=98"></script>
-  <script src="assets/js/game.js?v=98"></script>
+  <script src="assets/js/engine.js?v=99"></script>
+  <script src="assets/js/game.js?v=99"></script>
 
   <!-- POST-LOAD VERIFICATION + DIRECT BINDING FALLBACK
        After game.js IIFE runs, this script confirms __titleAction is the real one.

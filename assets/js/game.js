@@ -785,12 +785,16 @@
          timeLimit: null },
     9: { id: 9, name: 'LEVEL 9', subtitle: 'THE SUBURBS',
          rows: LV9_ROWS, theme: 9,
-         hint: '永遠に続く郊外の街。THE END への扉がここに。',
-         intro: '空に月はない。月のような何かがある。',
+         hint: 'BOSS を倒さなければ THE END の扉は開かない。武器を集めろ。',
+         intro: '空に月はない。月のような何かがある。— ここで終わる。',
          entities: [
            { type: 'boss', gx: 12, gy: 9 },
-           { type: 'crawler', gx: 5, gy: 16 }
+           { type: 'crawler', gx: 5, gy: 16 },
+           { type: 'hound', gx: 18, gy: 7 },
+           { type: 'hound', gx: 4, gy: 8 },
+           { type: 'skinstealer', gx: 19, gy: 17 }
          ],
+         bossRequired: true, // exit door locked until boss is dead
          timeLimit: null }
   };
 
@@ -970,20 +974,121 @@
     }
   };
 
+  // ============================================================
+  //  WEAPONS — directional ranged / melee attacks against entities
+  //  Stored in player.inventory just like items (count = ammo / durability).
+  //  category:'weapon' triggers the D-pad weapon mode usage.
+  // ============================================================
+  // Helper: damage the nearest entity that lies inside a forward cone
+  // (angle in radians, distance in tiles). Returns the affected entity or null.
+  function _attackForward(p, opts) {
+    var bestE = null, bestDist = Infinity;
+    var ang = p.angle;
+    var coneRad = opts.coneDeg * Math.PI / 180;
+    var maxDist = opts.rangeTiles * TS;
+    for (var i = 0; i < entities.length; i++) {
+      var e = entities[i];
+      if (!e.alive) continue;
+      var dx = e.x - p.x, dy = e.y - p.y;
+      var d = Math.sqrt(dx * dx + dy * dy);
+      if (d > maxDist) continue;
+      var relAng = Math.atan2(dy, dx) - ang;
+      while (relAng > Math.PI) relAng -= Math.PI * 2;
+      while (relAng < -Math.PI) relAng += Math.PI * 2;
+      if (Math.abs(relAng) > coneRad / 2) continue;
+      if (d < bestDist) { bestDist = d; bestE = e; }
+    }
+    if (!bestE) return null;
+    var dmg = opts.dmg * (cheatActive ? 3 : 1);
+    if (bestE.type === 'boss') {
+      bestE.bossHp = (bestE.bossHp !== undefined ? bestE.bossHp : 200) - dmg;
+      if (bestE.bossHp <= 0) {
+        bestE.alive = false;
+        unlockAchievement('defeat_boss');
+        toast('★ BOSS 撃破!');
+      }
+    } else {
+      bestE.hp = (bestE.hp !== undefined ? bestE.hp : 100) - dmg;
+      if (bestE.hp <= 0) {
+        bestE.alive = false;
+        bestE.deathAt = performance.now();
+        toast(getEntityLabel(bestE.type) + ' 撃破');
+      }
+    }
+    return bestE;
+  }
+  function getEntityLabel(t) {
+    return ({ hound: 'HOUND', skinstealer: 'SKIN-STEALER', smiler: 'SMILER',
+              partygoer: 'PARTYGOER', boss: 'BOSS', haruki: 'HARUKI', crawler: 'CRAWLER' })[t] || t;
+  }
+  // Register weapons into the global ITEMS map (defined above)
+  ITEMS.pistol = {
+    id: 'pistol', name: '拳銃', icon: '🔫',
+    desc: '中距離・低反動。1発で hound 系を倒せる。所持数=残弾。',
+    category: 'weapon',
+    effect: function (p) {
+      var hit = _attackForward(p, { dmg: 60, rangeTiles: 8, coneDeg: 14 });
+      if (audioInitialized) GameEngine.playSound('hit');
+      GameEngine.shakeScreen(4, 0.15);
+      toast(hit ? '命中: ' + getEntityLabel(hit.type) : '空振り');
+    }
+  };
+  ITEMS.shotgun = {
+    id: 'shotgun', name: 'ショットガン', icon: '🪓',
+    desc: '近距離・広範囲。大ダメージだが弾数少。',
+    category: 'weapon',
+    effect: function (p) {
+      // Multiple pellets within a wide cone — damage scales by hits
+      var hits = 0;
+      for (var s = 0; s < 5; s++) {
+        var h = _attackForward(p, { dmg: 35, rangeTiles: 4.5, coneDeg: 55 });
+        if (h) hits++;
+      }
+      if (audioInitialized) GameEngine.playSound('hit');
+      GameEngine.shakeScreen(10, 0.35);
+      GameEngine.redFlash();
+      toast(hits ? hits + 'ヒット' : '空振り');
+    }
+  };
+  ITEMS.katana = {
+    id: 'katana', name: '刀', icon: '🗡',
+    desc: '近接・即斬。耐久度1ずつ消費。Boss にも有効。',
+    category: 'weapon',
+    effect: function (p) {
+      var hit = _attackForward(p, { dmg: 95, rangeTiles: 1.6, coneDeg: 80 });
+      if (audioInitialized) GameEngine.playSound('hit');
+      GameEngine.shakeScreen(5, 0.18);
+      toast(hit ? '斬撃: ' + getEntityLabel(hit.type) : '空振り');
+    }
+  };
+  ITEMS.revolver = {
+    id: 'revolver', name: 'リボルバー', icon: '🎯',
+    desc: '長距離・高貫通。6発まで装填、命中力高い。',
+    category: 'weapon',
+    effect: function (p) {
+      var hit = _attackForward(p, { dmg: 85, rangeTiles: 12, coneDeg: 8 });
+      if (audioInitialized) GameEngine.playSound('hit');
+      GameEngine.shakeScreen(6, 0.22);
+      toast(hit ? '貫通: ' + getEntityLabel(hit.type) : '空振り');
+    }
+  };
+
   // ── ITEMS POOL BY LEVEL ─────────────────────────────────
   var LEVEL_ITEM_POOLS = {
     0: ['almond_water', 'bandage', 'flashlight', 'almond_milk', 'antacid', 'compass'],
     1: ['almond_water', 'bandage', 'energy_bar', 'keycard', 'flare', 'antacid', 'lockpick'],
     2: ['almond_water', 'bandage', 'energy_bar', 'flare', 'antacid'],
-    3: ['almond_water', 'bandage', 'flashlight', 'radio', 'flare', 'lockpick'],
-    4: ['almond_water', 'keycard', 'energy_bar', 'radio', 'mirror', 'lockpick', 'antacid'],
-    5: ['almond_water', 'voucher', 'bandage', 'energy_bar', 'flare', 'compass', 'antacid'],
-    6: ['almond_water', 'flashlight', 'bandage', 'flare', 'compass'],
-    7: ['energy_bar', 'almond_water', 'flare', 'antacid'],
-    8: ['almond_water', 'bandage', 'radio', 'mirror', 'flare', 'antacid'],
-    11: ['almond_water', 'flashlight', 'energy_bar', 'flare', 'compass'],
-    12: ['almond_water', 'energy_bar', 'voucher', 'bandage', 'flare', 'antacid'],
-    9: ['almond_water', 'voucher', 'bandage', 'energy_bar', 'radio', 'almond_milk', 'antacid', 'lockpick']
+    3: ['almond_water', 'bandage', 'flashlight', 'radio', 'flare', 'lockpick', 'pistol'],
+    4: ['almond_water', 'keycard', 'energy_bar', 'radio', 'mirror', 'lockpick', 'antacid', 'pistol'],
+    5: ['almond_water', 'voucher', 'bandage', 'energy_bar', 'flare', 'compass', 'antacid', 'pistol', 'katana'],
+    6: ['almond_water', 'flashlight', 'bandage', 'flare', 'compass', 'pistol', 'shotgun'],
+    7: ['energy_bar', 'almond_water', 'flare', 'antacid', 'shotgun', 'katana'],
+    8: ['almond_water', 'bandage', 'radio', 'mirror', 'flare', 'antacid', 'pistol', 'katana'],
+    11: ['almond_water', 'flashlight', 'energy_bar', 'flare', 'compass', 'shotgun'],
+    12: ['almond_water', 'energy_bar', 'voucher', 'bandage', 'flare', 'antacid', 'pistol', 'revolver'],
+    // Lv9: final-boss arena — extra firepower available.
+    9: ['almond_water', 'voucher', 'bandage', 'energy_bar', 'almond_milk', 'lockpick',
+        'pistol', 'shotgun', 'katana', 'revolver']
   };
 
   // ── NOTES ───────────────────────────────────────────────
@@ -1238,6 +1343,15 @@
   var pickupRenderList = []; // [{key, wx, wy, itemId}]
   var noteRenderList = [];   // [{key, wx, wy}]
   var doorStates = {};       // {gx_gy: {open}}
+
+  // Cheat mode: persisted unlock flag + per-session toggle.
+  // Unlocked once the player reaches any ending. While active:
+  //   - item/weapon use does NOT decrement count (infinite)
+  //   - weapons deal 3× damage (無双モード)
+  //   - player takes 0.4× damage
+  var cheatUnlocked = false;
+  var cheatActive = false;
+  try { cheatUnlocked = !!localStorage.getItem('thebackrooms_cheat_unlocked_v1'); } catch (e) {}
 
   // D-pad quick-use assignments (per mode)
   var dpadAssignments = { weapon: { up: '', down: '', left: '', right: '' },
@@ -4091,7 +4205,7 @@
       }
     }
     it.effect(player);
-    if (!it.persistent) {
+    if (!it.persistent && !cheatActive) {
       player.inventory[itemId]--;
       if (player.inventory[itemId] <= 0) delete player.inventory[itemId];
       player._itemsUsedThisLevel = (player._itemsUsedThisLevel || 0) + 1;
@@ -4449,6 +4563,20 @@
 
   function tryNoClip() {
     if (player._noClipping) return; // prevent rapid-tap re-entry
+    // Boss-gate: on levels marked bossRequired, the exit only opens once the
+    // boss is dead. This applies to the final-floor ending door specifically.
+    var def = LEVELS[currentLevel];
+    if (def && def.bossRequired) {
+      var bossAlive = false;
+      for (var bi = 0; bi < entities.length; bi++) {
+        if (entities[bi].type === 'boss' && entities[bi].alive) { bossAlive = true; break; }
+      }
+      if (bossAlive) {
+        toast('★ BOSS を倒さねば扉は開かない');
+        if (audioInitialized) GameEngine.playSound('door');
+        return;
+      }
+    }
     player._noClipping = true;
     // Endless mode: pick random next, increment score
     if (gameMode === 'endless') {
@@ -4901,6 +5029,7 @@
     if (_inCinematic) return;
     // No damage while overlays freeze gameplay (phone, settings, note viewer)
     if (typeof _isGamePaused === 'function' && _isGamePaused()) return;
+    if (cheatActive) dmg *= 0.4;
     var prevHp = player.hp;
     player.hp = Math.max(0, player.hp - dmg);
     // Always provide damage feedback: red flash + shake + sound + vital pulse
@@ -6019,6 +6148,14 @@
     // Play cinematic first, then show ending screen
     state = ST.ENDED;
     GameEngine.stopAll();
+    // Unlock cheat mode on any ending — replay incentive ("無双モード")
+    try {
+      if (!localStorage.getItem('thebackrooms_cheat_unlocked_v1')) {
+        localStorage.setItem('thebackrooms_cheat_unlocked_v1', '1');
+        cheatUnlocked = true;
+        toast('★ CHEAT MODE 解禁! タイトル画面で切替可能');
+      }
+    } catch (e) {}
     playEndingCinematic(type, function () {
       _showEndingScreen(type);
     });
@@ -7018,6 +7155,11 @@
     if (cont) cont.style.display = hasSave() ? '' : 'none';
     var diff = el('difficultyBtn');
     if (diff) diff.textContent = '難易度: ' + (DIFFICULTIES[currentDifficulty] ? DIFFICULTIES[currentDifficulty].name : 'NORMAL');
+    var cb = el('cheatBtn');
+    if (cb) {
+      cb.style.display = cheatUnlocked ? '' : 'none';
+      cb.textContent = '無双モード: ' + (cheatActive ? 'ON' : 'OFF');
+    }
     var ac = el('titleAchCounter');
     if (ac) {
       var acCount = Object.keys(unlockedAchievements).length;
@@ -7739,6 +7881,14 @@
           setDifficulty(nx);
           var dbtn = el('difficultyBtn');
           if (dbtn) dbtn.textContent = '難易度: ' + DIFFICULTIES[nx].name;
+          break;
+        case 'cheat':
+          stage = 'cheat';
+          if (!cheatUnlocked) { toast('一度クリアすると解禁'); break; }
+          cheatActive = !cheatActive;
+          var cb = el('cheatBtn');
+          if (cb) cb.textContent = '無双モード: ' + (cheatActive ? 'ON' : 'OFF');
+          toast(cheatActive ? '★ 無双モード ON — 全アイテム無限・3倍ダメージ' : '無双モード OFF');
           break;
         case 'controls': stage = 'controls'; showOverlay('tutorialOverlay'); break;
         case 'settings': stage = 'settings'; showOverlay('titleSettingsOverlay'); break;
