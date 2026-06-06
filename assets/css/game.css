@@ -1623,5 +1623,27 @@ body {
   }
   .game-title { font-size: 36px; line-height: 1.05; }
   .title-decoration { margin: 10px auto; }
-  .title-menu { flex-direction: row; }
+  .title-menu {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+  }
+  .menu-btn {
+    min-width: 0;
+    min-height: 38px;
+    padding: 8px 14px;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+  }
+  .title-content { padding: 10px 16px; }
+  .title-pre, .game-subtitle, .game-subtitle-jp { margin-bottom: 6px; }
+  .copyright, .version-text { font-size: 7px; bottom: 4px; }
+  /* Lighten the HUD bars in landscape */
+  #vitalBars { gap: 2px; }
+  .vital-bar { width: 80px; height: 7px; }
+  /* Mini-game more compact */
+  .minigame-canvas { max-width: 280px; }
+  .minigame-frame { padding: 10px 14px; }
+  /* HUD-objective lower on landscape */
+  .hud-objective { font-size: 11px; padding: 5px 12px; }
 }
