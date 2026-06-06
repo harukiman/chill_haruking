@@ -3558,10 +3558,21 @@
   }
 
   function attackPlayer(dmg) {
+    var prevHp = player.hp;
     player.hp = Math.max(0, player.hp - dmg);
     if (Math.random() < 0.1) {
       GameEngine.redFlash();
       if (navigator.vibrate) navigator.vibrate(60);
+      // Scream/grunt on heavier hits
+      if (audioInitialized) {
+        if (dmg > 0.15 && Math.random() < 0.5) {
+          GameEngine.playSound('scream_short');
+        }
+      }
+    }
+    // Critical scream when about to die
+    if (prevHp > player.hpMax * 0.2 && player.hp <= player.hpMax * 0.2) {
+      if (audioInitialized) GameEngine.playSound('scream');
     }
   }
 
@@ -5034,6 +5045,29 @@
     el('startBtn').addEventListener('click', startNewGame);
     el('continueBtn').addEventListener('click', continueGame);
     el('endlessBtn').addEventListener('click', startEndlessMode);
+
+    // Total reset (clears achievements, save, stats, best times, etc.)
+    el('titleResetBtn').addEventListener('click', function () {
+      // Two-step confirmation
+      var confirm1 = confirm('全てのデータを削除します:\n\n• セーブデータ\n• 全アチーブメント (20種)\n• 全ベストタイム\n• ENDLESS Best Score\n• 通算記録\n• 累積収集ノート\n• 遭遇エンティティ図鑑\n\n本当に削除しますか?');
+      if (!confirm1) return;
+      var confirm2 = confirm('【最終確認】\n\n削除後は全進捗が完全に失われ、復元不可能です。\n本当によろしいですか?');
+      if (!confirm2) return;
+      // Clear all known keys
+      var keys = ['thebackrooms_save_v1', 'thebackrooms_ach_v1', 'thebackrooms_best_v1', 'thebackrooms_diff_v1', 'thebackrooms_tut_v1', 'thebackrooms_endless_v1', 'thebackrooms_stats_v1', 'thebackrooms_ent_seen_v1', 'thebackrooms_lifetime_notes_v1', 'thebackrooms_items_collected_v1', 'thebackrooms_gfx_v1', 'bk_master_vol', 'bk_bgm_vol', 'bk_se_vol', 'bk_sens', 'bk_grain'];
+      keys.forEach(function (k) { try { localStorage.removeItem(k); } catch (e) {} });
+      // Reset in-memory state
+      unlockedAchievements = {};
+      bestTimes = {};
+      stats = { totalDeaths: 0, totalNoClips: 0, totalRuns: 0, totalPlayTime: 0, totalItemsCollected: 0, totalNotesRead: 0, totalDistanceWalked: 0 };
+      entitySeenTypes = {};
+      lifetimeNoteTitles = {};
+      endlessBestScore = 0;
+      tutorialDone = false;
+      currentDifficulty = 'normal';
+      toast('全データを削除しました');
+      setTimeout(function () { location.reload(); }, 1500);
+    });
     el('freeRoamBtn').addEventListener('click', openLevelSelect);
     el('lvlselCloseBtn').addEventListener('click', function () {
       hideOverlay('levelSelectOverlay');

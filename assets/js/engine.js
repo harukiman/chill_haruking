@@ -1980,7 +1980,93 @@
         case 'thunder':
           this._playThunder(now);
           break;
+        case 'scream':
+          this._playScream(now);
+          break;
+        case 'scream_short':
+          this._playScreamShort(now);
+          break;
       }
+    },
+
+    _playScream: function (now) {
+      var dest = seGain || masterGain;
+      // Female-ish scream: rapid pitch sweep + harmonic + noise
+      var fundamental = audioCtx.createOscillator();
+      fundamental.type = 'sawtooth';
+      fundamental.frequency.setValueAtTime(440, now);
+      fundamental.frequency.exponentialRampToValueAtTime(880, now + 0.1);
+      fundamental.frequency.exponentialRampToValueAtTime(660, now + 0.4);
+      fundamental.frequency.exponentialRampToValueAtTime(220, now + 0.9);
+      var fG = audioCtx.createGain();
+      fG.gain.setValueAtTime(0, now);
+      fG.gain.linearRampToValueAtTime(0.45, now + 0.08);
+      fG.gain.setValueAtTime(0.45, now + 0.7);
+      fG.gain.exponentialRampToValueAtTime(0.001, now + 1.0);
+      fundamental.connect(fG);
+      // Harmonic
+      var harm = audioCtx.createOscillator();
+      harm.type = 'square';
+      harm.frequency.setValueAtTime(880, now);
+      harm.frequency.exponentialRampToValueAtTime(1320, now + 0.15);
+      harm.frequency.exponentialRampToValueAtTime(440, now + 0.9);
+      var hG = audioCtx.createGain();
+      hG.gain.setValueAtTime(0, now);
+      hG.gain.linearRampToValueAtTime(0.18, now + 0.08);
+      hG.gain.exponentialRampToValueAtTime(0.001, now + 0.95);
+      harm.connect(hG);
+      // Breath/throat noise
+      var bufLen = (audioCtx.sampleRate * 1.0) | 0;
+      var buf = audioCtx.createBuffer(1, bufLen, audioCtx.sampleRate);
+      var d = buf.getChannelData(0);
+      for (var i = 0; i < bufLen; i++) {
+        var t = i / audioCtx.sampleRate;
+        var env = Math.sin(t * Math.PI);
+        d[i] = (Math.random() * 2 - 1) * env * 0.4;
+      }
+      var src = audioCtx.createBufferSource();
+      src.buffer = buf;
+      var bp = audioCtx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = 1500;
+      bp.Q.value = 4;
+      var nG = audioCtx.createGain();
+      nG.gain.value = 0.3;
+      src.connect(bp); bp.connect(nG);
+      fG.connect(dest); hG.connect(dest); nG.connect(dest);
+      fundamental.start(now); harm.start(now); src.start(now);
+      fundamental.stop(now + 1.05); harm.stop(now + 1.0); src.stop(now + 1.05);
+    },
+
+    _playScreamShort: function (now) {
+      // Brief "ugh" / pain sound
+      var dest = seGain || masterGain;
+      var osc = audioCtx.createOscillator();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(220, now);
+      osc.frequency.exponentialRampToValueAtTime(110, now + 0.25);
+      var g = audioCtx.createGain();
+      g.gain.setValueAtTime(0.35, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+      osc.connect(g); g.connect(dest);
+      osc.start(now); osc.stop(now + 0.32);
+      // Add breath noise burst
+      var bufLen = (audioCtx.sampleRate * 0.3) | 0;
+      var buf = audioCtx.createBuffer(1, bufLen, audioCtx.sampleRate);
+      var d = buf.getChannelData(0);
+      for (var i = 0; i < bufLen; i++) {
+        var t = i / audioCtx.sampleRate;
+        d[i] = (Math.random() * 2 - 1) * Math.exp(-t * 6) * 0.5;
+      }
+      var src = audioCtx.createBufferSource();
+      src.buffer = buf;
+      var bp = audioCtx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = 800;
+      var ng = audioCtx.createGain();
+      ng.gain.value = 0.4;
+      src.connect(bp); bp.connect(ng); ng.connect(dest);
+      src.start(now);
     },
 
     startLoop: function (type) {

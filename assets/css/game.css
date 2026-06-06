@@ -278,6 +278,26 @@ body {
   padding: 4px 10px;
   border: 1px solid #483910;
 }
+.title-reset-btn {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 8px) + 8px);
+  left: 12px;
+  font-size: 9px;
+  color: #c63a3a;
+  letter-spacing: 0.1em;
+  z-index: 2;
+  background: rgba(40, 0, 0, 0.4);
+  padding: 5px 10px;
+  border: 1px solid rgba(180, 30, 30, 0.5);
+  border-radius: 6px;
+  font-family: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.title-reset-btn:active {
+  background: rgba(80, 0, 0, 0.7);
+  transform: scale(0.95);
+}
 
 /* ============================================================
  *  LOADING SCREEN (no-clip transition)
