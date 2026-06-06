@@ -1361,15 +1361,14 @@
     // Show last-pressed button in title settings (when settings overlay is open)
     var pressedEl = el('tsGpPressedBtn');
     if (pressedEl) {
-      var anyPressed = false;
+      var pressedLabels = [];
       for (var pi = 0; pi < gp.buttons.length; pi++) {
         if (gp.buttons[pi].pressed) {
-          pressedEl.textContent = '押下中ボタン: ' + pi;
-          anyPressed = true;
-          break;
+          var lab = window._gpBtnLabels && window._gpBtnLabels[pi];
+          pressedLabels.push(lab || ('B' + pi));
         }
       }
-      if (!anyPressed) pressedEl.textContent = '押下中ボタン: -';
+      pressedEl.textContent = pressedLabels.length > 0 ? '押下中: ' + pressedLabels.join(' + ') : '押下中: -';
     }
     // Gamepad diagram + assign listening hooks (when settings open)
     if (typeof window._gpDiagramHook === 'function') {
@@ -1660,6 +1659,12 @@
   function showDiscovery(icon, label, name) {
     var pop = el('discoveryPopup');
     if (!pop) return;
+    // If a previous discovery is still showing, fire its close handler first to
+    // clear its listeners (prevent listener stacking + race conditions).
+    if (typeof window._discoveryCloseFn === 'function') {
+      try { window._discoveryCloseFn(); } catch (e) {}
+    }
+    if (_discoveryTimer) clearTimeout(_discoveryTimer);
     el('discoveryIcon').textContent = icon;
     el('discoveryLabel').textContent = label;
     el('discoveryName').textContent = name;
@@ -1669,7 +1674,6 @@
     void pop.offsetWidth; // force reflow
     pop.classList.add('show');
     _discoveryActive = true;
-    if (_discoveryTimer) clearTimeout(_discoveryTimer);
 
     // Tap-to-dismiss (no auto-close). Safety net: 10s timeout.
     var closed = false;
@@ -1678,6 +1682,7 @@
       closed = true;
       pop.removeEventListener('click', closeFn);
       pop.removeEventListener('touchstart', closeFn);
+      if (window._discoveryCloseFn === closeFn) window._discoveryCloseFn = null;
       pop.classList.remove('show');
       setTimeout(function () {
         pop.style.display = 'none';
@@ -6891,11 +6896,15 @@
       });
     }
     // Gamepad mapping UI — visual diagram + "press a button to assign" flow
+    // PS4/PS5 standard mapping. Most controllers (Xbox, Switch Pro via Bluetooth)
+    // expose the same button indices, just with different physical labels.
     var BTN_LABELS = ['✕', '◯', '□', '△', 'L1', 'R1', 'L2', 'R2',
-                       'SHARE', 'OPT', 'L3', 'R3', '↑', '↓', '←', '→', 'PS/Home'];
+                       'SHARE', 'OPTIONS', 'L3', 'R3', '↑', '↓', '←', '→', 'PS'];
+    // Expose for pollGamepad to label pressed buttons
+    window._gpBtnLabels = BTN_LABELS;
     function btnLabel(idx) {
       if (idx === undefined || idx === null || idx < 0) return '未割当';
-      return 'ボタン ' + idx + (BTN_LABELS[idx] ? ' (' + BTN_LABELS[idx] + ')' : '');
+      return BTN_LABELS[idx] || ('B' + idx);
     }
     function refreshGpFnUI() {
       var fnBtns = document.querySelectorAll('.ts-gp-assign');
@@ -6959,8 +6968,9 @@
         if (gp.buttons[bi].pressed) {
           gamepadMap[listeningFn] = bi;
           try { localStorage.setItem(GAMEPAD_KEY, JSON.stringify(gamepadMap)); } catch (e) {}
+          var assignedLabel = BTN_LABELS[bi] || ('B' + bi);
           stopListening();
-          toast('「' + listeningFn + '」を ボタン ' + bi + ' に設定');
+          toast('「' + listeningFn + '」を ' + assignedLabel + ' に設定');
           return true; // signal handled
         }
       }
@@ -7135,6 +7145,12 @@
           break;
         case 'controls': stage = 'controls'; showOverlay('tutorialOverlay'); break;
         case 'settings': stage = 'settings'; showOverlay('titleSettingsOverlay'); break;
+        case 'settingsFromPhone':
+          stage = 'settingsFromPhone';
+          // Close phone first so titleSettingsOverlay (z=55) isn't hidden by phone (z=60)
+          try { if (typeof closePhone === 'function') closePhone(); } catch (e) {}
+          showOverlay('titleSettingsOverlay');
+          break;
         case 'closeSettings': stage = 'closeSettings'; hideOverlay('titleSettingsOverlay'); break;
         case 'reset':
           stage = 'reset';
