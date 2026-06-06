@@ -925,15 +925,23 @@
       { title: '湿った絨毯',
         text: '床のシミは血ではない。漏水でもない。\nこの場所が記憶している、誰かの泣き痕だ。\n直視するな。SAN が削れる。' },
       { title: 'アーモンドウォーター',
-        text: '見覚えのある飲み物が、見覚えのない壁に置かれている。\n飲める。普通の味だ。\n誰がここに置いたのか、考えるな。' },
+        text: '見覚えのある飲み物が、見覚えのない壁に置かれている。\n飲める。普通の味だ。\n誰がここに置いたのか、考えるな。\n\n成分表示: 水、アーモンド、\nそして「気のせい」。' },
       { title: '蛍光灯のリズム',
-        text: 'ハム音には法則がある。\n3 回点滅したら近くにエンティティ。\n5 回点滅したら、もう手遅れだ。' },
+        text: 'ハム音には法則がある。\n3 回点滅したら近くにエンティティ。\n5 回点滅したら、もう手遅れだ。\n7 回点滅したら... 私は試したことがない。' },
       { title: 'ROOM 0 セッション #4521',
-        text: '"私たちは皆、最初にここに来る。\nそしてここを出ようとする。\nそして気付くんだ。\n— ここは入口でもあり、出口でもあると。"' },
+        text: '"私たちは皆、最初にここに来る。\nそしてここを出ようとする。\nそして気付くんだ。\n— ここは入口でもあり、出口でもあると。"\n\n発言者不明。録音は途中で切れている。' },
       { title: '黄色について',
-        text: '何故、Level 0 の壁紙は黄色なのか。\nそれは、人の最も古い記憶を呼び覚ます色だから。\nお前は、思い出さない方が幸せだろう。' },
+        text: '何故、Level 0 の壁紙は黄色なのか。\nそれは、人の最も古い記憶を呼び覚ます色だから。\nお前は、思い出さない方が幸せだろう。\n\n— K-37 探検記第3巻' },
       { title: '前ホテルの噂',
-        text: 'no-clipper 同士の間に伝わる噂。\n\n"あるホテルに、追跡者がいた。\nハルキ、と呼ばれていた。\n獲物を no-clip するまで追い詰め、\n壁の向こうまで追ってきた、と。"\n\n— Level 5 で会えるかもしれない。' }
+        text: 'no-clipper 同士の間に伝わる噂。\n\n"あるホテルに、追跡者がいた。\nハルキ、と呼ばれていた。\n獲物を no-clip するまで追い詰め、\n壁の向こうまで追ってきた、と。"\n\n— Level 5 で会えるかもしれない。' },
+      { title: 'M.E.G. 基地 BR-7 の住人手記',
+        text: 'Major Explorer Group が築いた Level 0 内の基地。\n安全な部屋は 7 つあるとされるが、\n誰も全てを発見したことがない。\n\n基地メンバーは月に 1 度、入れ替わる。\n— 入る人数と出る人数は、いつも一致しない。' },
+      { title: 'no-clip の科学',
+        text: '"no-clip" とは、現実の物理ルールを抜け出す現象。\n壁、床、天井 — いかなる障壁も\nお前が「ここではない」と確信した瞬間、消える。\n\nだが、確信した先には別の現実が待っている。\nそして、戻り方は誰も知らない。' },
+      { title: '私の名前は',
+        text: '思い出せない。\nここに来てから、3 階層を降りた。\nまだ 1 週間も経っていない。\n\nなのに、自分の名前が出てこない。\nこれを書いている文字は、私の字なのか?' },
+      { title: '時計が無い',
+        text: 'Level 0 には時計が無い。\n光も日没も無い。\n蛍光灯のハム音だけが、時間の代わり。\n\n私は時計を持ってきた。\n3 時間で止まった。\n針が逆回りを始めている。' }
     ],
     1: [
       { title: '倉庫の住人',
@@ -941,13 +949,21 @@
       { title: '居住可能ゾーン',
         text: 'Level 1 は比較的安全だ。\n他の "no-clipper" と出会うこともある。\nもし出会えたら、それは幸運だ。\nもし、向こうから来たら...違うかもしれない。' },
       { title: 'M.E.G. 報告書',
-        text: 'Major Explorer Group:\n"Level 1 は中継地点として最適。\n安全な領域あり、定期的にアーモンドウォーターが補給される。\nだが、夜は決して訪れないことを覚悟せよ。"' },
+        text: 'Major Explorer Group 第 14 派遣隊:\n"Level 1 は中継地点として最適。\n安全な領域あり、定期的にアーモンドウォーターが補給される。\nだが、夜は決して訪れないことを覚悟せよ。"\n\n補足: 派遣隊 14 のうち、戻ったのは 8 名。' },
       { title: '空気の重さ',
-        text: 'コンクリートの匂いと、僅かなオイル。\nここは「現実」に最も近い階層だと言われている。\nだから帰りたくなる。だから危ない。' },
+        text: 'コンクリートの匂いと、僅かなオイル。\nここは「現実」に最も近い階層だと言われている。\nだから帰りたくなる。だから危ない。\n\n— K-37 探検記第7巻' },
       { title: 'Crawler の生態',
         text: '低く、速く、多眼。\n奴は待つ。じっと待つ。\n動きが止まったら、次の瞬間に飛びかかってくる。\n— だから、走り続けろ。' },
       { title: '誰かの遺書',
-        text: '"ハルキに見つかった。\nまた逃げなければ。\n壁を抜けても、追ってくる。\nここ Level 1 までは追いつかれた。\n次はもっと深くへ。"\n\n紙片はここで途切れている。' }
+        text: '"ハルキに見つかった。\nまた逃げなければ。\n壁を抜けても、追ってくる。\nここ Level 1 までは追いつかれた。\n次はもっと深くへ。"\n\n紙片はここで途切れている。' },
+      { title: '搬入伝票 No.0024',
+        text: '差出: 不明\n宛先: Level 1 倉庫\n品名: 一式 (内容不明)\n数量: ∞\n納期: 既に到着済み\n\n何が運ばれてきているのか、誰もが知らない。\nだが、棚は決して空にならない。' },
+      { title: '電子掲示板',
+        text: '"Level 1 ヘようこそ\n— サポートは平日 9-17 時 (もう一度: もう機能していません)\n— 安全のため夜間は外出禁止 (もう一度: ここに夜は来ません)\n— 楽しい滞在を!"' },
+      { title: '前所有者の手紙',
+        text: '"この倉庫は、私の祖父の代から続いていた。\n商品を運び、棚を整理し、出荷した。\n\n気付けば、私は壁の中にいた。\n商品はまだ運ばれてくる。\nだから、私は今も働き続けている。\n壁の向こう側で。"' },
+      { title: 'コンクリートの夢',
+        text: 'M.E.G. 神経科医 R 博士の論文:\n"Level 1 で長時間過ごすと、被験者は『コンクリートの夢』を見る。\n灰色の長い廊下、何も無い、終わらない夢。\n\n目覚めても、夢は続いている — それが Level 1 の本質。"' }
     ],
     2: [
       { title: '配管夢の警告',
@@ -955,7 +971,17 @@
       { title: 'Smiler',
         text: '暗闇に白い歯だけが浮かぶ。\n見るな。目を逸らせばすり抜ける。\n見続けると...笑いに、引き込まれる。' },
       { title: '腐食した詩',
-        text: '"配管は夢を見る。\n誰も流さない水を流し、\n誰も呼ばない人を呼び、\n誰も帰らない者を待つ。"' }
+        text: '"配管は夢を見る。\n誰も流さない水を流し、\n誰も呼ばない人を呼び、\n誰も帰らない者を待つ。"' },
+      { title: 'プラント技師の最終ログ',
+        text: '日報 #∞-3:\n"配管系統 A-7 が逆流を始めた。\n圧力計が壊れている。\n指針が裏返しを指している。\n\n上司への報告: ...そうか、上司はもういない。\n私が最後の技師か。\nだったら、誰がこれを読むんだ。"' },
+      { title: '水の声',
+        text: 'ここの水は、声を発する。\n聴き続けると、お前の名前を呼ぶ。\n\nお前の名前は、ここに来る前から\n配管が知っていた。' },
+      { title: 'M.E.G. 構造解析報告',
+        text: '"Level 2 の配管は重力に従わない。\n上向きに水が流れ、下向きに蒸気が降りる。\nここに来た物理学者 3 名は、3 通りの結論を出した:\n\n1) ここは現実ではない\n2) 我々が物理を誤解していた\n3) 配管が物理を超えた\n\n3 名とも戻らなかった。"' },
+      { title: '配管夢',
+        text: 'この階層で目を閉じると、必ず\n配管の音が聞こえる。\n\n水滴の音 — リズミカル。\nバルブの音 — 規則的。\nそして、誰かの咳 — 配管の中から。\n\n咳をしているのは、お前が来る前から\n中にいた、誰か。' },
+      { title: '蒸気の中の影',
+        text: '湿気の高い箇所で、たまに\n人影が見える。\nお前と同じ姿勢。お前と同じ動き。\n\n鏡ではない。\nそれは、もうここに残っている、お前。' }
     ],
     3: [
       { title: '通電中',
@@ -965,7 +991,13 @@
       { title: '電気技師の最後の言葉',
         text: '"発電所を見つけた。\nこれで全階層に光を戻せる。\n— だが、誰が光を消したのか、まだ分からない。"' },
       { title: 'Wretch とは',
-        text: '動かない。\nだが、視線を合わせてはいけない。\n奴の胸には穴が開いている。\nその穴は、お前の SAN を吸い込む。\n目を逸らせ。決して、見つめるな。' }
+        text: '動かない。\nだが、視線を合わせてはいけない。\n奴の胸には穴が開いている。\nその穴は、お前の SAN を吸い込む。\n目を逸らせ。決して、見つめるな。' },
+      { title: '配電盤の記録',
+        text: '配電盤 No.7 に黒い炭の文字:\n\n"電気を止めるな。\n電気を止めると、\n奴らが目覚める。\n\n— 元 Level 3 担当者"' },
+      { title: '電撃の中の声',
+        text: 'スパーク音の合間に、声が混じる。\nヘリ音に偽装された、女性の声。\n\n聞き取れた言葉:\n"...どこ...どこに...いる...の..."\n\nお前の母親の声に、似ているかもしれない。' },
+      { title: '感電死体の供物',
+        text: 'M.E.G. Level 3 観察隊報告:\n"床の黒い斑点は元 no-clipper の影。\n感電死した者の魂が床に焼き付いている。\n\n触れるな。彼らは仲間が欲しいのだ。\n孤独な階層で、誰かを連れていきたいのだ。"' }
     ],
     4: [
       { title: 'デスクの落書き',
@@ -973,7 +1005,17 @@
       { title: 'Skin-Stealer',
         text: '床に倒れている同僚。\n声をかけるな。触るな。\n目を合わせるな。\n奴らはお前の皮膚を欲しがっている。' },
       { title: '退職届',
-        text: '退職事由: 不在\n退職日: 不明\n署名: ____________\n\n誰の退職届だ。なぜここに。' }
+        text: '退職事由: 不在\n退職日: 不明\n署名: ____________\n\n誰の退職届だ。なぜここに。' },
+      { title: '人事部からの通知',
+        text: '宛先: 全社員\n\n本日より、全社員の出社情報は\n「常に出社中」とみなされます。\n\nしたがって、退勤・退職・\n死亡の届出は受理されません。\n\n— 人事部より' },
+      { title: '残業申請書',
+        text: '申請者: M. 田中\n申請日: ??/??/????\n残業時間: ∞時間\n理由: 締切まで間に合わない\n\n承認印あり (印影は赤く滲んでいる)\n\n田中は、まだここで働いている。' },
+      { title: 'コーヒーマシン',
+        text: 'Level 4 のコーヒーマシンは未だ機能している。\nコインは要らない。\n\n紙コップにはいつも同じ言葉:\n\n"おかえりなさい、いつもの方"' },
+      { title: '社内メール (未送信)',
+        text: 'Subject: 来週月曜の会議について\nFrom: 自分\nTo: 上司\n\n"来週は出席できません。\n壁を抜けてしまったので。\n申し訳ありません。\nまたいつかお会いしましょう。\n\nたぶん、来週月曜の会議で。"' },
+      { title: '4F 第3キュービクル',
+        text: 'お前が立っているこのキュービクル。\nデスクに座ると、急に「思い出す」。\n\n書類の処理、上司の名前、\n隣の席の同僚の顔、\n会議の予定、\n\nそして、no-clipper になる前の人生を。\n\n— 思い出すな。それは罠だ。' }
     ],
     5: [
       { title: 'チェックイン用紙',
@@ -987,19 +1029,41 @@
       { title: '前ホテルの遺品',
         text: 'フロントデスクに置かれた、別のホテルのキーホルダー。\n「6畳一間ホテル」と刻まれている。\n誰かが no-clip して持ち込んだものか?\n\n表面に、爪痕のような筋がついている。' },
       { title: '電話が鳴る',
-        text: 'この階層では、無人の廊下に時々電話の音が響く。\n受話器は無い。\nだが、確実に聞こえる。\n\n— 出るな。\n  出れば、必ず追ってくる。' }
+        text: 'この階層では、無人の廊下に時々電話の音が響く。\n受話器は無い。\nだが、確実に聞こえる。\n\n— 出るな。\n  出れば、必ず追ってくる。' },
+      { title: 'コンシェルジュからの挨拶',
+        text: '"親愛なるお客様へ\n\n本ホテルでは、ご滞在中のあらゆる需要にお応えします:\n- お休みの部屋: 無限\n- お食事: 永遠\n- ご退室: ...差し止め中\n\nお気軽にコンシェルジュ (顔のないスーツの男) までお声がけください。\n\nMr. Hotel"' },
+      { title: 'ロビーの絵画',
+        text: 'ロビーに飾られた油絵。\n描かれているのは、お前の顔。\n\n気付くまで、お前は気付かない。\n気付いた瞬間、絵が瞬きをする。' },
+      { title: '元 chill_haruking より',
+        text: 'これはバックルーム以前の物語。\n深夜のホテルに、追跡者「ハルキ」がいた。\n彼女から逃げ切った宿泊客は、\n壁を抜けて Level 5 にたどり着いた。\n\nだが、ハルキも壁を抜いた。\n— 物語は、終わらない。' },
+      { title: 'チェックアウト不能',
+        text: 'M.E.G. 危険等級報告書 第 5 号:\n\n"Level 5 にチェックインした者は\nチェックアウトの方法を忘れる。\n\n出口の地図を持っていても、\n出口の存在自体を忘れる。\n\nこれは Mr. Hotel の能力ではない。\nここはホテル自体が、忘却させる場所なのだ。"' },
+      { title: '深夜の従業員放送',
+        text: 'スピーカーから:\n\n"夜 0 時を回りました。\nゲストの皆様におかれましては、\nお部屋に戻ってお休みください。\n\n戻らないゲストには、\nお迎えに上がります。"' }
     ],
     6: [
       { title: '完全な暗闇',
         text: '光を消した者がいる。\n誰かがこの階層を「閉じた」のだ。\n懐中電灯がなければ、5 タイル先も見えない。' },
       { title: '闇の儀式',
-        text: 'この階層に来た者の SAN は、通常の倍速で削れる。\n暗闇そのものが脳に侵食する。\n光を絶やすな。' }
+        text: 'この階層に来た者の SAN は、通常の倍速で削れる。\n暗闇そのものが脳に侵食する。\n光を絶やすな。' },
+      { title: '誰かの最後の言葉',
+        text: '"光が、消えた。\n電気を点けたのに。\n電池が満タンの懐中電灯を持っているのに。\n見えないものを、見ているのは、私だ。\n\n私の目こそが、ここで閉じてしまった。"' },
+      { title: '見えない地図',
+        text: '床にチョークで書かれた地図がある。\n手探りで形を読み取れる。\n\n書いた者の意図は明らかだ — \n後の者へ、迷わぬよう。\n\nだが地図は不規則に書き換えられている。\n誰かが、毎晩、新しく書いている。' },
+      { title: '暗闇の発声',
+        text: 'M.E.G. 音響観察:\n"完全な無音ではない。\n非常に低周波の振動 (約 0.3 Hz) が常時。\n人間の呼吸に近いリズム。\n\n何かが、この階層全体で\n呼吸している。"' }
     ],
     7: [
       { title: 'Run For Your Life',
         text: 'この階層に立ち止まった者はいない。\n走れ。\n振り返るな。\n奴らの数は、振り返るたびに増える。' },
       { title: '最速記録',
-        text: 'この階層を 60 秒未満でクリアした者がいるという。\n彼は今、走り続けている。\n他の階層で。\n他の自分から、逃げ続けている。' }
+        text: 'この階層を 60 秒未満でクリアした者がいるという。\n彼は今、走り続けている。\n他の階層で。\n他の自分から、逃げ続けている。' },
+      { title: '回廊の起源',
+        text: 'M.E.G. 第 3 仮説:\n"Level 7 は元 Level 0 の一部だった。\n誰かが「永遠に走り続けたい」と願った瞬間、\nその部屋が回廊となり、独立した階層になった。\n\n願いは叶っている。\nだが、その誰かは、止まることができない。"' },
+      { title: '前を見ろ',
+        text: '走っている間、決して振り返るな。\n振り返った瞬間、後ろにいた奴が見える。\n見えると、奴は加速する。\n\n見なければ、奴は遅い。\n見なければ、お前は速い。\n\nだから — 振り返るな。' },
+      { title: '私たちは走り続ける',
+        text: 'Level 7 の出口に、メモが置かれている。\n\n"走った者へ\nおめでとう。\n君は今、振り返らずに 60 秒走り抜いた。\n\nだが、これからの人生でも\n振り返らない覚悟はあるか?"' }
     ],
     8: [
       { title: 'The Hive — 巣',
@@ -1007,7 +1071,13 @@
       { title: '巣の主',
         text: 'Smiler と Partygoer が共存している珍しい階層。\n奴らは互いに干渉しない。\nそして両方ともお前に興味を持っている。' },
       { title: '蜂蜜のような',
-        text: '空気が甘い。\n床に小さな黄色い液滴が落ちている。\n蜂蜜? いや、もっと粘度が高い。\n— 触れるな。' }
+        text: '空気が甘い。\n床に小さな黄色い液滴が落ちている。\n蜂蜜? いや、もっと粘度が高い。\n— 触れるな。' },
+      { title: '巣の働き手',
+        text: 'M.E.G. 観察記録 #008-3:\n"Level 8 のセル状構造には、定期的に\n「働き手」が集まる。\n\n彼らは元 no-clipper。\nここの SAN 吸引に屈服した者たち。\n\n彼らは今もセルを修繕し、\n吊るされたものを増やし続ける。"' },
+      { title: '巣の女王',
+        text: 'セルの奥深く、最深部に\n「女王」と呼ばれる存在がいる、と噂される。\n\n見た者はいない。\n\nだが、Level 8 で死んだ者は\n例外なく、女王の腹の中に\n吊るされるという。' },
+      { title: '蜜の中の声',
+        text: '黄色い液滴に耳を近づけると、\n中から声が聞こえる。\n\n甘く優しい声。母親の声。\n\n"おかえりなさい。\nもう何もしなくていいよ。\nここで眠っていなさい。"\n\n— 聞いてはいけない。' }
     ],
     11: [
       { title: 'End of the Line',
@@ -3826,7 +3896,7 @@
     }
     if (visibleCount === 0) return; // fully occluded by walls
 
-    var fogFactor = Math.max(0.25, 1 - depthTiles / 14);
+    var fogFactor = Math.max(0.55, 1 - depthTiles / 14);
     var pulse = 0.7 + Math.sin(phase) * 0.3;
     var groundY = h / 2 + (h * 0.5) / depthTiles;
     var iconBaseY = groundY - iconSize * 0.4;
@@ -3888,6 +3958,21 @@
     ctx.restore();
   }
 
+  // Offscreen for no-clip beam (separate canvas to avoid corrupt during pickup draw)
+  var _noClipOffCanvas = null;
+  var _noClipOffCtx = null;
+  function getNoClipOffCanvas(w_, h_) {
+    if (!_noClipOffCanvas) {
+      _noClipOffCanvas = document.createElement('canvas');
+      _noClipOffCtx = _noClipOffCanvas.getContext('2d');
+    }
+    if (_noClipOffCanvas.width !== w_ || _noClipOffCanvas.height !== h_) {
+      _noClipOffCanvas.width = w_;
+      _noClipOffCanvas.height = h_;
+    }
+    return _noClipOffCanvas;
+  }
+
   function drawNoClipBeam(ctx, wx, wy, phase) {
     var w = GameEngine.width;
     var h = GameEngine.height;
@@ -3902,47 +3987,79 @@
     if (depthTiles > 18) return;
 
     var screenX = (w / 2) * (1 + tX / tY);
-    var zBuf = GameEngine._zBuffer;
-    var col = Math.round(screenX);
-    if (zBuf && col >= 0 && col < w && zBuf[col] < depthTiles) return;
-
-    var fogFactor = Math.max(0.3, 1 - depthTiles / 18);
     var beamWidth = Math.max(6, (h / depthTiles) * 0.12);
     var beamHeight = (h / depthTiles) * 1.5;
+    var ringR = beamWidth * 2;
+    var totalWidth = Math.max(beamWidth * 2.5, ringR * 2);
+
+    if (screenX + totalWidth < 0 || screenX - totalWidth > w) return;
+
+    var zBuf = GameEngine._zBuffer;
+    if (!zBuf) return;
+    // Multi-column visibility check
+    var sampleStart = Math.max(0, Math.floor(screenX - totalWidth / 2));
+    var sampleEnd = Math.min(w - 1, Math.ceil(screenX + totalWidth / 2));
+    if (sampleEnd <= sampleStart) return;
+    var visCount = 0;
+    for (var sc = sampleStart; sc <= sampleEnd; sc++) {
+      if (zBuf[sc] > depthTiles) visCount++;
+    }
+    if (visCount === 0) return;
+
+    var fogFactor = Math.max(0.3, 1 - depthTiles / 18);
     var groundY = h / 2 + (h * 0.5) / depthTiles;
     var beamTopY = Math.max(0, groundY - beamHeight);
     var pulse = 0.7 + Math.sin(phase * 1.5) * 0.3;
 
-    ctx.save();
+    // Render to offscreen
+    var offW = Math.ceil(totalWidth);
+    var offH = Math.ceil(beamHeight + ringR * 2);
+    var off = getNoClipOffCanvas(offW, offH);
+    var octx = _noClipOffCtx;
+    octx.clearRect(0, 0, offW, offH);
+    var oCenterX = offW / 2;
+    var oGroundY = beamHeight; // ground at this y on offscreen
     // Beam
-    ctx.globalAlpha = fogFactor * 0.7 * pulse;
-    var beamGrad = ctx.createLinearGradient(screenX, beamTopY, screenX, groundY);
+    octx.globalAlpha = 0.7 * pulse;
+    var beamGrad = octx.createLinearGradient(oCenterX, 0, oCenterX, oGroundY);
     beamGrad.addColorStop(0, 'rgba(255, 220, 100, 0)');
     beamGrad.addColorStop(0.5, 'rgba(255, 220, 100, 0.6)');
     beamGrad.addColorStop(1, 'rgba(255, 180, 50, 0.9)');
-    ctx.fillStyle = beamGrad;
-    ctx.fillRect(screenX - beamWidth, beamTopY, beamWidth * 2, beamHeight);
+    octx.fillStyle = beamGrad;
+    octx.fillRect(oCenterX - beamWidth, 0, beamWidth * 2, oGroundY);
     // Ground glow
-    ctx.globalAlpha = fogFactor * 0.85 * pulse;
-    var ringR = beamWidth * 2;
-    var groundGrad = ctx.createRadialGradient(screenX, groundY, 0, screenX, groundY, ringR);
-    groundGrad.addColorStop(0, 'rgba(255, 200, 80, 0.9)');
+    octx.globalAlpha = 0.85 * pulse;
+    var groundGrad = octx.createRadialGradient(oCenterX, oGroundY, 0, oCenterX, oGroundY, ringR);
+    groundGrad.addColorStop(0, 'rgba(255, 200, 80, 0.95)');
     groundGrad.addColorStop(1, 'rgba(255, 180, 50, 0)');
-    ctx.fillStyle = groundGrad;
-    ctx.beginPath();
-    ctx.arc(screenX, groundY, ringR, 0, Math.PI * 2);
-    ctx.fill();
-    // Triangle "▼" pointer above
-    ctx.globalAlpha = fogFactor * pulse;
+    octx.fillStyle = groundGrad;
+    octx.beginPath();
+    octx.arc(oCenterX, oGroundY, ringR, 0, Math.PI * 2);
+    octx.fill();
+    // Triangle "▼"
+    octx.globalAlpha = pulse;
     var triSize = beamWidth * 0.8;
-    var triY = beamTopY + triSize;
-    ctx.fillStyle = '#fce884';
-    ctx.beginPath();
-    ctx.moveTo(screenX, triY);
-    ctx.lineTo(screenX - triSize, triY - triSize);
-    ctx.lineTo(screenX + triSize, triY - triSize);
-    ctx.closePath();
-    ctx.fill();
+    var triY = Math.max(0, triSize);
+    octx.fillStyle = '#fce884';
+    octx.beginPath();
+    octx.moveTo(oCenterX, triY);
+    octx.lineTo(oCenterX - triSize, triY - triSize);
+    octx.lineTo(oCenterX + triSize, triY - triSize);
+    octx.closePath();
+    octx.fill();
+
+    // Column-blit to main canvas with per-column z-buffer check
+    ctx.save();
+    ctx.globalAlpha = fogFactor;
+    var blitY = beamTopY;
+    var screenStartCol = Math.max(0, Math.floor(screenX - offW / 2));
+    var screenEndCol = Math.min(w, Math.ceil(screenX + offW / 2));
+    for (var col2 = screenStartCol; col2 < screenEndCol; col2++) {
+      if (zBuf[col2] <= depthTiles) continue;
+      var srcCol = col2 - (screenX - offW / 2);
+      if (srcCol < 0 || srcCol >= offW) continue;
+      ctx.drawImage(off, srcCol, 0, 1, offH, col2, blitY, 1, offH);
+    }
     ctx.restore();
   }
 
@@ -4096,23 +4213,25 @@
     el('actionBtn').style.display = 'none';
     el('phoneBtn').style.display = 'none';
     el('floorHUD').style.display = 'none';
-    // Build run summary
-    var summary = [sub];
+    // Build run summary (convert \n in sub to <br>)
+    var subHtml = sub.replace(/\n/g, '<br>');
+    var summary = ['<span style="color:#ff8060;font-weight:bold;">' + subHtml + '</span>'];
     var clears = 0;
     for (var ck in clearedLevels) if (clearedLevels[ck]) clears++;
-    summary.push('生存時間: ' + formatTime(playTime));
-    summary.push('現在階層: ' + (currentLevelDef ? currentLevelDef.name : 'LV?'));
-    summary.push('クリアした階層: ' + clears);
-    summary.push('ノート: ' + discoveredNotes.length);
+    summary.push('<hr style="border:none;border-top:1px solid #483910;margin:10px 0;">');
+    summary.push('<span style="color:#b09040;">生存時間:</span> ' + formatTime(playTime));
+    summary.push('<span style="color:#b09040;">現在階層:</span> ' + (currentLevelDef ? currentLevelDef.name + ' / ' + currentLevelDef.subtitle : 'LV?'));
+    summary.push('<span style="color:#b09040;">クリア階層数:</span> ' + clears);
+    summary.push('<span style="color:#b09040;">収集ノート:</span> ' + discoveredNotes.length);
     if (gameMode === 'endless') {
       saveEndlessBest();
-      summary.push('ENDLESS Floor: ' + endlessFloor);
-      summary.push('Score: ' + endlessScore +
-                   (endlessScore === endlessBestScore ? ' (★ NEW BEST!)' : ' (Best: ' + endlessBestScore + ')'));
+      summary.push('<span style="color:#b09040;">ENDLESS Floor:</span> ' + endlessFloor);
+      summary.push('<span style="color:#b09040;">Score:</span> ' + endlessScore +
+                   (endlessScore === endlessBestScore ? ' <span style="color:#88c050;font-weight:bold;">(★ NEW BEST!)</span>' : ' (Best: ' + endlessBestScore + ')'));
     }
     var sumEl = el('gameoverSub');
     if (sumEl) {
-      sumEl.innerHTML = summary.map(function (s) { return s; }).join('<br>');
+      sumEl.innerHTML = summary.join('<br>');
     }
     GameEngine.stopAll();
     GameEngine.fadeToBlack(800, function () {
