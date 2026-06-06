@@ -1292,10 +1292,14 @@
     boss: { name: 'THE ARCHITECT', desc: 'バックルーム公式分類 Class 5 (Apex)。\nLevel 9 The Suburbs を構築・管理する存在。\n王冠と赤い目。3 段階で攻撃パターンが変化する。\nフレア (50dmg) / 鏡 (100dmg) で抵抗可能。' },
     mrhotel: { name: 'MR. HOTEL', desc: 'バックルーム公式分類 Class 4。\nLevel 5 ホテルの「支配人」。シルクハットに顔の無いスーツ。\n名前を尋ねられても答えるな。盗まれる。\n4 マス以内で SAN を継続吸引。' },
     haruki: { name: 'HARUKI', desc: '非公式。前ホテルからの no-clipper。\nお前を追って壁の向こうまで来た存在。\n姿は不定形だが、お前の最も恐ろしい記憶として現れる。\n電話のベルが近接の兆候。' },
-    echo: { name: 'ECHO', desc: 'バックルーム未分類。\nお前の動きを 0.6 秒遅れで完全模倣する亡霊。\n直視すると鏡を見ているような感覚に襲われ、SAN が削れる。\n振り切るには思考しない急な動きが有効。' }
+    echo: { name: 'ECHO', desc: 'バックルーム未分類。\nお前の動きを 0.6 秒遅れで完全模倣する亡霊。\n直視すると鏡を見ているような感覚に襲われ、SAN が削れる。\n振り切るには思考しない急な動きが有効。' },
+    faceling: { name: 'FACELING', desc: 'バックルーム公式分類 Class 1 (擬態型)。\nM.E.G. メンバーや過去の no-clipper の姿に化ける。\n顔は常に「ぼやけて」見える。\n敵対的ではないが、稀に視線を合わせると SAN を引き抜く。' }
   };
-  // sound map for echo
-  ENTITY_SOUND_MAP.echo = { sound: 'whisper', prob: 0.008 };
+  // NOTE: ENTITY_SOUND_MAP.echo / .faceling are added inline in ENTITY_SOUND_MAP literal
+  // below (line ~3957). Don't reference ENTITY_SOUND_MAP here — it's declared later via var
+  // hoisting (undefined at this point), which previously caused the IIFE to throw a
+  // TypeError ("Cannot set property 'echo' of undefined"), silently killing all
+  // subsequent code including window.__titleAction assignment.
 
   // First-run tutorial state
   var tutorialDone = false;
@@ -3961,7 +3965,9 @@
     wretch: { sound: 'whisper', prob: 0.005 },
     boss: { sound: 'stinger', prob: 0.002 },
     mrhotel: { sound: 'clock_tick', prob: 0.012 },
-    haruki: { sound: 'phone', prob: 0.005 }
+    haruki: { sound: 'phone', prob: 0.005 },
+    echo: { sound: 'whisper', prob: 0.008 },
+    faceling: { sound: 'whisper', prob: 0.005 }
   };
 
   function updateEntities(dt) {
@@ -6060,47 +6066,46 @@
     el('introSkipBtn').addEventListener('click', skipHandler);
     el('introOverlay').addEventListener('click', skipHandler);
 
-    // Scene 1: night back-alley walking
+    // Compressed cinematic — 9s total (was 23.8s). Skip anytime by tap.
+    // Scene 1: night back-alley walking (3s)
     setTimeout(function () {
       if (cancelled) return;
       s1.classList.add('active');
       startFootsteps();
       setLine('...深夜、会社からの帰り道。');
-    }, 800);
-    setTimeout(function () { if (!cancelled) setLine('いつもの裏路地。'); }, 4500);
-    setTimeout(function () { if (!cancelled) setLine('壁にもたれて、ため息を一つ。'); }, 8200);
+    }, 300);
+    setTimeout(function () { if (!cancelled) setLine('いつもの裏路地。'); }, 2200);
 
-    // Scene 2: wallpaper closeup
+    // Scene 2: wallpaper closeup (3s)
     setTimeout(function () {
       if (cancelled) return;
       stopFootsteps();
       s1.classList.remove('active');
       s2.classList.add('active');
-      setLine('— その時、足元の感触が、消えた。');
+      setLine('— 足元の感触が、消えた。');
       if (audioInitialized) GameEngine.playSound('static');
-    }, 12000);
-    setTimeout(function () { if (!cancelled) setLine('壁の中に、落ちた。'); }, 15500);
+    }, 4000);
 
-    // Scene 3: falling
+    // Scene 3: falling (2.5s)
     setTimeout(function () {
       if (cancelled) return;
       s2.classList.remove('active');
       s3.classList.add('active');
       setLine('黄色い、無限の、壁紙の世界へ。');
       if (audioInitialized) GameEngine.playSound('thunder');
-    }, 18500);
+    }, 6500);
 
-    // Eyes open → game starts
+    // Eyes open → game starts (0.5s)
     setTimeout(function () {
       if (cancelled) return;
       setLine('');
       eyes.classList.add('partial');
-    }, 22000);
+    }, 8200);
     setTimeout(function () {
       if (cancelled) return;
       eyes.classList.add('open');
-    }, 22600);
-    setTimeout(finish, 23800);
+    }, 8500);
+    setTimeout(finish, 9000);
   }
 
   function startNewGame() {
