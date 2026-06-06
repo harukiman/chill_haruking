@@ -1469,10 +1469,31 @@
     }
   }
 
+  var GAMEPLAY_TIPS = [
+    '蛍光灯のハム音が変化したら近くにエンティティ',
+    'Smiler は直視するな。視線を逸らせ',
+    'Skin-Stealer は床の死体。触るな',
+    'no-clip 地点は黄色い▲で示される',
+    'スマホの Notes タブでロアと進捗を確認',
+    'スタミナがあれば両スティック同時押しでダッシュ',
+    'フレアはエンティティをスタン + Boss にダメージ',
+    'カードキーは Lv1 で入手して Lv4/Lv5 で使う',
+    'セーフエリアでは HP/SAN がゆっくり回復',
+    'ベストタイムは Free Roam モードでも更新される',
+    'CHAOS 難易度は SAN drain 2.5倍 + 敵速度 1.8倍',
+    'ENDLESS モードは階毎に難易度上昇',
+    'ロア全収集 + 全アチーブで TRUE+ END 解放'
+  ];
+
   function showLoadingScreen(def) {
     el('loadingLevel').textContent = def.name;
     el('loadingName').textContent = def.subtitle;
-    el('loadingHint').textContent = def.hint;
+    // 50% chance to show level hint, 50% random gameplay tip
+    if (Math.random() < 0.5 && visitedLevels[def.id]) {
+      el('loadingHint').textContent = 'TIP: ' + GAMEPLAY_TIPS[Math.floor(Math.random() * GAMEPLAY_TIPS.length)];
+    } else {
+      el('loadingHint').textContent = def.hint;
+    }
     showOverlay('loadingScreen');
     // Animate progress bar
     var bar = el('loadingFill');
@@ -3570,15 +3591,23 @@
       // Count total achievements
       var totalAch = Object.keys(ACHIEVEMENTS).length;
       var hasAllNotes = discoveredNotes.length >= totalNotes;
-      var hasAllAch = Object.keys(unlockedAchievements).length >= totalAch - 1; // minus true_end itself
+      var hasAllAch = Object.keys(unlockedAchievements).length >= totalAch - 1;
+      var runSummary =
+        '<hr style="border:none;border-top:1px solid #483910;margin:14px 0;">' +
+        '<div style="font-size:11px;color:#b09040;letter-spacing:0.15em;line-height:1.8;">' +
+        '生存: ' + formatTime(playTime) + '<br>' +
+        'ノート: ' + discoveredNotes.length + ' / ' + totalNotes + '<br>' +
+        'アチーブ: ' + Object.keys(unlockedAchievements).length + ' / ' + totalAch + '<br>' +
+        '難易度: ' + (DIFFICULTIES[currentDifficulty] ? DIFFICULTIES[currentDifficulty].name : 'NORMAL') +
+        '</div>';
       if (hasAllNotes && hasAllAch) {
         tag.textContent = '∞∞∞';
         title.textContent = 'TRUE+ END';
-        msg.innerHTML = 'すべてのロアを読み、すべての試練を超えた。<br><br>あなたはバックルームを「理解した」最初の存在となった。<br>壁紙の黄色が、ようやく真の色を見せる...<br><br>あなたは、新しい階層になった。';
+        msg.innerHTML = 'すべてのロアを読み、すべての試練を超えた。<br><br>あなたはバックルームを「理解した」最初の存在となった。<br>壁紙の黄色が、ようやく真の色を見せる...<br><br>あなたは、新しい階層になった。' + runSummary;
       } else {
         tag.textContent = 'THE END';
         title.textContent = 'TRUE END';
-        msg.innerHTML = 'あなたは全ての階層を踏破した。<br>黒い扉の向こうで、本当の世界が待っている。<br>...かもしれない。<br><br>ノート: ' + discoveredNotes.length + '/' + totalNotes + ' 件';
+        msg.innerHTML = 'あなたは全ての階層を踏破した。<br>黒い扉の向こうで、本当の世界が待っている。<br>...かもしれない。' + runSummary;
       }
       unlockAchievement('true_end');
     } else if (type === 'frontrooms') {
