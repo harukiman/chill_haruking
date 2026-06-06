@@ -1263,6 +1263,25 @@
 
   function gridKey(gx, gy) { return gx + '_' + gy; }
 
+  // Discovery popup (item/note found)
+  var _discoveryTimer = null;
+  function showDiscovery(icon, label, name) {
+    var pop = el('discoveryPopup');
+    if (!pop) return;
+    el('discoveryIcon').textContent = icon;
+    el('discoveryLabel').textContent = label;
+    el('discoveryName').textContent = name;
+    pop.classList.remove('show');
+    pop.style.display = 'flex';
+    void pop.offsetWidth; // force reflow
+    pop.classList.add('show');
+    if (_discoveryTimer) clearTimeout(_discoveryTimer);
+    _discoveryTimer = setTimeout(function () {
+      pop.classList.remove('show');
+      setTimeout(function () { pop.style.display = 'none'; }, 400);
+    }, 1800);
+  }
+
   function toast(msg, duration) {
     duration = duration || 2200;
     var t = el('toastNotification');
@@ -3108,8 +3127,8 @@
       return;
     }
 
-    // Note spot
-    if (noteSpots[key]) {
+    // Note spot — only if not already read on this run
+    if (noteSpots[key] && !(readNotes[currentLevel] && readNotes[currentLevel][key])) {
       readNote(noteSpots[key], gx, gy);
       return;
     }
@@ -3166,8 +3185,9 @@
     if (!pickedUpItems[currentLevel]) pickedUpItems[currentLevel] = {};
     pickedUpItems[currentLevel][gridKey(gx, gy)] = true;
     delete pickupSpots[gridKey(gx, gy)];
-    toast(item.name + ' を入手');
+    showDiscovery(item.icon, 'アイテム入手', item.name);
     if (audioInitialized) GameEngine.playSound('item_get');
+    if (navigator.vibrate) navigator.vibrate(20);
     stats.totalItemsCollected++;
     saveStats();
     // Track all-time collected items
@@ -3184,7 +3204,8 @@
 
   function readNote(note, gx, gy) {
     if (!readNotes[currentLevel]) readNotes[currentLevel] = {};
-    if (!readNotes[currentLevel][gridKey(gx, gy)]) {
+    var isNew = !readNotes[currentLevel][gridKey(gx, gy)];
+    if (isNew) {
       discoveredNotes.push({
         levelId: currentLevel,
         title: note.title,
@@ -3194,13 +3215,15 @@
       stats.totalNotesRead++;
       saveStats();
     }
-    // Lifetime unique-title tracking (always update, regardless of tile read state)
+    // Lifetime unique-title tracking
     if (!lifetimeNoteTitles[note.title]) {
       lifetimeNoteTitles[note.title] = true;
       try { localStorage.setItem('thebackrooms_lifetime_notes_v1', JSON.stringify(lifetimeNoteTitles)); } catch (e) {}
     }
+    if (isNew) showDiscovery('📄', 'ノート発見', note.title);
     showNoteViewer(note.title, note.text);
     if (audioInitialized) GameEngine.playSound('paper');
+    if (navigator.vibrate) navigator.vibrate(15);
   }
 
   function showNoteViewer(title, text) {
@@ -4311,7 +4334,7 @@
       }
     }
     else if (pickupSpots[key]) { showAct = true; label = '拾う'; }
-    else if (noteSpots[key]) { showAct = true; label = '読む'; }
+    else if (noteSpots[key] && !(readNotes[currentLevel] && readNotes[currentLevel][key])) { showAct = true; label = '読む'; }
     else {
       var facingGx = Math.floor((player.x + Math.cos(player.angle) * TS * 0.7) / TS);
       var facingGy = Math.floor((player.y + Math.sin(player.angle) * TS * 0.7) / TS);
@@ -4319,7 +4342,7 @@
       var fkey = gridKey(facingGx, facingGy);
       if (ft === 2) { showAct = true; label = 'ドア'; }
       else if (ft === 5 && pickupSpots[fkey]) { showAct = true; label = '拾う'; }
-      else if (ft === 6 && noteSpots[fkey]) { showAct = true; label = '読む'; }
+      else if (ft === 6 && noteSpots[fkey] && !(readNotes[currentLevel] && readNotes[currentLevel][fkey])) { showAct = true; label = '読む'; }
       else if (ft === 3) { showAct = true; label = 'NoClip'; }
     }
 

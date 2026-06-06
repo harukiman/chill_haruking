@@ -1878,6 +1878,64 @@ body {
 /* ============================================================
  *  ACHIEVEMENT TOAST
  * ============================================================ */
+/* DISCOVERY POPUP (item/note discovery) */
+.discovery-popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.8);
+  background: linear-gradient(180deg, rgba(40, 30, 8, 0.96) 0%, rgba(20, 14, 4, 0.96) 100%);
+  border: 2px solid #d4b340;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 12px 40px rgba(212, 179, 64, 0.4), 0 0 60px rgba(212, 179, 64, 0.2);
+  padding: 20px 28px;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  z-index: 78;
+  min-width: 240px;
+  max-width: 84vw;
+  border-radius: 18px;
+  opacity: 0;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.discovery-popup.show {
+  display: flex;
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+.discovery-icon {
+  font-size: 56px;
+  line-height: 1;
+  filter: drop-shadow(0 0 16px rgba(212, 179, 64, 0.6));
+  animation: discoveryPulse 1s ease-out;
+}
+@keyframes discoveryPulse {
+  0%   { transform: scale(0.3) rotate(-15deg); }
+  60%  { transform: scale(1.2) rotate(8deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+.discovery-body {
+  text-align: center;
+}
+.discovery-label {
+  font-size: 10px;
+  letter-spacing: 0.4em;
+  color: #b09040;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.discovery-name {
+  font-family: 'Times New Roman', serif;
+  font-size: 18px;
+  letter-spacing: 0.12em;
+  color: #f0dc8a;
+  font-weight: bold;
+  text-shadow: 0 0 8px rgba(212, 179, 64, 0.5);
+}
+
 .achievement-toast {
   position: fixed;
   top: calc(env(safe-area-inset-top, 8px) + 10px);
