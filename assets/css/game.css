@@ -853,56 +853,101 @@ body {
   line-height: 1.7;
 }
 
-/* INVENTORY TAB */
+/* INVENTORY TAB — iOS Home Screen 風 */
 .inv-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  gap: 14px;
   min-height: 200px;
+  padding: 6px 4px;
 }
 .inv-slot {
   position: relative;
   aspect-ratio: 1;
-  background: rgba(212, 179, 64, 0.08);
-  border: 1px solid #483910;
+  background: linear-gradient(135deg, rgba(212, 179, 64, 0.18) 0%, rgba(60, 45, 12, 0.6) 100%);
+  border: 1px solid rgba(212, 179, 64, 0.25);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
-  font-size: 28px;
   color: #d4b340;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   -webkit-tap-highlight-color: transparent;
-  border-radius: 8px;
+  border-radius: 16px;
+  box-shadow:
+    inset 0 1px 0 rgba(240, 220, 138, 0.15),
+    0 2px 8px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+  padding-bottom: 14px;
 }
-.inv-slot:hover, .inv-slot:active {
-  background: rgba(212, 179, 64, 0.25);
-  border-color: #d4b340;
-  transform: scale(0.97);
+.inv-slot::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 50%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0) 100%);
+  border-radius: 16px 16px 0 0;
+  pointer-events: none;
+}
+.inv-slot:active {
+  transform: scale(0.92);
+  box-shadow:
+    inset 0 1px 0 rgba(240, 220, 138, 0.1),
+    0 1px 4px rgba(0, 0, 0, 0.35);
 }
 .inv-slot .inv-name {
   position: absolute;
-  bottom: 4px;
-  left: 0; right: 0;
+  bottom: 3px;
+  left: 4px; right: 4px;
   font-size: 9px;
-  color: #b09040;
+  color: #d8d2bc;
   letter-spacing: 0.04em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .inv-slot .inv-count {
   position: absolute;
-  top: 4px;
-  right: 6px;
+  top: -4px;
+  right: -4px;
   font-size: 11px;
   color: #fff;
   font-weight: bold;
-  background: rgba(160, 96, 32, 0.95);
-  padding: 1px 6px;
-  border-radius: 8px;
-  min-width: 18px;
+  background: linear-gradient(180deg, #ff5050 0%, #c63a3a 100%);
+  padding: 2px 7px;
+  border-radius: 12px;
+  min-width: 22px;
   text-align: center;
+  box-shadow: 0 1px 4px rgba(180, 0, 0, 0.5);
+  border: 1.5px solid #0d0a04;
 }
+.inv-slot .inv-perm {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  font-size: 18px;
+  font-weight: bold;
+  color: #f0dc8a;
+  text-shadow: 0 1px 4px rgba(212, 179, 64, 0.6);
+}
+.inv-slot .inv-state {
+  position: absolute;
+  bottom: 18px;
+  left: 6px;
+  right: 6px;
+  text-align: center;
+  font-size: 8px;
+  letter-spacing: 0.15em;
+  padding: 2px 0;
+  border-radius: 4px;
+  font-weight: bold;
+}
+.inv-slot .inv-state.on  { background: linear-gradient(180deg, #88c050 0%, #4a8030 100%); color: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4); }
+.inv-slot .inv-state.off { background: rgba(60, 60, 60, 0.85); color: #aaa; }
 .inv-slot .inv-perm {
   position: absolute;
   top: 4px;
