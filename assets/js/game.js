@@ -117,7 +117,7 @@
     '#......#.#......n......#',
     '#.i..F.#.#.............#',
     '#......#.#....F........#',
-    '#......#.#.............#',
+    '#......#.#.....s.......#',
     '#......#.#.............#',
     '########################'
   ];
@@ -136,7 +136,7 @@
     '#...F..FFFF..........#',
     '#...F........FF......#',
     '##D###.......FF......#',
-    '#....#...............#',
+    '#....#......s........#',
     '#.i..#......FF.......#',
     '#....#......FF...i...#',
     '#....D...............#',
@@ -241,7 +241,7 @@
     '#......D....D........#',
     '#......#....#...F....#',
     '#......######........#',
-    '#....................#',
+    '#..........s.........#',
     '#.....################',
     '#......D....D....D...#',
     '#......#....#....#...#',
@@ -276,6 +276,93 @@
     '#.....######.....#',
     '#................#',
     '##################'
+  ];
+
+  // ── LEVEL 8 — THE HIVE ──────────────────────────────────
+  // Hexagonal cell-like clusters, hanging bodies
+  var LV8_ROWS = [
+    '######################',
+    '#P...................#',
+    '#..FFF...FFF...FFF...#',
+    '#..F.F...F.F...F.F...#',
+    '#..F.F.n.F.F...F.F...#',
+    '#..F.F...F.F.i.F.F...#',
+    '#..FFF...FFF...FFF...#',
+    '#....................#',
+    '#....................#',
+    '#..FFF...FFF...FFF...#',
+    '#..F.F.i.F.F...F.F.n.#',
+    '#..F.F...F.F...F.F...#',
+    '#..F.F...F.F...F.F...#',
+    '#..FFF...FFF...FFF...#',
+    '#....................#',
+    '#....................#',
+    '#..FFF...FFF...FFF...#',
+    '#..F.F...F.F...F.F...#',
+    '#..F.F...F.F.X.F.F...#',
+    '#..F.F...F.F...F.F...#',
+    '#..FFF...FFF...FFF...#',
+    '######################'
+  ];
+
+  // ── LEVEL ! (id 11) — END OF THE LINE ───────────────────
+  // Dark train station with abandoned cars
+  var LV11_ROWS = [
+    '############',
+    '#P.........#',
+    '#.FFFFFFFF.#',
+    '#..........#',
+    '#..........#',
+    '#.FFFFFFFF.#',
+    '#..........#',
+    '#..n.......#',
+    '#.FFFFFFFF.#',
+    '#..........#',
+    '#..........#',
+    '#.FFFFFFFF.#',
+    '#.......i..#',
+    '#..........#',
+    '#.FFFFFFFF.#',
+    '#..........#',
+    '#..........#',
+    '#.FFFFFFFF.#',
+    '#..........#',
+    '#..n.......#',
+    '#.FFFFFFFF.#',
+    '#..........#',
+    '#..........#',
+    '#.FFFFFFFF.#',
+    '#..........#',
+    '#......X...#',
+    '#..........#',
+    '############'
+  ];
+
+  // ── LEVEL Fun =) (id 12) — ETERNAL PARTY ────────────────
+  // Bright pink party hellscape with Partygoers
+  var LV12_ROWS = [
+    '######################',
+    '#P....i....i....i.s..#',
+    '#....................#',
+    '#..####D####D####....#',
+    '#..#..........#......#',
+    '#..#.n........#..F...#',
+    '#..#..........D......#',
+    '#..#......i...#......#',
+    '#..############......#',
+    '#....................#',
+    '#......F.......F.....#',
+    '#....................#',
+    '#..############......#',
+    '#..#..........#...F..#',
+    '#..#......n...#......#',
+    '#..#..........D..n...#',
+    '#..#..i.......#......#',
+    '#..####D####D####....#',
+    '#....................#',
+    '#.......i....X.......#',
+    '#....................#',
+    '######################'
   ];
 
   // ── LEVEL 7 — RUN FOR YOUR LIFE (chase corridor) ────────
@@ -462,6 +549,65 @@
       grain: 0.3,
       chromatic: 0.1
     },
+    8: { // The Hive — green-tinted dark with body shadows
+      wall: {
+        upper: { 'default': [60, 80, 50], 1: [60, 80, 50] },
+        flat: true,
+        pattern: 'concrete'
+      },
+      bg: {
+        ceiling: ['#0a0c08', '#101810', '#1a2418'],
+        floor:   ['#0a0c08', '#141810', '#1c2418']
+      },
+      floorDefault: [35, 45, 30],
+      ceilingDefault: [25, 35, 22],
+      fogDist: 10,
+      ambientLoop: 'wind',
+      sanDrain: 0.9,
+      vignette: 0.45,
+      grain: 0.4,
+      chromatic: 0.2
+    },
+    11: { // End of the Line — pitch black with rare flashes
+      wall: {
+        upper: { 'default': [40, 35, 32], 1: [40, 35, 32] },
+        flat: true,
+        pattern: 'concrete'
+      },
+      bg: {
+        ceiling: ['#000', '#040404', '#080808'],
+        floor:   ['#000', '#080808', '#101010']
+      },
+      floorDefault: [25, 22, 20],
+      ceilingDefault: [12, 10, 10],
+      fogDist: 6,
+      ambientLoop: 'wind',
+      sanDrain: 1.0,
+      vignette: 0.6,
+      grain: 0.5,
+      chromatic: 0.25
+    },
+    12: { // Fun =) — bright pink hellscape
+      wall: {
+        upper: { 'default': [220, 100, 160], 1: [220, 100, 160], 2: [180, 120, 80] },
+        lower: { 'default': [180, 60, 120], 1: [180, 60, 120] },
+        pattern: 'stripe',
+        splitRatio: 0.55,
+        railColor: [120, 40, 70]
+      },
+      bg: {
+        ceiling: ['#a04060', '#882048', '#601838'],
+        floor:   ['#503040', '#7a4060', '#a0507a']
+      },
+      floorDefault: [200, 80, 120],
+      ceilingDefault: [180, 60, 110],
+      fogDist: 13,
+      ambientLoop: 'fluorescent',
+      sanDrain: 0.6,
+      vignette: 0.3,
+      grain: 0.3,
+      chromatic: 0.15
+    },
     7: { // Run For Your Life — fast chase, red tint
       wall: {
         upper: { 'default': [80, 30, 30], 1: [80, 30, 30] },
@@ -575,6 +721,34 @@
            { type: 'hound', gx: 5, gy: 5 }
          ],
          timeLimit: null },
+    8: { id: 8, name: 'LEVEL 8', subtitle: 'THE HIVE',
+         rows: LV8_ROWS, theme: 8,
+         hint: '六角形のセル。吊るされた何かが揺れている。',
+         intro: '甘い腐臭。蜂の巣のような部屋が並ぶ。',
+         entities: [
+           { type: 'smiler', gx: 11, gy: 11 },
+           { type: 'partygoer', gx: 5, gy: 16 }
+         ],
+         timeLimit: null },
+    11: { id: 11, name: 'LEVEL !', subtitle: 'END OF THE LINE',
+         rows: LV11_ROWS, theme: 11,
+         hint: '線路の上を歩く。遠くから何かが近づく音。',
+         intro: '駅の匂い...ここで降りる客はいない。',
+         entities: [
+           { type: 'hound', gx: 5, gy: 26 }
+         ],
+         timeLimit: null },
+    12: { id: 12, name: 'LEVEL Fun =)', subtitle: 'ETERNAL PARTY',
+         rows: LV12_ROWS, theme: 12,
+         hint: 'ピンクの壁紙。終わらないパーティ。Partygoer が踊る。',
+         intro: '陽気な音楽。だが、笑顔が多すぎる。',
+         entities: [
+           { type: 'partygoer', gx: 8, gy: 6 },
+           { type: 'partygoer', gx: 14, gy: 14 },
+           { type: 'partygoer', gx: 7, gy: 17 },
+           { type: 'partygoer', gx: 16, gy: 5 }
+         ],
+         timeLimit: null },
     9: { id: 9, name: 'LEVEL 9', subtitle: 'THE SUBURBS',
          rows: LV9_ROWS, theme: 9,
          hint: '永遠に続く郊外の街。THE END への扉がここに。',
@@ -639,6 +813,9 @@
     5: ['almond_water', 'voucher', 'bandage', 'energy_bar'],
     6: ['almond_water', 'flashlight', 'bandage'],
     7: ['energy_bar', 'almond_water'],
+    8: ['almond_water', 'bandage', 'radio'],
+    11: ['almond_water', 'flashlight', 'energy_bar'],
+    12: ['almond_water', 'energy_bar', 'voucher', 'bandage'],
     9: ['almond_water', 'voucher', 'bandage', 'energy_bar', 'radio']
   };
 
@@ -692,6 +869,24 @@
       { title: 'Run For Your Life',
         text: 'この階層に立ち止まった者はいない。\n走れ。\n振り返るな。\n奴らの数は、振り返るたびに増える。' }
     ],
+    8: [
+      { title: 'The Hive — 巣',
+        text: 'セルの中に何かが吊るされている。\nそれを直視しないこと。\n甘い香りに意識を持っていかれる。' },
+      { title: '巣の主',
+        text: 'Smiler と Partygoer が共存している珍しい階層。\n奴らは互いに干渉しない。\nそして両方ともお前に興味を持っている。' }
+    ],
+    11: [
+      { title: 'End of the Line',
+        text: '線路は始点も終点も無い。\nだが、列車は時々通る。\n音が聞こえたら、伏せろ。' },
+      { title: '駅員ノート',
+        text: '"乗客 0 / 降客 ∞"\n"次の列車: もうすぐ"\n"次の次の列車: もう来ない"' }
+    ],
+    12: [
+      { title: 'Fun =)',
+        text: 'パーティへようこそ!\n音楽は止まりません。\n笑顔の彼らは、お前にも笑顔を分けたがる。\n— 文字通り、お前の顔を切り取って。' },
+      { title: '招待状',
+        text: '宛先: 全 no-clipper 様\n本日のパーティは無料です。\nお帰りも無料です — できれば。' }
+    ],
     9: [
       { title: '郊外の終わり',
         text: 'この街には終わりがあるという。\n最後の家のドアを開ければ、そこに...\n何があるのか、誰も戻って報告していない。' },
@@ -744,11 +939,21 @@
   var phoneOpen = false;
   var activeTab = 'Status';
 
+  // Mini-game
+  var miniGameOpen = false;
+  var currentMiniGame = null;
+  var mgState = null;
+  var mgPlayedAt = {};  // {levelId_safeKey: true} — prevent replay per visit
+
+  // Achievements
+  var unlockedAchievements = {};
+
   // Toast
   var toastTimer = null;
 
   // Save key
   var SAVE_KEY = 'thebackrooms_save_v1';
+  var ACH_KEY = 'thebackrooms_ach_v1';
 
   // ============================================================
   //  UTILITY
@@ -1021,7 +1226,46 @@
       }
     }
     // Level 6 lights out — no lights (only flashlight)
-    else if (levelId === 7) {
+    else if (levelId === 8) {
+      // The Hive — green-tinted dim lights
+      var i8 = 0;
+      for (var gy8 = 4; gy8 < m.height; gy8 += 6) {
+        for (var gx8 = 4; gx8 < m.width; gx8 += 6) {
+          if (m.tiles[gy8][gx8] === 0) {
+            GameEngine.addPointLight('l_' + (i8++), gx8, gy8, {
+              radius: 3, r: 180, g: 220, b: 130, intensity: 0.35,
+              flicker: 4, phase: Math.random() * 6.28
+            });
+          }
+        }
+      }
+    } else if (levelId === 11) {
+      // End of the Line — very dim sparse white lights with flicker
+      var i11 = 0;
+      for (var gy11 = 5; gy11 < m.height; gy11 += 7) {
+        GameEngine.addPointLight('l_' + (i11++), 6, gy11, {
+          radius: 2, r: 200, g: 200, b: 215, intensity: 0.25,
+          flicker: 8, phase: Math.random() * 6.28
+        });
+      }
+    } else if (levelId === 12) {
+      // Fun =) — bright pink + chase pattern colored party lights
+      var i12 = 0;
+      var partyColors = [
+        [255, 100, 180], [180, 100, 255], [100, 180, 255], [255, 200, 100]
+      ];
+      for (var gy12 = 2; gy12 < m.height; gy12 += 3) {
+        for (var gx12 = 3; gx12 < m.width; gx12 += 4) {
+          if (m.tiles[gy12][gx12] === 0) {
+            var pc = partyColors[i12 % partyColors.length];
+            GameEngine.addPointLight('l_' + (i12++), gx12, gy12, {
+              radius: 3, r: pc[0], g: pc[1], b: pc[2], intensity: 0.7,
+              flicker: 5, phase: Math.random() * 6.28
+            });
+          }
+        }
+      }
+    } else if (levelId === 7) {
       // Run For Your Life — red emergency lights every few tiles
       var i7 = 0;
       for (var gy7 = 3; gy7 < m.height; gy7 += 5) {
@@ -1193,6 +1437,7 @@
     if (player.inSafeZone) {
       player.hp = Math.min(player.hpMax, player.hp + 5 * dt);
       player.san = Math.min(player.sanMax, player.san + 5 * dt);
+      unlockAchievement('found_safe_zone');
     }
 
     // SAN drain per level
@@ -1315,6 +1560,593 @@
   }
 
   // ============================================================
+  //  ACHIEVEMENTS
+  // ============================================================
+  var ACHIEVEMENTS = {
+    first_no_clip:    { name: 'はじめての no-clip', icon: '↓' },
+    five_clears:      { name: '5 階層クリア', icon: '◆' },
+    all_clears:       { name: '全階層踏破', icon: '★' },
+    no_damage_lv:     { name: '無傷で1階層クリア', icon: '◇' },
+    found_safe_zone:  { name: 'セーフエリア発見', icon: '◉' },
+    won_minigame:     { name: 'ミニゲーム勝利', icon: '🎯' },
+    san_zero_survive: { name: 'SAN 10% で生還', icon: '☉' },
+    collect_10_notes: { name: 'ロア 10 件収集', icon: '≡' },
+    inventory_full:   { name: 'インベントリ満載', icon: '▣' },
+    true_end:         { name: 'TRUE END 到達', icon: '∞' }
+  };
+
+  function unlockAchievement(id) {
+    if (unlockedAchievements[id]) return;
+    var ach = ACHIEVEMENTS[id];
+    if (!ach) return;
+    unlockedAchievements[id] = true;
+    showAchievementToast(ach);
+    // Persist to dedicated achievement store (cross-run)
+    try {
+      localStorage.setItem(ACH_KEY, JSON.stringify(unlockedAchievements));
+    } catch (e) { /* ignore */ }
+    saveGame();
+  }
+
+  function loadAchievements() {
+    try {
+      var s = localStorage.getItem(ACH_KEY);
+      if (s) unlockedAchievements = JSON.parse(s) || {};
+    } catch (e) { unlockedAchievements = {}; }
+  }
+
+  function showAchievementToast(ach) {
+    var t = el('achievementToast');
+    el('achName').textContent = ach.name;
+    el('achIcon').textContent = ach.icon;
+    t.style.display = 'flex';
+    requestAnimationFrame(function () {
+      t.classList.add('show');
+    });
+    setTimeout(function () {
+      t.classList.remove('show');
+      setTimeout(function () { t.style.display = 'none'; }, 400);
+    }, 3500);
+  }
+
+  // ============================================================
+  //  MINI-GAMES
+  // ============================================================
+  // Each safe zone in a level can host one mini-game.
+  // Per-level default mini-game (cycles through types).
+  var LEVEL_MINIGAMES = {
+    0: 'vending',
+    1: 'lockpick',
+    5: 'memory',
+    12: 'pong'
+  };
+
+  // Mini-game definitions
+  var MINI_GAMES = {
+
+    // ── VENDING MACHINE ──
+    vending: {
+      title: '自動販売機',
+      subtitle: 'タップしてリールを回転 → 3 個のアイテム獲得',
+      itemPool: ['almond_water', 'almond_water', 'almond_water', 'bandage', 'bandage', 'energy_bar', 'flashlight'],
+      init: function () {
+        mgState = {
+          reels: [0, 0, 0],
+          spinning: [false, false, false],
+          spinTimer: [0, 0, 0],
+          spinTotal: [0, 0, 0],
+          stopped: 0,
+          won: null,
+          phase: 'idle' // idle, spinning, done
+        };
+        setMGAction('スピン', 'green');
+        setMGStatus('スピンを押せ');
+      },
+      action: function () {
+        if (mgState.phase !== 'idle') return;
+        mgState.phase = 'spinning';
+        for (var i = 0; i < 3; i++) {
+          mgState.spinning[i] = true;
+          mgState.spinTotal[i] = 1.2 + i * 0.5;
+          mgState.spinTimer[i] = 0;
+        }
+        setMGStatus('スピン中...');
+        setMGAction('待機中...', 'gray');
+      },
+      update: function (dt) {
+        if (mgState.phase !== 'spinning') return;
+        var spinSpeed = 18;
+        for (var i = 0; i < 3; i++) {
+          if (mgState.spinning[i]) {
+            mgState.reels[i] = (mgState.reels[i] + spinSpeed * dt) % MINI_GAMES.vending.itemPool.length;
+            mgState.spinTimer[i] += dt;
+            if (mgState.spinTimer[i] >= mgState.spinTotal[i]) {
+              mgState.spinning[i] = false;
+              mgState.reels[i] = Math.floor(Math.random() * MINI_GAMES.vending.itemPool.length);
+              mgState.stopped++;
+            }
+          }
+        }
+        if (mgState.stopped >= 3) {
+          mgState.phase = 'done';
+          // Award items
+          var wonItems = [];
+          for (var j = 0; j < 3; j++) {
+            var itemId = MINI_GAMES.vending.itemPool[mgState.reels[j]];
+            player.inventory[itemId] = (player.inventory[itemId] || 0) + 1;
+            wonItems.push(ITEMS[itemId].name);
+          }
+          setMGStatus('入手: ' + wonItems.join(', '));
+          setMGAction('終了', 'green');
+          unlockAchievement('won_minigame');
+          if (audioInitialized) GameEngine.playSound('item_get');
+        }
+      },
+      draw: function (ctx, w, h) {
+        ctx.fillStyle = '#0d0c08';
+        ctx.fillRect(0, 0, w, h);
+        // Frame
+        ctx.strokeStyle = '#786020';
+        ctx.lineWidth = 4;
+        ctx.strokeRect(8, 8, w - 16, h - 16);
+
+        // 3 reels
+        var reelW = (w - 60) / 3;
+        var reelH = h - 60;
+        var pool = MINI_GAMES.vending.itemPool;
+        for (var i = 0; i < 3; i++) {
+          var rx = 20 + i * (reelW + 10);
+          var ry = 30;
+          ctx.fillStyle = '#1a1408';
+          ctx.fillRect(rx, ry, reelW, reelH);
+          ctx.strokeStyle = '#483910';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(rx, ry, reelW, reelH);
+
+          // Show 3 items per reel, centered
+          var cur = mgState.reels[i];
+          for (var off = -1; off <= 1; off++) {
+            var idx = (Math.floor(cur) + off + pool.length) % pool.length;
+            var item = ITEMS[pool[idx]];
+            var iy = ry + reelH / 2 + off * reelH / 3 - 20;
+            var alpha = off === 0 ? 1 : 0.4;
+            ctx.globalAlpha = alpha;
+            ctx.font = '32px sans-serif';
+            ctx.fillStyle = '#fff';
+            ctx.textAlign = 'center';
+            ctx.fillText(item.icon, rx + reelW / 2, iy + 32);
+            ctx.globalAlpha = 1;
+          }
+
+          // Center line
+          ctx.strokeStyle = '#d4b340';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(rx, ry + reelH / 2);
+          ctx.lineTo(rx + reelW, ry + reelH / 2);
+          ctx.stroke();
+        }
+      }
+    },
+
+    // ── LOCK PICK ──
+    lockpick: {
+      title: '錠前破り',
+      subtitle: '緑のゾーンでタップ × 3 回',
+      init: function () {
+        mgState = {
+          phase: 'play',
+          cursor: 0,
+          dir: 1,
+          speed: 0.7, // % per second
+          zoneStart: 0.4,
+          zoneEnd: 0.55,
+          stage: 0,
+          maxStages: 3,
+          failTimes: 0,
+          message: ''
+        };
+        setMGAction('タップ', 'green');
+        setMGStatus('ステージ 1/3');
+      },
+      action: function () {
+        if (mgState.phase !== 'play') return;
+        var inZone = mgState.cursor >= mgState.zoneStart && mgState.cursor <= mgState.zoneEnd;
+        if (inZone) {
+          mgState.stage++;
+          setMGStatus('OK! ステージ ' + (mgState.stage + 1) + '/' + mgState.maxStages);
+          if (mgState.stage >= mgState.maxStages) {
+            mgState.phase = 'win';
+            setMGStatus('解錠成功! カードキー +1');
+            setMGAction('終了', 'green');
+            player.inventory.keycard = (player.inventory.keycard || 0) + 1;
+            unlockAchievement('won_minigame');
+            if (audioInitialized) GameEngine.playSound('key_unlock');
+          } else {
+            mgState.speed *= 1.3;
+            mgState.zoneEnd = mgState.zoneStart + (mgState.zoneEnd - mgState.zoneStart) * 0.8;
+            mgState.zoneStart = 0.2 + Math.random() * 0.5;
+            mgState.zoneEnd = mgState.zoneStart + 0.12;
+            if (audioInitialized) GameEngine.playSound('clock_tick');
+          }
+        } else {
+          mgState.failTimes++;
+          if (audioInitialized) GameEngine.playSound('hit');
+          if (mgState.failTimes >= 3) {
+            mgState.phase = 'lose';
+            setMGStatus('失敗! 錠が壊れた');
+            setMGAction('終了', 'red');
+          } else {
+            setMGStatus('ミス! 残り試行 ' + (3 - mgState.failTimes));
+          }
+        }
+      },
+      update: function (dt) {
+        if (mgState.phase !== 'play') return;
+        mgState.cursor += mgState.dir * mgState.speed * dt;
+        if (mgState.cursor >= 1) { mgState.cursor = 1; mgState.dir = -1; }
+        if (mgState.cursor <= 0) { mgState.cursor = 0; mgState.dir = 1; }
+      },
+      draw: function (ctx, w, h) {
+        ctx.fillStyle = '#0d0c08';
+        ctx.fillRect(0, 0, w, h);
+        // Lock illustration top
+        var lockY = 50;
+        var lockSize = 80;
+        ctx.fillStyle = '#382a08';
+        ctx.fillRect(w / 2 - lockSize / 2, lockY, lockSize, lockSize);
+        ctx.fillStyle = mgState.phase === 'win' ? '#88c050' : (mgState.phase === 'lose' ? '#c63a3a' : '#786020');
+        ctx.fillRect(w / 2 - 20, lockY + 20, 40, 30);
+        // Stages indicator
+        for (var s = 0; s < mgState.maxStages; s++) {
+          ctx.fillStyle = s < mgState.stage ? '#88c050' : '#382a08';
+          ctx.fillRect(w / 2 - 30 + s * 22, lockY + 60, 16, 6);
+        }
+
+        // Slider track
+        var barY = h - 80;
+        var barH = 24;
+        var barX = 20;
+        var barW = w - 40;
+        ctx.fillStyle = '#1a1408';
+        ctx.fillRect(barX, barY, barW, barH);
+        ctx.strokeStyle = '#483910';
+        ctx.strokeRect(barX, barY, barW, barH);
+        // Green zone
+        ctx.fillStyle = 'rgba(136, 192, 80, 0.5)';
+        ctx.fillRect(barX + barW * mgState.zoneStart, barY,
+                     barW * (mgState.zoneEnd - mgState.zoneStart), barH);
+        // Cursor
+        ctx.fillStyle = '#d4b340';
+        var cx = barX + barW * mgState.cursor;
+        ctx.fillRect(cx - 2, barY - 4, 4, barH + 8);
+        // Label
+        ctx.font = 'bold 14px sans-serif';
+        ctx.fillStyle = '#d4b340';
+        ctx.textAlign = 'center';
+        ctx.fillText('緑ゾーンでタップ', w / 2, barY - 12);
+      }
+    },
+
+    // ── CARD MEMORY ──
+    memory: {
+      title: 'カード合わせ',
+      subtitle: '同じ絵柄のペアを全て揃えろ',
+      icons: ['🥤', '🩹', '🍫', '🔦', '🔑', '📻'],
+      init: function () {
+        // 4 pairs = 8 cards (3 pairs from 6 icons)
+        var pool = MINI_GAMES.memory.icons.slice(0, 4); // 4 pairs
+        var cards = pool.concat(pool); // 8 cards
+        // Shuffle
+        for (var i = cards.length - 1; i > 0; i--) {
+          var j = Math.floor(Math.random() * (i + 1));
+          var tmp = cards[i]; cards[i] = cards[j]; cards[j] = tmp;
+        }
+        mgState = {
+          cards: cards,
+          revealed: [false, false, false, false, false, false, false, false],
+          flipped: [],
+          matchedCount: 0,
+          attempts: 0,
+          maxAttempts: 12,
+          phase: 'play',
+          flipBackTimer: 0
+        };
+        setMGAction('閉じる', 'gray');
+        setMGStatus('試行 0/' + mgState.maxAttempts);
+      },
+      action: function () {
+        // Action button is just close
+        closeMiniGame();
+      },
+      onTap: function (cx, cy, w, h) {
+        if (mgState.phase !== 'play') return;
+        if (mgState.flipped.length >= 2) return;
+        var cols = 4, rows = 2;
+        var gridY = 50;
+        var gridH = h - 100;
+        var cardW = (w - 40) / cols;
+        var cardH = gridH / rows;
+        for (var i = 0; i < 8; i++) {
+          var r = Math.floor(i / cols);
+          var c = i % cols;
+          var x = 20 + c * cardW;
+          var y = gridY + r * cardH;
+          if (cx >= x && cx <= x + cardW && cy >= y && cy <= y + cardH) {
+            if (mgState.revealed[i] || mgState.flipped.indexOf(i) >= 0) return;
+            mgState.flipped.push(i);
+            if (audioInitialized) GameEngine.playSound('clock_tick');
+            if (mgState.flipped.length === 2) {
+              mgState.attempts++;
+              setMGStatus('試行 ' + mgState.attempts + '/' + mgState.maxAttempts);
+              var a = mgState.flipped[0];
+              var b = mgState.flipped[1];
+              if (mgState.cards[a] === mgState.cards[b]) {
+                // Match
+                mgState.revealed[a] = true;
+                mgState.revealed[b] = true;
+                mgState.matchedCount++;
+                mgState.flipped = [];
+                if (mgState.matchedCount >= 4) {
+                  mgState.phase = 'win';
+                  setMGStatus('クリア! 試行 ' + mgState.attempts + ' 回');
+                  // Reward: random useful item
+                  var rewardId = ['almond_water', 'bandage', 'energy_bar'][Math.floor(Math.random() * 3)];
+                  player.inventory[rewardId] = (player.inventory[rewardId] || 0) + 2;
+                  toast(ITEMS[rewardId].name + ' ×2 入手');
+                  unlockAchievement('won_minigame');
+                  if (audioInitialized) GameEngine.playSound('item_get');
+                  setMGAction('終了', 'green');
+                }
+              } else {
+                // No match — flip back after delay
+                mgState.flipBackTimer = 0.8;
+              }
+              if (mgState.attempts >= mgState.maxAttempts && mgState.phase === 'play') {
+                mgState.phase = 'lose';
+                setMGStatus('試行回数切れ。');
+                setMGAction('終了', 'red');
+              }
+            }
+            return;
+          }
+        }
+      },
+      update: function (dt) {
+        if (mgState.flipBackTimer > 0) {
+          mgState.flipBackTimer -= dt;
+          if (mgState.flipBackTimer <= 0) {
+            mgState.flipped = [];
+          }
+        }
+      },
+      draw: function (ctx, w, h) {
+        ctx.fillStyle = '#0d0c08';
+        ctx.fillRect(0, 0, w, h);
+        var cols = 4, rows = 2;
+        var gridY = 50;
+        var gridH = h - 100;
+        var cardW = (w - 40) / cols;
+        var cardH = gridH / rows;
+        for (var i = 0; i < 8; i++) {
+          var r = Math.floor(i / cols);
+          var c = i % cols;
+          var x = 20 + c * cardW + 4;
+          var y = gridY + r * cardH + 4;
+          var rw = cardW - 8;
+          var rh = cardH - 8;
+          var open = mgState.revealed[i] || mgState.flipped.indexOf(i) >= 0;
+          ctx.fillStyle = open ? '#382a08' : '#1a1408';
+          ctx.fillRect(x, y, rw, rh);
+          ctx.strokeStyle = open ? '#d4b340' : '#483910';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(x, y, rw, rh);
+          if (open) {
+            ctx.font = '36px sans-serif';
+            ctx.fillStyle = '#fff';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(mgState.cards[i], x + rw / 2, y + rh / 2);
+          } else {
+            ctx.font = '24px serif';
+            ctx.fillStyle = '#786020';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('?', x + rw / 2, y + rh / 2);
+          }
+        }
+      }
+    },
+
+    // ── PONG ──
+    pong: {
+      title: 'PONG (古いアーケード)',
+      subtitle: 'AI を 3 点先取で勝利 / SAN +50 報酬',
+      init: function () {
+        mgState = {
+          phase: 'play',
+          ballX: 0.5,
+          ballY: 0.5,
+          ballVX: (Math.random() < 0.5 ? -1 : 1) * 0.35,
+          ballVY: (Math.random() - 0.5) * 0.4,
+          playerY: 0.5,
+          aiY: 0.5,
+          playerScore: 0,
+          aiScore: 0,
+          paddleH: 0.18,
+          paddleW: 0.025,
+          touch: 0.5  // last touch y
+        };
+        setMGAction('閉じる', 'gray');
+        setMGStatus('0 - 0');
+      },
+      action: function () {
+        closeMiniGame();
+      },
+      onTap: function (cx, cy, w, h) {
+        if (mgState.phase !== 'play') return;
+        mgState.touch = cy / h;
+      },
+      onDrag: function (cx, cy, w, h) {
+        if (mgState.phase !== 'play') return;
+        mgState.touch = cy / h;
+      },
+      update: function (dt) {
+        if (mgState.phase !== 'play') return;
+        // Move player paddle toward touch
+        var diff = mgState.touch - mgState.playerY;
+        mgState.playerY += Math.sign(diff) * Math.min(Math.abs(diff), 1.5 * dt);
+        mgState.playerY = clamp(mgState.playerY, mgState.paddleH / 2, 1 - mgState.paddleH / 2);
+        // AI movement (slight lag)
+        var aiDiff = mgState.ballY - mgState.aiY;
+        mgState.aiY += Math.sign(aiDiff) * Math.min(Math.abs(aiDiff), 0.75 * dt);
+        mgState.aiY = clamp(mgState.aiY, mgState.paddleH / 2, 1 - mgState.paddleH / 2);
+
+        // Ball movement
+        mgState.ballX += mgState.ballVX * dt;
+        mgState.ballY += mgState.ballVY * dt;
+        // Top/bottom bounce
+        if (mgState.ballY <= 0.02 || mgState.ballY >= 0.98) {
+          mgState.ballVY *= -1;
+          mgState.ballY = clamp(mgState.ballY, 0.02, 0.98);
+          if (audioInitialized) GameEngine.playSound('clock_tick');
+        }
+        // Player paddle (left) bounce
+        if (mgState.ballX <= 0.07 && mgState.ballVX < 0) {
+          if (Math.abs(mgState.ballY - mgState.playerY) < mgState.paddleH / 2 + 0.02) {
+            mgState.ballVX = -mgState.ballVX * 1.05;
+            mgState.ballVY += (mgState.ballY - mgState.playerY) * 0.8;
+            if (audioInitialized) GameEngine.playSound('clock_tick');
+          }
+        }
+        // AI paddle (right) bounce
+        if (mgState.ballX >= 0.93 && mgState.ballVX > 0) {
+          if (Math.abs(mgState.ballY - mgState.aiY) < mgState.paddleH / 2 + 0.02) {
+            mgState.ballVX = -mgState.ballVX * 1.05;
+            mgState.ballVY += (mgState.ballY - mgState.aiY) * 0.8;
+            if (audioInitialized) GameEngine.playSound('clock_tick');
+          }
+        }
+        // Score
+        if (mgState.ballX < 0) {
+          mgState.aiScore++;
+          mgState.ballX = 0.5; mgState.ballY = 0.5;
+          mgState.ballVX = 0.4; mgState.ballVY = (Math.random() - 0.5) * 0.4;
+        }
+        if (mgState.ballX > 1) {
+          mgState.playerScore++;
+          mgState.ballX = 0.5; mgState.ballY = 0.5;
+          mgState.ballVX = -0.4; mgState.ballVY = (Math.random() - 0.5) * 0.4;
+        }
+        setMGStatus(mgState.playerScore + ' - ' + mgState.aiScore);
+        if (mgState.playerScore >= 3) {
+          mgState.phase = 'win';
+          setMGStatus('勝利! SAN +50');
+          setMGAction('終了', 'green');
+          player.san = Math.min(player.sanMax, player.san + 50);
+          unlockAchievement('won_minigame');
+        } else if (mgState.aiScore >= 3) {
+          mgState.phase = 'lose';
+          setMGStatus('敗北');
+          setMGAction('終了', 'red');
+        }
+      },
+      draw: function (ctx, w, h) {
+        ctx.fillStyle = '#0a0805';
+        ctx.fillRect(0, 0, w, h);
+        // Center line
+        ctx.strokeStyle = '#382a08';
+        ctx.setLineDash([6, 6]);
+        ctx.beginPath();
+        ctx.moveTo(w / 2, 4);
+        ctx.lineTo(w / 2, h - 4);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        // Score
+        ctx.font = 'bold 28px monospace';
+        ctx.fillStyle = '#382a08';
+        ctx.textAlign = 'center';
+        ctx.fillText(mgState.playerScore + ' ' + mgState.aiScore, w / 2, 30);
+        // Paddles
+        var pH = mgState.paddleH * h;
+        var pW = mgState.paddleW * w;
+        ctx.fillStyle = '#d4b340';
+        ctx.fillRect(0.02 * w, mgState.playerY * h - pH / 2, pW, pH);
+        ctx.fillRect(w - 0.02 * w - pW, mgState.aiY * h - pH / 2, pW, pH);
+        // Ball
+        ctx.beginPath();
+        ctx.arc(mgState.ballX * w, mgState.ballY * h, 6, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  };
+
+  function setMGStatus(msg) { el('minigameStatus').textContent = msg; }
+  function setMGAction(label, type) {
+    var b = el('minigameActionBtn');
+    b.textContent = label;
+    b.classList.remove('primary');
+    if (type === 'green') b.classList.add('primary');
+  }
+
+  function openMiniGame(id) {
+    var def = MINI_GAMES[id];
+    if (!def) return;
+    miniGameOpen = true;
+    currentMiniGame = id;
+    el('minigameTitle').textContent = def.title;
+    el('minigameSubtitle').textContent = def.subtitle;
+    showOverlay('minigameOverlay');
+    def.init();
+  }
+
+  function closeMiniGame() {
+    miniGameOpen = false;
+    currentMiniGame = null;
+    mgState = null;
+    hideOverlay('minigameOverlay');
+  }
+
+  function updateMiniGame(dt) {
+    if (!miniGameOpen || !currentMiniGame) return;
+    var def = MINI_GAMES[currentMiniGame];
+    if (def.update) def.update(dt);
+    drawMiniGame();
+  }
+
+  function drawMiniGame() {
+    var canvas = el('minigameCanvas');
+    var def = MINI_GAMES[currentMiniGame];
+    if (!def || !def.draw) return;
+    var rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width;
+    canvas.height = rect.height;
+    var ctx = canvas.getContext('2d');
+    def.draw(ctx, canvas.width, canvas.height);
+  }
+
+  function miniGameTap(e) {
+    if (!miniGameOpen || !currentMiniGame) return;
+    var canvas = el('minigameCanvas');
+    var rect = canvas.getBoundingClientRect();
+    var def = MINI_GAMES[currentMiniGame];
+    var touch = (e.changedTouches && e.changedTouches[0]) || e;
+    var cx = (touch.clientX - rect.left) * (canvas.width / rect.width);
+    var cy = (touch.clientY - rect.top) * (canvas.height / rect.height);
+    if (def.onTap) def.onTap(cx, cy, canvas.width, canvas.height);
+  }
+  function miniGameDrag(e) {
+    if (!miniGameOpen || !currentMiniGame) return;
+    var canvas = el('minigameCanvas');
+    var rect = canvas.getBoundingClientRect();
+    var def = MINI_GAMES[currentMiniGame];
+    var touch = (e.changedTouches && e.changedTouches[0]) || e;
+    var cx = (touch.clientX - rect.left) * (canvas.width / rect.width);
+    var cy = (touch.clientY - rect.top) * (canvas.height / rect.height);
+    if (def.onDrag) def.onDrag(cx, cy, canvas.width, canvas.height);
+  }
+
+  // ============================================================
   //  ACTION (red button): pick up, open door, no-clip
   // ============================================================
   function handleAction() {
@@ -1328,6 +2160,21 @@
     if (t === 3) {
       tryNoClip();
       return;
+    }
+
+    // Safe zone with mini-game
+    if (t === 11) {
+      var mgId = LEVEL_MINIGAMES[currentLevel];
+      if (mgId) {
+        var safeKey = currentLevel + '_' + gridKey(gx, gy);
+        if (mgPlayedAt[safeKey]) {
+          toast('このセーフエリアは利用済み');
+        } else {
+          mgPlayedAt[safeKey] = true;
+          openMiniGame(mgId);
+        }
+        return;
+      }
     }
 
     // Item spot
@@ -1426,6 +2273,16 @@
       return;
     }
     clearedLevels[currentLevel] = true;
+    unlockAchievement('first_no_clip');
+    var clearedCount = 0;
+    for (var ck in clearedLevels) if (clearedLevels[ck]) clearedCount++;
+    if (clearedCount >= 5) unlockAchievement('five_clears');
+    if (clearedCount >= 12) unlockAchievement('all_clears');
+    // No damage check
+    if (player.hp >= player.hpMax * 0.95) unlockAchievement('no_damage_lv');
+    if (player.san < player.sanMax * 0.1) unlockAchievement('san_zero_survive');
+    if (Object.keys(player.inventory).length >= 6) unlockAchievement('inventory_full');
+    if (discoveredNotes.length >= 10) unlockAchievement('collect_10_notes');
     if (audioInitialized) {
       GameEngine.stopAll();
       // Quiet during transition
@@ -1444,8 +2301,8 @@
   }
 
   function getNextLevel(cur) {
-    // Normal progression: 0 → 1 → 2 → 3 → 4 → 5 → 6 → 7 → 9 → END
-    var order = [0, 1, 2, 3, 4, 5, 6, 7, 9];
+    // Normal progression: 0→1→2→3→4→5→6→7→8→!→Fun→9→END
+    var order = [0, 1, 2, 3, 4, 5, 6, 7, 8, 11, 12, 9];
     var idx = order.indexOf(cur);
     if (idx < 0 || idx === order.length - 1) return null;
     return order[idx + 1];
@@ -1571,6 +2428,168 @@
   }
 
   // ============================================================
+  //  ENTITY RENDERER (type-aware, uses engine z-buffer)
+  // ============================================================
+  function drawTypedEntity(ctx, e) {
+    var w = GameEngine.width;
+    var h = GameEngine.height;
+    var dx = e.x - player.x;
+    var dy = e.y - player.y;
+    var cosA = Math.cos(-player.angle);
+    var sinA = Math.sin(-player.angle);
+    var tX = dx * cosA - dy * sinA;
+    var tY = dx * sinA + dy * cosA;
+    if (tY <= 0.1) return;
+    var depthTiles = tY / TS;
+    var maxDist = 22;
+    if (depthTiles > maxDist) return;
+
+    var screenX = (w / 2) * (1 + tX / tY);
+    var spriteH = Math.abs(h / depthTiles) * 0.8;
+    var spriteW = spriteH;
+    var startY = (h - spriteH) / 2;
+    var startX = screenX - spriteW / 2;
+
+    var fogFactor = Math.max(0.15, 1 - depthTiles / maxDist);
+    var zBuf = GameEngine._zBuffer;
+    if (!zBuf) return;
+
+    ctx.save();
+    ctx.globalAlpha = fogFactor;
+
+    // Per-type shape drawing
+    if (e.type === 'hound') {
+      // Low quadruped: dark mass at bottom 50% of sprite, with eyes
+      var bodyY = startY + spriteH * 0.5;
+      var bodyH = spriteH * 0.45;
+      drawShapedSprite(ctx, startX, bodyY, spriteW, bodyH, screenX, depthTiles, zBuf, w,
+        '#2a1810', '#150c08');
+      // Eyes (red dots)
+      var eyeY = startY + spriteH * 0.45;
+      var eyeSize = Math.max(2, spriteH * 0.03);
+      ctx.fillStyle = 'rgba(255,40,40,' + fogFactor + ')';
+      drawSpriteDot(ctx, screenX - spriteW * 0.12, eyeY, eyeSize, zBuf, w, depthTiles);
+      drawSpriteDot(ctx, screenX + spriteW * 0.12, eyeY, eyeSize, zBuf, w, depthTiles);
+    } else if (e.type === 'smiler') {
+      // Floating smile in darkness — only teeth visible
+      var smileY = startY + spriteH * 0.45;
+      var smileW = spriteW * 0.4;
+      var smileH = spriteH * 0.08;
+      var sStartX = screenX - smileW / 2;
+      // Glow
+      var gradRad = spriteW * 0.4;
+      var grad = ctx.createRadialGradient(screenX, smileY, 0, screenX, smileY, gradRad);
+      grad.addColorStop(0, 'rgba(220,220,220,' + (0.3 * fogFactor) + ')');
+      grad.addColorStop(1, 'rgba(220,220,220,0)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(screenX - gradRad, smileY - gradRad, gradRad * 2, gradRad * 2);
+      // Teeth (white blocks)
+      ctx.fillStyle = 'rgba(245,245,235,' + fogFactor + ')';
+      var teethCount = 8;
+      var teethW = smileW / teethCount;
+      for (var ti = 0; ti < teethCount; ti++) {
+        var tx = sStartX + ti * teethW + 1;
+        var col = Math.round(tx);
+        if (col < 0 || col >= w) continue;
+        if (zBuf[col] > depthTiles) {
+          ctx.fillRect(tx, smileY, teethW - 1, smileH);
+        }
+      }
+      // Eyes (small yellow pinpricks)
+      ctx.fillStyle = 'rgba(255,255,180,' + fogFactor + ')';
+      var sEyeY = startY + spriteH * 0.32;
+      drawSpriteDot(ctx, screenX - spriteW * 0.08, sEyeY, Math.max(1, spriteH * 0.012), zBuf, w, depthTiles);
+      drawSpriteDot(ctx, screenX + spriteW * 0.08, sEyeY, Math.max(1, spriteH * 0.012), zBuf, w, depthTiles);
+    } else if (e.type === 'skinstealer') {
+      if (e.state === 'corpse') {
+        // Pile on ground — short and wide
+        var pH = spriteH * 0.18;
+        var pY = startY + spriteH * 0.78;
+        drawShapedSprite(ctx, startX, pY, spriteW, pH, screenX, depthTiles, zBuf, w,
+          '#3a2820', '#1a1208');
+      } else {
+        // Tall thin humanoid with skin texture
+        var ssH = spriteH * 0.92;
+        var ssY = startY + spriteH * 0.04;
+        var ssW = spriteW * 0.4;
+        var ssX = screenX - ssW / 2;
+        drawShapedSprite(ctx, ssX, ssY, ssW, ssH, screenX, depthTiles, zBuf, w,
+          '#a08070', '#604838');
+        // Mask (white face)
+        ctx.fillStyle = 'rgba(240,230,210,' + fogFactor + ')';
+        var faceY = ssY + ssH * 0.05;
+        var faceH = ssH * 0.18;
+        var faceW = ssW * 0.7;
+        var faceX = screenX - faceW / 2;
+        for (var fc = Math.floor(faceX); fc < faceX + faceW; fc++) {
+          if (fc < 0 || fc >= w) continue;
+          if (zBuf[fc] > depthTiles) ctx.fillRect(fc, faceY, 1, faceH);
+        }
+        // Empty eye sockets
+        ctx.fillStyle = 'rgba(0,0,0,' + fogFactor + ')';
+        drawSpriteDot(ctx, screenX - ssW * 0.12, faceY + faceH * 0.4, Math.max(1, ssH * 0.02), zBuf, w, depthTiles);
+        drawSpriteDot(ctx, screenX + ssW * 0.12, faceY + faceH * 0.4, Math.max(1, ssH * 0.02), zBuf, w, depthTiles);
+      }
+    } else if (e.type === 'partygoer') {
+      // Humanoid with cone party hat
+      var pgH = spriteH * 0.85;
+      var pgY = startY + spriteH * 0.15;
+      var pgW = spriteW * 0.45;
+      var pgX = screenX - pgW / 2;
+      drawShapedSprite(ctx, pgX, pgY, pgW, pgH, screenX, depthTiles, zBuf, w,
+        '#603040', '#301820');
+      // Party hat cone (triangle on top)
+      var hatColor = 'rgba(255,180,80,' + fogFactor + ')';
+      ctx.fillStyle = hatColor;
+      var hatBase = pgY;
+      var hatTop = pgY - spriteH * 0.18;
+      var hatW = pgW * 0.7;
+      for (var hc = Math.floor(screenX - hatW / 2); hc < screenX + hatW / 2; hc++) {
+        if (hc < 0 || hc >= w) continue;
+        if (zBuf[hc] > depthTiles) {
+          var hcNorm = Math.abs(hc - screenX) / (hatW / 2);
+          var hcTop = hatBase - (1 - hcNorm) * (hatBase - hatTop);
+          ctx.fillRect(hc, hcTop, 1, hatBase - hcTop);
+        }
+      }
+      // Big creepy smile
+      ctx.fillStyle = 'rgba(180,40,40,' + fogFactor + ')';
+      var pgFaceY = pgY + pgH * 0.18;
+      var pgSmileW = pgW * 0.5;
+      ctx.fillRect(screenX - pgSmileW / 2, pgFaceY, pgSmileW, Math.max(1, pgH * 0.04));
+    } else {
+      // Default — basic blob
+      drawShapedSprite(ctx, startX, startY, spriteW, spriteH, screenX, depthTiles, zBuf, w,
+        e.color || '#444', '#222');
+    }
+    ctx.restore();
+  }
+
+  function drawShapedSprite(ctx, x, y, w, h, centerX, depth, zBuf, sw, mainColor, edgeColor) {
+    var startCol = Math.max(0, Math.floor(x));
+    var endCol = Math.min(sw, Math.ceil(x + w));
+    for (var c = startCol; c < endCol; c++) {
+      if (zBuf[c] > depth) {
+        var norm = (c - x) / w;
+        var edgeBlend = 1 - Math.pow(Math.abs(norm - 0.5) * 2, 2) * 0.5;
+        // Linear interp between edge and main
+        var color = edgeBlend > 0.6 ? mainColor : edgeColor;
+        ctx.fillStyle = color;
+        ctx.fillRect(c, y, 1, h);
+      }
+    }
+  }
+
+  function drawSpriteDot(ctx, cx, cy, r, zBuf, sw, depth) {
+    var col = Math.round(cx);
+    if (col < 0 || col >= sw) return;
+    if (zBuf[col] <= depth) return;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // ============================================================
   //  RENDER
   // ============================================================
   function onRender(ctx) {
@@ -1579,23 +2598,11 @@
 
     GameEngine.drawMap();
 
-    // Draw entities
+    // Draw entities (type-aware)
     for (var i = 0; i < entities.length; i++) {
       var e = entities[i];
       if (!e.alive) continue;
-      // Skin-stealer in 'corpse' state appears lower (on ground)
-      if (e.type === 'skinstealer' && e.state === 'corpse') {
-        // Render as floor-pile (smaller)
-        GameEngine.drawEntity({
-          x: e.x, y: e.y, color: '#352825', visible: true,
-          bodyColor: '#1a1208', _bodyR: 26, _bodyG: 18, _bodyB: 8
-        });
-      } else {
-        GameEngine.drawEntity({
-          x: e.x, y: e.y, color: e.color, visible: true,
-          bodyColor: e.bodyColor, _bodyR: 26, _bodyG: 20, _bodyB: 18
-        });
-      }
+      drawTypedEntity(ctx, e);
     }
 
     // Draw item glow sprites
@@ -1646,6 +2653,14 @@
     var label = '調べる';
 
     if (here === 3) { showAct = true; label = 'no-clip ↓'; }
+    else if (here === 11) {
+      var safeKey2 = currentLevel + '_' + key;
+      if (LEVEL_MINIGAMES[currentLevel] && !mgPlayedAt[safeKey2]) {
+        showAct = true; label = 'プレイ';
+      } else {
+        showAct = false;
+      }
+    }
     else if (pickupSpots[key]) { showAct = true; label = '拾う'; }
     else if (noteSpots[key]) { showAct = true; label = '読む'; }
     else {
@@ -1671,7 +2686,7 @@
   //  GAME LOOP HOOK
   // ============================================================
   function onUpdate(dt) {
-    if (state === ST.PLAYING && !phoneOpen) {
+    if (state === ST.PLAYING && !phoneOpen && !miniGameOpen) {
       updatePlayer(dt);
       updateEntities(dt);
       GameEngine.updateParticles(dt);
@@ -1682,6 +2697,7 @@
         GameEngine.addParticle('dust', player.x + Math.cos(pAng) * pDist, player.y + Math.sin(pAng) * pDist);
       }
     }
+    if (miniGameOpen) updateMiniGame(dt);
   }
 
   // ============================================================
@@ -1720,6 +2736,7 @@
       tag.textContent = 'THE END';
       title.textContent = 'TRUE END';
       msg.innerHTML = 'あなたは全ての階層を踏破した。<br>黒い扉の向こうで、本当の世界が待っている。<br>...かもしれない。';
+      unlockAchievement('true_end');
     } else if (type === 'frontrooms') {
       content.classList.remove('bad-ending', 'true-ending', 'lost-ending');
       tag.textContent = 'ESCAPED';
@@ -1805,7 +2822,7 @@
       el('statTimeText').textContent = formatTime(playTime);
       var clears = 0;
       for (var k in clearedLevels) if (clearedLevels[k]) clears++;
-      el('statProgText').textContent = 'クリア: ' + clears + ' / 9 階層';
+      el('statProgText').textContent = 'クリア: ' + clears + ' / 12 階層';
     }
 
     // INVENTORY
@@ -1854,8 +2871,18 @@
     if (activeTab === 'Notes') {
       var list = el('notesList');
       list.innerHTML = '';
+      // Notes section
+      var notesHeader = document.createElement('h3');
+      notesHeader.className = 'phone-h3';
+      notesHeader.textContent = 'ロアノート (' + discoveredNotes.length + ' 件)';
+      notesHeader.style.margin = '0 0 8px';
+      list.appendChild(notesHeader);
       if (discoveredNotes.length === 0) {
-        list.innerHTML = '<p class="notes-empty">まだ何も記録されていない。</p>';
+        var emp = document.createElement('p');
+        emp.className = 'notes-empty';
+        emp.style.padding = '20px 16px';
+        emp.textContent = 'まだ何も記録されていない。';
+        list.appendChild(emp);
       } else {
         for (var ni = 0; ni < discoveredNotes.length; ni++) {
           var note = discoveredNotes[ni];
@@ -1872,6 +2899,25 @@
           })(note);
           list.appendChild(card);
         }
+      }
+      // Achievements section
+      var achHeader = document.createElement('h3');
+      achHeader.className = 'phone-h3';
+      var achCount = Object.keys(unlockedAchievements).length;
+      var totalAch = Object.keys(ACHIEVEMENTS).length;
+      achHeader.textContent = 'アチーブメント (' + achCount + ' / ' + totalAch + ')';
+      list.appendChild(achHeader);
+      for (var aid in ACHIEVEMENTS) {
+        var ach = ACHIEVEMENTS[aid];
+        var unlocked = !!unlockedAchievements[aid];
+        var achCard = document.createElement('div');
+        achCard.className = 'note-card';
+        achCard.style.borderLeftColor = unlocked ? '#d4b340' : '#382a08';
+        achCard.style.opacity = unlocked ? '1' : '0.45';
+        achCard.innerHTML =
+          '<div class="note-card-title">' + ach.icon + ' ' + ach.name + '</div>' +
+          '<div class="note-card-preview">' + (unlocked ? '✓ 達成済み' : '未達成') + '</div>';
+        list.appendChild(achCard);
       }
     }
   }
@@ -1947,7 +2993,7 @@
   function saveGame() {
     try {
       var data = {
-        v: 1,
+        v: 2,
         currentLevel: currentLevel,
         playTime: playTime,
         inLevelTime: inLevelTime,
@@ -1964,6 +3010,8 @@
         discoveredNotes: discoveredNotes,
         pickedUpItems: pickedUpItems,
         readNotes: readNotes,
+        unlockedAchievements: unlockedAchievements,
+        mgPlayedAt: mgPlayedAt,
         spawn: { x: player.x, y: player.y, angle: player.angle }
       };
       localStorage.setItem(SAVE_KEY, JSON.stringify(data));
@@ -1991,6 +3039,8 @@
       discoveredNotes = data.discoveredNotes || [];
       pickedUpItems = data.pickedUpItems || {};
       readNotes = data.readNotes || {};
+      unlockedAchievements = data.unlockedAchievements || {};
+      mgPlayedAt = data.mgPlayedAt || {};
       return true;
     } catch (e) {
       console.warn('Load failed', e);
@@ -2022,6 +3072,8 @@
     pickedUpItems = {};
     readNotes = {};
     discoveredMap = {};
+    mgPlayedAt = {};
+    // Note: unlockedAchievements persists across runs
 
     // Start audio context
     if (!audioInitialized) {
@@ -2100,6 +3152,21 @@
     el('closeNoteBtn').addEventListener('click', function () {
       hideOverlay('noteViewerOverlay');
     });
+
+    // Mini-game controls
+    el('minigameActionBtn').addEventListener('click', function () {
+      if (!currentMiniGame) return;
+      var def = MINI_GAMES[currentMiniGame];
+      if (def.action) def.action();
+    });
+    el('minigameCloseBtn').addEventListener('click', function () {
+      closeMiniGame();
+    });
+    var mgCanvas = el('minigameCanvas');
+    mgCanvas.addEventListener('touchstart', function (e) { e.preventDefault(); miniGameTap(e); }, { passive: false });
+    mgCanvas.addEventListener('touchmove',  function (e) { e.preventDefault(); miniGameDrag(e); }, { passive: false });
+    mgCanvas.addEventListener('mousedown',  function (e) { miniGameTap(e); });
+    mgCanvas.addEventListener('mousemove',  function (e) { if (e.buttons) miniGameDrag(e); });
 
     el('retryBtn').addEventListener('click', function () {
       hideOverlay('gameOverScreen');
@@ -2208,6 +3275,7 @@
     GameEngine.onUpdate = onUpdate;
     GameEngine.onRender = onRender;
 
+    loadAchievements();
     bindEvents();
     updateTitleButtons();
     showOverlay('titleScreen');

@@ -1076,6 +1076,123 @@ body {
 }
 
 /* ============================================================
+ *  MINI-GAME OVERLAY
+ * ============================================================ */
+.minigame-overlay {
+  z-index: 65;
+  background: rgba(0, 0, 0, 0.96);
+}
+.minigame-frame {
+  background: linear-gradient(180deg, #1a1408 0%, #0a0804 100%);
+  border: 2px solid #786020;
+  width: 92vw;
+  max-width: 380px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 0 24px rgba(212, 179, 64, 0.2);
+}
+.minigame-title {
+  font-family: 'Times New Roman', serif;
+  font-size: 20px;
+  letter-spacing: 0.3em;
+  color: #e8d57a;
+  margin-bottom: 2px;
+  text-shadow: 0 0 8px rgba(212, 179, 64, 0.5);
+}
+.minigame-subtitle {
+  font-size: 11px;
+  color: #b09040;
+  letter-spacing: 0.1em;
+  text-align: center;
+  margin-bottom: 8px;
+}
+.minigame-canvas {
+  background: #050402;
+  border: 1px solid #483910;
+  width: 100%;
+  max-width: 320px;
+  aspect-ratio: 1;
+  display: block;
+  touch-action: none;
+}
+.minigame-status {
+  min-height: 22px;
+  font-size: 12px;
+  color: #d4b340;
+  text-align: center;
+  letter-spacing: 0.1em;
+}
+.minigame-controls {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  margin-top: 4px;
+}
+.mg-btn {
+  flex: 1;
+  padding: 12px;
+  background: rgba(20, 14, 4, 0.85);
+  color: #d4b340;
+  border: 1px solid #786020;
+  font-family: inherit;
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.mg-btn:active { background: #2a1c00; }
+.mg-btn.primary {
+  background: rgba(212, 179, 64, 0.2);
+  color: #f0dc8a;
+  border-color: #d4b340;
+}
+.mg-btn.primary:active {
+  background: rgba(212, 179, 64, 0.4);
+}
+
+/* ============================================================
+ *  ACHIEVEMENT TOAST
+ * ============================================================ */
+.achievement-toast {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 8px) + 10px);
+  left: 50%;
+  transform: translateX(-50%) translateY(-100%);
+  background: linear-gradient(180deg, #2a1c00, #0a0805);
+  border: 1px solid #d4b340;
+  box-shadow: 0 0 20px rgba(212, 179, 64, 0.5);
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 70;
+  min-width: 240px;
+  max-width: 80vw;
+  transition: transform 0.35s ease-out;
+}
+.achievement-toast.show {
+  transform: translateX(-50%) translateY(0);
+}
+.ach-icon {
+  font-size: 28px;
+}
+.ach-body { flex: 1; }
+.ach-label {
+  font-size: 9px;
+  color: #b09040;
+  letter-spacing: 0.3em;
+}
+.ach-name {
+  font-size: 12px;
+  color: #f0dc8a;
+  font-weight: bold;
+  margin-top: 2px;
+}
+
+/* ============================================================
  *  NO-CLIP FLASH (transition white flash)
  * ============================================================ */
 .noclip-flash {

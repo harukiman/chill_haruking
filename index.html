@@ -331,6 +331,29 @@
   <!-- No-clip transition flash -->
   <div id="noclipFlash" class="noclip-flash" style="display:none;"></div>
 
+  <!-- Mini-game Overlay -->
+  <div id="minigameOverlay" class="overlay minigame-overlay" style="display:none;">
+    <div class="minigame-frame">
+      <h2 class="minigame-title" id="minigameTitle">MINIGAME</h2>
+      <p class="minigame-subtitle" id="minigameSubtitle">説明文</p>
+      <canvas id="minigameCanvas" class="minigame-canvas" width="320" height="320"></canvas>
+      <div class="minigame-status" id="minigameStatus"></div>
+      <div class="minigame-controls">
+        <button id="minigameActionBtn" type="button" class="mg-btn primary">スタート</button>
+        <button id="minigameCloseBtn" type="button" class="mg-btn">閉じる</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Achievements Toast -->
+  <div id="achievementToast" class="achievement-toast" style="display:none;">
+    <div class="ach-icon" id="achIcon">🏆</div>
+    <div class="ach-body">
+      <p class="ach-label">アチーブメント解除</p>
+      <p class="ach-name" id="achName"></p>
+    </div>
+  </div>
+
   <!-- Scripts -->
   <script src="assets/js/engine.js"></script>
   <script src="assets/js/game.js"></script>

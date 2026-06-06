@@ -1626,7 +1626,7 @@
       // Prevent default touch behaviors on the whole document
       // But allow interaction on overlays (sliders, buttons, scroll)
       document.addEventListener('touchmove', function (e) {
-        var allowScrollIds = ['phoneOverlay', 'noteViewerOverlay', 'tutorialOverlay', 'settingsOverlay', 'minimapOverlay'];
+        var allowScrollIds = ['phoneOverlay', 'noteViewerOverlay', 'tutorialOverlay', 'settingsOverlay', 'minimapOverlay', 'minigameOverlay'];
         for (var i = 0; i < allowScrollIds.length; i++) {
           var ov = document.getElementById(allowScrollIds[i]);
           if (ov && ov.style.display !== 'none') return;
