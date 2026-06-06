@@ -4896,12 +4896,76 @@
   // ============================================================
   //  TITLE / NEW GAME
   // ============================================================
+  // Intro cinematic frames
+  var INTRO_LINES = [
+    { text: '', delay: 800 },
+    { text: '...深夜、いつもの帰り道。', delay: 3000 },
+    { text: '壁紙の前を、通り過ぎようとした。', delay: 3000 },
+    { text: 'その時、', delay: 2200 },
+    { text: '足元の感触が、消えた。', delay: 3200 },
+    { text: '...', delay: 2000 }
+  ];
+
+  function playIntroCinematic(onDone) {
+    showOverlay('introOverlay');
+    var eyes = el('introEyes');
+    eyes.classList.remove('open', 'partial');
+    var lineEl = el('introLine');
+    lineEl.textContent = '';
+    lineEl.classList.remove('show');
+    if (audioInitialized) {
+      GameEngine.startLoop('wind');
+    }
+    var idx = 0;
+    var cancelled = false;
+    function next() {
+      if (cancelled) return;
+      if (idx >= INTRO_LINES.length) {
+        // Eyes opening animation
+        eyes.classList.add('partial');
+        setTimeout(function () {
+          if (cancelled) return;
+          eyes.classList.add('open');
+          setTimeout(function () {
+            if (cancelled) return;
+            hideOverlay('introOverlay');
+            if (audioInitialized) GameEngine.stopLoop('wind');
+            onDone();
+          }, 1200);
+        }, 800);
+        return;
+      }
+      var line = INTRO_LINES[idx];
+      lineEl.classList.remove('show');
+      void lineEl.offsetWidth;
+      lineEl.textContent = line.text;
+      requestAnimationFrame(function () { lineEl.classList.add('show'); });
+      idx++;
+      setTimeout(next, line.delay);
+    }
+    // Skip button
+    var skip = el('introSkipBtn');
+    var skipHandler = function () {
+      cancelled = true;
+      hideOverlay('introOverlay');
+      if (audioInitialized) GameEngine.stopLoop('wind');
+      skip.removeEventListener('click', skipHandler);
+      onDone();
+    };
+    skip.addEventListener('click', skipHandler);
+    next();
+  }
+
   function startNewGame() {
     state = ST.LOADING;
     hideOverlay('titleScreen');
     gameMode = 'normal';
     stats.totalRuns++;
     saveStats();
+    if (!audioInitialized) {
+      GameEngine.initAudio();
+      audioInitialized = true;
+    }
 
     var diff = DIFFICULTIES[currentDifficulty] || DIFFICULTIES.normal;
     player.hpMax = Math.round(100 * diff.hpMul);
@@ -4931,13 +4995,14 @@
     }
     // Note: unlockedAchievements persists across runs
 
-    // Start audio context
-    if (!audioInitialized) {
-      GameEngine.initAudio();
-      audioInitialized = true;
+    // Intro cinematic only on first run (skip if user replayed)
+    var firstRunKey = 'thebackrooms_seen_intro_v1';
+    if (!localStorage.getItem(firstRunKey)) {
+      localStorage.setItem(firstRunKey, '1');
+      playIntroCinematic(function () { setLevel(0); });
+    } else {
+      setLevel(0);
     }
-
-    setLevel(0);
   }
 
   function continueGame() {

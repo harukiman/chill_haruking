@@ -17,7 +17,7 @@
   <meta name="twitter:title" content="THE BACKROOMS — featuring HARUKI">
   <meta name="twitter:description" content="一人称モバイル探索ホラー。Level 0 から no-clip で階層を降下。壁の向こうにカレが待つ。">
   <title>THE BACKROOMS</title>
-  <link rel="stylesheet" href="assets/css/game.css?v=37">
+  <link rel="stylesheet" href="assets/css/game.css?v=38">
 </head>
 <body oncontextmenu="return false;">
 
@@ -65,6 +65,19 @@
     <p class="copyright">THE BACKROOMS — featuring HARUKI &copy; 2026</p>
     <p class="version-text" id="versionText">ver 3.6 (Critical Fixes)</p>
     <p class="title-ach-counter" id="titleAchCounter"></p>
+  </div>
+
+  <!-- Intro Cinematic Overlay (new game opening) -->
+  <div id="introOverlay" class="overlay intro-overlay" style="display:none;">
+    <div class="intro-vignette"></div>
+    <div class="intro-content">
+      <p class="intro-line" id="introLine"></p>
+    </div>
+    <div class="intro-eyes" id="introEyes">
+      <div class="intro-eye left"></div>
+      <div class="intro-eye right"></div>
+    </div>
+    <button id="introSkipBtn" class="intro-skip-btn" type="button">スキップ →</button>
   </div>
 
   <!-- Loading Screen Overlay (level transition) -->
@@ -454,8 +467,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="assets/js/engine.js?v=37"></script>
-  <script src="assets/js/game.js?v=37"></script>
+  <script src="assets/js/engine.js?v=38"></script>
+  <script src="assets/js/game.js?v=38"></script>
 
 </body>
 </html>
