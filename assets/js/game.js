@@ -4768,6 +4768,17 @@
 
     el('retryBtn').addEventListener('click', function () {
       hideOverlay('gameOverScreen');
+      // ENDLESS death: retry starts new endless run
+      if (gameMode === 'endless') {
+        startEndlessMode();
+        return;
+      }
+      // Free Roam death: return to title
+      if (gameMode === 'freeroam') {
+        returnToTitle();
+        return;
+      }
+      // Normal: continue from save
       if (hasSave()) continueGame();
       else { returnToTitle(); }
     });
