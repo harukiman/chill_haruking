@@ -2847,6 +2847,8 @@
     el('minigameTitle').textContent = def.title;
     el('minigameSubtitle').textContent = def.subtitle;
     showOverlay('minigameOverlay');
+    // Hide phone button during mini-game (avoid stacking conflict)
+    el('phoneBtn').style.display = 'none';
     def.init();
   }
 
@@ -2855,6 +2857,8 @@
     currentMiniGame = null;
     mgState = null;
     hideOverlay('minigameOverlay');
+    // Restore phone button (only if still playing)
+    if (state === ST.PLAYING) el('phoneBtn').style.display = 'flex';
   }
 
   function updateMiniGame(dt) {
