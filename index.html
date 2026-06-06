@@ -51,6 +51,7 @@
       <div class="title-menu">
         <button id="startBtn" class="menu-btn" type="button">はじめから</button>
         <button id="continueBtn" class="menu-btn" type="button" style="display:none;">つづきから</button>
+        <button id="freeRoamBtn" class="menu-btn" type="button" style="display:none;">フリーローム</button>
         <button id="difficultyBtn" class="menu-btn" type="button">難易度: NORMAL</button>
         <button id="controlsBtn" class="menu-btn" type="button">操作説明</button>
       </div>
@@ -335,6 +336,16 @@
 
   <!-- No-clip transition flash -->
   <div id="noclipFlash" class="noclip-flash" style="display:none;"></div>
+
+  <!-- Free Roam (Level Select) Overlay -->
+  <div id="levelSelectOverlay" class="overlay" style="display:none;">
+    <div class="lvlsel-frame">
+      <h2 class="lvlsel-title">FREE ROAM</h2>
+      <p class="lvlsel-sub">クリア済みのレベルを選んで再プレイ</p>
+      <div class="lvlsel-grid" id="lvlselGrid"></div>
+      <button id="lvlselCloseBtn" type="button" class="mg-btn">タイトルへ</button>
+    </div>
+  </div>
 
   <!-- Mini-game Overlay -->
   <div id="minigameOverlay" class="overlay minigame-overlay" style="display:none;">

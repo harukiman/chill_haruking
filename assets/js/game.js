@@ -1614,6 +1614,38 @@
       GameEngine.playSound('whisper');
     }
 
+    // Level-specific dynamic events
+    if (currentLevel === 3) {
+      // Electrical Station: random brief blackouts
+      player._blackoutTimer = (player._blackoutTimer || 0) - dt;
+      if (player._blackoutTimer <= 0) {
+        player._blackoutTimer = 10 + Math.random() * 8;
+        if (Math.random() < 0.5) {
+          GameEngine.staticEffect(0.5);
+          GameEngine.shakeScreen(4, 0.4);
+          if (audioInitialized) GameEngine.playSound('static');
+          setTimeout(function () { GameEngine.staticEffect(0); }, 700);
+        }
+      }
+    } else if (currentLevel === 11) {
+      // End of the Line: train passes
+      player._trainTimer = (player._trainTimer || 0) - dt;
+      if (player._trainTimer <= 0) {
+        player._trainTimer = 16 + Math.random() * 14;
+        if (Math.random() < 0.5) {
+          GameEngine.shakeScreen(18, 3);
+          if (audioInitialized) GameEngine.playSound('thunder');
+          toast('列車が通過する...');
+        }
+      }
+    } else if (currentLevel === 12) {
+      // Fun =): periodic confetti / party effect
+      if (Math.random() < 0.02) {
+        var pAng2 = Math.random() * Math.PI * 2;
+        GameEngine.addParticle('spark', player.x + Math.cos(pAng2) * 100, player.y + Math.sin(pAng2) * 100);
+      }
+    }
+
     // Heartbeat near entities
     var nearestDist = nearestEntityDist();
     if (nearestDist < 8 * TS) {
@@ -3538,6 +3570,67 @@
       var acTotal = Object.keys(ACHIEVEMENTS).length;
       ac.textContent = '🏆 ' + acCount + ' / ' + acTotal;
     }
+    var fr = el('freeRoamBtn');
+    if (fr) {
+      var anyBest = Object.keys(bestTimes).length > 0;
+      fr.style.display = anyBest ? '' : 'none';
+    }
+  }
+
+  function openLevelSelect() {
+    var grid = el('lvlselGrid');
+    grid.innerHTML = '';
+    var order = [0, 1, 2, 3, 4, 5, 6, 7, 8, 11, 12, 9];
+    for (var i = 0; i < order.length; i++) {
+      var lvId = order[i];
+      var def = LEVELS[lvId];
+      if (!def) continue;
+      var card = document.createElement('div');
+      card.className = 'lvlsel-card';
+      var canPlay = !!bestTimes[lvId];
+      if (canPlay) card.classList.add('cleared');
+      else card.classList.add('locked');
+      var bestStr = bestTimes[lvId] ? formatTime(bestTimes[lvId]) : '--:--:--';
+      card.innerHTML =
+        '<div class="lvlsel-num">' + def.name.replace('LEVEL ', '') + '</div>' +
+        '<div class="lvlsel-name">' + def.subtitle + '</div>' +
+        '<div class="lvlsel-best">' + (canPlay ? 'BEST ' + bestStr : 'ロック') + '</div>';
+      if (canPlay) {
+        (function (id) {
+          card.addEventListener('click', function () {
+            hideOverlay('levelSelectOverlay');
+            hideOverlay('titleScreen');
+            startFreeRoam(id);
+          });
+        })(lvId);
+      }
+      grid.appendChild(card);
+    }
+    showOverlay('levelSelectOverlay');
+  }
+
+  function startFreeRoam(levelId) {
+    state = ST.LOADING;
+    var diff = DIFFICULTIES[currentDifficulty] || DIFFICULTIES.normal;
+    player.hpMax = Math.round(100 * diff.hpMul);
+    player.hp = player.hpMax;
+    player.san = player.sanMax = 100;
+    player.stam = player.stamMax = 100;
+    player.inventory = {};
+    player.flashlightOn = false;
+    player.radioOn = false;
+    playTime = 0;
+    discoveredNotes = [];
+    pickedUpItems = {};
+    readNotes = {};
+    discoveredMap = {};
+    mgPlayedAt = {};
+
+    if (!audioInitialized) {
+      GameEngine.initAudio();
+      audioInitialized = true;
+    }
+    setLevel(levelId);
   }
 
   // ============================================================
@@ -3546,6 +3639,10 @@
   function bindEvents() {
     el('startBtn').addEventListener('click', startNewGame);
     el('continueBtn').addEventListener('click', continueGame);
+    el('freeRoamBtn').addEventListener('click', openLevelSelect);
+    el('lvlselCloseBtn').addEventListener('click', function () {
+      hideOverlay('levelSelectOverlay');
+    });
     el('difficultyBtn').addEventListener('click', function () {
       var order = ['easy', 'normal', 'hard', 'chaos'];
       var idx = order.indexOf(currentDifficulty);

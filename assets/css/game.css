@@ -1098,6 +1098,92 @@ body {
 }
 
 /* ============================================================
+ *  LEVEL SELECT OVERLAY (Free Roam)
+ * ============================================================ */
+.lvlsel-frame {
+  background: #0d0a04;
+  border: 1px solid #786020;
+  padding: 22px 18px;
+  width: 90vw;
+  max-width: 440px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.lvlsel-title {
+  font-family: 'Times New Roman', serif;
+  font-size: 22px;
+  letter-spacing: 0.3em;
+  color: #e8d57a;
+  text-align: center;
+  text-shadow: 0 0 10px rgba(212, 179, 64, 0.5);
+}
+.lvlsel-sub {
+  font-size: 11px;
+  color: #b09040;
+  text-align: center;
+  letter-spacing: 0.15em;
+  margin-bottom: 8px;
+}
+.lvlsel-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  overflow-y: auto;
+  flex: 1;
+  -webkit-overflow-scrolling: touch;
+  padding: 4px;
+}
+.lvlsel-card {
+  background: rgba(212, 179, 64, 0.05);
+  border: 1px solid #382a08;
+  padding: 8px 6px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.lvlsel-card.cleared {
+  background: rgba(136, 192, 80, 0.08);
+  border-color: #88c050;
+}
+.lvlsel-card.locked {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.lvlsel-card:not(.locked):hover,
+.lvlsel-card:not(.locked):active {
+  background: rgba(212, 179, 64, 0.25);
+  border-color: #d4b340;
+}
+.lvlsel-num {
+  font-family: 'Times New Roman', serif;
+  font-size: 20px;
+  font-weight: 900;
+  color: #e8d57a;
+  letter-spacing: 0.1em;
+}
+.lvlsel-name {
+  font-size: 8px;
+  color: #b09040;
+  letter-spacing: 0.1em;
+  margin-top: 4px;
+  line-height: 1.2;
+}
+.lvlsel-best {
+  font-size: 8px;
+  color: #786020;
+  margin-top: 3px;
+  font-family: monospace;
+}
+
+/* ============================================================
  *  MINI-GAME OVERLAY
  * ============================================================ */
 .minigame-overlay {
