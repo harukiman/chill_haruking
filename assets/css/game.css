@@ -471,30 +471,28 @@ button {
 .title-settings-overlay {
   z-index: 55;
   background: rgba(0, 0, 0, 0.85);
-  /* removed backdrop-filter (heavy on mobile) */
-  /* Make the overlay itself scrollable when content is taller than viewport */
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-y;
-  /* Override .overlay flex-center: allow content to stack from top so it can scroll */
-  align-items: flex-start;
-  padding: 20px 0;
+  /* Force scroll on the overlay itself */
+  overflow-y: scroll !important;
+  -webkit-overflow-scrolling: touch !important;
+  touch-action: pan-y !important;
+  /* Stack content from top (override .overlay flex center) */
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  /* Account for safe area at top/bottom */
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 .ts-card {
   width: min(92vw, 420px);
-  /* Respect safe-area insets on iOS so content isn't clipped by notch / home bar */
-  max-height: calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 40px);
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
   background: linear-gradient(180deg, rgba(35, 26, 6, 0.95) 0%, rgba(15, 12, 4, 0.95) 100%);
   border: 1px solid rgba(212, 179, 64, 0.55);
   border-radius: 16px;
   padding: 22px 22px 24px;
-  padding-top: max(22px, env(safe-area-inset-top, 22px));
-  padding-bottom: max(24px, calc(env(safe-area-inset-bottom, 24px) + 16px));
+  margin: 20px 0;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(240, 220, 138, 0.1);
-  /* Allow scroll on touch */
-  touch-action: pan-y;
+  /* No own overflow — parent overlay scrolls */
 }
 .ts-title {
   font-family: 'Times New Roman', serif;
