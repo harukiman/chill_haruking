@@ -1183,6 +1183,10 @@
   var phoneOpen = false;
   var activeTab = 'Status';
 
+  // Floating map
+  var floatingMapOpen = false;
+  var floatingMapOpacity = 0.65;
+
   // Mini-game
   var miniGameOpen = false;
   var currentMiniGame = null;
@@ -1714,6 +1718,7 @@
     el('touchZoneRight').style.display = '';
     el('phoneBtn').style.display = 'flex';
     el('floorHUD').style.display = '';
+    el('floatingMapBtn').classList.add('show');
     if (gameMode === 'endless') {
       el('floorText').textContent = 'ENDLESS F' + endlessFloor + ' / LV' + currentLevel + ' / ' + endlessScore;
     } else {
@@ -1972,6 +1977,40 @@
       el('stamFill').classList.toggle('low', stamRatio < 0.2);
       player._hudCache.stam = stamRatio;
     }
+
+    // HP/SAN screen state effects
+    var hpFx = el('hpScreenEffect');
+    if (hpFx) {
+      if (hpRatio < 0.15) {
+        hpFx.style.display = 'block';
+        hpFx.classList.add('critical');
+        hpFx.classList.remove('warn');
+      } else if (hpRatio < 0.35) {
+        hpFx.style.display = 'block';
+        hpFx.classList.add('warn');
+        hpFx.classList.remove('critical');
+      } else {
+        hpFx.style.display = 'none';
+        hpFx.classList.remove('warn', 'critical');
+      }
+    }
+    var sanFx = el('sanScreenEffect');
+    if (sanFx) {
+      if (sanRatio0 < 0.15) {
+        sanFx.style.display = 'block';
+        sanFx.classList.add('critical');
+        sanFx.classList.remove('warn');
+      } else if (sanRatio0 < 0.4) {
+        sanFx.style.display = 'block';
+        sanFx.classList.add('warn');
+        sanFx.classList.remove('critical');
+      } else {
+        sanFx.style.display = 'none';
+        sanFx.classList.remove('warn', 'critical');
+      }
+    }
+    // Update floating map (if visible)
+    if (floatingMapOpen) drawFloatingMap();
 
     // Threshold warnings (sound + toast on crossing 50% / 25%)
     if (!player._lastHpRatio) player._lastHpRatio = 1;
@@ -4864,6 +4903,77 @@
     }
   }
 
+  function drawFloatingMap() {
+    var canvas = el('floatingMapCanvas');
+    if (!canvas || !currentMap) return;
+    var rect = canvas.getBoundingClientRect();
+    var sz = Math.min(rect.width, rect.height) | 0;
+    if (sz <= 0) return;
+    canvas.width = sz;
+    canvas.height = sz;
+    var ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, sz, sz);
+    var mw = currentMap.width;
+    var mh = currentMap.height;
+    var ts = Math.floor(sz / Math.max(mw, mh));
+    var ox = (sz - ts * mw) / 2;
+    var oy = (sz - ts * mh) / 2;
+    for (var y = 0; y < mh; y++) {
+      for (var x = 0; x < mw; x++) {
+        var t = currentMap.tiles[y][x];
+        var disc = discoveredMap[currentLevel] && discoveredMap[currentLevel][y] && discoveredMap[currentLevel][y][x];
+        if (!disc) continue; // skip undiscovered
+        if (t === 1 || t === 4 || t === 8 || t === 9) ctx.fillStyle = '#786020';
+        else if (t === 3) ctx.fillStyle = '#f0dc8a';
+        else if (t === 2) ctx.fillStyle = '#a08850';
+        else if (t === 10) ctx.fillStyle = '#c63a3a';
+        else if (t === 11) ctx.fillStyle = '#88b033';
+        else if (t === 7) ctx.fillStyle = '#406070';
+        else ctx.fillStyle = '#382a08';
+        ctx.fillRect(ox + x * ts, oy + y * ts, ts, ts);
+      }
+    }
+    // Items in discovered area
+    for (var ikey in pickupSpots) {
+      var parts = ikey.split('_');
+      var igx = parseInt(parts[0], 10), igy = parseInt(parts[1], 10);
+      if (discoveredMap[currentLevel] && discoveredMap[currentLevel][igy] && discoveredMap[currentLevel][igy][igx]) {
+        ctx.fillStyle = '#88c050';
+        ctx.beginPath();
+        ctx.arc(ox + (igx + 0.5) * ts, oy + (igy + 0.5) * ts, Math.max(1.5, ts * 0.3), 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    // No-clip exits
+    if (currentMap.noclipExits) {
+      for (var nci = 0; nci < currentMap.noclipExits.length; nci++) {
+        var nce = currentMap.noclipExits[nci];
+        if (discoveredMap[currentLevel] && discoveredMap[currentLevel][nce.gy] && discoveredMap[currentLevel][nce.gy][nce.gx]) {
+          ctx.fillStyle = '#f0dc8a';
+          ctx.beginPath();
+          ctx.moveTo(ox + (nce.gx + 0.5) * ts, oy + (nce.gy + 0.1) * ts);
+          ctx.lineTo(ox + (nce.gx + 0.9) * ts, oy + (nce.gy + 0.9) * ts);
+          ctx.lineTo(ox + (nce.gx + 0.1) * ts, oy + (nce.gy + 0.9) * ts);
+          ctx.closePath();
+          ctx.fill();
+        }
+      }
+    }
+    // Player
+    var pgx = player.x / TS, pgy = player.y / TS;
+    ctx.fillStyle = '#88b033';
+    ctx.beginPath();
+    ctx.arc(ox + pgx * ts, oy + pgy * ts, Math.max(2, ts * 0.4), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#88b033';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(ox + pgx * ts, oy + pgy * ts);
+    ctx.lineTo(ox + pgx * ts + Math.cos(player.angle) * ts * 1.5,
+              oy + pgy * ts + Math.sin(player.angle) * ts * 1.5);
+    ctx.stroke();
+  }
+
   function drawMap() {
     var canvas = el('mapCanvas');
     var ctx = canvas.getContext('2d');
@@ -5183,14 +5293,8 @@
     }
     // Note: unlockedAchievements persists across runs
 
-    // Intro cinematic only on first run (skip if user replayed)
-    var firstRunKey = 'thebackrooms_seen_intro_v1';
-    if (!localStorage.getItem(firstRunKey)) {
-      localStorage.setItem(firstRunKey, '1');
-      playIntroCinematic(function () { setLevel(0); });
-    } else {
-      setLevel(0);
-    }
+    // Intro cinematic always plays when starting from "はじめから"
+    playIntroCinematic(function () { setLevel(0); });
   }
 
   function continueGame() {
@@ -5372,6 +5476,21 @@
       openPhone();
       if (navigator.vibrate) navigator.vibrate(10);
     });
+
+    // Floating map toggle
+    el('floatingMapBtn').addEventListener('click', function () {
+      floatingMapOpen = !floatingMapOpen;
+      el('floatingMap').style.display = floatingMapOpen ? 'flex' : 'none';
+      if (navigator.vibrate) navigator.vibrate(8);
+    });
+    var fmOpacity = el('floatingMapOpacity');
+    if (fmOpacity) {
+      fmOpacity.addEventListener('input', function () {
+        floatingMapOpacity = fmOpacity.value / 100;
+        el('floatingMap').style.opacity = floatingMapOpacity;
+      });
+      el('floatingMap').style.opacity = floatingMapOpacity;
+    }
     el('closePhoneBtn').addEventListener('click', function () {
       closePhone();
       if (navigator.vibrate) navigator.vibrate(10);

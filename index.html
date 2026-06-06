@@ -17,7 +17,7 @@
   <meta name="twitter:title" content="THE BACKROOMS — featuring HARUKI">
   <meta name="twitter:description" content="一人称モバイル探索ホラー。Level 0 から no-clip で階層を降下。壁の向こうにカレが待つ。">
   <title>THE BACKROOMS</title>
-  <link rel="stylesheet" href="assets/css/game.css?v=42">
+  <link rel="stylesheet" href="assets/css/game.css?v=43">
 </head>
 <body oncontextmenu="return false;">
 
@@ -184,6 +184,29 @@
   <button id="actionBtn" type="button" style="display:none;">
     <span id="actionBtnText">調べる</span>
   </button>
+
+  <!-- Floating Map Toggle Button -->
+  <button id="floatingMapBtn" type="button" class="floating-map-btn" aria-label="マップ" style="display:none;">
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+      <rect x="1.5" y="2" width="17" height="16" rx="2"/>
+      <line x1="6.5" y1="2" x2="6.5" y2="18"/>
+      <line x1="13.5" y1="2" x2="13.5" y2="18"/>
+      <line x1="1.5" y1="7" x2="18.5" y2="7"/>
+      <line x1="1.5" y1="13" x2="18.5" y2="13"/>
+    </svg>
+  </button>
+
+  <!-- Floating Map Overlay (transparent, persistent during play) -->
+  <div id="floatingMap" class="floating-map" style="display:none;">
+    <canvas id="floatingMapCanvas" class="floating-map-canvas"></canvas>
+    <div class="floating-map-controls">
+      <input type="range" id="floatingMapOpacity" min="20" max="100" value="65" class="floating-map-opacity">
+    </div>
+  </div>
+
+  <!-- HP/SAN Screen Effects (overlays) -->
+  <div id="hpScreenEffect" class="screen-effect-hp" style="display:none;"></div>
+  <div id="sanScreenEffect" class="screen-effect-san" style="display:none;"></div>
 
   <!-- Phone Button (opens smartphone UI) -->
   <button id="phoneBtn" type="button" class="phone-btn" aria-label="スマホ" style="display:none;">
@@ -501,8 +524,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="assets/js/engine.js?v=42"></script>
-  <script src="assets/js/game.js?v=42"></script>
+  <script src="assets/js/engine.js?v=43"></script>
+  <script src="assets/js/game.js?v=43"></script>
 
 </body>
 </html>

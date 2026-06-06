@@ -925,6 +925,138 @@ body {
 }
 
 /* ============================================================
+ *  FLOATING MAP
+ * ============================================================ */
+.floating-map-btn {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 8px) + 56px);
+  right: 8px;
+  width: 44px;
+  height: 44px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(212, 179, 64, 0.55);
+  color: #d4b340;
+  border-radius: 8px;
+  z-index: 16;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  -webkit-tap-highlight-color: transparent;
+}
+.floating-map-btn.show { display: flex; }
+.floating-map-btn:active {
+  background: rgba(40, 30, 8, 0.85);
+  transform: scale(0.95);
+}
+.floating-map {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 8px) + 56px);
+  right: 58px;
+  width: 180px;
+  height: 180px;
+  z-index: 17;
+  background: rgba(5, 4, 2, 0.55);
+  border: 1px solid rgba(120, 96, 32, 0.4);
+  border-radius: 10px;
+  padding: 8px 8px 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  pointer-events: auto;
+  transition: opacity 0.3s;
+}
+.floating-map-canvas {
+  flex: 1;
+  width: 100%;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+  display: block;
+}
+.floating-map-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-top: 2px;
+}
+.floating-map-opacity {
+  flex: 1;
+  height: 3px;
+  appearance: none;
+  background: rgba(120, 96, 32, 0.3);
+  outline: none;
+  border-radius: 2px;
+}
+.floating-map-opacity::-webkit-slider-thumb {
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  background: #d4b340;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.floating-map-opacity::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  background: #d4b340;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+}
+
+/* ============================================================
+ *  HP/SAN SCREEN EFFECTS
+ * ============================================================ */
+.screen-effect-hp {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 8;
+  background: radial-gradient(ellipse at center, transparent 30%, rgba(180, 0, 0, 0.35) 100%);
+  opacity: 0;
+  transition: opacity 0.5s;
+}
+.screen-effect-hp.warn {
+  opacity: 0.5;
+  animation: hpEffectBeat 1.2s ease-in-out infinite;
+}
+.screen-effect-hp.critical {
+  opacity: 1;
+  animation: hpEffectBeat 0.6s ease-in-out infinite;
+}
+@keyframes hpEffectBeat {
+  0%, 100% { transform: scale(1); }
+  10%      { transform: scale(1.04); }
+  20%      { transform: scale(1); }
+}
+.screen-effect-san {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 8;
+  background: linear-gradient(135deg, rgba(80, 30, 120, 0.2) 0%, transparent 30%, transparent 70%, rgba(40, 20, 80, 0.3) 100%);
+  opacity: 0;
+  transition: opacity 0.5s;
+  mix-blend-mode: screen;
+}
+.screen-effect-san.warn {
+  opacity: 0.5;
+  filter: blur(1px);
+}
+.screen-effect-san.critical {
+  opacity: 0.9;
+  animation: sanEffectShift 4s ease-in-out infinite;
+}
+@keyframes sanEffectShift {
+  0%, 100% { filter: blur(0px) hue-rotate(0deg); }
+  50%      { filter: blur(2px) hue-rotate(20deg); }
+}
+
+/* ============================================================
  *  PHONE BUTTON (top-right)
  * ============================================================ */
 .phone-btn {
