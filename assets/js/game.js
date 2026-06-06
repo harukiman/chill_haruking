@@ -1959,19 +1959,9 @@
       }, 3500);
     }
 
-    // Lv9: dramatic Boss introduction (delayed 4s after entering)
+    // Lv9: dramatic Boss introduction sequence (delayed 5s after entering)
     if (currentLevel === 9 && !unlockedAchievements.defeat_boss) {
-      setTimeout(function () {
-        if (state !== ST.PLAYING) return;
-        // Flash + stinger + shake for "Boss reveals" impact
-        GameEngine.redFlash();
-        GameEngine.shakeScreen(12, 0.8);
-        if (audioInitialized) {
-          GameEngine.playSound('stinger');
-          GameEngine.playSound('thunder');
-        }
-        toast('— THE ARCHITECT が目を覚ました');
-      }, 4000);
+      setTimeout(function () { if (state === ST.PLAYING) playBossIntroSequence(); }, 5000);
     }
 
     // Save automatically on level start (normal mode only)
@@ -2385,15 +2375,20 @@
       }
     }
 
-    // Chase BGM detection: any entity is actively chasing AND within range
+    // Multi-tier threat detection
     var isBeingChased = false;
+    var threatLevel = 0; // 0 = safe, 1 = uneasy, 2 = hunted, 3 = critical
     for (var ceI = 0; ceI < entities.length; ceI++) {
       var ce = entities[ceI];
       if (!ce.alive) continue;
       var ceDx = ce.x - player.x, ceDy = ce.y - player.y;
       var ceD = Math.sqrt(ceDx * ceDx + ceDy * ceDy);
-      if (ceD > 8 * TS) continue; // out of chase range
-      // Entity-specific chase trigger conditions
+      if (ceD > 14 * TS) continue;
+      // Awareness (uneasy)
+      if (ceD < 14 * TS) threatLevel = Math.max(threatLevel, 1);
+      if (ceD < 7 * TS) threatLevel = Math.max(threatLevel, 2);
+      if (ceD < 3 * TS) threatLevel = Math.max(threatLevel, 3);
+      // Entity-specific chase trigger
       if (ce.type === 'hound' && ce.state === 'chase') isBeingChased = true;
       else if (ce.type === 'skinstealer' && ce.state === 'reveal') isBeingChased = true;
       else if (ce.type === 'partygoer' && ceD < 4 * TS) isBeingChased = true;
@@ -2402,9 +2397,15 @@
       else if (ce.type === 'boss' && ceD < 6 * TS) isBeingChased = true;
       else if (ce.type === 'mrhotel' && ceD < 4 * TS) isBeingChased = true;
       else if (ce.type === 'echo' && ceD < 3 * TS) isBeingChased = true;
-      if (isBeingChased) break;
     }
-    // BGM transition (only if state changed)
+    // Apply BGM layer adjustments by threat level (live blending)
+    if (audioInitialized && GameEngine.setBGMLayers) {
+      var droneG = 0.06;
+      var dissG = threatLevel * 0.08;
+      var pulseG = isBeingChased ? 0.5 : threatLevel * 0.08;
+      GameEngine.setBGMLayers({ drone: droneG, dissonance: dissG, pulse: pulseG });
+    }
+    // BGM transition (chase only)
     if (audioInitialized && isBeingChased !== player._beingChased) {
       player._beingChased = isBeingChased;
       if (isBeingChased) {
@@ -3610,6 +3611,44 @@
       tryNoClip();
       return;
     }
+  }
+
+  function playBossIntroSequence() {
+    // Sequence: silence → deep rumble → red flash → encounter cinematic
+    _inCinematic = true;
+    if (audioInitialized) {
+      GameEngine.stopAll();
+      GameEngine.playSound('thunder');
+    }
+    // Phase 1: 1.5s silent with red tint
+    GameEngine.redFlash();
+    setTimeout(function () {
+      // Phase 2: stinger + heavy shake
+      if (audioInitialized) {
+        GameEngine.playSound('stinger');
+        GameEngine.playSound('scream');
+      }
+      GameEngine.shakeScreen(25, 1.5);
+      GameEngine.staticEffect(0.7);
+      setTimeout(function () { GameEngine.staticEffect(0); }, 1200);
+    }, 1500);
+    // Phase 3: encounter cinematic (using existing system)
+    setTimeout(function () {
+      _inCinematic = false;
+      var intro = ENTITY_INTROS.boss;
+      el('encounterShape').textContent = '👑';
+      el('encounterName').textContent = intro.name;
+      el('encounterDesc').textContent = intro.desc + '\n\n— 用意できたら扉を探せ。';
+      showOverlay('encounterCinematic');
+      if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 200]);
+      setTimeout(function () {
+        hideOverlay('encounterCinematic');
+        // Resume ambient/BGM
+        var theme = THEMES[currentLevelDef.theme];
+        if (theme.ambientLoop && audioInitialized) GameEngine.startLoop(theme.ambientLoop);
+        if (theme.bgmLoop && audioInitialized) GameEngine.startLoop(theme.bgmLoop);
+      }, 4500);
+    }, 3200);
   }
 
   function playEntityDeathScene(killerType) {
