@@ -1772,6 +1772,17 @@
     el('sanFill').classList.toggle('low', sanRatio0 < 0.25);
     el('stamFill').classList.toggle('low', stamRatio < 0.2);
 
+    // Flashlight effect: dynamic point light at player position
+    if (player.flashlightOn) {
+      var fgx = Math.floor(player.x / TS);
+      var fgy = Math.floor(player.y / TS);
+      GameEngine.addPointLight('player_flashlight', fgx, fgy, {
+        radius: 6, r: 255, g: 240, b: 200, intensity: 0.9
+      });
+    } else {
+      GameEngine.removePointLight('player_flashlight');
+    }
+
     // Time
     playTime += dt;
     inLevelTime += dt;
