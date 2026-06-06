@@ -1353,11 +1353,14 @@
     },
 
     _resize: function () {
-      var dpr = window.devicePixelRatio || 1;
+      // Cap DPR for mobile perf — full devicePixelRatio (often 3) quadruples fill rate
+      // on iPhone. 1.25 is a good balance between sharpness and frame rate.
+      var rawDpr = window.devicePixelRatio || 1;
+      var dpr = Math.min(rawDpr, 1.25);
       var w = window.innerWidth;
       var h = window.innerHeight;
-      this.canvas.width = w * dpr;
-      this.canvas.height = h * dpr;
+      this.canvas.width = Math.floor(w * dpr);
+      this.canvas.height = Math.floor(h * dpr);
       this.canvas.style.width = w + 'px';
       this.canvas.style.height = h + 'px';
       this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);

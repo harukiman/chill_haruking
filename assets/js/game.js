@@ -1264,7 +1264,8 @@
   var ENT_SEEN_KEY = 'thebackrooms_ent_seen_v1';
   var GFX_KEY = 'thebackrooms_gfx_v1';
 
-  var gfxQuality = 'high'; // 'high' | 'low'
+  // Default to LOW for mobile perf — users opt-in to HIGH via settings.
+  var gfxQuality = 'low'; // 'high' | 'low'
 
   // Lifetime stats (persists across all runs)
   var stats = {
@@ -1342,6 +1343,9 @@
     for (var i = 0; i < pads.length; i++) {
       if (pads[i]) { gp = pads[i]; break; }
     }
+    // Update gamepad status UI in title settings
+    var statusEl = el('tsGamepadStatus');
+    if (statusEl) statusEl.textContent = gp ? (gp.id.split('(')[0].trim() + ' 接続中') : '未接続';
     if (!gp) {
       if (gamepadConnected) {
         gamepadConnected = false;
@@ -1353,6 +1357,16 @@
       gamepadConnected = true;
       toast('コントローラ接続: ' + (gp.id.split('(')[0].trim()));
       if (audioInitialized) GameEngine.playSound('item_get');
+    }
+    // Show last-pressed button in title settings (when settings overlay is open)
+    var pressedEl = el('tsGpPressedBtn');
+    if (pressedEl) {
+      for (var pi = 0; pi < gp.buttons.length; pi++) {
+        if (gp.buttons[pi].pressed) {
+          pressedEl.textContent = '最後に押されたボタン: ' + pi;
+          break;
+        }
+      }
     }
     if (state !== ST.PLAYING || phoneOpen || miniGameOpen) return;
     // Left stick: movement
@@ -6604,6 +6618,40 @@
         localStorage.setItem('bk_vibrate', vibOn ? '1' : '0');
         tsVib.textContent = vibOn ? 'ON' : 'OFF';
         tsVib.classList.toggle('off', !vibOn);
+      });
+    }
+    // Gamepad mapping UI
+    var gpFields = {
+      gpBtnAction: 'action', gpBtnPhone: 'phone', gpBtnFlare: 'flare',
+      gpBtnSprint: 'sprint', gpBtnMap: 'map', gpBtnPause: 'pause'
+    };
+    function refreshGpUI() {
+      for (var elid in gpFields) {
+        var inp = el(elid);
+        if (inp) inp.value = gamepadMap[gpFields[elid]];
+      }
+    }
+    refreshGpUI();
+    for (var elid2 in gpFields) {
+      (function (id, key) {
+        var inp = el(id);
+        if (!inp) return;
+        inp.addEventListener('input', function () {
+          var v = parseInt(inp.value, 10);
+          if (isFinite(v) && v >= 0 && v <= 20) {
+            gamepadMap[key] = v;
+            try { localStorage.setItem(GAMEPAD_KEY, JSON.stringify(gamepadMap)); } catch (e) {}
+          }
+        });
+      })(elid2, gpFields[elid2]);
+    }
+    var gpReset = el('tsGpResetBtn');
+    if (gpReset) {
+      gpReset.addEventListener('click', function () {
+        gamepadMap = Object.assign({}, DEFAULT_GAMEPAD_MAP);
+        try { localStorage.setItem(GAMEPAD_KEY, JSON.stringify(gamepadMap)); } catch (e) {}
+        refreshGpUI();
+        toast('ゲームパッド設定をリセット');
       });
     }
 

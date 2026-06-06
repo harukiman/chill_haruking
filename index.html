@@ -20,7 +20,7 @@
   <meta name="twitter:title" content="THE BACKROOMS — featuring HARUKI">
   <meta name="twitter:description" content="一人称モバイル探索ホラー。Level 0 から no-clip で階層を降下。壁の向こうにカレが待つ。">
   <title>THE BACKROOMS</title>
-  <link rel="stylesheet" href="assets/css/game.css?v=68">
+  <link rel="stylesheet" href="assets/css/game.css?v=69">
 </head>
 <body oncontextmenu="return false;">
 
@@ -118,7 +118,7 @@
     <button id="titleReloadBtn" class="title-reload-btn" type="button" onclick="window.__hardReload&&window.__hardReload()">↻ 再読込</button>
     <div id="tapToStartHint" class="tap-to-start-hint hidden"></div>
     <p class="copyright">THE BACKROOMS — featuring HARUKI &copy; 2026</p>
-    <p class="version-text" id="versionText">ver 5.0 (Perf + Tap to Start)</p>
+    <p class="version-text" id="versionText">ver 5.1 (Default LOW + Gamepad UI)</p>
     <p class="title-ach-counter" id="titleAchCounter"></p>
     <p id="jsLoadedDiag" style="position:absolute;bottom:4px;right:4px;font-size:9px;color:#806020;letter-spacing:0.1em;z-index:5;">JS ?</p>
   </div>
@@ -158,6 +158,20 @@
           <span>振動</span>
           <button id="tsVibrateToggle" type="button" class="ts-toggle">ON</button>
         </div>
+      </div>
+      <div class="ts-section">
+        <h3 class="ts-subhead">ゲームパッド (PS4/PS5/Xbox)</h3>
+        <p class="ts-help">接続: <span id="tsGamepadStatus">未接続</span></p>
+        <div class="ts-gamepad-grid">
+          <div class="ts-gp-row"><label>アクション</label><input type="number" id="gpBtnAction" min="0" max="20" value="0"></div>
+          <div class="ts-gp-row"><label>スマホ</label><input type="number" id="gpBtnPhone" min="0" max="20" value="3"></div>
+          <div class="ts-gp-row"><label>フレア</label><input type="number" id="gpBtnFlare" min="0" max="20" value="2"></div>
+          <div class="ts-gp-row"><label>Sprint</label><input type="number" id="gpBtnSprint" min="0" max="20" value="6"></div>
+          <div class="ts-gp-row"><label>マップ</label><input type="number" id="gpBtnMap" min="0" max="20" value="7"></div>
+          <div class="ts-gp-row"><label>Pause</label><input type="number" id="gpBtnPause" min="0" max="20" value="9"></div>
+        </div>
+        <p class="ts-help" id="tsGpPressedBtn">最後に押されたボタン: -</p>
+        <button id="tsGpResetBtn" class="ts-toggle" style="margin-top:6px;">既定に戻す</button>
       </div>
       <div class="ts-actions">
         <button class="ts-close-btn" type="button" onclick="window.__titleAction&&window.__titleAction('closeSettings')">閉じる</button>
@@ -656,8 +670,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="assets/js/engine.js?v=68"></script>
-  <script src="assets/js/game.js?v=68"></script>
+  <script src="assets/js/engine.js?v=69"></script>
+  <script src="assets/js/game.js?v=69"></script>
 
   <!-- POST-LOAD VERIFICATION + DIRECT BINDING FALLBACK
        After game.js IIFE runs, this script confirms __titleAction is the real one.
