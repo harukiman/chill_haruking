@@ -17,35 +17,16 @@
   <meta name="twitter:title" content="THE BACKROOMS — featuring HARUKI">
   <meta name="twitter:description" content="一人称モバイル探索ホラー。Level 0 から no-clip で階層を降下。壁の向こうにカレが待つ。">
   <title>THE BACKROOMS</title>
-  <link rel="stylesheet" href="assets/css/game.css?v=58">
+  <link rel="stylesheet" href="assets/css/game.css?v=59">
 </head>
 <body oncontextmenu="return false;">
 
-  <!-- Early-load failsafe: define __titleAction immediately so inline onclick attrs
-       always have a function to call, even if engine.js or game.js fails. -->
+  <!-- Early no-op fallback for __titleAction — overridden by game.js IIFE.
+       If game.js hasn't loaded yet, taps are silently ignored (no misleading text). -->
   <script>
-  (function () {
-    // Queue of actions invoked before game.js IIFE finishes
-    window.__titleActionQueue = window.__titleActionQueue || [];
-    window.__titleAction = window.__titleAction || function (action) {
-      try {
-        window.__titleActionQueue.push({ a: action, t: Date.now() });
-        // Visual feedback that the tap registered
-        var hint = document.getElementById('tapToStartHint');
-        if (hint) hint.textContent = '読み込み中... (' + action + ')';
-      } catch (e) {}
-    };
-    // Diagnostic: track click attempts on title to surface bugs
-    window.__titleDiag = { taps: 0, lastTap: 0 };
-    document.addEventListener('DOMContentLoaded', function () {
-      var ts = document.getElementById('titleScreen');
-      if (!ts) return;
-      ts.addEventListener('click', function () {
-        window.__titleDiag.taps++;
-        window.__titleDiag.lastTap = Date.now();
-      }, true);
-    });
-  })();
+  if (typeof window.__titleAction !== 'function') {
+    window.__titleAction = function () { /* awaiting game.js */ };
+  }
   </script>
 
   <!-- Game Canvas -->
@@ -95,7 +76,7 @@
     <button id="titleResetBtn" class="title-reset-btn" type="button" onclick="window.__titleAction&&window.__titleAction('reset')">⚠ 全データ削除</button>
     <div id="tapToStartHint" class="tap-to-start-hint">画面をタップして開始</div>
     <p class="copyright">THE BACKROOMS — featuring HARUKI &copy; 2026</p>
-    <p class="version-text" id="versionText">ver 4.2 (Surfaces + Hallucinations)</p>
+    <p class="version-text" id="versionText">ver 4.3 (Loading Fix)</p>
     <p class="title-ach-counter" id="titleAchCounter"></p>
   </div>
 
@@ -632,8 +613,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="assets/js/engine.js?v=58"></script>
-  <script src="assets/js/game.js?v=58"></script>
+  <script src="assets/js/engine.js?v=59"></script>
+  <script src="assets/js/game.js?v=59"></script>
 
 </body>
 </html>
