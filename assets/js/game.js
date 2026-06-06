@@ -2034,7 +2034,6 @@
     currentDifficulty = id;
     localStorage.setItem(DIFF_KEY, id);
     toast('難易度: ' + DIFFICULTIES[id].name);
-    if (id === 'chaos') unlockAchievement('play_chaos');
   }
 
   function showAchievementToast(ach) {
@@ -3019,6 +3018,8 @@
     player._itemsUsedThisLevel = 0;
     // Survive HARUKI: clear Lv5
     if (currentLevel === 5) unlockAchievement('survive_haruki');
+    // CHAOS achievement: only unlock when actually clearing a level on CHAOS
+    if (currentDifficulty === 'chaos') unlockAchievement('play_chaos');
     if (audioInitialized) {
       GameEngine.stopAll();
       // Quiet during transition
@@ -3647,6 +3648,133 @@
     ctx.restore();
   }
 
+  // World-space pickup renderer (replaces faint floor glow with visible floating icon + beam)
+  function drawWorldPickup(ctx, wx, wy, phase, color, icon, itemId) {
+    var w = GameEngine.width;
+    var h = GameEngine.height;
+    var dx = wx - player.x;
+    var dy = wy - player.y;
+    var cosA = Math.cos(-player.angle);
+    var sinA = Math.sin(-player.angle);
+    var tX = dx * cosA - dy * sinA;
+    var tY = dx * sinA + dy * cosA;
+    if (tY <= 0.5) return;
+    var depthTiles = tY / TS;
+    if (depthTiles > 14) return;
+
+    var screenX = (w / 2) * (1 + tX / tY);
+    if (screenX < -50 || screenX > w + 50) return;
+
+    var zBuf = GameEngine._zBuffer;
+    var col = Math.round(screenX);
+    if (zBuf && col >= 0 && col < w && zBuf[col] < depthTiles) return; // occluded
+
+    var fogFactor = Math.max(0.25, 1 - depthTiles / 14);
+    var iconSize = Math.max(14, (h / depthTiles) * 0.18);
+    var pulse = 0.7 + Math.sin(phase) * 0.3;
+
+    // Floor circle (small, on ground)
+    var groundY = h / 2 + (h * 0.5) / depthTiles;
+    var ringR = Math.max(4, iconSize * 0.5);
+    ctx.save();
+    ctx.globalAlpha = fogFactor * 0.85 * pulse;
+    var grad = ctx.createRadialGradient(screenX, groundY, 0, screenX, groundY, ringR);
+    grad.addColorStop(0, color);
+    grad.addColorStop(1, 'transparent');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(screenX, groundY, ringR, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Vertical beam (attention-grabbing)
+    ctx.globalAlpha = fogFactor * 0.4 * pulse;
+    var beamW = Math.max(2, iconSize * 0.12);
+    var beamH = iconSize * 1.8;
+    var beamY = groundY - beamH;
+    var beamGrad = ctx.createLinearGradient(screenX, beamY, screenX, groundY);
+    beamGrad.addColorStop(0, 'rgba(0,0,0,0)');
+    beamGrad.addColorStop(1, color);
+    ctx.fillStyle = beamGrad;
+    ctx.fillRect(screenX - beamW / 2, beamY, beamW, beamH);
+
+    // Floating icon at chest height
+    ctx.globalAlpha = fogFactor;
+    var iconY = h / 2 + Math.sin(phase * 2) * iconSize * 0.15;
+    ctx.font = 'bold ' + iconSize + 'px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    // Outline (dark) for legibility
+    ctx.fillStyle = 'rgba(0,0,0,0.7)';
+    for (var ox = -1; ox <= 1; ox++) for (var oy = -1; oy <= 1; oy++) {
+      if (ox === 0 && oy === 0) continue;
+      ctx.fillText(icon, screenX + ox, iconY + oy);
+    }
+    // Item-specific icon override
+    var displayIcon = icon;
+    if (itemId && ITEMS[itemId]) displayIcon = ITEMS[itemId].icon;
+    ctx.fillStyle = color;
+    ctx.fillText(displayIcon, screenX, iconY);
+    ctx.restore();
+  }
+
+  function drawNoClipBeam(ctx, wx, wy, phase) {
+    var w = GameEngine.width;
+    var h = GameEngine.height;
+    var dx = wx - player.x;
+    var dy = wy - player.y;
+    var cosA = Math.cos(-player.angle);
+    var sinA = Math.sin(-player.angle);
+    var tX = dx * cosA - dy * sinA;
+    var tY = dx * sinA + dy * cosA;
+    if (tY <= 0.5) return;
+    var depthTiles = tY / TS;
+    if (depthTiles > 18) return;
+
+    var screenX = (w / 2) * (1 + tX / tY);
+    var zBuf = GameEngine._zBuffer;
+    var col = Math.round(screenX);
+    if (zBuf && col >= 0 && col < w && zBuf[col] < depthTiles) return;
+
+    var fogFactor = Math.max(0.3, 1 - depthTiles / 18);
+    var beamWidth = Math.max(6, (h / depthTiles) * 0.12);
+    var beamHeight = (h / depthTiles) * 1.5;
+    var groundY = h / 2 + (h * 0.5) / depthTiles;
+    var beamTopY = Math.max(0, groundY - beamHeight);
+    var pulse = 0.7 + Math.sin(phase * 1.5) * 0.3;
+
+    ctx.save();
+    // Beam
+    ctx.globalAlpha = fogFactor * 0.7 * pulse;
+    var beamGrad = ctx.createLinearGradient(screenX, beamTopY, screenX, groundY);
+    beamGrad.addColorStop(0, 'rgba(255, 220, 100, 0)');
+    beamGrad.addColorStop(0.5, 'rgba(255, 220, 100, 0.6)');
+    beamGrad.addColorStop(1, 'rgba(255, 180, 50, 0.9)');
+    ctx.fillStyle = beamGrad;
+    ctx.fillRect(screenX - beamWidth, beamTopY, beamWidth * 2, beamHeight);
+    // Ground glow
+    ctx.globalAlpha = fogFactor * 0.85 * pulse;
+    var ringR = beamWidth * 2;
+    var groundGrad = ctx.createRadialGradient(screenX, groundY, 0, screenX, groundY, ringR);
+    groundGrad.addColorStop(0, 'rgba(255, 200, 80, 0.9)');
+    groundGrad.addColorStop(1, 'rgba(255, 180, 50, 0)');
+    ctx.fillStyle = groundGrad;
+    ctx.beginPath();
+    ctx.arc(screenX, groundY, ringR, 0, Math.PI * 2);
+    ctx.fill();
+    // Triangle "▼" pointer above
+    ctx.globalAlpha = fogFactor * pulse;
+    var triSize = beamWidth * 0.8;
+    var triY = beamTopY + triSize;
+    ctx.fillStyle = '#fce884';
+    ctx.beginPath();
+    ctx.moveTo(screenX, triY);
+    ctx.lineTo(screenX - triSize, triY - triSize);
+    ctx.lineTo(screenX + triSize, triY - triSize);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
   function drawShapedSprite(ctx, x, y, w, h, centerX, depth, zBuf, sw, mainColor, edgeColor) {
     var startCol = Math.max(0, Math.floor(x));
     var endCol = Math.min(sw, Math.ceil(x + w));
@@ -3687,7 +3815,7 @@
       drawTypedEntity(ctx, e);
     }
 
-    // Draw item glow sprites
+    // Draw item / note / exit sprites (custom visible)
     var glowPhase = performance.now() * 0.003;
     for (var key in pickupSpots) {
       var parts = key.split('_');
@@ -3695,7 +3823,7 @@
       var gy = parseInt(parts[1], 10);
       var wx = gx * TS + TS / 2;
       var wy = gy * TS + TS / 2;
-      GameEngine.drawFloorGlow(wx, wy, glowPhase);
+      drawWorldPickup(ctx, wx, wy, glowPhase, '#88c050', '📦', pickupSpots[key]);
     }
     for (var nkey in noteSpots) {
       if (readNotes[currentLevel] && readNotes[currentLevel][nkey]) continue;
@@ -3704,15 +3832,15 @@
       var ngy = parseInt(nparts[1], 10);
       var nwx = ngx * TS + TS / 2;
       var nwy = ngy * TS + TS / 2;
-      GameEngine.drawFloorGlow(nwx, nwy, glowPhase + 1);
+      drawWorldPickup(ctx, nwx, nwy, glowPhase + 1, '#5a82c8', '📄', null);
     }
-    // No-clip exit glow
+    // No-clip exit (large beam)
     if (currentMap.noclipExits) {
       for (var ei = 0; ei < currentMap.noclipExits.length; ei++) {
         var ex = currentMap.noclipExits[ei];
         var ewx = ex.gx * TS + TS / 2;
         var ewy = ex.gy * TS + TS / 2;
-        GameEngine.drawFloorGlow(ewx, ewy, glowPhase + 2);
+        drawNoClipBeam(ctx, ewx, ewy, glowPhase + 2);
       }
     }
 
