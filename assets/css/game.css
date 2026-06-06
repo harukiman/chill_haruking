@@ -124,6 +124,29 @@ body {
 #titleScreen {
   background: #0d0a04;
   overflow: hidden;
+  /* CRITICAL: override body's touch-action: none so iOS Safari fires click events on buttons */
+  touch-action: manipulation;
+  -webkit-touch-callout: default;
+  pointer-events: auto;
+}
+#titleScreen * {
+  touch-action: manipulation;
+}
+#titleScreen button {
+  touch-action: manipulation !important;
+  pointer-events: auto !important;
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+}
+#titleSettingsOverlay,
+#titleSettingsOverlay * {
+  touch-action: manipulation;
+}
+#titleSettingsOverlay button,
+#titleSettingsOverlay input {
+  touch-action: manipulation !important;
+  pointer-events: auto !important;
 }
 .title-bg-wallpaper {
   position: absolute;

@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HARUKING Dev Guide — THE BACKROOMS featuring HARUKI</title>
+<style>
+  :root {
+    --bg: #0b0a08;
+    --bg2: #14110a;
+    --bg3: #1c1808;
+    --gold: #d4b340;
+    --gold-d: #b09040;
+    --gold-l: #f0dc8a;
+    --text: #e6e0c4;
+    --text-d: #a89c70;
+    --line: #3a2e10;
+    --red: #c83a3a;
+    --green: #6cb04a;
+    --blue: #5a82c8;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif; }
+  body { background: var(--bg); color: var(--text); line-height: 1.6; }
+  .layout { display: flex; min-height: 100vh; }
+
+  /* Sidebar */
+  .sidebar {
+    width: 240px;
+    flex-shrink: 0;
+    background: var(--bg2);
+    border-right: 1px solid var(--line);
+    padding: 24px 18px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+  .sidebar h1 {
+    font-family: 'Times New Roman', serif;
+    font-size: 18px;
+    color: var(--gold-l);
+    letter-spacing: 0.08em;
+    margin: 0 0 4px;
+  }
+  .sidebar h1 small { color: var(--gold-d); font-size: 11px; display: block; font-weight: normal; letter-spacing: 0.2em; margin-top: 4px; }
+  .sidebar nav { margin-top: 18px; }
+  .sidebar nav a {
+    display: block;
+    color: var(--text-d);
+    text-decoration: none;
+    padding: 7px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    margin-bottom: 2px;
+    transition: all 0.15s;
+  }
+  .sidebar nav a:hover { background: var(--bg3); color: var(--gold-l); }
+  .sidebar nav a.section { font-size: 11px; color: var(--gold-d); margin-top: 12px; padding: 4px 10px; letter-spacing: 0.2em; text-transform: uppercase; pointer-events: none; }
+  .sidebar .play-btn {
+    display: block;
+    margin: 16px 0 8px;
+    padding: 10px;
+    background: linear-gradient(180deg, var(--bg3), var(--bg2));
+    border: 1px solid var(--gold-d);
+    color: var(--gold);
+    border-radius: 8px;
+    text-align: center;
+    text-decoration: none;
+    font-size: 12px;
+    letter-spacing: 0.3em;
+    transition: all 0.18s;
+  }
+  .sidebar .play-btn:hover { background: var(--gold-d); color: var(--bg); }
+
+  /* Main */
+  .main { flex: 1; padding: 40px 56px; max-width: 1200px; }
+  .main section { margin-bottom: 64px; scroll-margin-top: 24px; }
+  .main h2 {
+    font-family: 'Times New Roman', serif;
+    font-size: 30px;
+    letter-spacing: 0.05em;
+    color: var(--gold-l);
+    border-bottom: 2px solid var(--line);
+    padding-bottom: 12px;
+    margin: 0 0 24px;
+  }
+  .main h3 {
+    color: var(--gold);
+    font-size: 16px;
+    letter-spacing: 0.1em;
+    margin: 28px 0 12px;
+  }
+  .main p { font-size: 14px; }
+  .lead {
+    font-size: 16px;
+    color: var(--text-d);
+    border-left: 3px solid var(--gold-d);
+    padding-left: 16px;
+    margin: 20px 0 28px;
+  }
+  code, kbd {
+    background: var(--bg3);
+    color: var(--gold-l);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: 'SF Mono', Menlo, monospace;
+    font-size: 12px;
+  }
+  pre {
+    background: var(--bg3);
+    padding: 14px 18px;
+    border-radius: 8px;
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    font-size: 12px;
+    font-family: 'SF Mono', Menlo, monospace;
+    color: var(--text);
+  }
+  .grid {
+    display: grid;
+    gap: 16px;
+    margin: 20px 0;
+  }
+  .grid-3 { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+  .grid-4 { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+  .grid-2 { grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); }
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 18px;
+    position: relative;
+  }
+  .card-title { color: var(--gold-l); font-size: 14px; letter-spacing: 0.15em; margin: 0 0 10px; }
+  .card-meta { font-size: 11px; color: var(--text-d); margin-bottom: 12px; letter-spacing: 0.1em; }
+  .card p { margin: 6px 0; font-size: 13px; }
+  .tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    background: var(--bg3);
+    color: var(--gold-d);
+    border: 1px solid var(--line);
+    margin: 2px 4px 2px 0;
+    text-transform: uppercase;
+  }
+  .tag.danger { color: var(--red); border-color: var(--red); }
+  .tag.safe { color: var(--green); border-color: var(--green); }
+  .tag.info { color: var(--blue); border-color: var(--blue); }
+
+  /* Title preview */
+  .title-preview {
+    background: radial-gradient(ellipse at center, #4a3a14 0%, #1d1604 70%, #050300 100%);
+    padding: 60px 40px;
+    border-radius: 12px;
+    text-align: center;
+    border: 1px solid var(--line);
+    margin: 24px 0;
+  }
+  .title-preview .pre { font-size: 11px; letter-spacing: 0.5em; color: var(--gold-d); margin-bottom: 8px; }
+  .title-preview .title {
+    font-family: 'Times New Roman', serif;
+    font-size: 56px;
+    line-height: 0.95;
+    letter-spacing: 0.06em;
+    font-weight: 900;
+    color: var(--gold-l);
+    text-shadow: 0 0 16px rgba(212,179,64,0.5), 0 0 32px rgba(212,179,64,0.3);
+    margin: 0;
+  }
+  .title-preview .sub { font-size: 12px; letter-spacing: 0.4em; color: var(--gold-d); margin: 12px 0 4px; }
+  .title-preview .sub2 { font-size: 11px; letter-spacing: 0.3em; color: #786020; font-style: italic; margin-top: -4px; }
+
+  /* Entity sprite mock — CSS rendered to match in-game style */
+  .entity-sprite {
+    width: 96px;
+    height: 96px;
+    border-radius: 8px;
+    margin: 0 auto 12px;
+    background: linear-gradient(180deg, #1a1208 0%, #050300 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--line);
+    overflow: hidden;
+    position: relative;
+  }
+  .entity-sprite img { max-width: 100%; max-height: 100%; object-fit: contain; }
+
+  /* Procedural entity icons (CSS art) */
+  .icn-hound {
+    width: 80px; height: 60px;
+    background: radial-gradient(ellipse at center, #5a3220 0%, #2a1810 60%, #180a05 100%);
+    border-radius: 30% 60% 50% 40%;
+    position: relative;
+  }
+  .icn-hound::before {
+    content: ''; position: absolute; top: 18px; left: 16px;
+    width: 6px; height: 6px; background: #ff3a3a; border-radius: 50%;
+    box-shadow: 0 0 8px #ff3a3a, 18px 0 0 #ff3a3a, 18px 0 8px #ff3a3a;
+  }
+  .icn-smiler {
+    width: 70px; height: 70px;
+    background: radial-gradient(ellipse, #1a1208 30%, transparent 71%);
+    position: relative;
+  }
+  .icn-smiler::before {
+    content: ''; position: absolute; bottom: 16px; left: 12px;
+    width: 46px; height: 8px;
+    background: linear-gradient(180deg, #f0e4a8 60%, #b09040 100%);
+    border-radius: 0 0 30px 30px;
+    box-shadow: 0 -1px 0 #1a1208;
+  }
+  .icn-smiler::after {
+    content: ''; position: absolute; top: 18px; left: 16px;
+    width: 5px; height: 5px; background: #f0e4a8; border-radius: 50%;
+    box-shadow: 28px 0 0 #f0e4a8;
+  }
+  .icn-wretch {
+    width: 60px; height: 80px;
+    background: linear-gradient(180deg, #6a4030 0%, #3a1a10 100%);
+    border-radius: 40% 40% 20% 20%;
+    position: relative;
+  }
+  .icn-wretch::before {
+    content: ''; position: absolute; top: 12px; left: 18px;
+    width: 6px; height: 18px; background: #a85020; border-radius: 50%;
+    box-shadow: 16px 0 0 #a85020, 8px 4px 0 -2px #6a3010;
+  }
+  .icn-skinstealer {
+    width: 60px; height: 80px;
+    background: linear-gradient(180deg, #c8a878 0%, #806040 80%, #2a1810 100%);
+    border-radius: 35% 35% 10% 10%;
+    position: relative;
+  }
+  .icn-skinstealer::before {
+    content: ''; position: absolute; top: 22px; left: 16px;
+    width: 4px; height: 4px; background: #050300; border-radius: 50%;
+    box-shadow: 20px 0 0 #050300;
+  }
+  .icn-skinstealer::after {
+    content: ''; position: absolute; top: 38px; left: 18px;
+    width: 20px; height: 2px; background: #2a1810;
+  }
+  .icn-partygoer {
+    width: 60px; height: 80px;
+    background: linear-gradient(180deg, #ff80c0 0%, #a04080 60%, #501030 100%);
+    border-radius: 40% 40% 20% 20%;
+    position: relative;
+  }
+  .icn-partygoer::before {
+    content: '☺'; position: absolute; top: 12px; left: 50%;
+    transform: translateX(-50%); color: #fff; font-size: 28px;
+    text-shadow: 0 0 4px #fff;
+  }
+  .icn-crawler {
+    width: 80px; height: 40px;
+    background: linear-gradient(180deg, #4a2a10 0%, #1a0a05 100%);
+    border-radius: 50% 50% 30% 30% / 60% 60% 40% 40%;
+    position: relative;
+  }
+  .icn-crawler::before {
+    content: ''; position: absolute; top: 50%; left: 10px;
+    width: 30px; height: 10px;
+    background: linear-gradient(90deg, transparent, #6a3a18, transparent);
+    box-shadow: 28px 0 0 #5a3010;
+  }
+  .icn-echo {
+    width: 60px; height: 80px;
+    background: radial-gradient(ellipse, rgba(232,213,122,0.4) 0%, rgba(180,150,80,0.2) 50%, transparent 80%);
+    border: 1px dashed var(--gold-d);
+    border-radius: 35% 35% 10% 10%;
+    position: relative;
+  }
+  .icn-echo::before {
+    content: '?'; position: absolute; top: 20px; left: 50%;
+    transform: translateX(-50%); color: var(--gold-l); font-size: 28px; opacity: 0.6;
+  }
+  .icn-mrhotel {
+    width: 64px; height: 86px;
+    background: linear-gradient(180deg, #20180a 0%, #0a0805 100%);
+    border-radius: 18% 18% 6% 6%;
+    position: relative;
+    border: 1px solid #3a2e10;
+  }
+  .icn-mrhotel::before {
+    content: ''; position: absolute; top: 16px; left: 50%;
+    transform: translateX(-50%);
+    width: 30px; height: 30px;
+    background: #d4b340;
+    border-radius: 50%;
+    opacity: 0.85;
+  }
+  .icn-mrhotel::after {
+    content: ''; position: absolute; top: 28px; left: 50%;
+    transform: translateX(-50%);
+    width: 6px; height: 6px; background: #050300; border-radius: 50%;
+    box-shadow: -12px 0 0 #050300, 12px 0 0 #050300;
+  }
+  .icn-boss {
+    width: 84px; height: 84px;
+    background: radial-gradient(circle, #ff3a3a 0%, #801010 50%, #0a0000 100%);
+    border-radius: 50%;
+    position: relative;
+    box-shadow: 0 0 24px rgba(255,58,58,0.4);
+    animation: bossPulse 2s ease-in-out infinite;
+  }
+  @keyframes bossPulse {
+    0%, 100% { box-shadow: 0 0 24px rgba(255,58,58,0.4); }
+    50%      { box-shadow: 0 0 40px rgba(255,58,58,0.7); }
+  }
+
+  /* Item icon */
+  .item-icon {
+    font-size: 40px;
+    margin: 6px 0 14px;
+    display: block;
+    text-align: center;
+  }
+
+  /* Event timeline */
+  .timeline {
+    border-left: 2px solid var(--gold-d);
+    padding-left: 20px;
+    margin: 24px 0 24px 12px;
+  }
+  .timeline-step {
+    position: relative;
+    padding: 12px 0;
+  }
+  .timeline-step::before {
+    content: '';
+    position: absolute;
+    left: -27px;
+    top: 18px;
+    width: 12px;
+    height: 12px;
+    background: var(--gold);
+    border-radius: 50%;
+    box-shadow: 0 0 0 4px var(--bg);
+  }
+  .timeline-step h4 {
+    margin: 0 0 4px;
+    color: var(--gold-l);
+    font-size: 14px;
+    letter-spacing: 0.1em;
+  }
+  .timeline-step p { font-size: 13px; color: var(--text-d); margin: 4px 0; }
+
+  /* Level theme color */
+  .level-theme {
+    width: 100%; height: 60px;
+    border-radius: 6px 6px 0 0;
+    margin: -18px -18px 12px;
+    width: calc(100% + 36px);
+  }
+  .lt-0 { background: linear-gradient(180deg, #d4b340 0%, #806020 100%); }
+  .lt-1 { background: linear-gradient(180deg, #707080 0%, #303040 100%); }
+  .lt-2 { background: linear-gradient(180deg, #406060 0%, #102030 100%); }
+  .lt-3 { background: linear-gradient(180deg, #604010 0%, #200a00 100%); }
+  .lt-4 { background: linear-gradient(180deg, #a08060 0%, #403020 100%); }
+  .lt-5 { background: linear-gradient(180deg, #804040 0%, #200a0a 100%); }
+  .lt-6 { background: linear-gradient(180deg, #1a1a1a 0%, #050505 100%); }
+  .lt-7 { background: linear-gradient(180deg, #c83030 0%, #400000 100%); }
+  .lt-8 { background: linear-gradient(180deg, #b08020 0%, #503010 100%); }
+  .lt-9 { background: linear-gradient(180deg, #203040 0%, #050810 100%); }
+  .lt-11 { background: linear-gradient(180deg, #303030 0%, #0a0a0a 100%); }
+  .lt-12 { background: linear-gradient(180deg, #ff80c0 0%, #a02080 100%); }
+
+  /* Table */
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px; }
+  th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--line); }
+  th { color: var(--gold-d); letter-spacing: 0.1em; font-size: 11px; text-transform: uppercase; }
+  td { color: var(--text); }
+  td code { font-size: 11px; }
+
+  /* Note box */
+  .note {
+    background: rgba(212, 179, 64, 0.08);
+    border-left: 3px solid var(--gold);
+    padding: 12px 16px;
+    border-radius: 4px;
+    margin: 16px 0;
+    font-size: 13px;
+  }
+  .note.warn { background: rgba(200, 58, 58, 0.08); border-left-color: var(--red); }
+  .note.info { background: rgba(90, 130, 200, 0.08); border-left-color: var(--blue); }
+
+  /* Update meta */
+  .updated-meta {
+    font-size: 11px;
+    color: var(--text-d);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    border-top: 1px solid var(--line);
+    padding-top: 24px;
+    margin-top: 48px;
+  }
+
+  /* Mobile */
+  @media (max-width: 800px) {
+    .layout { flex-direction: column; }
+    .sidebar { position: static; width: 100%; height: auto; }
+    .main { padding: 24px 16px; }
+    .main h2 { font-size: 22px; }
+    .title-preview { padding: 30px 16px; }
+    .title-preview .title { font-size: 36px; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+
+<aside class="sidebar">
+  <h1>HARUKING<small>DEV GUIDE</small></h1>
+  <a href="./index.html" class="play-btn">▶ ゲームを開く</a>
+  <nav>
+    <a href="#overview" class="section">Overview</a>
+    <a href="#overview">概要</a>
+    <a href="#story">ストーリー設計</a>
+    <a href="#events" class="section">Flow</a>
+    <a href="#events">イベント順序</a>
+    <a href="#states">ゲーム状態</a>
+    <a href="#content" class="section">Content</a>
+    <a href="#levels">レベル一覧 (12)</a>
+    <a href="#entities">エンティティ一覧 (10)</a>
+    <a href="#items">アイテム一覧 (13)</a>
+    <a href="#difficulty">難易度</a>
+    <a href="#tech" class="section">Tech</a>
+    <a href="#controls">操作 / コントロール</a>
+    <a href="#settings">設定項目</a>
+    <a href="#files">ファイル構成</a>
+    <a href="#audit-rule" class="section">Maintenance</a>
+    <a href="#audit-rule">更新ルール</a>
+    <a href="#changelog">変更履歴</a>
+  </nav>
+</aside>
+
+<main class="main">
+
+<section id="overview">
+  <h2>THE BACKROOMS featuring HARUKI</h2>
+  <p class="lead">
+    モバイル向けのバックルームス系ホラーレイキャスティング FPS。HTML5 Canvas + Web Audio API + Vanilla JS のみ、外部ライブラリなし。タイトル画面、12 レベル、10 種類のエンティティ、13 種類のアイテム、4 段階の難易度、ENDLESS モードを搭載。
+  </p>
+
+  <div class="title-preview">
+    <p class="pre">no-clip →</p>
+    <h3 class="title">THE<br>BACKROOMS</h3>
+    <p class="sub">— featuring HARUKI —</p>
+    <p class="sub2">壁の向こうに"カレ"が待っている...</p>
+  </div>
+
+  <h3>コア体験</h3>
+  <p>探索 → ノート発見 → no-clip ポータル発見 → 次階層 → 最終的にエンディング (FRONTROOMS END / HARUKI END / TRUE END)。途中、エンティティが SAN/HP を削る。アイテム/M.E.G. セーフエリア/ミニゲーム/電話 (M.E.G. アプリ) でリソース管理。</p>
+
+  <h3>テクノロジースタック</h3>
+  <table>
+    <tr><th>レイヤ</th><th>採用</th></tr>
+    <tr><td>レンダリング</td><td>HTML5 Canvas 2D, raycasting (Lode's tutorial), per-column z-buffer</td></tr>
+    <tr><td>サウンド</td><td>Web Audio API procedural (BGM ループ 9 種、StereoPanner 立体音響)</td></tr>
+    <tr><td>UI</td><td>iOS スタイル CSS (backdrop-filter, cubic-bezier easing)</td></tr>
+    <tr><td>入力</td><td>動的ジョイスティック (touchstart 起点配置)、Gamepad API (PS4/PS5/Xbox)</td></tr>
+    <tr><td>永続化</td><td>LocalStorage (セーブ・アチーブメント・統計・ベストタイム・設定)</td></tr>
+    <tr><td>ビルド</td><td>なし。静的配信のみ。<code>?v=NN</code> でキャッシュ無効化</td></tr>
+  </table>
+</section>
+
+<section id="story">
+  <h2>ストーリー設計</h2>
+
+  <h3>世界観</h3>
+  <p>主人公が現実世界の壁を no-clip (すり抜け) してバックルームスに迷い込む。各レベルは独立した無限空間。M.E.G. (The Major Explorer Group) が安全地帯を運営。HARUKI は本作固有の追跡型エンティティで、特定レベルで遭遇する元・知人。</p>
+
+  <h3>イントロ (3 シーン POV カット)</h3>
+  <div class="timeline">
+    <div class="timeline-step">
+      <h4>SCENE 1: 夜の路地</h4>
+      <p>街灯が点滅する路地裏を歩く。冷たい風。突然、壁の中に "ノークリップ" する感覚。</p>
+    </div>
+    <div class="timeline-step">
+      <h4>SCENE 2: 壁の中</h4>
+      <p>視界が歪み、現実が剥がれていく。黄色い光が見える。</p>
+    </div>
+    <div class="timeline-step">
+      <h4>SCENE 3: ロビーへ降臨</h4>
+      <p>気がつくと黄色い壁紙の無限の部屋。ハム音、湿った絨毯。LEVEL 0 開始。</p>
+    </div>
+  </div>
+
+  <h3>エンディング分岐</h3>
+  <ul>
+    <li><strong>FRONTROOMS END</strong> — LEVEL 9 の THE END 扉に到達。現実への帰還。</li>
+    <li><strong>HARUKI END</strong> — LEVEL 5 / 7 で HARUKI に追われ続けると...?</li>
+    <li><strong>TRUE END</strong> — 全レベル踏破 + 全ノート発見 + Boss 撃破。</li>
+  </ul>
+
+  <h3>ノート (91 種)</h3>
+  <p>各レベルに散らばっている lore note。読むことで世界観を補完。M.E.G. の生存者ログ、過去の探索者の遺書、HARUKI の手紙など。</p>
+</section>
+
+<section id="events">
+  <h2>イベント順序 (起動 → エンディング)</h2>
+
+  <div class="timeline">
+    <div class="timeline-step">
+      <h4>1. ページロード</h4>
+      <p><code>init()</code> 実行 → GameEngine 初期化、画像プリロード、LocalStorage ロード、<code>bindEvents()</code> で全 DOM ハンドラ登録、<code>showOverlay('titleScreen')</code></p>
+    </div>
+    <div class="timeline-step">
+      <h4>2. タイトル画面</h4>
+      <p>BGM (classical horror) が初回タッチで開始。ボタン: はじめから / つづきから / フリーローム / ENDLESS / 難易度 / 操作説明 / 設定 / 全データ削除</p>
+    </div>
+    <div class="timeline-step">
+      <h4>3. はじめから</h4>
+      <p>イントロシネマ (3 シーン) → setLevel(0) → ローディング画面 → LEVEL 0 開始</p>
+    </div>
+    <div class="timeline-step">
+      <h4>4. レベル進入演出</h4>
+      <p>levelReachCinematic オーバーレイ表示 (タップで進む)。レベル名・サブタイトル・ヒント表示。</p>
+    </div>
+    <div class="timeline-step">
+      <h4>5. プレイループ (60fps)</h4>
+      <p><code>onUpdate</code>: 移動・SAN/HP/STA 更新・エンティティ AI・脅威検知 (nearestThreat 計算)・空間音響キュー。<br>
+      <code>onRender</code>: マップ・エンティティ・ピックアップ・noclip ビーム・暗闇マスク・脅威コンパス。</p>
+    </div>
+    <div class="timeline-step">
+      <h4>6. ピックアップ / ノート発見</h4>
+      <p>右上に discoveryPopup 表示。表示中は update が一時停止 (エンティティも止まる)。タップ or 自動消去で再開。</p>
+    </div>
+    <div class="timeline-step">
+      <h4>7. no-clip 扉発見</h4>
+      <p>noclip-flash で画面を白くフラッシュ → setLevel(nextId) で次階層へ。</p>
+    </div>
+    <div class="timeline-step">
+      <h4>8. エンティティ遭遇</h4>
+      <p>初遭遇時 encounterCinematic で entity 図鑑解放演出。HARUKI 初遭遇では特別なシーン。</p>
+    </div>
+    <div class="timeline-step">
+      <h4>9. ダメージ → DEAD</h4>
+      <p>HP 0 で state = DEAD、gameOverScreen 表示。最後のセーブから再開 / タイトルへ。</p>
+    </div>
+    <div class="timeline-step">
+      <h4>10. エンディング</h4>
+      <p>LEVEL 9 / 12 / 11 で条件達成 → endingScreen 表示。スコア・タイム・ノート発見率を集計。</p>
+    </div>
+  </div>
+</section>
+
+<section id="states">
+  <h2>ゲーム状態 (ST)</h2>
+  <table>
+    <tr><th>状態</th><th>意味</th><th>遷移元</th></tr>
+    <tr><td><code>TITLE</code></td><td>タイトル画面</td><td>初期 / returnToTitle</td></tr>
+    <tr><td><code>LOADING</code></td><td>レベル切り替え中</td><td>setLevel</td></tr>
+    <tr><td><code>PLAYING</code></td><td>通常プレイ</td><td>setLevel 完了</td></tr>
+    <tr><td><code>DEAD</code></td><td>ゲームオーバー</td><td>HP 0</td></tr>
+    <tr><td><code>ENDED</code></td><td>エンディング</td><td>各エンディング条件</td></tr>
+  </table>
+</section>
+
+<section id="levels">
+  <h2>レベル一覧</h2>
+  <p class="lead">11 階層 + Level 12 (Fun =)。各レベルは独立マップ・テーマ・敵配置・hint テキストを持つ。</p>
+  <div class="grid grid-2">
+
+    <div class="card">
+      <div class="level-theme lt-0"></div>
+      <div class="card-title">LEVEL 0 — THE LOBBY</div>
+      <div class="card-meta">テーマ 0 · 黄色壁紙</div>
+      <p>黄色い壁紙の無限の部屋。湿った絨毯。蛍光灯のハム音。稀に「もう一人の自分」(ECHO) が現れる。</p>
+      <span class="tag">echo</span>
+    </div>
+
+    <div class="card">
+      <div class="level-theme lt-1"></div>
+      <div class="card-title">LEVEL 1 — HABITABLE ZONE</div>
+      <div class="card-meta">テーマ 1 · コンクリート</div>
+      <p>コンクリート倉庫。M.E.G. ベース (safe area) あり。Hound は近づけない。</p>
+      <span class="tag danger">hound</span><span class="tag danger">crawler</span>
+    </div>
+
+    <div class="card">
+      <div class="level-theme lt-2"></div>
+      <div class="card-title">LEVEL 2 — PIPE DREAMS</div>
+      <div class="card-meta">テーマ 2 · 配管</div>
+      <p>配管の迷路。足元の水が SAN を削る。</p>
+      <span class="tag danger">smiler</span>
+    </div>
+
+    <div class="card">
+      <div class="level-theme lt-3"></div>
+      <div class="card-title">LEVEL 3 — ELECTRICAL STATION</div>
+      <div class="card-meta">テーマ 3 · 電気室</div>
+      <p>感電する配線あり。火花の音と暗闇。</p>
+      <span class="tag danger">wretch</span><span class="tag danger">wretch</span>
+    </div>
+
+    <div class="card">
+      <div class="level-theme lt-4"></div>
+      <div class="card-title">LEVEL 4 — ABANDONED OFFICE</div>
+      <div class="card-meta">テーマ 4 · オフィス</div>
+      <p>キュービクルの迷路。Skin-Stealer が紛れている。</p>
+      <span class="tag danger">skinstealer</span>
+    </div>
+
+    <div class="card">
+      <div class="level-theme lt-5"></div>
+      <div class="card-title">LEVEL 5 — THE HOTEL</div>
+      <div class="card-meta">テーマ 5 · ホテル</div>
+      <p>無数の部屋とドア。Partygoers、Mr. Hotel、そして HARUKI と初遭遇。</p>
+      <span class="tag danger">partygoer</span><span class="tag danger">mrhotel</span><span class="tag danger">haruki</span>
+    </div>
+
+    <div class="card">
+      <div class="level-theme lt-6"></div>
+      <div class="card-title">LEVEL 6 — LIGHTS OUT</div>
+      <div class="card-meta">テーマ 6 · 暗闇</div>
+      <p>完全な暗闇。視界は極端に短い。懐中電灯必須。</p>
+      <span class="tag danger">hound</span>
+    </div>
+
+    <div class="card">
+      <div class="level-theme lt-7"></div>
+      <div class="card-title">LEVEL 7 — RUN FOR YOUR LIFE</div>
+      <div class="card-meta">テーマ 7 · 廊下</div>
+      <p>一直線の回廊。背後から複数 Hound が迫る。HARUKI の声も混じる。</p>
+      <span class="tag danger">hound×3</span><span class="tag danger">haruki</span>
+    </div>
+
+    <div class="card">
+      <div class="level-theme lt-8"></div>
+      <div class="card-title">LEVEL 8 — THE HIVE</div>
+      <div class="card-meta">テーマ 8 · 六角形</div>
+      <p>六角形のセル。吊るされた何かが揺れている。甘い腐臭。</p>
+      <span class="tag danger">smiler</span><span class="tag danger">partygoer</span>
+    </div>
+
+    <div class="card">
+      <div class="level-theme lt-9"></div>
+      <div class="card-title">LEVEL 9 — THE SUBURBS</div>
+      <div class="card-meta">テーマ 9 · 郊外</div>
+      <p>永遠に続く郊外の街。THE END への扉がここに。Boss あり。</p>
+      <span class="tag danger">boss</span><span class="tag danger">crawler</span>
+    </div>
+
+    <div class="card">
+      <div class="level-theme lt-11"></div>
+      <div class="card-title">LEVEL ! — END OF THE LINE</div>
+      <div class="card-meta">テーマ 11 · 線路</div>
+      <p>線路の上を歩く。遠くから何かが近づく音。列車シネマあり。</p>
+      <span class="tag danger">hound</span><span class="tag danger">crawler</span>
+    </div>
+
+    <div class="card">
+      <div class="level-theme lt-12"></div>
+      <div class="card-title">LEVEL Fun =) — ETERNAL PARTY</div>
+      <div class="card-meta">テーマ 12 · ピンク</div>
+      <p>ピンクの壁紙。終わらないパーティ。笑顔が多すぎる。</p>
+      <span class="tag danger">partygoer×4</span>
+    </div>
+
+  </div>
+</section>
+
+<section id="entities">
+  <h2>エンティティ一覧</h2>
+  <p class="lead">10 種類のエンティティ。各タイプは AI ステート機械 (idle/patrol/approach/hunt 等) + procedural canvas sprite で描画。HARUKI のみ実画像 (haruki.png / haruki_scary.png) を使用。</p>
+
+  <div class="grid grid-3">
+
+    <div class="card">
+      <div class="entity-sprite"><div class="icn-hound"></div></div>
+      <div class="card-title">HOUND</div>
+      <div class="card-meta">type: hound</div>
+      <p>人型の頭と犬の体。視界に入ると追跡。Lv1/6/7/11 出現。</p>
+      <span class="tag danger">追跡</span><span class="tag">M.E.G. 安全</span>
+    </div>
+
+    <div class="card">
+      <div class="entity-sprite"><div class="icn-smiler"></div></div>
+      <div class="card-title">SMILER</div>
+      <div class="card-meta">type: smiler</div>
+      <p>暗闇に浮かぶ歯と目。直視で SAN ドレイン。Lv2/8 出現。</p>
+      <span class="tag danger">SAN ドレイン</span>
+    </div>
+
+    <div class="card">
+      <div class="entity-sprite"><div class="icn-skinstealer"></div></div>
+      <div class="card-title">SKIN-STEALER</div>
+      <div class="card-meta">type: skinstealer</div>
+      <p>人の皮を被ったエンティティ。reveal 状態で襲いかかる。Lv4 出現。鏡で消滅。</p>
+      <span class="tag danger">reveal hunt</span><span class="tag info">mirror で対抗</span>
+    </div>
+
+    <div class="card">
+      <div class="entity-sprite"><div class="icn-partygoer"></div></div>
+      <div class="card-title">PARTYGOER</div>
+      <div class="card-meta">type: partygoer</div>
+      <p>狂気のパーティ参加者。近づくと笑いながら襲う。Lv5/8/12 出現。</p>
+      <span class="tag danger">近接</span>
+    </div>
+
+    <div class="card">
+      <div class="entity-sprite"><div class="icn-crawler"></div></div>
+      <div class="card-title">CRAWLER</div>
+      <div class="card-meta">type: crawler</div>
+      <p>四足の這うエンティティ。lunge で突進。Lv1/9/11 出現。</p>
+      <span class="tag danger">lunge</span>
+    </div>
+
+    <div class="card">
+      <div class="entity-sprite"><div class="icn-wretch"></div></div>
+      <div class="card-title">WRETCH</div>
+      <div class="card-meta">type: wretch</div>
+      <p>感電して苦しむヒューマノイド。視認時 SAN ドレイン強。Lv3 出現。</p>
+      <span class="tag danger">SAN -5/s</span>
+    </div>
+
+    <div class="card">
+      <div class="entity-sprite"><div class="icn-echo"></div></div>
+      <div class="card-title">ECHO</div>
+      <div class="card-meta">type: echo</div>
+      <p>もう一人の自分。Lv0 にのみ稀に出現。直視で SAN -1.2/s。</p>
+      <span class="tag danger">SAN -1.2/s</span>
+    </div>
+
+    <div class="card">
+      <div class="entity-sprite"><div class="icn-mrhotel"></div></div>
+      <div class="card-title">MR. HOTEL</div>
+      <div class="card-meta">type: mrhotel</div>
+      <p>ホテルの管理人。お辞儀した後襲ってくる。Lv5 出現。voucher で回避可。</p>
+      <span class="tag danger">SAN -2.5/s</span>
+    </div>
+
+    <div class="card">
+      <div class="entity-sprite"><img src="assets/img/haruki.png" alt="HARUKI" onerror="this.style.display='none'; this.parentNode.innerHTML='<div style=color:#d4b340;font-size:36px>👤</div>'"></div>
+      <div class="card-title">HARUKI</div>
+      <div class="card-meta">type: haruki</div>
+      <p>固有エンティティ。3 フェーズ追跡 AI (distant → approach → hunting)。Lv5/7 出現。Phase 3 で SAN -2/s。</p>
+      <span class="tag danger">3-phase tracker</span>
+    </div>
+
+    <div class="card">
+      <div class="entity-sprite"><div class="icn-boss"></div></div>
+      <div class="card-title">BOSS</div>
+      <div class="card-meta">type: boss</div>
+      <p>Lv9 終盤の浮遊する球体。bossHp 200。フレア (-50) + 鏡 (-100) で撃破可。</p>
+      <span class="tag danger">HP 200</span><span class="tag info">flare / mirror</span>
+    </div>
+
+  </div>
+</section>
+
+<section id="items">
+  <h2>アイテム一覧</h2>
+  <p class="lead">13 種類。一部はトグル式 (persistent: true) でインベントリに残る。レベルごとに <code>LEVEL_ITEM_POOLS</code> で出現率が変わる。</p>
+  <div class="grid grid-3">
+
+    <div class="card">
+      <span class="item-icon">🥤</span>
+      <div class="card-title">アーモンドウォーター</div>
+      <div class="card-meta">almond_water</div>
+      <p>SAN +35。バックルームで最も普通の飲料。</p>
+    </div>
+
+    <div class="card">
+      <span class="item-icon">🩹</span>
+      <div class="card-title">応急手当キット</div>
+      <div class="card-meta">bandage</div>
+      <p>HP +50。出血を止める。</p>
+    </div>
+
+    <div class="card">
+      <span class="item-icon">🍫</span>
+      <div class="card-title">エナジーバー</div>
+      <div class="card-meta">energy_bar</div>
+      <p>STA 全回復。</p>
+    </div>
+
+    <div class="card">
+      <span class="item-icon">🔦</span>
+      <div class="card-title">懐中電灯</div>
+      <div class="card-meta">flashlight · トグル</div>
+      <p>暗いレベルで視界を広げる。Lv6 必須。</p>
+    </div>
+
+    <div class="card">
+      <span class="item-icon">🔑</span>
+      <div class="card-title">カードキー</div>
+      <div class="card-meta">keycard</div>
+      <p>特定のドアを解錠。自動使用。</p>
+    </div>
+
+    <div class="card">
+      <span class="item-icon">🎫</span>
+      <div class="card-title">ホテル引換券</div>
+      <div class="card-meta">voucher</div>
+      <p>THE HOTEL で特別な部屋へ案内。</p>
+    </div>
+
+    <div class="card">
+      <span class="item-icon">📻</span>
+      <div class="card-title">壊れたラジオ</div>
+      <div class="card-meta">radio · トグル</div>
+      <p>エンティティの接近を察知。ノイズに混じる声で警告。</p>
+    </div>
+
+    <div class="card">
+      <span class="item-icon">🔥</span>
+      <div class="card-title">フレア</div>
+      <div class="card-meta">flare</div>
+      <p>周囲 6 マスのエンティティを 4 秒スタン。Boss に -50。HP +10。</p>
+    </div>
+
+    <div class="card">
+      <span class="item-icon">🪞</span>
+      <div class="card-title">ひび割れた鏡</div>
+      <div class="card-meta">mirror</div>
+      <p>Skin-Stealer を消滅させる。Boss に -100。1 回使い切り。</p>
+    </div>
+
+    <div class="card">
+      <span class="item-icon">🥛</span>
+      <div class="card-title">アーモンドミルク</div>
+      <div class="card-meta">almond_milk</div>
+      <p>HP/SAN/STA 全回復。最高級品。</p>
+    </div>
+
+    <div class="card">
+      <span class="item-icon">💊</span>
+      <div class="card-title">アーモンド胃薬</div>
+      <div class="card-meta">antacid</div>
+      <p>HP +35 & SAN +35。3 秒間移動速度 70%。</p>
+    </div>
+
+    <div class="card">
+      <span class="item-icon">🧭</span>
+      <div class="card-title">壊れたコンパス</div>
+      <div class="card-meta">compass · トグル</div>
+      <p>マップ全表示。だが北が回転する。</p>
+    </div>
+
+    <div class="card">
+      <span class="item-icon">🔓</span>
+      <div class="card-title">ロックピック</div>
+      <div class="card-meta">lockpick</div>
+      <p>錠前破りミニゲームをスキップ。鍵付きドアを解錠。</p>
+    </div>
+
+  </div>
+</section>
+
+<section id="difficulty">
+  <h2>難易度</h2>
+  <table>
+    <tr><th>難易度</th><th>SAN ドレイン</th><th>敵速度</th><th>HP 倍率</th></tr>
+    <tr><td><code>EASY</code></td><td>×0.5</td><td>×0.7</td><td>×1.5</td></tr>
+    <tr><td><code>NORMAL</code></td><td>×1.0</td><td>×1.0</td><td>×1.0</td></tr>
+    <tr><td><code>HARD</code></td><td>×1.5</td><td>×1.3</td><td>×0.7</td></tr>
+    <tr><td><code>CHAOS</code></td><td>×2.5</td><td>×1.8</td><td>×0.5</td></tr>
+  </table>
+</section>
+
+<section id="controls">
+  <h2>操作 / コントロール</h2>
+
+  <h3>モバイル (デフォルト)</h3>
+  <ul>
+    <li>画面左半分: 動的ジョイスティック (タップした場所が中心)。ダブルタップで sprint。</li>
+    <li>画面右半分: 視点回転。</li>
+    <li>右下: 調べる / 拾う / 開ける / 攻撃 ボタン (コンテキストにより変化)。</li>
+    <li>右下: 浮動マップ / クイックアイテムバー / スマホ (M.E.G. アプリ)。</li>
+  </ul>
+
+  <h3>キーボード</h3>
+  <table>
+    <tr><th>キー</th><th>動作</th></tr>
+    <tr><td><kbd>W A S D</kbd></td><td>移動</td></tr>
+    <tr><td><kbd>← → ↑ ↓</kbd></td><td>視点回転 (or マウス)</td></tr>
+    <tr><td><kbd>Shift</kbd></td><td>sprint</td></tr>
+    <tr><td><kbd>E</kbd></td><td>調べる / 拾う</td></tr>
+    <tr><td><kbd>Tab</kbd></td><td>マップ</td></tr>
+    <tr><td><kbd>P</kbd></td><td>スマホ (設定 / 図鑑)</td></tr>
+    <tr><td><kbd>↑↑↓↓←→←→BA</kbd></td><td>KONAMI コード — スタートパック付与</td></tr>
+  </table>
+
+  <h3>ゲームパッド (PS4 / PS5 / Xbox)</h3>
+  <p>左スティック: 移動、右スティック: 視点、各ボタンは設定 → ゲームパッドマッピングで個別変更可。</p>
+</section>
+
+<section id="settings">
+  <h2>設定項目</h2>
+  <p class="lead">タイトル画面の "設定" ボタン、またはプレイ中の M.E.G. スマホ → 歯車から開ける。LocalStorage キー <code>bk_*</code> に保存。</p>
+  <table>
+    <tr><th>項目</th><th>キー</th><th>範囲 / 既定</th></tr>
+    <tr><td>マスター音量</td><td><code>bk_master_vol</code></td><td>0-100 / 70</td></tr>
+    <tr><td>BGM 音量</td><td><code>bk_bgm_vol</code></td><td>0-100 / 90</td></tr>
+    <tr><td>SE 音量</td><td><code>bk_se_vol</code></td><td>0-100 / 80</td></tr>
+    <tr><td>視点感度</td><td><code>bk_sens</code></td><td>50-200 (%) / 100</td></tr>
+    <tr><td>フィルムグレイン</td><td><code>bk_grain_level</code></td><td>0-2 (オフ/中/高) / 1</td></tr>
+    <tr><td>グラフィック品質</td><td><code>thebackrooms_gfx_v1</code></td><td>high / low</td></tr>
+    <tr><td>振動</td><td><code>bk_vibrate</code></td><td>1 / 0 (ON/OFF)</td></tr>
+    <tr><td>ゲームパッドマップ</td><td><code>thebackrooms_gamepad_v1</code></td><td>JSON</td></tr>
+  </table>
+</section>
+
+<section id="files">
+  <h2>ファイル構成</h2>
+  <pre>chill_haruking/
+├── index.html             — エントリポイント、全 overlay と UI 要素
+├── dev_guide.html         — このファイル (開発者向けガイド)
+├── assets/
+│   ├── css/
+│   │   └── game.css       — 全 UI スタイル (~2200 lines)
+│   ├── img/
+│   │   ├── haruki.png     — HARUKI 通常スプライト
+│   │   └── haruki_scary.png — HARUKI 接近時スプライト
+│   └── js/
+│       ├── engine.js      — レイキャスタ + Web Audio + 入力 (~3900 lines)
+│       └── game.js        — 全ゲームロジック (~6600 lines)
+└── .git/</pre>
+
+  <h3>キャッシュ無効化</h3>
+  <p>HTML 内の <code>?v=NN</code> を 1 上げる。<code>index.html</code> 上部 3 箇所 (css, engine.js, game.js)。</p>
+</section>
+
+<section id="audit-rule">
+  <h2>更新ルール</h2>
+  <div class="note warn">
+    <strong>このファイルは生きたドキュメントです。</strong> 新しいエンティティ・アイテム・レベル・設定・状態を追加したら、必ず該当セクションを更新してください。具体的には:
+    <ul>
+      <li>エンティティ追加: <a href="#entities">エンティティ一覧</a> + CSS 描画を追加</li>
+      <li>アイテム追加: <a href="#items">アイテム一覧</a> に icon/desc 追加</li>
+      <li>レベル追加: <a href="#levels">レベル一覧</a> にカード追加</li>
+      <li>設定追加: <a href="#settings">設定項目</a> テーブルに行追加</li>
+      <li>イベント追加: <a href="#events">イベント順序</a> の timeline に挿入</li>
+    </ul>
+  </div>
+
+  <div class="note">
+    <strong>監視:</strong> ~/.local/maintenance/chill_haruking_watchdog.sh が 5 分毎に最終 commit timestamp をチェックし、30 分以上 idle で macOS 通知を発火します。launchd label: <code>com.local.chill-haruking-watchdog</code>
+  </div>
+</section>
+
+<section id="changelog">
+  <h2>変更履歴 (抜粋)</h2>
+  <table>
+    <tr><th>ver</th><th>変更</th></tr>
+    <tr><td>v4.0</td><td>タイトル多層防御 (inline onclick + window.__titleAction)、設定オーバーレイ追加、watchdog daemon 設置</td></tr>
+    <tr><td>v3.9</td><td>空間オーディオキュー (StereoPanner で立体音響)、breath/scrape/tap 音響</td></tr>
+    <tr><td>v3.8</td><td>方向警告コンパス (画面端の弧で最近接エンティティ方向)</td></tr>
+    <tr><td>v3.7</td><td>タイトルボタン無反応バグ修正 (bindEvents 順序入れ替え + try/catch)</td></tr>
+    <tr><td>v3.6</td><td>Boss intro 本格演出 + 多段階脅威 BGM レイヤー</td></tr>
+    <tr><td>v3.5</td><td>HUD バイタル強化 (数値表示 + バー大型化)</td></tr>
+    <tr><td>v3.4</td><td>SAN drain 緩和 + リトライ画面暗バグ修正 + Lv1 Hound 配置調整 + ポップアップ時時間停止</td></tr>
+    <tr><td>v3.3</td><td>クイックアイテムバー + 死亡演出 + セーフエリア視覚化</td></tr>
+    <tr><td>v3.2</td><td>Lv7 進行テキスト + Lv11 列車シネマ + 環境別パーティクル + ゲームパッド対応</td></tr>
+  </table>
+  <p>詳細は <code>git log --oneline</code></p>
+</section>
+
+<p class="updated-meta" id="updateMeta">
+  Generated: <span id="genTime"></span> · auto-updated by claude code
+</p>
+
+</main>
+</div>
+
+<script>
+  document.getElementById('genTime').textContent = new Date().toISOString().replace('T',' ').substring(0, 16) + ' JST';
+</script>
+
+</body>
+</html>
