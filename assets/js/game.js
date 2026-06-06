@@ -1368,6 +1368,59 @@
         }
       }
     }
+    // Handle menu navigation when overlays are open (close on action / phone button)
+    var pauseBtn = gp.buttons[gamepadMap.pause];
+    var actionBtnRaw = gp.buttons[gamepadMap.action];
+    var phoneBtnRaw = gp.buttons[gamepadMap.phone];
+    var anyClose = (pauseBtn && pauseBtn.pressed) || (phoneBtnRaw && phoneBtnRaw.pressed);
+    var anyConfirm = actionBtnRaw && actionBtnRaw.pressed;
+
+    // Phone open → phone or pause closes it
+    if (phoneOpen && anyClose && !gp._menuClosePressed) {
+      gp._menuClosePressed = true;
+      closePhone();
+      return;
+    }
+    // Item use modal → action confirms, pause cancels
+    var iumEl = el('itemUseModal');
+    if (iumEl && iumEl.style.display !== 'none') {
+      if (anyConfirm && !gp._menuConfirmPressed) {
+        gp._menuConfirmPressed = true;
+        try { confirmItemUse(); } catch (e) {}
+      }
+      if (pauseBtn && pauseBtn.pressed && !gp._menuClosePressed) {
+        gp._menuClosePressed = true;
+        closeItemUseModal();
+      }
+      if (!anyConfirm) gp._menuConfirmPressed = false;
+      if (!(pauseBtn && pauseBtn.pressed)) gp._menuClosePressed = false;
+      return;
+    }
+    // Note viewer → any button closes
+    var nveEl = el('noteViewerOverlay');
+    if (nveEl && nveEl.style.display !== 'none') {
+      if ((anyConfirm || anyClose) && !gp._menuClosePressed) {
+        gp._menuClosePressed = true;
+        var closeNoteBtn = el('closeNoteBtn');
+        if (closeNoteBtn) closeNoteBtn.click();
+      }
+      if (!anyConfirm && !anyClose) gp._menuClosePressed = false;
+      return;
+    }
+    // Tutorial overlay → close
+    var tutEl = el('tutorialOverlay');
+    if (tutEl && tutEl.style.display !== 'none') {
+      if ((anyConfirm || anyClose) && !gp._menuClosePressed) {
+        gp._menuClosePressed = true;
+        var closeTutBtn = el('closeTutorialBtn');
+        if (closeTutBtn) closeTutBtn.click();
+      }
+      if (!anyConfirm && !anyClose) gp._menuClosePressed = false;
+      return;
+    }
+    // Reset close press tracking when no buttons held
+    if (!anyClose) gp._menuClosePressed = false;
+
     if (state !== ST.PLAYING || phoneOpen || miniGameOpen) return;
     // Left stick: movement
     // BUGFIX: 以前は dead zone 以内で input がクリアされず最後の値が残り続け、
