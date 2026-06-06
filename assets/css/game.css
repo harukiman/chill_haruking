@@ -416,10 +416,16 @@ body {
 
 .gameover-content, .ending-content {
   text-align: center;
-  padding: 24px;
-  max-width: 90vw;
+  padding: 28px 24px;
+  max-width: 92vw;
   position: relative;
   z-index: 2;
+  background: rgba(15, 12, 4, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 18px;
+  border: 1px solid rgba(120, 96, 32, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
 }
 .gameover-text {
   font-family: 'Times New Roman', serif;
