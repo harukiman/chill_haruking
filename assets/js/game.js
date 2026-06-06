@@ -6912,19 +6912,23 @@
   // Global title action façade — used by inline onclick attrs as a robust fallback
   // so title buttons always work even if addEventListener fails for any reason.
   window.__titleAction = function (action) {
+    var stage = 'enter';
     try {
+      stage = 'audio_init';
       if (!audioInitialized) {
         try { GameEngine.initAudio(); } catch (e) {}
         audioInitialized = true;
         var hint = el('tapToStartHint');
         if (hint) hint.classList.add('hidden');
       }
+      stage = 'switch:' + action;
       switch (action) {
-        case 'start': startNewGame(); break;
-        case 'continue': continueGame(); break;
-        case 'endless': startEndlessMode(); break;
-        case 'freeroam': openLevelSelect(); break;
+        case 'start': stage = 'startNewGame'; startNewGame(); break;
+        case 'continue': stage = 'continueGame'; continueGame(); break;
+        case 'endless': stage = 'startEndlessMode'; startEndlessMode(); break;
+        case 'freeroam': stage = 'openLevelSelect'; openLevelSelect(); break;
         case 'difficulty':
+          stage = 'difficulty';
           var order = ['easy', 'normal', 'hard', 'chaos'];
           var idx = order.indexOf(currentDifficulty);
           var nx = order[(idx + 1) % order.length];
@@ -6932,10 +6936,11 @@
           var dbtn = el('difficultyBtn');
           if (dbtn) dbtn.textContent = '難易度: ' + DIFFICULTIES[nx].name;
           break;
-        case 'controls': showOverlay('tutorialOverlay'); break;
-        case 'settings': showOverlay('titleSettingsOverlay'); break;
-        case 'closeSettings': hideOverlay('titleSettingsOverlay'); break;
+        case 'controls': stage = 'controls'; showOverlay('tutorialOverlay'); break;
+        case 'settings': stage = 'settings'; showOverlay('titleSettingsOverlay'); break;
+        case 'closeSettings': stage = 'closeSettings'; hideOverlay('titleSettingsOverlay'); break;
         case 'reset':
+          stage = 'reset';
           if (!confirm('全データ削除しますか?')) return;
           if (!confirm('最終確認: 取り消せません。本当に?')) return;
           var keys = ['thebackrooms_save_v1', 'thebackrooms_ach_v1', 'thebackrooms_best_v1', 'thebackrooms_diff_v1', 'thebackrooms_tut_v1', 'thebackrooms_endless_v1', 'thebackrooms_stats_v1', 'thebackrooms_ent_seen_v1', 'thebackrooms_lifetime_notes_v1', 'thebackrooms_items_collected_v1', 'thebackrooms_gfx_v1', 'bk_master_vol', 'bk_bgm_vol', 'bk_se_vol', 'bk_sens', 'bk_grain'];
@@ -6944,7 +6949,14 @@
           setTimeout(function () { location.reload(); }, 1200);
           break;
       }
-    } catch (e) { console.error('titleAction failed', action, e); }
+    } catch (e) {
+      // Surface errors visibly so they're not silently swallowed
+      console.error('titleAction failed at stage:', stage, e);
+      var errBanner = document.createElement('div');
+      errBanner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#400;color:#fff;padding:14px;text-align:center;z-index:99999;font-size:12px;line-height:1.5;font-family:monospace;';
+      errBanner.innerHTML = 'エラー: ' + action + ' @ ' + stage + '<br>' + (e && e.message ? e.message : String(e)) + '<br><button onclick="this.parentNode.remove()" style="margin-top:8px;padding:6px 14px;background:#fff;color:#400;border:0;border-radius:4px;cursor:pointer;">閉じる</button>';
+      document.body.appendChild(errBanner);
+    }
   };
 
   if (document.readyState === 'loading') {
