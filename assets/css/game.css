@@ -1,30 +1,16 @@
-/* =============================================
-   追跡者 -HARUKI- (TSUISEKISHA -HARUKI-)
-   一人称モバイルホラーゲーム
-   ============================================= */
+/* ============================================================
+ *  THE BACKROOMS — game.css
+ *  Backrooms-themed first-person mobile horror
+ *  Palette: mustard yellow (#d4b340), fluorescent flicker, CRT scanlines
+ * ============================================================ */
 
-/* --- Custom Properties --- */
-:root {
-  --horror-red: #8b0000;
-  --horror-glow: #ff0000;
-  --horror-deep: #1a0000;
-  --text-color: #e0e0e0;
-  --text-dim: #888888;
-  --ui-bg: rgba(0, 0, 0, 0.85);
-  --ui-border: rgba(255, 255, 255, 0.15);
-  --accent-green: #00cc44;
-  --stamina-green: #44cc44;
-  --stamina-yellow: #cccc00;
-  --stamina-red: #cc2222;
-  --font-main: "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", sans-serif;
-}
-
-/* --- Reset & Base --- */
-*, *::before, *::after {
-  box-sizing: border-box;
+* {
   margin: 0;
   padding: 0;
+  box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  user-select: none;
 }
 
 html, body {
@@ -32,2079 +18,1108 @@ html, body {
   height: 100%;
   overflow: hidden;
   background: #000;
-  margin: 0;
-  padding: 0;
-  font-family: var(--font-main);
-  color: var(--text-color);
-  user-select: none;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
+  color: #d8d2bc;
+  font-family: 'Courier New', 'Hiragino Sans', 'Yu Gothic', monospace;
+  font-size: 14px;
   touch-action: none;
-  -webkit-touch-callout: none;
-  cursor: default;
-  position: fixed;
-  top: 0;
-  left: 0;
 }
 
-/* --- Canvas --- */
+body {
+  position: fixed;
+  inset: 0;
+  overscroll-behavior: none;
+}
+
+/* ============================================================
+ *  CANVAS
+ * ============================================================ */
 #gameCanvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: #050505;
   display: block;
-  width: 100vw;
-  height: 100vh;
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 0;
   touch-action: none;
-  image-rendering: pixelated;
 }
 
-/* --- Overlay Base --- */
+/* ============================================================
+ *  VITAL BARS (top-left compact)
+ * ============================================================ */
+#vitalBars {
+  position: fixed;
+  top: env(safe-area-inset-top, 8px);
+  left: 8px;
+  display: none;
+  flex-direction: column;
+  gap: 3px;
+  z-index: 20;
+  pointer-events: none;
+}
+#vitalBars.show { display: flex; }
+
+.vital-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.vital-label {
+  font-size: 9px;
+  width: 24px;
+  letter-spacing: 0.05em;
+  color: rgba(216, 210, 188, 0.8);
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.9);
+}
+.vital-bar {
+  width: 90px;
+  height: 7px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(120, 100, 50, 0.6);
+}
+.vital-fill {
+  height: 100%;
+  width: 100%;
+  transition: width 0.25s ease;
+}
+.vital-fill.vital-hp   { background: linear-gradient(90deg, #803030, #c63a3a); }
+.vital-fill.vital-san  { background: linear-gradient(90deg, #382878, #6a55c8); }
+.vital-fill.vital-sta  { background: linear-gradient(90deg, #4a6610, #88b033); }
+
+/* ============================================================
+ *  OVERLAY (shared)
+ * ============================================================ */
 .overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  z-index: 100;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-direction: column;
-  touch-action: none;
+  background: rgba(0, 0, 0, 0.92);
+  z-index: 50;
 }
 
-/* =============================================
-   TITLE SCREEN
-   ============================================= */
+/* ============================================================
+ *  TITLE SCREEN
+ * ============================================================ */
 #titleScreen {
-  background:
-    radial-gradient(ellipse at 50% 30%, rgba(139, 0, 0, 0.15) 0%, transparent 60%),
-    linear-gradient(180deg, #050000 0%, #0a0000 40%, #000000 100%);
-  z-index: 200;
-  animation: fadeIn 1.5s ease-out;
+  background: #0d0a04;
   overflow: hidden;
 }
-
-#lightningCanvas {
+.title-bg-wallpaper {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 0;
+  inset: 0;
+  background:
+    repeating-linear-gradient(0deg, rgba(212, 179, 64, 0.12) 0, rgba(212, 179, 64, 0.12) 2px, transparent 2px, transparent 8px),
+    repeating-linear-gradient(90deg, rgba(212, 179, 64, 0.08) 0, rgba(212, 179, 64, 0.08) 2px, transparent 2px, transparent 8px),
+    radial-gradient(ellipse at center, #4a3a14 0%, #1d1604 70%, #050300 100%);
+  filter: blur(0.5px);
+  animation: titleFlicker 5s infinite;
 }
 
-#titleScreen .title-content {
-  position: relative;
-  z-index: 1;
-}
-
-#titleScreen .copyright {
-  z-index: 1;
+@keyframes titleFlicker {
+  0%, 92%, 100% { opacity: 1; filter: blur(0.5px); }
+  93%           { opacity: 0.4; filter: blur(1.2px); }
+  94%, 96%      { opacity: 1; filter: blur(0.5px); }
+  95%           { opacity: 0.7; filter: blur(0.8px); }
 }
 
 .title-content {
-  text-align: center;
-  padding: 20px;
-}
-
-.game-title {
-  font-size: clamp(36px, 10vw, 64px);
-  font-weight: 900;
-  color: #fff;
-  letter-spacing: 0.15em;
-  text-shadow:
-    0 0 10px var(--horror-glow),
-    0 0 30px var(--horror-red),
-    0 0 60px var(--horror-red),
-    2px 2px 0 var(--horror-deep),
-    -1px -1px 0 rgba(255, 0, 0, 0.3);
-  animation: flicker 4s infinite;
-  margin-bottom: 12px;
-  line-height: 1.2;
   position: relative;
+  text-align: center;
+  color: #e8d57a;
+  z-index: 2;
+  padding: 20px 16px;
+  max-width: 92vw;
 }
-
-.game-title::after {
-  content: "追跡者";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  color: rgba(255, 0, 0, 0.08);
-  text-shadow: none;
-  animation: glitchTitle 8s infinite;
-  pointer-events: none;
+.title-pre {
+  font-size: 10px;
+  letter-spacing: 0.5em;
+  color: #b09040;
+  margin-bottom: 8px;
+  opacity: 0.7;
 }
-
+.game-title {
+  font-family: 'Times New Roman', serif;
+  font-size: 52px;
+  line-height: 0.95;
+  letter-spacing: 0.06em;
+  font-weight: 900;
+  color: #e8d57a;
+  text-shadow:
+    0 0 16px rgba(212, 179, 64, 0.5),
+    0 0 32px rgba(212, 179, 64, 0.3),
+    3px 3px 0 #2a1c00,
+    -1px -1px 0 #3a2800;
+  margin-bottom: 10px;
+}
 .game-subtitle {
-  font-size: clamp(14px, 4vw, 22px);
-  color: var(--text-dim);
-  letter-spacing: 0.3em;
-  margin-bottom: 40px;
-  text-shadow: 0 0 8px rgba(139, 0, 0, 0.4);
+  font-size: 12px;
+  letter-spacing: 0.4em;
+  color: #b09040;
+  margin-bottom: 30px;
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.9);
 }
-
 .title-decoration {
-  width: 60px;
+  width: 60%;
+  margin: 20px auto;
   height: 1px;
-  background: linear-gradient(90deg, transparent, var(--horror-red), transparent);
-  margin: 0 auto 50px;
-  opacity: 0.6;
+  background: linear-gradient(90deg, transparent, #786020, transparent);
 }
-
-.start-btn {
-  font-family: var(--font-main);
-  font-size: clamp(14px, 4vw, 18px);
-  color: var(--text-color);
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  padding: 14px 40px;
+.title-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+}
+.menu-btn {
+  min-width: 200px;
+  padding: 12px 24px;
+  background: rgba(20, 14, 4, 0.85);
+  color: #d4b340;
+  border: 1px solid #786020;
+  font-family: inherit;
+  font-size: 13px;
   letter-spacing: 0.2em;
   cursor: pointer;
-  animation: pulse 2.5s ease-in-out infinite;
-  transition: all 0.3s ease;
-  min-height: 48px;
-  min-width: 200px;
-  touch-action: manipulation;
+  transition: all 0.2s;
 }
-
-.start-btn:active {
-  background: rgba(139, 0, 0, 0.4);
-  border-color: var(--horror-glow);
-  color: #fff;
-  transform: scale(0.96);
+.menu-btn:hover, .menu-btn:active {
+  background: #2a1c00;
+  border-color: #d4b340;
+  color: #f0dc8a;
+  box-shadow: 0 0 12px rgba(212, 179, 64, 0.35);
 }
-
 .copyright {
   position: absolute;
-  bottom: 24px;
-  font-size: 10px;
-  color: rgba(255, 255, 255, 0.15);
+  bottom: calc(36px + env(safe-area-inset-bottom, 0px));
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 9px;
+  color: #786020;
   letter-spacing: 0.2em;
+  z-index: 2;
+}
+.version-text {
+  position: absolute;
+  bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 8px;
+  color: #483910;
+  letter-spacing: 0.15em;
+  z-index: 2;
 }
 
-/* =============================================
-   LOADING SCREEN
-   ============================================= */
+/* ============================================================
+ *  LOADING SCREEN (no-clip transition)
+ * ============================================================ */
 #loadingScreen {
   background: #000;
-  z-index: 250;
 }
-
 .loading-content {
   text-align: center;
-  padding: 20px;
-  width: 80%;
-  max-width: 320px;
+  padding: 16px;
+  max-width: 88vw;
 }
-
-.loading-text {
-  font-size: 16px;
-  color: var(--text-dim);
-  margin-bottom: 20px;
-  animation: loadingDots 1.5s infinite;
+.loading-level {
+  font-size: 24px;
+  letter-spacing: 0.3em;
+  color: #e8d57a;
+  font-weight: 900;
+  margin-bottom: 4px;
+  text-shadow: 0 0 8px rgba(212, 179, 64, 0.4);
 }
-
+.loading-name {
+  font-size: 13px;
+  letter-spacing: 0.45em;
+  color: #b09040;
+  margin-bottom: 28px;
+  font-family: 'Times New Roman', serif;
+  font-style: italic;
+}
 .loading-bar {
-  width: 100%;
-  height: 2px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 1px;
+  width: 240px;
+  max-width: 70vw;
+  height: 4px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid #483910;
+  margin: 0 auto 22px;
   overflow: hidden;
-  margin-bottom: 24px;
 }
-
 .loading-fill {
-  width: 0%;
   height: 100%;
-  background: linear-gradient(90deg, var(--horror-red), var(--horror-glow));
-  transition: width 0.3s ease;
+  background: linear-gradient(90deg, #786020, #d4b340, #786020);
+  width: 0%;
+  transition: width 0.2s linear;
 }
-
 .loading-hint {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.2);
-  letter-spacing: 0.15em;
+  font-size: 11px;
+  color: #786020;
+  letter-spacing: 0.2em;
+  animation: loadingPulse 1.5s infinite;
+}
+@keyframes loadingPulse {
+  0%, 100% { opacity: 0.5; }
+  50%      { opacity: 1; }
 }
 
-/* =============================================
-   DIALOGUE BOX
-   ============================================= */
+/* ============================================================
+ *  DIALOGUE BOX
+ * ============================================================ */
 #dialogueBox {
   position: fixed;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  z-index: 150;
-  padding: 0 12px 16px;
-  animation: fadeIn 0.3s ease-out;
-  pointer-events: auto;
-  touch-action: manipulation;
+  left: 12px;
+  right: 12px;
+  bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+  z-index: 30;
+  pointer-events: none;
 }
-
 .dialogue-inner {
-  background: var(--ui-bg);
-  border: 1px solid var(--ui-border);
-  border-bottom: none;
-  border-radius: 8px 8px 0 0;
-  padding: 16px 18px 20px;
+  background: rgba(0, 0, 0, 0.92);
+  border: 1px solid #786020;
+  padding: 14px 16px 16px;
   position: relative;
-  max-width: 600px;
-  margin: 0 auto;
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  min-height: 70px;
+  font-size: 13px;
 }
-
 .speaker-name {
-  display: inline-block;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--horror-glow);
-  letter-spacing: 0.1em;
-  margin-bottom: 8px;
-  padding: 2px 8px;
-  background: rgba(139, 0, 0, 0.2);
-  border-radius: 2px;
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: #d4b340;
+  margin-bottom: 6px;
 }
-
-.speaker-name:empty {
-  display: none;
-}
-
 .dialogue-text {
-  font-size: 16px;
-  line-height: 1.7;
-  color: var(--text-color);
-  min-height: 2.4em;
-  word-break: break-all;
+  color: #e8e0c0;
+  line-height: 1.5;
 }
-
 .dialogue-next {
   position: absolute;
-  bottom: 8px;
-  right: 14px;
-  font-size: 10px;
-  color: rgba(255, 255, 255, 0.4);
-  animation: dialogueBounce 1s ease-in-out infinite;
+  right: 12px;
+  bottom: 6px;
+  font-size: 12px;
+  color: #786020;
+  animation: blink 1s infinite;
+}
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
 }
 
-/* =============================================
-   PHONE CALL UI
-   ============================================= */
-#phoneUI {
-  background: rgba(0, 0, 0, 0.92);
-  z-index: 180;
-  animation: fadeIn 0.5s ease-out;
-}
-
-.phone-content {
+/* ============================================================
+ *  GAME OVER / ENDING
+ * ============================================================ */
+.gameover-content, .ending-content {
   text-align: center;
-  padding: 20px;
+  padding: 24px;
+  max-width: 90vw;
 }
-
-.phone-icon {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  margin: 0 auto 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  animation: phoneRing 1s ease-in-out infinite;
-  position: relative;
-}
-
-.phone-icon::before {
-  content: "";
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  animation: phoneWave 1.5s ease-out infinite;
-}
-
-.phone-receiver {
-  width: 28px;
-  height: 28px;
-  position: relative;
-}
-
-.phone-receiver::before {
-  content: "";
-  position: absolute;
-  top: 4px;
-  left: 2px;
-  width: 24px;
-  height: 10px;
-  border: 2px solid #fff;
-  border-radius: 8px 8px 0 0;
-  border-bottom: none;
-}
-
-.phone-receiver::after {
-  content: "";
-  position: absolute;
-  bottom: 4px;
-  left: 5px;
-  width: 18px;
-  height: 6px;
-  background: #fff;
-  border-radius: 0 0 4px 4px;
-}
-
-.phone-caller {
-  font-size: 14px;
-  color: var(--text-dim);
-  letter-spacing: 0.15em;
-  margin-bottom: 4px;
-}
-
-.phone-name {
-  font-size: 28px;
-  font-weight: 700;
-  color: #fff;
-  letter-spacing: 0.1em;
-  margin-bottom: 40px;
-  text-shadow: 0 0 15px rgba(255, 0, 0, 0.3);
-}
-
-.answer-btn {
-  font-family: var(--font-main);
-  font-size: 16px;
-  color: #fff;
-  background: var(--accent-green);
-  border: none;
-  border-radius: 30px;
-  padding: 14px 36px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  margin: 0 auto;
-  min-height: 48px;
-  min-width: 160px;
-  touch-action: manipulation;
-  transition: transform 0.15s ease, background 0.15s ease;
-  box-shadow: 0 0 20px rgba(0, 204, 68, 0.3);
-}
-
-.answer-btn:active {
-  transform: scale(0.95);
-  background: #00aa33;
-}
-
-.answer-icon {
-  display: inline-block;
-  width: 18px;
-  height: 18px;
-  border: 2px solid #fff;
-  border-radius: 50%;
-  position: relative;
-}
-
-.answer-icon::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) rotate(-135deg);
-  width: 8px;
-  height: 8px;
-  border-top: 2px solid #fff;
-  border-right: 2px solid #fff;
-}
-
-/* =============================================
-   GAME OVER SCREEN
-   ============================================= */
-#gameOverScreen {
-  background:
-    radial-gradient(ellipse at 50% 50%, rgba(139, 0, 0, 0.25) 0%, transparent 70%),
-    rgba(0, 0, 0, 0.95);
-  z-index: 300;
-  animation: fadeIn 1s ease-out;
-}
-
-.gameover-content {
-  text-align: center;
-  padding: 20px;
-}
-
 .gameover-text {
-  font-size: clamp(32px, 10vw, 56px);
-  font-weight: 900;
-  color: var(--horror-glow);
-  letter-spacing: 0.15em;
-  text-shadow:
-    0 0 20px var(--horror-glow),
-    0 0 40px var(--horror-red),
-    0 0 80px rgba(255, 0, 0, 0.4);
-  animation: glitch 3s infinite;
-  margin-bottom: 16px;
-  position: relative;
-}
-
-.gameover-text::before {
-  content: "ゲームオーバー";
-  position: absolute;
-  top: 0;
-  left: 2px;
-  width: 100%;
-  color: rgba(255, 0, 0, 0.5);
-  text-shadow: none;
-  clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
-  animation: glitchClip1 3s infinite;
-}
-
-.gameover-text::after {
-  content: "ゲームオーバー";
-  position: absolute;
-  top: 0;
-  left: -2px;
-  width: 100%;
-  color: rgba(0, 255, 255, 0.3);
-  text-shadow: none;
-  clip-path: polygon(0 55%, 100% 55%, 100% 100%, 0 100%);
-  animation: glitchClip2 3s infinite;
-}
-
-.gameover-sub {
-  font-size: 14px;
-  color: var(--text-dim);
-  margin-bottom: 48px;
+  font-family: 'Times New Roman', serif;
+  font-size: 44px;
   letter-spacing: 0.1em;
-  animation: fadeIn 2s ease-out;
+  color: #c63a3a;
+  font-weight: 900;
+  margin-bottom: 12px;
+  text-shadow:
+    0 0 18px rgba(150, 0, 0, 0.7),
+    3px 3px 0 #200;
 }
-
+.gameover-sub {
+  font-size: 12px;
+  color: #d8d2bc;
+  letter-spacing: 0.1em;
+  margin-bottom: 30px;
+  line-height: 1.7;
+}
 .retry-btn {
-  font-family: var(--font-main);
-  font-size: 16px;
-  color: var(--text-color);
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  padding: 14px 48px;
+  display: block;
+  margin: 10px auto;
+  min-width: 200px;
+  padding: 12px 24px;
+  background: rgba(20, 14, 4, 0.85);
+  color: #d4b340;
+  border: 1px solid #786020;
+  font-family: inherit;
+  font-size: 13px;
   letter-spacing: 0.2em;
   cursor: pointer;
-  transition: all 0.3s ease;
-  min-height: 48px;
-  min-width: 180px;
-  touch-action: manipulation;
 }
-
-.retry-btn:active {
-  background: rgba(139, 0, 0, 0.3);
-  border-color: var(--horror-glow);
-  color: #fff;
-  transform: scale(0.96);
-}
-
-/* =============================================
-   ENDING SCREEN
-   ============================================= */
-#endingScreen {
-  background: rgba(0, 0, 0, 0.97);
-  z-index: 300;
-  animation: fadeIn 2s ease-out;
-}
-
-.ending-content {
-  text-align: center;
-  padding: 20px;
-  max-width: 400px;
+.retry-btn:hover, .retry-btn:active {
+  background: #2a1c00;
+  border-color: #d4b340;
 }
 
 .ending-escape {
-  font-size: 14px;
-  color: var(--accent-green);
-  letter-spacing: 0.3em;
-  margin-bottom: 8px;
-  text-shadow: 0 0 10px rgba(0, 204, 68, 0.4);
-}
-
-.ending-title {
-  font-size: clamp(28px, 8vw, 48px);
-  font-weight: 300;
-  color: #fff;
-  letter-spacing: 0.4em;
-  margin-bottom: 32px;
-  animation: fadeIn 3s ease-out;
-}
-
-.ending-message {
-  font-size: 14px;
-  color: var(--text-dim);
-  line-height: 2;
-  margin-bottom: 40px;
-  letter-spacing: 0.05em;
-  animation: fadeIn 4s ease-out;
-}
-
-.ending-thanks {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.3);
-  line-height: 2;
-  margin-bottom: 40px;
-  letter-spacing: 0.15em;
-  animation: fadeIn 5s ease-out;
+  letter-spacing: 0.5em;
+  color: #88c050;
+  margin-bottom: 8px;
+}
+.ending-title {
+  font-family: 'Times New Roman', serif;
+  font-size: 36px;
+  letter-spacing: 0.1em;
+  color: #e8d57a;
+  font-weight: 900;
+  margin-bottom: 20px;
+  text-shadow: 0 0 14px rgba(212, 179, 64, 0.5);
+}
+.ending-message {
+  font-size: 13px;
+  color: #e0d8b8;
+  line-height: 1.7;
+  margin-bottom: 24px;
+}
+.ending-thanks {
+  font-size: 11px;
+  color: #786020;
+  letter-spacing: 0.2em;
+  margin: 24px 0;
+  line-height: 1.6;
 }
 
-/* =============================================
-   VIRTUAL JOYSTICK
-   ============================================= */
-/* =============================================
-   TOUCH ZONES (invisible, full-height halves)
-   ============================================= */
-#touchZoneLeft {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 50%;
-  height: 100%;
-  z-index: 46;
-  touch-action: none;
-  pointer-events: auto;
-}
-#touchZoneRight {
-  position: fixed;
-  top: 0;
-  left: 50%;
-  width: 50%;
-  height: 100%;
-  z-index: 46;
-  touch-action: none;
-  pointer-events: auto;
-}
-#touchZoneLeft.faded, #touchZoneRight.faded {
-  pointer-events: none;
-}
+/* Endings with custom palette */
+.ending-content.bad-ending .ending-escape { color: #c63a3a; }
+.ending-content.bad-ending .ending-title  { color: #884040; text-shadow: 0 0 12px rgba(150,0,0,0.5); }
+.ending-content.true-ending .ending-escape { color: #80d0f0; }
+.ending-content.true-ending .ending-title  { color: #c0e0f8; text-shadow: 0 0 14px rgba(120, 180, 240, 0.4); }
+.ending-content.lost-ending .ending-escape { color: #888; }
+.ending-content.lost-ending .ending-title  { color: #c0c0c0; }
 
-/* =============================================
-   VIRTUAL STICKS (both left and right)
-   ============================================= */
+/* ============================================================
+ *  VIRTUAL JOYSTICK
+ * ============================================================ */
 .virtual-stick {
   position: fixed;
   width: 120px;
   height: 120px;
-  z-index: 50;
-  touch-action: none;
   pointer-events: none;
+  z-index: 12;
   opacity: 0;
-  transition: opacity 0.15s ease;
+  transition: opacity 0.15s;
 }
 .virtual-stick.active {
-  opacity: 1;
+  opacity: 0.85;
 }
-
 .joystick-outer {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.25);
-  background: rgba(0, 0, 0, 0.3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-}
-
-.joystick-inner {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.35);
   position: absolute;
-  transition: none;
-  pointer-events: none;
+  inset: 0;
+  border: 2px solid rgba(212, 179, 64, 0.5);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.3);
+}
+.joystick-inner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 50px;
+  height: 50px;
+  margin: -25px;
+  background: rgba(212, 179, 64, 0.55);
+  border: 2px solid #d4b340;
+  border-radius: 50%;
+  transition: transform 0.04s linear;
 }
 
-/* =============================================
-   MINIMAP BUTTON & OVERLAY
-   ============================================= */
-#minimapBtn {
+#touchZoneLeft, #touchZoneRight {
   position: fixed;
-  top: 12px;
-  left: 12px;
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  background: rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: rgba(255, 255, 255, 0.7);
-  cursor: pointer;
-  z-index: 55;
-  touch-action: manipulation;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
+  top: 0;
+  bottom: 0;
+  width: 50%;
+  z-index: 11;
+  background: transparent;
 }
-#minimapBtn.visible {
-  display: flex;
-}
+#touchZoneLeft  { left: 0; }
+#touchZoneRight { right: 0; }
 
-.minimap-expanded {
-  position: relative;
-  background: rgba(10, 10, 10, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 12px;
-  padding: 16px;
-  max-width: 90vw;
-  max-height: 80vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-}
-
-#minimapCanvas {
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
-  max-width: 100%;
-}
-
-.minimap-legend {
-  font-family: var(--font-main);
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.6);
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-.legend-player { color: #4488ff; }
-.legend-objective { color: #ffcc00; }
-
-.minimap-close {
-  font-family: var(--font-main);
-  font-size: 13px;
-  color: #fff;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 6px;
-  padding: 6px 24px;
-  cursor: pointer;
-  touch-action: manipulation;
-}
-
-/* =============================================
-   ACTION BUTTON
-   ============================================= */
+/* ============================================================
+ *  ACTION BUTTON (red interaction)
+ * ============================================================ */
 #actionBtn {
   position: fixed;
-  bottom: 48px;
-  right: 24px;
-  width: 80px;
-  height: 80px;
+  right: calc(28px + env(safe-area-inset-right, 0px));
+  bottom: calc(110px + env(safe-area-inset-bottom, 0px));
+  width: 78px;
+  height: 78px;
+  background: radial-gradient(circle, #cc2828 0%, #882020 65%, #441010 100%);
+  border: 2px solid #ff5050;
   border-radius: 50%;
-  background: rgba(139, 0, 0, 0.6);
-  border: 2px solid rgba(255, 100, 100, 0.5);
   color: #fff;
-  font-family: var(--font-main);
-  font-size: 13px;
+  font-family: inherit;
+  font-size: 12px;
+  letter-spacing: 0.1em;
   font-weight: bold;
-  letter-spacing: 0.05em;
+  z-index: 14;
+  box-shadow: 0 0 14px rgba(200, 0, 0, 0.6);
   cursor: pointer;
-  z-index: 100;
-  touch-action: manipulation;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  transition: border-color 0.3s ease, background 0.3s ease;
 }
-
-#actionBtn.visible {
-  display: flex;
-  animation: pulse 1.8s ease-in-out infinite;
-}
-
 #actionBtn:active {
-  background: rgba(139, 0, 0, 0.5);
-  border-color: var(--horror-glow);
-  transform: scale(0.92);
-  animation: none;
+  background: radial-gradient(circle, #ff5050 0%, #aa2828 65%, #551010 100%);
+  transform: scale(0.94);
 }
 
-#actionBtnText {
-  pointer-events: none;
-}
-
-/* =============================================
-   STAMINA BAR
-   ============================================= */
-#staminaBar {
+/* ============================================================
+ *  PHONE BUTTON (top-right)
+ * ============================================================ */
+.phone-btn {
   position: fixed;
-  top: 12px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 40%;
-  max-width: 200px;
-  height: 4px;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 2px;
-  z-index: 50;
-  overflow: hidden;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-#staminaBar.visible {
-  opacity: 1;
-}
-
-#staminaFill {
-  width: 100%;
-  height: 100%;
-  background: var(--stamina-green);
-  border-radius: 2px;
-  transition: width 0.15s ease, background-color 0.3s ease;
-}
-
-#staminaFill.medium {
-  background: var(--stamina-yellow);
-}
-
-#staminaFill.low {
-  background: var(--stamina-red);
-  animation: staminaPulse 0.8s ease-in-out infinite;
-}
-
-/* =============================================
-   ANIMATIONS
-   ============================================= */
-
-/* Pulse - Action Button */
-@keyframes pulse {
-  0%, 100% {
-    border-color: rgba(255, 255, 255, 0.3);
-    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
-  }
-  50% {
-    border-color: rgba(255, 255, 255, 0.6);
-    box-shadow: 0 0 12px 2px rgba(255, 255, 255, 0.1);
-  }
-}
-
-/* Glitch - Game Over */
-@keyframes glitch {
-  0%, 92%, 100% {
-    transform: translate(0);
-    opacity: 1;
-  }
-  93% {
-    transform: translate(-4px, 2px) skewX(-2deg);
-    opacity: 0.85;
-  }
-  94% {
-    transform: translate(3px, -1px) skewX(1deg);
-    opacity: 0.9;
-  }
-  95% {
-    transform: translate(-2px, 3px);
-    opacity: 0.8;
-  }
-  96% {
-    transform: translate(4px, -2px) skewX(-1deg);
-    opacity: 0.95;
-  }
-  97% {
-    transform: translate(0);
-    opacity: 1;
-  }
-}
-
-@keyframes glitchClip1 {
-  0%, 90%, 100% {
-    transform: translate(0);
-  }
-  92% {
-    transform: translate(6px, 0);
-  }
-  94% {
-    transform: translate(-4px, 0);
-  }
-  96% {
-    transform: translate(2px, 0);
-  }
-}
-
-@keyframes glitchClip2 {
-  0%, 88%, 100% {
-    transform: translate(0);
-  }
-  91% {
-    transform: translate(-5px, 0);
-  }
-  93% {
-    transform: translate(3px, 0);
-  }
-  95% {
-    transform: translate(-2px, 0);
-  }
-}
-
-/* Glitch - Title */
-@keyframes glitchTitle {
-  0%, 94%, 100% {
-    transform: translate(0);
-    opacity: 0;
-  }
-  95% {
-    transform: translate(3px, -1px);
-    opacity: 0.15;
-  }
-  96% {
-    transform: translate(-2px, 1px);
-    opacity: 0.1;
-  }
-  97% {
-    transform: translate(0);
-    opacity: 0;
-  }
-}
-
-/* Flicker - Title */
-@keyframes flicker {
-  0%, 100% {
-    opacity: 1;
-  }
-  41% {
-    opacity: 1;
-  }
-  42% {
-    opacity: 0.85;
-  }
-  43% {
-    opacity: 1;
-  }
-  77% {
-    opacity: 1;
-  }
-  78% {
-    opacity: 0.9;
-  }
-  79% {
-    opacity: 0.95;
-  }
-  80% {
-    opacity: 1;
-  }
-}
-
-/* Fade In */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-/* Phone Ring */
-@keyframes phoneRing {
-  0%, 100% {
-    transform: rotate(0deg);
-  }
-  10% {
-    transform: rotate(12deg);
-  }
-  20% {
-    transform: rotate(-10deg);
-  }
-  30% {
-    transform: rotate(8deg);
-  }
-  40% {
-    transform: rotate(-6deg);
-  }
-  50% {
-    transform: rotate(0deg);
-  }
-}
-
-/* Phone Wave */
-@keyframes phoneWave {
-  0% {
-    transform: scale(1);
-    opacity: 0.4;
-  }
-  100% {
-    transform: scale(1.8);
-    opacity: 0;
-  }
-}
-
-/* Dialogue Bounce */
-@keyframes dialogueBounce {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(3px);
-  }
-}
-
-/* Loading Dots */
-@keyframes loadingDots {
-  0% {
-    content: "読み込み中";
-  }
-  25% {
-    content: "読み込み中.";
-  }
-  50% {
-    content: "読み込み中..";
-  }
-  75% {
-    content: "読み込み中...";
-  }
-}
-
-/* Stamina Pulse (low) */
-@keyframes staminaPulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-
-/* =============================================
-   SCREEN EFFECT UTILITIES
-   ============================================= */
-
-/* Vignette overlay applied to canvas container if needed */
-.vignette::after {
-  content: "";
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: radial-gradient(ellipse at center, transparent 50%, rgba(0, 0, 0, 0.7) 100%);
-  pointer-events: none;
-  z-index: 5;
-}
-
-/* Scanline effect */
-.scanlines::before {
-  content: "";
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: repeating-linear-gradient(
-    to bottom,
-    transparent 0px,
-    transparent 2px,
-    rgba(0, 0, 0, 0.08) 2px,
-    rgba(0, 0, 0, 0.08) 4px
-  );
-  pointer-events: none;
-  z-index: 6;
-}
-
-/* Flash effect for jump scares */
-.flash-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: #fff;
-  z-index: 400;
-  pointer-events: none;
-  animation: flashBang 0.3s ease-out forwards;
-}
-
-@keyframes flashBang {
-  0% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-  }
-}
-
-/* Red flash for damage */
-.damage-flash {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(139, 0, 0, 0.5);
-  z-index: 400;
-  pointer-events: none;
-  animation: damageFlash 0.5s ease-out forwards;
-}
-
-@keyframes damageFlash {
-  0% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-  }
-}
-
-/* =============================================
-   SETTINGS
-   ============================================= */
-.settings-btn {
-  position: fixed;
-  top: 12px;
-  right: 12px;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: rgba(0,0,0,0.4);
-  border: 1px solid rgba(255,255,255,0.2);
-  color: rgba(255,255,255,0.6);
+  top: calc(env(safe-area-inset-top, 8px) + 6px);
+  right: 8px;
+  width: 44px;
+  height: 44px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(212, 179, 64, 0.55);
+  color: #d4b340;
+  border-radius: 4px;
+  z-index: 15;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+.phone-btn:active {
+  background: rgba(40, 30, 8, 0.85);
+}
+
+/* ============================================================
+ *  PHONE OVERLAY (the main inventory UI)
+ * ============================================================ */
+.phone-overlay {
+  background: rgba(0, 0, 0, 0.95);
+  align-items: flex-end;
   z-index: 60;
-  cursor: pointer;
-  touch-action: manipulation;
-  transition: opacity 0.3s ease;
+  animation: phoneSlideUp 0.25s ease-out;
 }
-.settings-btn:active {
-  background: rgba(139,0,0,0.4);
-  border-color: var(--horror-glow);
+@keyframes phoneSlideUp {
+  from { transform: translateY(20%); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
 }
 
-#settingsOverlay {
-  background: rgba(0,0,0,0.92);
-  z-index: 500;
-  align-items: flex-start;
-  justify-content: flex-start;
-  padding-top: 0;
-}
-
-.settings-panel {
-  background: rgba(20,0,0,0.95);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 0 0 12px 12px;
-  padding: 12px 16px;
+.phone-frame {
   width: 100%;
-  max-width: 360px;
-  text-align: center;
+  max-width: 420px;
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
 }
 
-.settings-title {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--text-color);
-  margin-bottom: 8px;
+.phone-screen {
+  background: #0d0c08;
+  border: 2px solid #483910;
+  border-radius: 28px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 70vh;
+  box-shadow:
+    inset 0 0 30px rgba(212, 179, 64, 0.08),
+    0 0 18px rgba(0, 0, 0, 0.9);
+}
+
+.phone-statusbar {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 18px;
+  background: #0a0905;
+  border-bottom: 1px solid #2a2200;
+  font-size: 10px;
+  color: #b09040;
+  letter-spacing: 0.1em;
+}
+.phone-battery {
+  font-size: 8px;
+  letter-spacing: -0.05em;
+}
+
+.phone-content-area {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 14px 16px 16px;
+  scrollbar-width: thin;
+  scrollbar-color: #483910 transparent;
+}
+.phone-content-area::-webkit-scrollbar {
+  width: 4px;
+}
+.phone-content-area::-webkit-scrollbar-thumb {
+  background: #483910;
+}
+
+.phone-h2 {
+  font-size: 13px;
+  letter-spacing: 0.3em;
+  color: #d4b340;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #382a08;
+  padding-bottom: 6px;
+}
+.phone-h3 {
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: #b09040;
+  margin: 16px 0 8px;
+}
+
+/* STATUS TAB */
+.status-level-box {
+  background: rgba(212, 179, 64, 0.08);
+  border: 1px solid #483910;
+  padding: 12px;
+  text-align: center;
+  margin-bottom: 12px;
+}
+.status-level-num {
+  font-family: 'Times New Roman', serif;
+  font-size: 22px;
+  font-weight: 900;
+  color: #e8d57a;
   letter-spacing: 0.15em;
 }
-
-.settings-item {
-  margin-bottom: 8px;
-  text-align: left;
+.status-level-name {
+  font-size: 10px;
+  letter-spacing: 0.35em;
+  color: #b09040;
+  margin-top: 4px;
+}
+.status-vital {
+  display: grid;
+  grid-template-columns: 60px 1fr 55px;
+  gap: 8px;
+  align-items: center;
+  font-size: 11px;
+  color: #d8d2bc;
+  margin: 6px 0;
+}
+.status-bar {
+  height: 8px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid #382a08;
+}
+.status-bar-fill {
+  height: 100%;
+  width: 100%;
+  transition: width 0.3s;
+}
+.status-bar-fill.hp   { background: linear-gradient(90deg, #803030, #c63a3a); }
+.status-bar-fill.san  { background: linear-gradient(90deg, #382878, #6a55c8); }
+.status-bar-fill.sta  { background: linear-gradient(90deg, #4a6610, #88b033); }
+.status-vital span:last-child {
+  text-align: right;
+  color: #b09040;
+  font-size: 10px;
+}
+.status-time {
+  font-family: 'Courier New', monospace;
+  font-size: 18px;
+  color: #d4b340;
+  letter-spacing: 0.1em;
+}
+.status-prog {
+  font-size: 11px;
+  color: #d8d2bc;
 }
 
-.settings-item label {
-  display: block;
-  font-size: 12px;
-  color: var(--text-dim);
-  margin-bottom: 4px;
+/* INVENTORY TAB */
+.inv-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  min-height: 200px;
+}
+.inv-slot {
+  position: relative;
+  aspect-ratio: 1;
+  background: rgba(212, 179, 64, 0.05);
+  border: 1px solid #382a08;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 24px;
+  color: #d4b340;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.inv-slot:hover, .inv-slot:active {
+  background: rgba(212, 179, 64, 0.18);
+  border-color: #d4b340;
+}
+.inv-slot .inv-name {
+  position: absolute;
+  bottom: 2px;
+  left: 0; right: 0;
+  font-size: 8px;
+  color: #b09040;
+  letter-spacing: 0.04em;
+}
+.inv-slot .inv-count {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  font-size: 10px;
+  color: #fff;
+  background: rgba(120, 96, 32, 0.85);
+  padding: 0 4px;
+  border-radius: 2px;
+}
+.inv-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 40px 16px;
+  font-size: 11px;
+  color: #483910;
+}
+.inv-hint {
+  text-align: center;
+  font-size: 10px;
+  color: #483910;
+  margin-top: 12px;
   letter-spacing: 0.1em;
 }
 
-.slider-row {
+/* MAP TAB */
+.map-level-name {
+  text-align: center;
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  color: #b09040;
+  margin-bottom: 8px;
+}
+.map-canvas {
+  width: 100%;
+  aspect-ratio: 1;
+  background: #050402;
+  border: 1px solid #382a08;
+  display: block;
+}
+.map-legend {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 10px;
+  font-size: 10px;
+  color: #b09040;
 }
+.legend-player  { color: #88b033; }
+.legend-exit    { color: #d4b340; }
+.legend-unknown { color: #483910; }
 
-.volume-slider {
-  flex: 1;
-  height: 8px;
-  -webkit-appearance: none;
-  appearance: none;
-  background: rgba(255,255,255,0.15);
-  border-radius: 4px;
-  outline: none;
-  touch-action: none;
-}
-
-.volume-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: var(--horror-glow);
-  cursor: pointer;
-  border: 2px solid #fff;
-}
-
-.volume-slider::-moz-range-thumb {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: var(--horror-glow);
-  cursor: pointer;
-  border: 2px solid #fff;
-}
-
-.volume-value {
-  display: inline-block;
-  font-size: 12px;
-  color: var(--text-dim);
-  margin-top: 4px;
-}
-
-.settings-buttons {
+/* NOTES TAB */
+.notes-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-top: 4px;
 }
-
-.settings-action-btn {
-  font-family: var(--font-main);
-  font-size: 13px;
-  color: var(--text-color);
-  background: transparent;
-  border: 1px solid rgba(255,255,255,0.2);
-  padding: 10px 20px;
-  border-radius: 6px;
+.note-card {
+  background: rgba(212, 179, 64, 0.06);
+  border: 1px solid #382a08;
+  border-left: 3px solid #786020;
+  padding: 10px 12px;
   cursor: pointer;
-  letter-spacing: 0.1em;
-  touch-action: manipulation;
-  min-height: 40px;
-  transition: all 0.2s ease;
+  transition: background 0.15s;
 }
-.settings-action-btn:active {
-  background: rgba(139,0,0,0.3);
-  border-color: var(--horror-glow);
+.note-card:hover, .note-card:active {
+  background: rgba(212, 179, 64, 0.18);
+}
+.note-card-title {
+  font-size: 11px;
+  color: #d4b340;
+  letter-spacing: 0.1em;
+  margin-bottom: 4px;
+}
+.note-card-preview {
+  font-size: 10px;
+  color: #786020;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.notes-empty {
+  text-align: center;
+  padding: 40px 16px;
+  font-size: 11px;
+  color: #483910;
 }
 
-.settings-close-btn {
-  font-family: var(--font-main);
-  font-size: 13px;
-  color: #fff;
-  background: var(--horror-red);
+/* OPTIONS TAB */
+.opt-row {
+  display: grid;
+  grid-template-columns: 100px 1fr 50px;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0;
+}
+.opt-row label {
+  font-size: 11px;
+  color: #d8d2bc;
+}
+.opt-slider {
+  width: 100%;
+  height: 4px;
+  appearance: none;
+  background: #2a2200;
+  outline: none;
+  border-radius: 2px;
+}
+.opt-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: #d4b340;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.opt-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: #d4b340;
+  border-radius: 50%;
   border: none;
-  padding: 10px 20px;
-  border-radius: 6px;
   cursor: pointer;
+}
+.opt-val {
+  text-align: right;
+  font-size: 10px;
+  color: #b09040;
+}
+.opt-buttons {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0;
+}
+.opt-btn {
+  flex: 1;
+  padding: 10px 12px;
+  background: rgba(20, 14, 4, 0.85);
+  color: #d4b340;
+  border: 1px solid #786020;
+  font-family: inherit;
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  cursor: pointer;
+}
+.opt-btn:active {
+  background: #2a1c00;
+}
+.opt-btn.warn {
+  color: #c63a3a;
+  border-color: #803030;
+}
+.opt-btn.warn:active {
+  background: #1a0808;
+}
+
+/* PHONE TAB BAR */
+.phone-tabbar {
+  display: flex;
+  background: #0a0905;
+  border-top: 1px solid #2a2200;
+  padding: 8px 4px;
+}
+.phone-tab-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #786020;
+  font-family: inherit;
+  font-size: 9px;
+  padding: 4px 2px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  letter-spacing: 0.05em;
+}
+.phone-tab-btn.active {
+  color: #d4b340;
+}
+.phone-tab-btn .tab-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+.phone-tab-btn .tab-label {
+  font-size: 8px;
   letter-spacing: 0.1em;
-  touch-action: manipulation;
-  min-height: 40px;
-  transition: all 0.2s ease;
-}
-.settings-close-btn:active {
-  background: #660000;
-  transform: scale(0.97);
 }
 
-/* Joystick faded during dialogue */
-.virtual-stick.faded {
-  opacity: 0 !important;
-  pointer-events: none;
+.phone-close-btn {
+  margin-top: 10px;
+  padding: 8px;
+  background: transparent;
+  color: #786020;
+  border: 1px solid #483910;
+  font-family: inherit;
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  cursor: pointer;
+}
+.phone-close-btn:active {
+  background: rgba(40, 30, 8, 0.8);
 }
 
-/* Safe area for settings button */
-@supports (padding-top: env(safe-area-inset-top)) {
-  .settings-btn {
-    top: calc(12px + env(safe-area-inset-top));
-  }
-}
-
-/* =============================================
-   MEDIA QUERIES - Small Screens
-   ============================================= */
-@media screen and (max-width: 360px) {
-  .virtual-stick {
-    width: 100px;
-    height: 100px;
-  }
-
-  .joystick-inner {
-    width: 34px;
-    height: 34px;
-  }
-
-  #actionBtn {
-    width: 56px;
-    height: 56px;
-    bottom: 36px;
-    right: 16px;
-    font-size: 10px;
-  }
-
-  .dialogue-text {
-    font-size: 14px;
-  }
-
-  .game-title {
-    font-size: 32px;
-  }
-}
-
-@media screen and (max-height: 480px) {
-  .virtual-stick {
-    width: 90px;
-    height: 90px;
-  }
-
-  .joystick-inner {
-    width: 30px;
-    height: 30px;
-  }
-
-  #actionBtn {
-    width: 52px;
-    height: 52px;
-    bottom: 28px;
-    right: 16px;
-    font-size: 10px;
-  }
-
-  .dialogue-inner {
-    padding: 10px 14px 14px;
-  }
-
-  .dialogue-text {
-    font-size: 14px;
-    min-height: 1.6em;
-  }
-}
-
-/* Larger screens - slightly bigger controls */
-@media screen and (min-width: 768px) {
-  .virtual-stick {
-    width: 140px;
-    height: 140px;
-  }
-
-  .joystick-inner {
-    width: 48px;
-    height: 48px;
-  }
-
-  #actionBtn {
-    width: 72px;
-    height: 72px;
-    bottom: 56px;
-    right: 32px;
-    font-size: 13px;
-  }
-
-  .dialogue-text {
-    font-size: 18px;
-  }
-}
-
-/* Safe area insets for notched devices */
-@supports (padding-bottom: env(safe-area-inset-bottom)) {
-  #touchZoneLeft, #touchZoneRight {
-    /* touch zones are full height, no adjustment needed */
-  }
-
-  #actionBtn {
-    bottom: calc(48px + env(safe-area-inset-bottom));
-  }
-
-  #dialogueBox {
-    padding-bottom: calc(16px + env(safe-area-inset-bottom));
-  }
-
-  #staminaBar {
-    top: calc(12px + env(safe-area-inset-top));
-  }
-}
-
-/* =============================================
-   NEW ANIMATIONS (U3, U2, U6)
-   ============================================= */
-
-@keyframes slideUp {
-  0% {
-    opacity: 0;
-    transform: translateX(-50%) translateY(16px);
-  }
-  15% {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
-  80% {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
-  100% {
-    opacity: 0;
-    transform: translateX(-50%) translateY(-8px);
-  }
-}
-
-@keyframes breathe {
-  0%, 100% {
-    opacity: 0.5;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-
-@keyframes dangerPulse {
-  0%, 100% {
-    opacity: 0.3;
-  }
-  50% {
-    opacity: 0.85;
-  }
-}
-
-@keyframes cinemaIn {
-  from {
-    height: 0;
-  }
-  to {
-    height: 12vh;
-  }
-}
-
-@keyframes glowPulse {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(255, 215, 0, 0);
-  }
-  50% {
-    box-shadow: 0 0 8px 3px rgba(255, 215, 0, 0.6);
-  }
-}
-
-@keyframes memoReveal {
-  0% {
-    opacity: 0;
-    transform: scale(0.94);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-@keyframes objectiveFadeIn {
-  from {
-    opacity: 0;
-    transform: translateX(-50%) translateY(-6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
-}
-
-@keyframes dialogueShake {
-  0%, 100% { transform: translateX(0); }
-  15%       { transform: translateX(-4px); }
-  30%       { transform: translateX(4px); }
-  45%       { transform: translateX(-3px); }
-  60%       { transform: translateX(3px); }
-  75%       { transform: translateX(-1px); }
-  90%       { transform: translateX(1px); }
-}
-
-/* =============================================
-   U1-1. OBJECTIVE HUD
-   ============================================= */
+/* ============================================================
+ *  OBJECTIVE / LEVEL HUD
+ * ============================================================ */
 .hud-objective {
   position: fixed;
-  top: calc(56px + env(safe-area-inset-top, 0px));
+  top: calc(env(safe-area-inset-top, 8px) + 6px);
   left: 50%;
   transform: translateX(-50%);
-  z-index: 15;
-  pointer-events: none;
-  animation: objectiveFadeIn 0.4s ease-out;
+  background: rgba(0, 0, 0, 0.75);
+  border: 1px solid rgba(120, 96, 32, 0.6);
+  padding: 6px 14px;
+  z-index: 13;
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  color: #d4b340;
+  max-width: 70vw;
+  text-align: center;
 }
 
-.hud-objective span {
-  display: inline-block;
-  background: rgba(0, 0, 0, 0.72);
-  color: #e0e0e0;
-  font-size: 12px;
-  font-family: var(--font-main);
-  letter-spacing: 0.1em;
-  padding: 5px 14px;
-  border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  white-space: nowrap;
-  max-width: 280px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* =============================================
-   U1-2. INVENTORY HUD
-   ============================================= */
-.hud-inventory {
-  position: fixed;
-  top: calc(12px + env(safe-area-inset-top, 0px));
-  right: calc(60px + env(safe-area-inset-right, 0px));
-  z-index: 15;
-  display: flex;
-  flex-direction: row;
-  gap: 6px;
-  align-items: center;
-  pointer-events: none;
-}
-
-.inv-item {
-  width: 32px;
-  height: 32px;
-  background: rgba(0, 0, 0, 0.65);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-  position: relative;
-  flex-direction: column;
-}
-
-.inv-item.new-item {
-  animation: glowPulse 1s ease-in-out 3;
-}
-
-.inv-icon {
-  font-size: 15px;
-  line-height: 1;
-}
-
-.inv-count {
-  position: absolute;
-  bottom: 1px;
-  right: 3px;
-  font-size: 9px;
-  color: #ffd700;
-  font-weight: 700;
-  line-height: 1;
-}
-
-/* =============================================
-   U1-3. FLOOR HUD
-   ============================================= */
 .hud-floor {
   position: fixed;
-  top: calc(56px + env(safe-area-inset-top, 0px));
-  left: calc(12px + env(safe-area-inset-left, 0px));
-  z-index: 15;
-  pointer-events: none;
-}
-
-.hud-floor span {
-  display: inline-block;
-  background: rgba(0, 0, 0, 0.65);
-  color: #e0e0e0;
-  font-size: 11px;
-  font-family: 'Courier New', 'Menlo', monospace;
-  letter-spacing: 0.1em;
-  padding: 3px 10px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-}
-
-/* =============================================
-   U2-1. MEMO VIEWER OVERLAY
-   ============================================= */
-#memoOverlay {
-  background: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  z-index: 1000;
-}
-
-.memo-panel {
-  background: #f4e8d0;
-  color: #2a1a0a;
-  border-radius: 4px;
-  padding: 24px 24px 20px;
-  max-width: 320px;
-  width: calc(100% - 48px);
-  box-shadow:
-    0 4px 24px rgba(0, 0, 0, 0.6),
-    inset 0 0 40px rgba(42, 26, 10, 0.08),
-    0 0 0 1px rgba(42, 26, 10, 0.15);
-  animation: memoReveal 0.35s ease-out;
-  position: relative;
-}
-
-.memo-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: #2a1a0a;
-  letter-spacing: 0.1em;
-  margin-bottom: 10px;
-  font-family: 'Hiragino Mincho ProN', 'Yu Mincho', 'Georgia', serif;
-}
-
-.memo-divider {
-  width: 100%;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, #8b3a1a, transparent);
-  margin-bottom: 14px;
-  opacity: 0.6;
-}
-
-.memo-text {
-  font-size: 14px;
-  line-height: 1.9;
-  color: #3a2010;
-  word-break: break-all;
-  white-space: pre-wrap;
-  margin-bottom: 20px;
-  font-family: 'Hiragino Mincho ProN', 'Yu Mincho', serif;
-}
-
-.memo-close-btn {
-  font-family: var(--font-main);
-  font-size: 14px;
-  color: #f4e8d0;
-  background: #5a2800;
-  border: none;
-  border-radius: 4px;
-  padding: 10px 28px;
-  cursor: pointer;
-  display: block;
-  margin: 0 auto;
-  touch-action: manipulation;
-  min-height: 44px;
-  letter-spacing: 0.1em;
-  transition: background 0.2s ease;
-}
-
-.memo-close-btn:active {
-  background: #3a1800;
-  transform: scale(0.97);
-}
-
-/* =============================================
-   U2-2. TOAST NOTIFICATION
-   ============================================= */
-.toast {
-  position: fixed;
-  bottom: calc(180px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
   left: 50%;
-  transform: translateX(-50%) translateY(0);
-  z-index: 800;
-  pointer-events: none;
-  animation: slideUp 3s ease forwards;
-}
-
-.toast span {
-  display: inline-block;
-  background: rgba(0, 0, 0, 0.82);
-  color: #e0e0e0;
-  font-family: var(--font-main);
-  font-size: 13px;
-  letter-spacing: 0.08em;
-  padding: 8px 20px;
-  border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  white-space: nowrap;
-  max-width: 280px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* =============================================
-   U3-1. TUTORIAL OVERLAY
-   ============================================= */
-#tutorialOverlay {
-  background: rgba(0, 0, 0, 0.88);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  z-index: 1200;
-}
-
-.tutorial-content {
-  background: rgba(15, 0, 0, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 12px;
-  padding: 24px 20px 20px;
-  max-width: 320px;
-  width: calc(100% - 48px);
-}
-
-.tutorial-title {
-  font-size: 17px;
-  font-weight: 700;
-  color: #e0e0e0;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid #483910;
+  padding: 5px 12px;
+  z-index: 12;
+  font-size: 11px;
   letter-spacing: 0.2em;
-  text-align: center;
-  margin-bottom: 20px;
+  color: #d4b340;
+  pointer-events: none;
 }
 
-.tutorial-item {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 16px;
-}
-
-.tutorial-icon {
-  width: 52px;
-  min-width: 52px;
-  height: 44px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
-  color: #aaa;
-  text-align: center;
-  line-height: 1.3;
-}
-
-.tutorial-action-demo {
-  color: #cc2222;
-  font-size: 22px;
-}
-
-.tutorial-item p {
-  font-size: 13px;
-  color: var(--text-color);
-  letter-spacing: 0.06em;
-  line-height: 1.5;
-}
-
-.tutorial-close {
-  font-family: var(--font-main);
-  font-size: 15px;
-  color: #fff;
-  background: var(--horror-red);
-  border: none;
-  border-radius: 6px;
-  padding: 12px 40px;
-  cursor: pointer;
-  display: block;
-  margin: 20px auto 0;
-  letter-spacing: 0.15em;
-  min-height: 48px;
-  touch-action: manipulation;
-  transition: background 0.2s ease;
-}
-
-.tutorial-close:active {
-  background: #660000;
-  transform: scale(0.97);
-}
-
-/* =============================================
-   U3-2. DIALOGUE STYLING ENHANCEMENTS
-   ============================================= */
-
-/* Haruki speaker: red name + red tint bg */
-#dialogueBox[data-speaker="ハルキ"] .dialogue-inner {
-  background: rgba(20, 0, 0, 0.9);
-}
-
-#dialogueBox[data-speaker="ハルキ"] .speaker-name {
-  color: #cc0000;
-  text-shadow: 0 0 8px rgba(204, 0, 0, 0.6);
-}
-
-#dialogueBox[data-speaker="ハルキ"] .dialogue-text {
-  font-size: 17px;
-}
-
-/* Player / あなた speaker: white name, dimmer text */
-#dialogueBox[data-speaker="あなた"] .speaker-name {
-  color: #e0e0e0;
-  background: rgba(255, 255, 255, 0.08);
-}
-
-#dialogueBox[data-speaker="あなた"] .dialogue-text {
-  color: #b0b0b0;
-}
-
-/* System / narration: no speaker, italic text */
-#dialogueBox[data-speaker=""] .dialogue-text,
-#dialogueBox[data-speaker="system"] .dialogue-text {
-  font-style: italic;
-  color: #888;
-}
-
-/* Shake class for scary moments */
-.dialogue-shake .dialogue-inner {
-  animation: dialogueShake 0.5s ease-in-out;
-}
-
-/* =============================================
-   U3-3. DIRECTIONAL DANGER INDICATOR
-   ============================================= */
+/* ============================================================
+ *  DANGER INDICATOR
+ * ============================================================ */
 .danger-indicator {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  inset: 0;
   pointer-events: none;
-  z-index: 20;
+  z-index: 9;
 }
-
 .danger-edge {
   position: absolute;
   top: 0;
-  height: 100%;
-  width: 30px;
-  pointer-events: none;
+  bottom: 0;
+  width: 80px;
+  background: linear-gradient(to right, rgba(180, 30, 30, 0.55), transparent);
   opacity: 0;
-  animation: dangerPulse 0.8s ease-in-out infinite;
+  transition: opacity 0.15s;
 }
-
-.danger-edge.active {
-  opacity: 1;
-}
-
-.danger-left {
-  left: 0;
-  background: linear-gradient(to right, rgba(180, 0, 0, 0.7), transparent);
-}
-
 .danger-right {
   right: 0;
-  background: linear-gradient(to left, rgba(180, 0, 0, 0.7), transparent);
+  left: auto;
+  background: linear-gradient(to left, rgba(180, 30, 30, 0.55), transparent);
+}
+.danger-edge.active {
+  opacity: 1;
+  animation: dangerPulse 0.5s infinite;
+}
+@keyframes dangerPulse {
+  0%, 100% { opacity: 0.3; }
+  50%      { opacity: 0.9; }
 }
 
-/* =============================================
-   U3-4. CINEMA BARS
-   ============================================= */
-#cinemaBars {
+/* ============================================================
+ *  TOAST NOTIFICATION
+ * ============================================================ */
+.toast {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 18;
+  top: calc(env(safe-area-inset-top, 8px) + 56px);
+  left: 50%;
+  transform: translate(-50%, -10px);
+  background: rgba(0, 0, 0, 0.92);
+  border: 1px solid #786020;
+  padding: 10px 18px;
+  color: #e8d57a;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  z-index: 40;
+  opacity: 0;
+  transition: opacity 0.25s, transform 0.25s;
+  max-width: 80vw;
+  text-align: center;
+}
+.toast.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
 }
 
-.cinema-bar {
-  position: absolute;
-  left: 0;
-  width: 100%;
-  background: #000;
-  height: 0;
-  transition: height 0.5s ease;
-}
-
-.cinema-top {
-  top: 0;
-}
-
-.cinema-bottom {
-  bottom: 0;
-}
-
-#cinemaBars.active .cinema-bar {
-  height: 12vh;
-}
-
-/* =============================================
-   U4-1. TITLE MENU
-   ============================================= */
-.title-menu {
+/* ============================================================
+ *  NOTE VIEWER (full memo)
+ * ============================================================ */
+.note-panel {
+  background: #1c1604;
+  border: 1px solid #786020;
+  width: 86vw;
+  max-width: 420px;
+  max-height: 80vh;
+  padding: 20px;
+  position: relative;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 12px;
 }
-
-.menu-btn {
-  font-family: var(--font-main);
-  font-size: clamp(13px, 3.5vw, 16px);
-  color: var(--text-color);
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  padding: 12px 36px;
-  letter-spacing: 0.2em;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  min-height: 48px;
-  min-width: 180px;
-  touch-action: manipulation;
-  border-radius: 2px;
-}
-
-.menu-btn:active {
-  background: rgba(139, 0, 0, 0.4);
-  border-color: var(--horror-glow);
-  color: #fff;
-  transform: scale(0.96);
-}
-
-/* Keep pulse on start button */
-#startBtn.menu-btn {
-  animation: pulse 2.5s ease-in-out infinite;
-}
-
-/* =============================================
-   U4-2. CREDITS OVERLAY
-   ============================================= */
-#creditsOverlay {
-  background: rgba(0, 0, 0, 0.92);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  z-index: 1200;
-}
-
-.credits-content {
-  text-align: center;
-  padding: 40px 24px;
-  max-width: 320px;
-  width: 100%;
-}
-
-.credits-title {
-  font-size: 20px;
-  font-weight: 700;
-  color: #e0e0e0;
-  letter-spacing: 0.3em;
-  margin-bottom: 32px;
-}
-
-.credits-role {
-  font-size: 11px;
-  color: #666;
-  letter-spacing: 0.2em;
-  margin-bottom: 4px;
-  margin-top: 16px;
-}
-
-.credits-name {
-  font-size: 17px;
-  color: #e0e0e0;
-  letter-spacing: 0.1em;
-  margin-bottom: 0;
-}
-
-.credits-note {
-  font-size: 10px;
-  color: rgba(255, 255, 255, 0.2);
-  letter-spacing: 0.2em;
-  margin-top: 32px;
-  margin-bottom: 32px;
-}
-
-.credits-close {
-  font-family: var(--font-main);
+.note-title {
   font-size: 14px;
-  color: var(--text-color);
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  padding: 12px 36px;
-  border-radius: 2px;
-  cursor: pointer;
-  letter-spacing: 0.15em;
-  min-height: 48px;
-  touch-action: manipulation;
-  transition: all 0.2s ease;
-}
-
-.credits-close:active {
-  background: rgba(139, 0, 0, 0.3);
-  border-color: var(--horror-glow);
-}
-
-/* =============================================
-   U4-3. VERSION TEXT
-   ============================================= */
-.version-text {
-  position: absolute;
-  bottom: 48px;
-  right: 16px;
-  font-size: 9px;
-  color: rgba(255, 255, 255, 0.12);
-  letter-spacing: 0.15em;
-  z-index: 1;
-  pointer-events: none;
-}
-
-/* =============================================
-   U5. TRUE ENDING & BAD ENDING SCREENS
-   ============================================= */
-#trueEndingScreen {
-  background: rgba(0, 0, 0, 0.97);
-  z-index: 300;
-  animation: fadeIn 2s ease-out;
-}
-
-.true-ending .ending-escape {
-  color: #ffd700;
-  text-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
-}
-
-.true-ending .ending-title {
-  color: #ffd700;
-  text-shadow:
-    0 0 20px rgba(255, 215, 0, 0.5),
-    0 0 40px rgba(255, 215, 0, 0.2);
-}
-
-#badEndingScreen {
-  background:
-    radial-gradient(ellipse at 50% 50%, rgba(100, 0, 0, 0.3) 0%, transparent 70%),
-    rgba(0, 0, 0, 0.97);
-  z-index: 300;
-  animation: fadeIn 1.5s ease-out;
-}
-
-.bad-ending .ending-escape {
-  color: #cc0000;
-  text-shadow: 0 0 10px rgba(200, 0, 0, 0.5);
-}
-
-.bad-ending .ending-title {
-  color: #880000;
-  text-shadow:
-    0 0 20px rgba(150, 0, 0, 0.5),
-    0 0 40px rgba(100, 0, 0, 0.3);
-}
-
-.bad-ending .ending-message {
-  color: #cc4444;
-}
-
-/* =============================================
-   U6. HIDING UI
-   ============================================= */
-#hideOverlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: auto;
-  z-index: 90;
-  background: radial-gradient(ellipse at center,
-    rgba(0,0,0,0.2) 0%,
-    rgba(0,0,0,0.6) 50%,
-    rgba(0,0,0,0.92) 100%
-  );
-  touch-action: manipulation;
-}
-
-.hide-ui {
-  position: absolute;
-  bottom: calc(80px + env(safe-area-inset-bottom, 0px));
-  left: 50%;
-  transform: translateX(-50%);
-  text-align: center;
-  width: calc(100% - 48px);
-  max-width: 280px;
-}
-
-.hide-text {
-  font-size: 15px;
-  color: rgba(255, 255, 255, 0.7);
   letter-spacing: 0.2em;
-  margin-bottom: 12px;
-  animation: breathe 2.5s ease-in-out infinite;
+  color: #d4b340;
+  margin-bottom: 10px;
+  font-family: 'Times New Roman', serif;
 }
-
-.hide-breath-bar {
-  width: 100%;
-  height: 3px;
-  background: rgba(255, 255, 255, 0.12);
-  border-radius: 2px;
-  overflow: hidden;
-  margin-bottom: 8px;
+.note-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #786020, transparent);
+  margin-bottom: 14px;
 }
-
-.hide-breath-fill {
-  height: 100%;
-  width: 100%;
-  background: linear-gradient(90deg, rgba(255,255,255,0.6), rgba(255,255,255,0.3));
-  border-radius: 2px;
-  transition: width 0.2s linear;
+.note-text {
+  flex: 1;
+  color: #e8e0c0;
+  font-size: 12px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  overflow-y: auto;
+  margin-bottom: 14px;
 }
-
-.hide-hint {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.3);
-  letter-spacing: 0.15em;
-  margin-bottom: 16px;
-  animation: breathe 2.5s ease-in-out infinite;
-}
-
-.hide-exit-btn {
-  font-family: var(--font-main);
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.8);
-  background: rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 4px;
-  padding: 8px 24px;
+.note-close-btn {
+  align-self: flex-end;
+  padding: 8px 18px;
+  background: rgba(0, 0, 0, 0.7);
+  color: #d4b340;
+  border: 1px solid #786020;
+  font-family: inherit;
+  font-size: 12px;
+  letter-spacing: 0.2em;
   cursor: pointer;
-  letter-spacing: 0.1em;
-  touch-action: manipulation;
-  min-height: 40px;
-  transition: all 0.2s ease;
 }
 
-.hide-exit-btn:active {
-  background: rgba(80, 0, 0, 0.5);
-  border-color: rgba(255, 100, 100, 0.4);
+/* ============================================================
+ *  TUTORIAL
+ * ============================================================ */
+.tutorial-content {
+  background: #0d0a04;
+  border: 1px solid #786020;
+  padding: 24px 20px;
+  width: 86vw;
+  max-width: 380px;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+.tutorial-title {
+  font-size: 16px;
+  letter-spacing: 0.3em;
+  color: #d4b340;
+  text-align: center;
+  margin-bottom: 18px;
+}
+.tutorial-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 14px 0;
+  font-size: 12px;
+  color: #d8d2bc;
+}
+.tutorial-icon {
+  width: 56px;
+  text-align: center;
+  font-size: 14px;
+  color: #d4b340;
+  background: rgba(40, 30, 8, 0.5);
+  padding: 8px 4px;
+  border: 1px solid #382a08;
+  flex-shrink: 0;
+}
+.tutorial-action-demo {
+  color: #ff5050;
+  background: radial-gradient(circle, #cc2828, #441010);
+  border-color: #ff5050;
+  border-radius: 8px;
+}
+.tutorial-item.lore {
+  background: rgba(212, 179, 64, 0.08);
+  border-left: 3px solid #d4b340;
+  padding: 10px 14px;
+  margin-top: 22px;
+}
+.lore-text {
+  font-size: 11px;
+  color: #b09040;
+  line-height: 1.6;
+  font-style: italic;
+}
+.tutorial-close {
+  display: block;
+  margin: 20px auto 0;
+  padding: 10px 28px;
+  background: rgba(20, 14, 4, 0.85);
+  color: #d4b340;
+  border: 1px solid #786020;
+  font-family: inherit;
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  cursor: pointer;
 }
 
-/* =============================================
-   SAFE AREA & SMALL SCREEN ADJUSTMENTS (new)
-   ============================================= */
-@media screen and (max-width: 360px) {
-  .hud-inventory {
-    right: calc(52px + env(safe-area-inset-right, 0px));
-    gap: 4px;
-  }
-
-  .inv-item {
-    width: 28px;
-    height: 28px;
-    font-size: 14px;
-  }
-
-  .hud-objective span {
-    font-size: 11px;
-    padding: 4px 10px;
-    max-width: 200px;
-  }
-
-  .toast span {
-    font-size: 12px;
-    padding: 7px 14px;
-  }
+/* ============================================================
+ *  NO-CLIP FLASH (transition white flash)
+ * ============================================================ */
+.noclip-flash {
+  position: fixed;
+  inset: 0;
+  background: #fffce8;
+  z-index: 80;
+  pointer-events: none;
+  opacity: 0;
+}
+.noclip-flash.show {
+  animation: noclipFade 0.6s ease-out forwards;
+}
+@keyframes noclipFade {
+  0%   { opacity: 1; }
+  100% { opacity: 0; }
 }
 
-@supports (padding-top: env(safe-area-inset-top)) {
-  .hud-objective {
-    top: calc(56px + env(safe-area-inset-top));
-  }
+/* ============================================================
+ *  MOBILE RESPONSIVENESS
+ * ============================================================ */
+@media (max-width: 380px) {
+  .game-title { font-size: 42px; }
+  .menu-btn { min-width: 170px; font-size: 12px; }
+  .phone-frame { padding: 6px; }
+  .phone-screen { border-radius: 22px; }
+  .status-vital { grid-template-columns: 50px 1fr 50px; font-size: 10px; }
+  .inv-grid { grid-template-columns: repeat(3, 1fr); }
+  .opt-row { grid-template-columns: 80px 1fr 40px; }
+  #actionBtn { width: 68px; height: 68px; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+}
 
-  .hud-floor {
-    top: calc(56px + env(safe-area-inset-top));
-    left: calc(12px + env(safe-area-inset-left));
-  }
+@media (max-height: 620px) {
+  .phone-screen { min-height: 86vh; }
+  .game-title { font-size: 38px; }
+  .title-decoration { margin: 12px auto; }
+}
 
-  .hud-inventory {
-    top: calc(12px + env(safe-area-inset-top));
-    right: calc(60px + env(safe-area-inset-right));
+/* Landscape — phone tabs go horizontal next to content */
+@media (orientation: landscape) and (max-height: 500px) {
+  .phone-frame {
+    max-width: 600px;
   }
+  .game-title { font-size: 36px; line-height: 1.05; }
+  .title-decoration { margin: 10px auto; }
+  .title-menu { flex-direction: row; }
 }

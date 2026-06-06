@@ -175,18 +175,51 @@
 
   function getWallColor(tile, side, dist, isLower, wallX, mapX, mapY) {
     var r, g, b;
-    if (isLower) {
-      // Wainscoting / dark wood panel (lower wall)
+    var theme = engine.theme;
+    // ── Theme override (Backrooms) ───────────────────────────
+    if (theme && theme.wall) {
+      var palette = theme.wall;
+      var base;
+      if (isLower && palette.lower && !palette.flat) {
+        base = palette.lower[tile] || palette.lower['default'] || [85, 55, 35];
+      } else {
+        base = palette.upper[tile] || palette.upper['default'] || [155, 135, 105];
+      }
+      r = base[0]; g = base[1]; b = base[2];
+
+      // Pattern overlay per palette.pattern
+      if (palette.pattern && wallX !== undefined) {
+        var pat = palette.pattern;
+        if (pat === 'stripe') {
+          var sp = (wallX * 10) | 0;
+          if (sp % 2 === 0) { r = (r * 0.95) | 0; g = (g * 0.95) | 0; b = (b * 0.95) | 0; }
+        } else if (pat === 'tile') {
+          // Hard tile lines every 0.25
+          var tilePos = (wallX * 4) % 1;
+          if (tilePos < 0.04 || tilePos > 0.96) {
+            r = (r * 0.65) | 0; g = (g * 0.65) | 0; b = (b * 0.65) | 0;
+          }
+        } else if (pat === 'concrete') {
+          var noise = (Math.sin(wallX * 60 + (mapX || 0) * 7) * 0.06);
+          r = Math.max(0, (r * (1 + noise)) | 0);
+          g = Math.max(0, (g * (1 + noise)) | 0);
+          b = Math.max(0, (b * (1 + noise)) | 0);
+        } else if (pat === 'grain') {
+          var g0 = 0.95 + Math.sin(wallX * 60) * 0.03 + Math.sin(wallX * 150) * 0.02;
+          r = (r * g0) | 0; g = (g * g0) | 0; b = (b * g0) | 0;
+        }
+      }
+    } else if (isLower) {
+      // ── Default hotel theme (legacy) ─────────────────────────
       switch (tile) {
-        case 1: r = 85; g = 55; b = 35; break;   // Dark oak panel
-        case 2: r = 130; g = 85; b = 40; break;   // Door (lighter wood)
-        case 6: r = 45; g = 110; b = 45; break;   // Exit door (green)
-        case 7: r = 75; g = 50; b = 30; break;    // Furniture (dark wood)
-        case 9: r = 100; g = 100; b = 110; break;  // Elevator (brushed metal)
-        case 10: r = 55; g = 65; b = 95; break;    // Window
+        case 1: r = 85; g = 55; b = 35; break;
+        case 2: r = 130; g = 85; b = 40; break;
+        case 6: r = 45; g = 110; b = 45; break;
+        case 7: r = 75; g = 50; b = 30; break;
+        case 9: r = 100; g = 100; b = 110; break;
+        case 10: r = 55; g = 65; b = 95; break;
         default: r = 85; g = 55; b = 35; break;
       }
-      // V1: Wainscoting wood grain — horizontal line variation
       if (wallX !== undefined) {
         var grain = 0.95 + Math.sin(wallX * 60) * 0.03 + Math.sin(wallX * 150) * 0.02;
         r = (r * grain) | 0;
@@ -194,17 +227,15 @@
         b = (b * grain) | 0;
       }
     } else {
-      // Upper wall — warm cream/beige wallpaper with subtle pattern
       switch (tile) {
-        case 1: r = 155; g = 135; b = 105; break;  // Cream wallpaper
-        case 2: r = 160; g = 110; b = 50; break;   // Door (wood)
-        case 6: r = 60; g = 150; b = 60; break;    // Exit door (green)
-        case 7: r = 100; g = 90; b = 80; break;    // Furniture
-        case 9: r = 140; g = 140; b = 150; break;  // Elevator (metal)
-        case 10: r = 80; g = 90; b = 130; break;   // Window (blue tint)
+        case 1: r = 155; g = 135; b = 105; break;
+        case 2: r = 160; g = 110; b = 50; break;
+        case 6: r = 60; g = 150; b = 60; break;
+        case 7: r = 100; g = 90; b = 80; break;
+        case 9: r = 140; g = 140; b = 150; break;
+        case 10: r = 80; g = 90; b = 130; break;
         default: r = 155; g = 135; b = 105; break;
       }
-      // V1: Procedural wallpaper vertical stripe pattern
       if (wallX !== undefined) {
         var stripePhase = (wallX * 10) | 0;
         if (stripePhase % 2 === 0) {
@@ -256,8 +287,8 @@
     // Darken one side for depth
     if (side === 1) { r = r * 0.72 | 0; g = g * 0.72 | 0; b = b * 0.72 | 0; }
 
-    // Distance fog — visible up to ~12 tiles out
-    var maxViewDist = 12;
+    // Distance fog — theme-driven view distance (default 12 tiles)
+    var maxViewDist = (engine.theme && engine.theme.fogDist) || 12;
     var fogFactor = Math.max(0.05, 1 - dist / maxViewDist);
 
     // V5: Point light contributions (from precomputed grid)
@@ -578,19 +609,22 @@
     // Apply shake to angle for camera wobble
     var renderAngle = playerAngle + shakeOffsetX * 0.01;
 
-    // Draw ceiling (hotel ceiling — warm off-white receding into dark)
+    // ── Theme-driven ceiling/floor backdrop ───────────────
+    var themeBg = engine.theme && engine.theme.bg;
+    var ceilStops = (themeBg && themeBg.ceiling) || ['#181614', '#262018', '#302a20'];
+    var floorStops = (themeBg && themeBg.floor) || ['#1c1210', '#2d1815', '#3a2018'];
+
     var ceilGrad = ctx.createLinearGradient(0, 0, 0, h / 2);
-    ceilGrad.addColorStop(0, '#181614');
-    ceilGrad.addColorStop(0.7, '#262018');
-    ceilGrad.addColorStop(1, '#302a20');
+    ceilGrad.addColorStop(0, ceilStops[0]);
+    ceilGrad.addColorStop(0.7, ceilStops[1] || ceilStops[0]);
+    ceilGrad.addColorStop(1, ceilStops[2] || ceilStops[1] || ceilStops[0]);
     ctx.fillStyle = ceilGrad;
     ctx.fillRect(0, 0, w, h / 2);
 
-    // Draw floor (deep burgundy/red hotel carpet)
     var floorGrad = ctx.createLinearGradient(0, h / 2, 0, h);
-    floorGrad.addColorStop(0, '#1c1210');
-    floorGrad.addColorStop(0.3, '#2d1815');
-    floorGrad.addColorStop(1, '#3a2018');
+    floorGrad.addColorStop(0, floorStops[0]);
+    floorGrad.addColorStop(0.3, floorStops[1] || floorStops[0]);
+    floorGrad.addColorStop(1, floorStops[2] || floorStops[1] || floorStops[0]);
     ctx.fillStyle = floorGrad;
     ctx.fillRect(0, h / 2, w, h / 2);
 
@@ -709,30 +743,41 @@
       wallX = wallX - Math.floor(wallX); // fractional part 0-1
 
       var wallH = drawEnd - drawStart;
-      var fogDim = Math.max(0.05, 1 - correctedDist / 12);
+      var _fogDist = (engine.theme && engine.theme.fogDist) || 12;
+      var fogDim = Math.max(0.05, 1 - correctedDist / _fogDist);
       var totalDim = fogDim * frameFlicker;
 
       // --- Door rendering (tile 2, 6, 9) ---
       if (hitTile === 2 || hitTile === 6 || hitTile === 9) {
         renderDoorStrip(ctx, screenX, stripWidth, drawStart, wallH, wallX, hitTile, side, totalDim, mapX, mapY);
       } else {
-        // Regular wall: upper wallpaper + dado rail + lower wainscoting
-        var splitY = drawStart + wallH * 0.62;
-        var colorUpper = getWallColor(hitTile, side, correctedDist, false, wallX, mapX, mapY);
-        var colorLower = getWallColor(hitTile, side, correctedDist, true, wallX, mapX, mapY);
+        // ── Theme override: flat wall (no wainscoting split) ─
+        var themeWall = engine.theme && engine.theme.wall;
+        if (themeWall && themeWall.flat) {
+          var flatColor = getWallColor(hitTile, side, correctedDist, false, wallX, mapX, mapY);
+          ctx.fillStyle = flatColor;
+          ctx.fillRect(screenX, drawStart, stripWidth, wallH);
+        } else {
+          // Regular wall: upper wallpaper + dado rail + lower wainscoting
+          var splitRatio = (themeWall && themeWall.splitRatio) || 0.62;
+          var splitY = drawStart + wallH * splitRatio;
+          var colorUpper = getWallColor(hitTile, side, correctedDist, false, wallX, mapX, mapY);
+          var colorLower = getWallColor(hitTile, side, correctedDist, true, wallX, mapX, mapY);
 
-        ctx.fillStyle = colorUpper;
-        ctx.fillRect(screenX, drawStart, stripWidth, splitY - drawStart);
+          ctx.fillStyle = colorUpper;
+          ctx.fillRect(screenX, drawStart, stripWidth, splitY - drawStart);
 
-        var railH = Math.max(1, wallH * 0.015);
-        var railR = (50 * totalDim) | 0;
-        var railG = (35 * totalDim) | 0;
-        var railB = (22 * totalDim) | 0;
-        ctx.fillStyle = 'rgb(' + railR + ',' + railG + ',' + railB + ')';
-        ctx.fillRect(screenX, splitY, stripWidth, railH);
+          var railH = Math.max(1, wallH * 0.015);
+          var railRgb = (themeWall && themeWall.railColor) || [50, 35, 22];
+          var railR = (railRgb[0] * totalDim) | 0;
+          var railG = (railRgb[1] * totalDim) | 0;
+          var railB = (railRgb[2] * totalDim) | 0;
+          ctx.fillStyle = 'rgb(' + railR + ',' + railG + ',' + railB + ')';
+          ctx.fillRect(screenX, splitY, stripWidth, railH);
 
-        ctx.fillStyle = colorLower;
-        ctx.fillRect(screenX, splitY + railH, stripWidth, drawEnd - splitY - railH);
+          ctx.fillStyle = colorLower;
+          ctx.fillRect(screenX, splitY + railH, stripWidth, drawEnd - splitY - railH);
+        }
       }
     }
 
@@ -770,8 +815,9 @@
 
         if (fgx < 0 || fgx >= mapW || fgy < 0 || fgy >= mapH) continue;
 
-        // Default: burgundy carpet
-        var fR = 60, fG = 25, fB = 22;
+        // Default: theme-driven (else burgundy carpet)
+        var defFloor = (engine.theme && engine.theme.floorDefault) || [60, 25, 22];
+        var fR = defFloor[0], fG = defFloor[1], fB = defFloor[2];
         var fKey = fgy * 1000 + fgx;
         if (floorColors && floorColors[fKey]) {
           var fc = floorColors[fKey];
@@ -780,9 +826,19 @@
             fR = (fR * 0.9) | 0; fG = (fG * 0.9) | 0; fB = (fB * 0.9) | 0;
           }
         }
+        // Theme floor pattern overlay
+        if (engine.theme && engine.theme.floorPattern === 'checker' && ((fgx + fgy) & 1) === 0) {
+          fR = (fR * 0.92) | 0; fG = (fG * 0.92) | 0; fB = (fB * 0.92) | 0;
+        } else if (engine.theme && engine.theme.floorPattern === 'damp') {
+          var dampN = Math.sin(fgx * 1.7 + fgy * 2.3) * 0.06;
+          fR = Math.max(0, (fR * (1 + dampN)) | 0);
+          fG = Math.max(0, (fG * (1 + dampN)) | 0);
+          fB = Math.max(0, (fB * (1 + dampN)) | 0);
+        }
 
-        // Distance fog
-        var fFog = Math.max(0.05, 1 - fRowDist / 12);
+        // Distance fog (theme-driven)
+        var _fcDist = (engine.theme && engine.theme.fogDist) || 12;
+        var fFog = Math.max(0.05, 1 - fRowDist / _fcDist);
 
         // Light from precomputed grid (floor uses 0.25 multiplier)
         var fLIdx = (fgy * mapW + fgx) * 3;
@@ -815,8 +871,22 @@
 
         if (cgx < 0 || cgx >= mapW || cgy < 0 || cgy >= mapH) continue;
 
-        // Default ceiling: dark warm tone
-        var cR = 30, cG = 24, cB = 20;
+        // Default ceiling: theme-driven (else dark warm tone)
+        var defCeil = (engine.theme && engine.theme.ceilingDefault) || [30, 24, 20];
+        var cR = defCeil[0], cG = defCeil[1], cB = defCeil[2];
+        // Backrooms-style fluorescent grid ceiling
+        if (engine.theme && engine.theme.ceilingPattern === 'grid') {
+          var gridU = ((cgx + cgy) & 1);
+          if (gridU === 0) {
+            cR = Math.min(255, cR + 60);
+            cG = Math.min(255, cG + 55);
+            cB = Math.min(255, cB + 40);
+          }
+        } else if (engine.theme && engine.theme.ceilingPattern === 'pipes') {
+          if ((cgx + cgy * 2) % 4 === 0) {
+            cR = (cR * 0.6) | 0; cG = (cG * 0.6) | 0; cB = (cB * 0.6) | 0;
+          }
+        }
 
         // Light from precomputed grid (ceiling uses full contrib)
         var cLIdx = (cgy * mapW + cgx) * 3;
@@ -826,7 +896,8 @@
           cB = Math.min(255, cB + _lightGrid[cLIdx + 2] | 0);
         }
 
-        var cFog = Math.max(0.05, 1 - cRowDist / 12);
+        var _ccDist = (engine.theme && engine.theme.fogDist) || 12;
+        var cFog = Math.max(0.05, 1 - cRowDist / _ccDist);
         cR = (cR * cFog) | 0;
         cG = (cG * cFog) | 0;
         cB = (cB * cFog) | 0;
@@ -1154,6 +1225,12 @@
     chromaticLevel: 0,
     vignetteIntensity: 0.3,
 
+    // ── Backrooms: Level theme (palette, fog, patterns) ──
+    theme: null,
+
+    // ── Optional hook: game.js can override walkable check ──
+    isWalkableHook: null,
+
     // ── V7: Particle API ──
     particles: particles,
 
@@ -1256,9 +1333,7 @@
       this._buildStaticCanvas();
       this._initInput();
 
-      // Preload images
-      this.loadImage('assets/img/haruki.png');
-      this.loadImage('assets/img/haruki_scary.png');
+      // Preload images (game-specific images loaded by game.js)
 
       this.running = true;
       lastTime = performance.now();
@@ -1301,9 +1376,12 @@
     },
 
     isWalkable: function (wx, wy) {
+      // Hook for game to override walkability check
+      if (this.isWalkableHook) {
+        return this.isWalkableHook(wx, wy);
+      }
       var g = this.worldToGrid(wx, wy);
       var t = this.getTile(g.x, g.y);
-      // Walkable tiles: floor(0), door(2), front desk(3), room404(4), utility(5), exit(6), carpet(8)
       return t === 0 || t === 2 || t === 3 || t === 4 || t === 5 || t === 6 || t === 8;
     },
 
@@ -1546,12 +1624,13 @@
       var canvas = this.canvas;
 
       // Prevent default touch behaviors on the whole document
-      // But allow interaction on settings overlay (sliders, buttons)
+      // But allow interaction on overlays (sliders, buttons, scroll)
       document.addEventListener('touchmove', function (e) {
-        var settingsOverlay = document.getElementById('settingsOverlay');
-        if (settingsOverlay && settingsOverlay.style.display !== 'none') return;
-        var minimapOverlay = document.getElementById('minimapOverlay');
-        if (minimapOverlay && minimapOverlay.style.display !== 'none') return;
+        var allowScrollIds = ['phoneOverlay', 'noteViewerOverlay', 'tutorialOverlay', 'settingsOverlay', 'minimapOverlay'];
+        for (var i = 0; i < allowScrollIds.length; i++) {
+          var ov = document.getElementById(allowScrollIds[i]);
+          if (ov && ov.style.display !== 'none') return;
+        }
         e.preventDefault();
       }, { passive: false });
 
@@ -1929,6 +2008,18 @@
           break;
         case 'static':
           activeLoops[type] = this._startStaticLoop();
+          break;
+        case 'fluorescent':
+          activeLoops[type] = this._startFluorescentLoop();
+          break;
+        case 'pipe_drip':
+          activeLoops[type] = this._startPipeDripLoop();
+          break;
+        case 'electric':
+          activeLoops[type] = this._startElectricLoop();
+          break;
+        case 'wind':
+          activeLoops[type] = this._startWindLoop();
           break;
       }
     },
@@ -2626,6 +2717,164 @@
       gain.connect(bgmGain || masterGain);
       src.start();
       return { nodes: [src], gain: gain };
+    },
+
+    // ── Backrooms ambient loops ──
+
+    _startFluorescentLoop: function () {
+      // Iconic Backrooms hum: 60Hz hum + subtle high buzz with random flicker
+      var dest = bgmGain || masterGain;
+      var hum = audioCtx.createOscillator();
+      hum.type = 'sine';
+      hum.frequency.value = 60;
+      var humG = audioCtx.createGain();
+      humG.gain.value = 0.10;
+      hum.connect(humG);
+      humG.connect(dest);
+      hum.start();
+
+      var hum2 = audioCtx.createOscillator();
+      hum2.type = 'sine';
+      hum2.frequency.value = 120;
+      var hum2G = audioCtx.createGain();
+      hum2G.gain.value = 0.05;
+      hum2.connect(hum2G);
+      hum2G.connect(dest);
+      hum2.start();
+
+      // Buzz/hiss
+      var bufSize = audioCtx.sampleRate * 2;
+      var buf = audioCtx.createBuffer(1, bufSize, audioCtx.sampleRate);
+      var bd = buf.getChannelData(0);
+      for (var i = 0; i < bufSize; i++) bd[i] = (Math.random() * 2 - 1) * 0.1;
+      var noise = audioCtx.createBufferSource();
+      noise.buffer = buf; noise.loop = true;
+      var bp = audioCtx.createBiquadFilter();
+      bp.type = 'highpass';
+      bp.frequency.value = 6000;
+      var noiseG = audioCtx.createGain();
+      noiseG.gain.value = 0.04;
+      noise.connect(bp); bp.connect(noiseG); noiseG.connect(dest);
+      noise.start();
+
+      // Random flicker LFO (volume dips)
+      var flickerInterval = setInterval(function () {
+        if (!audioCtx || audioCtx.state !== 'running') return;
+        if (Math.random() < 0.2) {
+          var t = audioCtx.currentTime;
+          humG.gain.setValueAtTime(0.02, t);
+          humG.gain.linearRampToValueAtTime(0.10, t + 0.15);
+        }
+      }, 700);
+
+      return {
+        nodes: [hum, hum2, noise],
+        gain: humG,
+        interval: flickerInterval
+      };
+    },
+
+    _startPipeDripLoop: function () {
+      // Random drips
+      var self = this;
+      var dripInterval = setInterval(function () {
+        if (!audioCtx || audioCtx.state !== 'running') return;
+        if (Math.random() < 0.3) {
+          var t = audioCtx.currentTime;
+          var dest = seGain || masterGain;
+          var osc = audioCtx.createOscillator();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(800 + Math.random() * 400, t);
+          osc.frequency.exponentialRampToValueAtTime(200, t + 0.15);
+          var g = audioCtx.createGain();
+          g.gain.setValueAtTime(0.15, t);
+          g.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+          osc.connect(g); g.connect(dest);
+          osc.start(t); osc.stop(t + 0.25);
+        }
+      }, 1500);
+
+      // Low pipe hum
+      var dest2 = bgmGain || masterGain;
+      var pipeHum = audioCtx.createOscillator();
+      pipeHum.type = 'triangle';
+      pipeHum.frequency.value = 45;
+      var pipeG = audioCtx.createGain();
+      pipeG.gain.value = 0.08;
+      pipeHum.connect(pipeG);
+      pipeG.connect(dest2);
+      pipeHum.start();
+
+      return { nodes: [pipeHum], gain: pipeG, interval: dripInterval };
+    },
+
+    _startElectricLoop: function () {
+      var dest = bgmGain || masterGain;
+      // Sub bass
+      var sub = audioCtx.createOscillator();
+      sub.type = 'sawtooth';
+      sub.frequency.value = 50;
+      var subG = audioCtx.createGain();
+      subG.gain.value = 0.08;
+      sub.connect(subG);
+      subG.connect(dest);
+      sub.start();
+
+      // Random sparks / arcs
+      var sparkInterval = setInterval(function () {
+        if (!audioCtx || audioCtx.state !== 'running') return;
+        if (Math.random() < 0.18) {
+          var t = audioCtx.currentTime;
+          var bufLen = (audioCtx.sampleRate * 0.15) | 0;
+          var buf = audioCtx.createBuffer(1, bufLen, audioCtx.sampleRate);
+          var d = buf.getChannelData(0);
+          for (var i = 0; i < bufLen; i++) {
+            var tt = i / audioCtx.sampleRate;
+            d[i] = (Math.random() * 2 - 1) * Math.exp(-tt * 40);
+          }
+          var src = audioCtx.createBufferSource();
+          src.buffer = buf;
+          var hp = audioCtx.createBiquadFilter();
+          hp.type = 'highpass';
+          hp.frequency.value = 3000;
+          var sg = audioCtx.createGain();
+          sg.gain.value = 0.12;
+          src.connect(hp); hp.connect(sg); sg.connect(seGain || masterGain);
+          src.start(t);
+        }
+      }, 1200);
+
+      return { nodes: [sub], gain: subG, interval: sparkInterval };
+    },
+
+    _startWindLoop: function () {
+      var dest = bgmGain || masterGain;
+      var bufSize = audioCtx.sampleRate * 4;
+      var buf = audioCtx.createBuffer(1, bufSize, audioCtx.sampleRate);
+      var bd = buf.getChannelData(0);
+      for (var i = 0; i < bufSize; i++) bd[i] = (Math.random() * 2 - 1);
+      var noise = audioCtx.createBufferSource();
+      noise.buffer = buf;
+      noise.loop = true;
+      var lp = audioCtx.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.value = 400;
+      var g = audioCtx.createGain();
+      g.gain.value = 0.12;
+      noise.connect(lp); lp.connect(g); g.connect(dest);
+      noise.start();
+
+      // Slow LFO modulating volume for breathing wind
+      var lfo = audioCtx.createOscillator();
+      lfo.type = 'sine';
+      lfo.frequency.value = 0.15;
+      var lfoG = audioCtx.createGain();
+      lfoG.gain.value = 0.06;
+      lfo.connect(lfoG);
+      lfoG.connect(g.gain);
+      lfo.start();
+
+      return { nodes: [noise, lfo], gain: g };
     },
 
     // ─────────────────────────────────────────────
