@@ -2408,6 +2408,31 @@
     player._nearestThreat = nearestThreat;
     player._nearestThreatDist = nearestThreatDist;
     player._threatLevel = threatLevel;
+
+    // Spatial audio cue: occasional positional whisper/breath from nearest threat
+    if (audioInitialized && nearestThreat && typeof GameEngine.playPositional === 'function') {
+      player._spatialCueTimer = (player._spatialCueTimer || 0) - (1 / 60);
+      if (player._spatialCueTimer <= 0) {
+        // Interval scales with proximity: 6s far, 1.5s very close
+        var prox = Math.max(0, 1 - nearestThreatDist / (14 * TS));
+        player._spatialCueTimer = 6 - prox * 4.5 + Math.random() * 1.5;
+        var dx2 = nearestThreat.x - player.x;
+        var dy2 = nearestThreat.y - player.y;
+        var worldA = Math.atan2(dy2, dx2);
+        var relA = worldA - player.angle;
+        while (relA > Math.PI) relA -= Math.PI * 2;
+        while (relA < -Math.PI) relA += Math.PI * 2;
+        // Pan: relA -PI/2 = full left, +PI/2 = full right, 0 = front (no pan)
+        // Behind: also no pan but slightly muffled.
+        var pan = Math.max(-1, Math.min(1, Math.sin(relA)));
+        var vol = 0.15 + prox * 0.35;
+        // Tone by threat tier
+        var tone = 'breath';
+        if (threatLevel >= 3) tone = 'scrape';
+        else if (threatLevel === 1 && Math.random() < 0.4) tone = 'tap';
+        try { GameEngine.playPositional(tone, pan, vol); } catch (e) {}
+      }
+    }
     // Apply BGM layer adjustments by threat level (live blending)
     if (audioInitialized && typeof GameEngine.setBGMLayers === 'function') {
       try {

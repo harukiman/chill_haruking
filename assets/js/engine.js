@@ -2997,6 +2997,95 @@
       src.stop(now + 2.1);
     },
 
+    // Spatial entity cue: low breath/scrape sound with stereo panning
+    // pan: -1 = left, 0 = front, +1 = right
+    // vol: 0..1
+    // tone: 'breath' | 'scrape' | 'tap'
+    playPositional: function (tone, pan, vol) {
+      if (!audioCtx || audioCtx.state === 'suspended') return;
+      pan = Math.max(-1, Math.min(1, pan || 0));
+      vol = Math.max(0, Math.min(1, vol || 0.3));
+      var now = audioCtx.currentTime;
+      var dest = seGain || masterGain;
+      var gain = audioCtx.createGain();
+      gain.gain.value = 0;
+      // Stereo pan (fallback if not available)
+      var sink;
+      if (typeof audioCtx.createStereoPanner === 'function') {
+        var panner = audioCtx.createStereoPanner();
+        panner.pan.value = pan;
+        gain.connect(panner);
+        panner.connect(dest);
+        sink = gain;
+      } else {
+        sink = gain;
+        gain.connect(dest);
+      }
+      if (tone === 'tap') {
+        var bufLen = (audioCtx.sampleRate * 0.08) | 0;
+        var buf = audioCtx.createBuffer(1, bufLen, audioCtx.sampleRate);
+        var d = buf.getChannelData(0);
+        for (var i = 0; i < bufLen; i++) {
+          var t = i / audioCtx.sampleRate;
+          d[i] = (Math.random() * 2 - 1) * Math.exp(-t * 60);
+        }
+        var src = audioCtx.createBufferSource();
+        src.buffer = buf;
+        var bp = audioCtx.createBiquadFilter();
+        bp.type = 'bandpass';
+        bp.frequency.value = 1800;
+        bp.Q.value = 6;
+        src.connect(bp);
+        bp.connect(sink);
+        gain.gain.linearRampToValueAtTime(vol, now + 0.005);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
+        src.start(now);
+        src.stop(now + 0.25);
+      } else if (tone === 'scrape') {
+        var sBufLen = (audioCtx.sampleRate * 0.6) | 0;
+        var sBuf = audioCtx.createBuffer(1, sBufLen, audioCtx.sampleRate);
+        var sd = sBuf.getChannelData(0);
+        for (var j = 0; j < sBufLen; j++) {
+          var st = j / audioCtx.sampleRate;
+          var senv = Math.sin(st / 0.6 * Math.PI);
+          sd[j] = (Math.random() * 2 - 1) * senv * 0.6;
+        }
+        var ssrc = audioCtx.createBufferSource();
+        ssrc.buffer = sBuf;
+        var sbp = audioCtx.createBiquadFilter();
+        sbp.type = 'lowpass';
+        sbp.frequency.value = 600;
+        ssrc.connect(sbp);
+        sbp.connect(sink);
+        gain.gain.linearRampToValueAtTime(vol, now + 0.05);
+        gain.gain.linearRampToValueAtTime(0.0001, now + 0.6);
+        ssrc.start(now);
+        ssrc.stop(now + 0.7);
+      } else {
+        // breath
+        var bBufLen = (audioCtx.sampleRate * 1.1) | 0;
+        var bBuf = audioCtx.createBuffer(1, bBufLen, audioCtx.sampleRate);
+        var bd = bBuf.getChannelData(0);
+        for (var k = 0; k < bBufLen; k++) {
+          var bt = k / audioCtx.sampleRate;
+          var benv = Math.sin(bt / 1.1 * Math.PI);
+          bd[k] = (Math.random() * 2 - 1) * benv * 0.5;
+        }
+        var bsrc = audioCtx.createBufferSource();
+        bsrc.buffer = bBuf;
+        var bbp = audioCtx.createBiquadFilter();
+        bbp.type = 'bandpass';
+        bbp.frequency.value = 350;
+        bbp.Q.value = 3;
+        bsrc.connect(bbp);
+        bbp.connect(sink);
+        gain.gain.linearRampToValueAtTime(vol, now + 0.1);
+        gain.gain.linearRampToValueAtTime(0.0001, now + 1.0);
+        bsrc.start(now);
+        bsrc.stop(now + 1.1);
+      }
+    },
+
     _playLullaby: function (now) {
       var dest = seGain || masterGain;
       // C4, E4, G4, E4, C4
