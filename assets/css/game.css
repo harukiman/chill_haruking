@@ -3086,6 +3086,28 @@ button {
   justify-content: center;
 }
 .inv-svg > svg { width: 100%; height: 100%; display: block; }
+.inv-slot.equipped {
+  border-color: #5080c0;
+  box-shadow:
+    inset 0 0 12px rgba(80, 128, 192, 0.55),
+    0 0 10px rgba(80, 128, 192, 0.55);
+}
+.inv-slot.equipped::after {
+  content: '装備中';
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: #c0e0ff;
+  background: rgba(40, 60, 100, 0.85);
+  padding: 1px 5px;
+  border-radius: 6px;
+  border: 1px solid #5080c0;
+  text-shadow: 1px 1px 0 #000;
+  pointer-events: none;
+}
 .shop-row-svg {
   width: 36px;
   height: 36px;

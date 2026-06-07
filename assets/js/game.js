@@ -11438,6 +11438,11 @@
       function makeSlot(id, item, cnt) {
         var slot = document.createElement('div');
         slot.className = 'inv-slot';
+        // Mark the slot if this is the currently equipped weapon so the
+        // player can see at a glance what's loaded.
+        if (item.category === 'weapon' && player.equippedWeapon === id) {
+          slot.classList.add('equipped');
+        }
         var stateMark = '';
         if (item.id === 'flashlight') {
           var battPct = Math.round(player.flashlightBattery || 0);
