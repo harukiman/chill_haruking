@@ -13527,9 +13527,12 @@
         var row = document.createElement('div');
         row.className = 'ta-note-row' + (unlocked ? '' : ' locked');
         if (unlocked) {
+          var iconHtml = WEAPON_SVG[id]
+            ? '<span class="ta-item-icon ta-item-icon-svg">' + WEAPON_SVG[id] + '</span>'
+            : '<span class="ta-item-icon">' + it.icon + '</span>';
           row.innerHTML =
             '<div class="ta-item-head">' +
-              '<span class="ta-item-icon">' + it.icon + '</span>' +
+              iconHtml +
               '<span class="ta-item-name">' + it.name + '</span>' +
               '<span class="ta-item-cat">' + (it.category === 'weapon' ? '武器' : (it.persistent ? '装備' : '消耗品')) + '</span>' +
             '</div>' +
