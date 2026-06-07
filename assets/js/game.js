@@ -10700,6 +10700,38 @@
   //  EVENT BINDINGS
   // ============================================================
   function bindEvents() {
+    // iOS Safari fix: body has touch-action: none for canvas, which can leak
+    // into overlays and stop their scroll containers from accepting
+    // touchmove. We attach explicit touchstart/touchmove handlers to the
+    // scrollable cards that translate finger drag into scrollTop changes,
+    // bypassing the global touch-action.
+    function bindManualScroll(el_) {
+      if (!el_ || el_._manualScrollBound) return;
+      el_._manualScrollBound = true;
+      var startY = 0, startTop = 0, dragging = false;
+      el_.addEventListener('touchstart', function (e) {
+        var t = e.changedTouches && e.changedTouches[0];
+        if (!t) return;
+        startY = t.clientY;
+        startTop = el_.scrollTop;
+        dragging = true;
+      }, { passive: true });
+      el_.addEventListener('touchmove', function (e) {
+        if (!dragging) return;
+        var t = e.changedTouches && e.changedTouches[0];
+        if (!t) return;
+        var dy = t.clientY - startY;
+        el_.scrollTop = Math.max(0, Math.min(el_.scrollHeight - el_.clientHeight, startTop - dy));
+        // Prevent body from absorbing the drag
+        if (e.cancelable) e.preventDefault();
+      }, { passive: false });
+      el_.addEventListener('touchend', function () { dragging = false; }, { passive: true });
+      el_.addEventListener('touchcancel', function () { dragging = false; }, { passive: true });
+    }
+    bindManualScroll(el('titleArchiveOverlay') && el('titleArchiveOverlay').querySelector('.ta-card'));
+    bindManualScroll(el('titleSettingsOverlay') && el('titleSettingsOverlay').querySelector('.ts-card'));
+    bindManualScroll(el('shopOverlay') && el('shopOverlay').querySelector('.shop-card'));
+
     // Title archive: tab buttons (5 panels)
     var taTabs = document.querySelectorAll('.ta-tab');
     for (var taI = 0; taI < taTabs.length; taI++) {
@@ -10771,8 +10803,13 @@
       if (!confirm1) return;
       var confirm2 = confirm('【最終確認】\n\n削除後は全進捗が完全に失われ、復元不可能です。\n本当によろしいですか?');
       if (!confirm2) return;
-      // Clear all known keys
-      var keys = ['thebackrooms_save_v1', 'thebackrooms_ach_v1', 'thebackrooms_best_v1', 'thebackrooms_diff_v1', 'thebackrooms_tut_v1', 'thebackrooms_endless_v1', 'thebackrooms_stats_v1', 'thebackrooms_ent_seen_v1', 'thebackrooms_lifetime_notes_v1', 'thebackrooms_items_collected_v1', 'thebackrooms_gfx_v1', 'bk_master_vol', 'bk_bgm_vol', 'bk_se_vol', 'bk_sens', 'bk_grain'];
+      // Clear all known keys (including dpad assignments + secret docs +
+      // defeated entities + hidden boss flag — anything that persists).
+      var keys = ['thebackrooms_save_v1', 'thebackrooms_ach_v1', 'thebackrooms_best_v1', 'thebackrooms_diff_v1', 'thebackrooms_tut_v1', 'thebackrooms_endless_v1', 'thebackrooms_stats_v1', 'thebackrooms_ent_seen_v1', 'thebackrooms_lifetime_notes_v1', 'thebackrooms_items_collected_v1', 'thebackrooms_gfx_v1', 'bk_master_vol', 'bk_bgm_vol', 'bk_se_vol', 'bk_sens', 'bk_grain',
+        'bk_dpad_assignments_v1', 'bk_dpad_mode_v1',
+        'thebackrooms_secret_docs_v1', 'thebackrooms_defeated_entities_v1',
+        'thebackrooms_hidden_boss_kill_v1', 'thebackrooms_just_died_v1',
+        'thebackrooms_cheat_unlocked_v1'];
       keys.forEach(function (k) { try { localStorage.removeItem(k); } catch (e) {} });
       // Reset in-memory state
       unlockedAchievements = {};
@@ -10783,7 +10820,12 @@
       endlessBestScore = 0;
       tutorialDone = false;
       currentDifficulty = 'normal';
-      toast('全データを削除しました');
+      dpadAssignments = { weapon: { up: '', down: '', left: '', right: '' },
+                          item:   { up: '', down: '', left: '', right: '' } };
+      dpadMode = 'item';
+      collectedSecretDocs = {};
+      defeatedEntities = {};
+      toast('全データを削除しました (D-pad 割当も含む)');
       setTimeout(function () { location.reload(); }, 1500);
     });
     el('freeRoamBtn').addEventListener('click', openLevelSelect);
