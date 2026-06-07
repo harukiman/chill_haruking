@@ -5115,7 +5115,8 @@
     bought_unique:    { name: 'ユニーク品を購入', icon: '★' },
     civilian_killed:  { name: '何かを失った', icon: '🩸' },
     found_secret_doc: { name: '秘匿書類 — 第一号', icon: '✉' },
-    all_secret_docs:  { name: '九四四班 — 全資料', icon: '✦' }
+    all_secret_docs:  { name: '九四四班 — 全資料', icon: '✦' },
+    true_secret_end:  { name: '真の脱出 — TRUE END', icon: '∞' }
   };
 
   function unlockAchievement(id) {
@@ -7349,7 +7350,10 @@
       toast('Best time! ' + formatTime(inLevelTime));
     }
     if (nextLevel === null) {
-      triggerEnding('truend');
+      // 通常の分岐エンドはすべてバッドエンド扱い。全秘匿書類を集めた状態
+      // でのみ真のトゥルーエンドに到達。
+      var endType = hasAllSecretDocs() ? 'true_secret' : 'truend_bad';
+      triggerEnding(endType);
       return;
     }
     clearedLevels[currentLevel] = true;
@@ -9002,20 +9006,40 @@
     lineEl.classList.remove('show');
     if (audioInitialized) GameEngine.startLoop('wind');
     var lines;
-    if (type === 'truend') {
+    if (type === 'true_secret') {
+      // 真のトゥルーエンド: 全秘匿書類を集めた状態でのみ到達。
+      // 春木保 / 晴美 兄妹の魂が解放され、プレイヤーは「鍵」を持って
+      // バックルームの呪縛から本当の意味で脱出する。
+      lines = [
+        { text: '', delay: 1400 },
+        { text: 'お前は黒い扉の前に立つ ── が、扉は開かなかった。', delay: 5200 },
+        { text: '懐の中で、九つの書類が淡く光り出す。', delay: 5400 },
+        { text: '「鍵は ── 書類だ」', delay: 4400 },
+        { text: '── 春木晴美の声。', delay: 4600 },
+        { text: '九四四班の罪を、お前は読み解いた。', delay: 5600 },
+        { text: '壁紙が剥がれ落ちる。', delay: 4400 },
+        { text: '黄色の向こうに、本当の朝日が見える。', delay: 5400 },
+        { text: '兄妹は微笑み、お前と共に壁を抜ける。', delay: 5800 },
+        { text: 'バックルームは、閉じた。', delay: 5000 },
+        { text: '─ THE TRUE END ─', delay: 5000 }
+      ];
+    } else if (type === 'truend' || type === 'truend_bad') {
+      // ハルキ撃破後の「通常」エンド ── 全資料未収集ならバッド扱い。
       lines = [
         { text: '', delay: 1200 },
         { text: 'お前は黒い扉に手をかけた。', delay: 4200 },
         { text: '振り返れば、9 つの階層と無数の影。', delay: 4600 },
         { text: '前を向けば、何かが待っている。', delay: 4400 },
         { text: '扉が、開く。', delay: 3800 },
-        { text: '光、または、無。', delay: 4200 },
+        { text: '── そこにあったのは、もう一つの階層だった。', delay: 5400 },
+        { text: 'お前はまだ、何も理解していない。', delay: 4800 },
         { text: '...', delay: 2400 }
       ];
     } else {
       lines = [
         { text: '', delay: 1200 },
         { text: 'お前は壁を抜けた。', delay: 4200 },
+        { text: 'だが、これは出口ではなかった。', delay: 4600 },
         { text: '...', delay: 3000 }
       ];
     }
@@ -9090,46 +9114,64 @@
     var title = el('endingTitle');
     var msg = el('endingMessage');
 
-    if (type === 'truend') {
+    // Pre-compute run summary used by every ending type.
+    var totalNotes_ = 0;
+    for (var lk in NOTES_POOL) totalNotes_ += NOTES_POOL[lk].length;
+    var totalAch_ = Object.keys(ACHIEVEMENTS).length;
+    var lifetimeCount_ = Object.keys(lifetimeNoteTitles).length;
+    var sdHave_ = Object.keys(collectedSecretDocs).length;
+    var sdTotal_ = SECRET_DOCS.length;
+    var runSummary =
+      '<hr style="border:none;border-top:1px solid #483910;margin:14px 0;">' +
+      '<div style="font-size:11px;color:#b09040;letter-spacing:0.15em;line-height:1.8;">' +
+      '生存: ' + formatTime(playTime) + '<br>' +
+      '本ラン ノート: ' + discoveredNotes.length + '<br>' +
+      '通算 ユニーク ノート: ' + lifetimeCount_ + ' / ' + totalNotes_ + '<br>' +
+      '秘匿書類: ' + sdHave_ + ' / ' + sdTotal_ + '<br>' +
+      '実績: ' + Object.keys(unlockedAchievements).length + ' / ' + totalAch_ + '<br>' +
+      '難易度: ' + (DIFFICULTIES[currentDifficulty] ? DIFFICULTIES[currentDifficulty].name : 'NORMAL') +
+      '</div>';
+
+    if (type === 'true_secret') {
+      // 真のトゥルーエンド ── 全秘匿書類を集めた状態でハルキ撃破。
       content.classList.add('true-ending');
-      // Count total notes available across all levels
-      var totalNotes = 0;
-      for (var lk in NOTES_POOL) totalNotes += NOTES_POOL[lk].length;
-      // Count total achievements
-      var totalAch = Object.keys(ACHIEVEMENTS).length;
-      // TRUE+ END uses lifetime collection (across multiple runs)
-      var lifetimeCount = Object.keys(lifetimeNoteTitles).length;
-      var hasAllNotes = lifetimeCount >= totalNotes;
-      var hasAllAch = Object.keys(unlockedAchievements).length >= totalAch - 1;
-      var runSummary =
-        '<hr style="border:none;border-top:1px solid #483910;margin:14px 0;">' +
-        '<div style="font-size:11px;color:#b09040;letter-spacing:0.15em;line-height:1.8;">' +
-        '生存: ' + formatTime(playTime) + '<br>' +
-        '本ラン ノート: ' + discoveredNotes.length + '<br>' +
-        '通算 ユニーク ノート: ' + lifetimeCount + ' / ' + totalNotes + '<br>' +
-        '実績: ' + Object.keys(unlockedAchievements).length + ' / ' + totalAch + '<br>' +
-        '難易度: ' + (DIFFICULTIES[currentDifficulty] ? DIFFICULTIES[currentDifficulty].name : 'NORMAL') +
-        '</div>';
-      if (hasAllNotes && hasAllAch) {
-        tag.textContent = '∞∞∞';
-        title.textContent = 'TRUE+ END';
-        msg.innerHTML = 'すべてのロアを読み、すべての試練を超えた。<br><br>あなたはバックルームを「理解した」最初の存在となった。<br>壁紙の黄色が、ようやく真の色を見せる...<br><br>あなたは、新しい階層になった。' + runSummary;
-      } else {
-        tag.textContent = 'THE END';
-        title.textContent = 'TRUE END';
-        msg.innerHTML = 'あなたは全ての階層を踏破した。<br>黒い扉の向こうで、本当の世界が待っている。<br>...かもしれない。' + runSummary;
-      }
+      tag.textContent = '∞ TRUE ∞';
+      title.textContent = 'TRUE END';
+      msg.innerHTML =
+        '九四四班の罪を、あなたは全て読み解いた。<br>' +
+        '黒い扉の向こうに、本当の朝日が見えた。<br><br>' +
+        '春木兄妹はあなたと共に、バックルームから永遠に解放された。<br>' +
+        'あの黄色い壁紙は、もう、誰の悪夢にも現れない。' + runSummary;
       unlockAchievement('true_end');
+      unlockAchievement('true_secret_end');
+    } else if (type === 'truend_bad' || type === 'truend') {
+      // 全秘匿書類を集めずにハルキ撃破 → バッドエンド扱い。
+      content.classList.add('bad-ending');
+      tag.textContent = 'BAD END';
+      title.textContent = '虚偽の脱出';
+      msg.innerHTML =
+        'あなたはハルキを倒し、黒い扉を抜けた。<br>' +
+        'しかし、扉の向こうも、また同じ黄色い廊下だった。<br><br>' +
+        '九四四班の罪を読み解かない限り、出口は無い。<br>' +
+        'アーカイブで「秘匿書類」を全て集めよ。' + runSummary;
+      unlockAchievement('true_end'); // counts as ハルキ撃破
     } else if (type === 'frontrooms') {
-      content.classList.remove('bad-ending', 'true-ending', 'lost-ending');
-      tag.textContent = 'ESCAPED';
-      title.textContent = 'FRONTROOMS END';
-      msg.innerHTML = 'バックルームから脱出した。<br>だが、あの蛍光灯のハム音は<br>今も耳に残っている。';
+      // FRONTROOMS は脱出に見えるが、バックルームの「擬装」 → bad-ending 扱い。
+      content.classList.add('bad-ending');
+      tag.textContent = 'BAD END';
+      title.textContent = '見せかけの帰還';
+      msg.innerHTML =
+        'バックルームから脱出した、と思った。<br>' +
+        'だが、蛍光灯のハム音は今も耳に残っている。<br>' +
+        'これは本当の現実か、それとも、もう一つの階層か。' + runSummary;
     } else {
+      // LOOP END / その他 = lost-ending (バッドエンド)
       content.classList.add('lost-ending');
-      tag.textContent = 'LOST';
-      title.textContent = 'LOOP END';
-      msg.innerHTML = '出口を見つけられないまま、永遠が経過した。<br>そして次の no-clipper を待つ存在になった。';
+      tag.textContent = 'BAD END';
+      title.textContent = '永遠のループ';
+      msg.innerHTML =
+        '出口を見つけられないまま、永遠が経過した。<br>' +
+        'そして次の no-clipper を待つ存在になった。' + runSummary;
     }
 
     el('vitalBars').classList.remove('show');
