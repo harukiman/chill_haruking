@@ -1236,6 +1236,18 @@
         target.x + spread, target.y + spread);
     }
   }
+  // Drop coins on enemy kill. Tuned so a careful run accumulates enough for
+  // the Lv11 shop without making weapons feel pointless to use.
+  var COIN_DROPS = {
+    crawler: 2, hound: 3, smiler: 4, skinstealer: 6, wretch: 5,
+    haruki: 8, echo: 3, faceling: 4, boss: 30, haruki_boss: 100
+  };
+  function _grantCoinsForKill(type) {
+    var amt = COIN_DROPS[type] || 1;
+    player.coins = (player.coins || 0) + amt;
+    if (amt >= 10) toast('+ ' + amt + ' コイン');
+  }
+
   function _attackForward(p, opts) {
     var bestE = null, bestDist = Infinity;
     var ang = p.angle;
@@ -1261,6 +1273,7 @@
         bestE.alive = false;
         unlockAchievement('defeat_boss');
         toast(bestE.type === 'haruki_boss' ? '★ ハルキ 撃破! ★' : '★ BOSS 撃破!');
+        _grantCoinsForKill(bestE.type);
       }
     } else {
       bestE.hp = (bestE.hp !== undefined ? bestE.hp : 100) - dmg;
@@ -1268,6 +1281,7 @@
         bestE.alive = false;
         bestE.deathAt = performance.now();
         toast(getEntityLabel(bestE.type) + ' 撃破');
+        _grantCoinsForKill(bestE.type);
       }
     }
     // Blood/spark feedback at the hit location
@@ -1752,6 +1766,7 @@
     stam: 100, stamMax: 100,
     sprintCooldown: 0,
     inventory: {},          // {itemId: count}
+    coins: 0,               // shop currency — earned from kills / sold items
     flashlightOn: false,
     flashlightBattery: 0,    // 0-100 %; consumed at 1%/s while ON
     radioOn: false,
@@ -8626,6 +8641,8 @@
       el('statSanText').textContent = Math.floor(player.san) + '/' + player.sanMax;
       el('statStaFill').style.width = (player.stam / player.stamMax * 100) + '%';
       el('statStaText').textContent = Math.floor(player.stam) + '/' + player.stamMax;
+      var coinsEl = el('statCoinsText');
+      if (coinsEl) coinsEl.innerHTML = '<span class="status-coin-icon">🪙</span> ' + (player.coins || 0);
       el('statTimeText').textContent = formatTime(playTime);
       var clears = 0;
       for (var k in clearedLevels) if (clearedLevels[k]) clears++;
@@ -9056,6 +9073,7 @@
           san: player.san, sanMax: player.sanMax,
           stam: player.stam, stamMax: player.stamMax,
           inventory: player.inventory,
+          coins: player.coins || 0,
           flashlightOn: player.flashlightOn,
           flashlightBattery: player.flashlightBattery || 0,
           radioOn: player.radioOn
@@ -9087,6 +9105,7 @@
       player.stam = data.player.stam;
       player.stamMax = data.player.stamMax;
       player.inventory = data.player.inventory || {};
+      player.coins = data.player.coins || 0;
       player.flashlightOn = data.player.flashlightOn || false;
       player.flashlightBattery = data.player.flashlightBattery || 0;
       player.radioOn = data.player.radioOn || false;
@@ -9461,6 +9480,7 @@
     player.hp = player.hpMax;
     applyHalfRespawnIfDied();
     player.inventory = {};
+    player.coins = 0;
     player.flashlightOn = false;
     player.flashlightBattery = 0;
     player.radioOn = false;

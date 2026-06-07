@@ -2079,6 +2079,20 @@ button {
   text-shadow: 0 0 8px rgba(212, 179, 64, 0.3);
   font-weight: 600;
 }
+.status-coins {
+  font-size: 22px;
+  color: #f0c850;
+  letter-spacing: 0.15em;
+  text-align: center;
+  margin: 10px 0;
+  font-weight: 600;
+  text-shadow: 0 0 10px rgba(240, 200, 80, 0.45);
+}
+.status-coin-icon {
+  margin-right: 4px;
+  font-size: 22px;
+  filter: drop-shadow(0 0 4px rgba(240, 200, 80, 0.6));
+}
 .status-prog {
   font-size: 12px;
   color: #d8d2bc;
