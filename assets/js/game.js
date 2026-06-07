@@ -1457,7 +1457,8 @@
       if (acq.levelId !== currentLevel) continue;
       if (collectedSecretDocs[sdoc.id]) continue;
       discoverSecretDoc(sdoc.id);
-      toast('★ 秘匿書類: ' + sdoc.title);
+      // discoverSecretDoc already opens the noteViewer; toast would just
+      // stack with that briefly.
       break; // only one per kill
     }
   }
@@ -6663,12 +6664,12 @@
           }
           if (pick) {
             discoverSecretDoc(pick.id);
-            toast('★ 秘匿書類: ' + pick.title);
-            // Remove this S spot so it doesn't show up again this session
+            // Remove this S spot so it doesn't show up again this session.
+            // (No toast — the noteViewer already interrupts and shows the
+            // title prominently.)
             currentMap.secretSpots.splice(sci, 1);
             return;
           } else {
-            // All docs from this level already collected on a previous run
             toast('既に読んだ書類');
             return;
           }
