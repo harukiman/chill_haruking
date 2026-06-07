@@ -4680,10 +4680,23 @@
   // and by tap on the D-pad widget when in weapon mode.
   function equipWeapon(itemId) {
     if (!ITEMS[itemId] || ITEMS[itemId].category !== 'weapon') return;
+    var prev = player.equippedWeapon;
     player.equippedWeapon = itemId;
     try { updateWeaponAttackBtn(); } catch (e) {}
     toast('装備: ' + ITEMS[itemId].name);
     if (audioInitialized) try { GameEngine.playSound('ui_tap'); } catch (e) {}
+    // Slide-up animation on the FPS hand whenever the equipped weapon changes
+    if (prev !== itemId) {
+      var hand = el('weaponHand');
+      if (hand) {
+        hand.classList.remove('equip-in');
+        void hand.offsetWidth;
+        hand.classList.add('equip-in');
+        setTimeout(function () {
+          if (hand) hand.classList.remove('equip-in');
+        }, 320);
+      }
+    }
   }
   // Refresh weapon attack button icon + count to reflect equipped weapon.
   function updateWeaponAttackBtn() {

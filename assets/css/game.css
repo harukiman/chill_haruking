@@ -204,6 +204,14 @@ body {
   transition: transform 0.07s ease-out;
 }
 .weapon-hand.show { display: block; }
+.weapon-hand.equip-in {
+  animation: weapon-equip-in 0.30s ease-out;
+}
+@keyframes weapon-equip-in {
+  0%   { transform: translateX(-50%) translateY(120%) rotate(8deg); opacity: 0; }
+  60%  { transform: translateX(-50%) translateY(8%)   rotate(-4deg); opacity: 1; }
+  100% { transform: translateX(-50%) translateY(20%)  rotate(0deg);  opacity: 0.95; }
+}
 .weapon-hand.fire {
   transform: translateX(-50%) translateY(8%) rotate(-12deg);
   transition: transform 0.05s ease-out;
