@@ -7044,7 +7044,10 @@
         var gridH = h - 100;
         var cardW = (w - 40) / cols;
         var cardH = gridH / rows;
-        for (var i = 0; i < 8; i++) {
+        // BUG FIX 2026-06-07: previously iterated `i < 8` so the bottom
+        // row (cards 8..11) was visually drawn but untappable.
+        // User report: 「カード合わせでタップできない箇所がある」.
+        for (var i = 0; i < mgState.cards.length; i++) {
           var r = Math.floor(i / cols);
           var c = i % cols;
           var x = 20 + c * cardW;
