@@ -8854,6 +8854,21 @@
     // figured out the phone/equip flow.
     if (item.category === 'weapon' && !player.equippedWeapon) {
       try { equipWeapon(itemId); } catch (e) {}
+      // Also auto-bind to the first empty d-pad slot in weapon mode so
+      // the player can switch with the d-pad without going through the
+      // phone equip modal.
+      try {
+        var wmSlots = dpadAssignments.weapon || (dpadAssignments.weapon = { up: '', down: '', left: '', right: '' });
+        var DIRS = ['up', 'down', 'left', 'right'];
+        for (var di = 0; di < DIRS.length; di++) {
+          if (!wmSlots[DIRS[di]]) {
+            wmSlots[DIRS[di]] = itemId;
+            saveDpadAssignments();
+            updateDpadHud();
+            break;
+          }
+        }
+      } catch (e) {}
     }
     if (!pickedUpItems[currentLevel]) pickedUpItems[currentLevel] = {};
     pickedUpItems[currentLevel][gridKey(gx, gy)] = true;
