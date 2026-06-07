@@ -1126,17 +1126,20 @@
     keycard: {
       id: 'keycard', name: 'カードキー',
       icon: '🔑', desc: 'どこかのドアを解錠できる...かもしれない。',
+      useSound: 'key_unlock',
       effect: function (p) { toast('特定の場所で自動使用'); }
     },
     voucher: {
       id: 'voucher', name: 'ホテル引換券',
       icon: '🎫', desc: 'THE HOTEL で特別な部屋へ案内される。',
+      useSound: 'paper',
       effect: function (p) { toast('特定の場所で自動使用'); }
     },
     radio: {
       id: 'radio', name: '壊れたラジオ',
       icon: '📻', desc: 'ノイズの中に時折声が聞こえる。エンティティを察知できる。トグル式。',
       persistent: true,
+      useSound: 'static',
       effect: function (p) {
         if (p.radioOn) { p.radioOn = false; toast('ラジオ OFF'); }
         else { p.radioOn = true; toast('ラジオ ON — エンティティ警告'); }
@@ -1251,6 +1254,7 @@
     lockpick: {
       id: 'lockpick', name: 'ロックピック',
       icon: '🔓', desc: '錠前破りミニゲームをスキップ。または鍵付きドア解錠。',
+      useSound: 'key_unlock',
       effect: function (p) {
         // Try to find a locked door adjacent to player
         var pgx = Math.floor(p.x / TS);
