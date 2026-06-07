@@ -4312,7 +4312,8 @@ button {
   text-shadow: 0 0 14px rgba(0, 0, 0, 0.9);
   text-align: center;
   opacity: 0;
-  transition: opacity 1s ease-out;
+  /* 1s → 600ms to match the 600ms setTimeout in setText (fade-out → swap) */
+  transition: opacity 600ms ease-out;
 }
 .es-text.show { opacity: 1; }
 

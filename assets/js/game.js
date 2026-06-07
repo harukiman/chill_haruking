@@ -3792,9 +3792,16 @@
     function setText(t) {
       if (!hbcText) return;
       hbcText.classList.remove('show');
-      void hbcText.offsetWidth;
-      hbcText.textContent = t;
-      requestAnimationFrame(function () { hbcText.classList.add('show'); });
+      // Fade out the old line before swapping. Matches the intro fix so the
+      // text doesn't snap mid-fade. CSS transition is 600ms.
+      setTimeout(function () {
+        if (cancelled) return;
+        hbcText.textContent = t;
+        requestAnimationFrame(function () {
+          if (cancelled) return;
+          hbcText.classList.add('show');
+        });
+      }, 600);
     }
     function flashLightning() {
       if (!lightning) return;
@@ -4058,9 +4065,15 @@
     function setText(t) {
       if (!esText) return;
       esText.classList.remove('show');
-      void esText.offsetWidth;
-      esText.textContent = t;
-      requestAnimationFrame(function () { esText.classList.add('show'); });
+      // Fade out before swap (matches intro / boss cinematics).
+      setTimeout(function () {
+        if (cancelled) return;
+        esText.textContent = t;
+        requestAnimationFrame(function () {
+          if (cancelled) return;
+          esText.classList.add('show');
+        });
+      }, 600);
     }
     function finish() {
       if (cancelled) return;
