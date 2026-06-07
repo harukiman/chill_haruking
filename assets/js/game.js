@@ -4309,6 +4309,33 @@
     playTime += dt;
     inLevelTime += dt;
 
+    // Ambient micro-events — break the monotony of long traversals with
+    // scripted sensory beats. Rolled at ~5s intervals, never within 25s of
+    // the previous beat so they stay surprising. Skipped during cutscenes,
+    // chase, safe-area, or while the phone/settings overlay is open.
+    if (typeof _isGamePaused !== 'function' || !_isGamePaused()) {
+      if (!_inCinematic && !player.inSafeZone && !player._beingChased) {
+        _ambientEventRollT = (_ambientEventRollT || 0) - dt;
+        if (_ambientEventRollT <= 0) {
+          _ambientEventRollT = 5;
+          var nowAmb = performance.now();
+          var cdAmb = 25000; // 25s minimum between events
+          if (!_lastAmbientEventAt || (nowAmb - _lastAmbientEventAt) > cdAmb) {
+            // Probability scales with low SAN and time spent in this level
+            var sanPct2 = (player.san / player.sanMax) * 100;
+            var pBase = 0.10;
+            if (sanPct2 < 50) pBase += 0.05;
+            if (sanPct2 < 25) pBase += 0.10;
+            if (inLevelTime > 60) pBase += 0.05;
+            if (Math.random() < pBase) {
+              fireAmbientMicroEvent();
+              _lastAmbientEventAt = nowAmb;
+            }
+          }
+        }
+      }
+    }
+
     // SAN-driven visual effects + HARUKI proximity bonus
     var sanRatio = player.san / player.sanMax;
     var harukiNear = 0;
@@ -6272,6 +6299,72 @@
         localStorage.setItem(allKey2, JSON.stringify(allColl2));
       }
     } catch (e) {}
+  }
+
+  // Ambient micro-event state — see fireAmbientMicroEvent() below.
+  var _lastAmbientEventAt = 0;
+  var _ambientEventRollT = 5;
+
+  // Pick and execute one random ambient micro-event. Sensory beats only —
+  // never hurts the player, just thickens the atmosphere. Some events are
+  // tuned to fire more often in specific levels.
+  function fireAmbientMicroEvent() {
+    var pool = [
+      'distant_footsteps', 'distant_door_slam', 'light_flicker',
+      'whisper_pass', 'wall_knock', 'breathing_close', 'glitch_text'
+    ];
+    var ev = pool[Math.floor(Math.random() * pool.length)];
+    var hl = el('hallucinationLayer');
+    var htxt = el('hallucText');
+    switch (ev) {
+      case 'distant_footsteps':
+        if (audioInitialized) {
+          try { GameEngine.playSound('footstep'); } catch (e) {}
+          setTimeout(function () { try { GameEngine.playSound('footstep'); } catch (e) {} }, 380);
+          setTimeout(function () { try { GameEngine.playSound('footstep'); } catch (e) {} }, 760);
+        }
+        break;
+      case 'distant_door_slam':
+        if (audioInitialized) {
+          try { GameEngine.playSound('door'); } catch (e) {}
+          GameEngine.shakeScreen(6, 0.25);
+        }
+        break;
+      case 'light_flicker':
+        if (hl) {
+          hl.style.display = 'block';
+          var prevOp = hl.style.opacity;
+          hl.style.opacity = '0.9';
+          setTimeout(function () { if (hl) hl.style.opacity = '0.1'; }, 80);
+          setTimeout(function () { if (hl) hl.style.opacity = '0.7'; }, 180);
+          setTimeout(function () { if (hl) hl.style.opacity = prevOp || ''; }, 320);
+        }
+        if (audioInitialized) try { GameEngine.playSound('static'); } catch (e) {}
+        break;
+      case 'whisper_pass':
+        if (audioInitialized) try { GameEngine.playSound('whisper'); } catch (e) {}
+        break;
+      case 'wall_knock':
+        if (audioInitialized) try { GameEngine.playSound('hit'); } catch (e) {}
+        if (navigator.vibrate) try { navigator.vibrate(40); } catch (e) {}
+        break;
+      case 'breathing_close':
+        if (audioInitialized) try { GameEngine.playSound('breath_drone'); } catch (e) {}
+        break;
+      case 'glitch_text':
+        if (htxt) {
+          var lines = ['...いる', 'みてる', 'まだ?', 'ここ', 'うしろ'];
+          htxt.textContent = lines[Math.floor(Math.random() * lines.length)];
+          htxt.classList.remove('show');
+          void htxt.offsetWidth;
+          htxt.classList.add('show');
+          if (hl) {
+            hl.style.display = 'block';
+            setTimeout(function () { if (htxt) htxt.classList.remove('show'); }, 1000);
+          }
+        }
+        break;
+    }
   }
 
   // Situational TTS line banks. Categories are sparse on purpose so the voice
