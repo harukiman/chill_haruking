@@ -951,7 +951,7 @@
          entities: [
            { type: 'skinstealer', gx: 16, gy: 5 },
            { type: 'skinstealer', gx: 26, gy: 21 },
-           { type: 'skinstealer', gx: 4,  gy: 19 }
+           { type: 'skinstealer', gx: 4,  gy: 18 }
          ],
          timeLimit: null },
     5: { id: 5, name: 'LEVEL 5', subtitle: 'THE HOTEL',
