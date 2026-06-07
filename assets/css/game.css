@@ -2660,7 +2660,7 @@ button {
   50% { opacity: 1; }
 }
 
-/* D-pad quick-use HUD (gamepad mode only) */
+/* D-pad quick-use HUD (gamepad mode by default, doubles as tap quick-bar) */
 .hud-dpad {
   position: fixed;
   bottom: calc(env(safe-area-inset-bottom, 0px) + 70px);
@@ -2674,6 +2674,45 @@ button {
   pointer-events: none;
   font-size: 9px;
   letter-spacing: 0.1em;
+}
+/* Touch mode: lifted to top-left so it doesn't sit under the joystick or
+   action button, and made fully interactive (no gamepad to use it). */
+.hud-dpad.touch-mode {
+  bottom: auto;
+  top: calc(env(safe-area-inset-top, 8px) + 110px);
+  left: calc(env(safe-area-inset-left, 0px) + 8px);
+  width: 110px;
+  pointer-events: auto;
+  background: rgba(0, 0, 0, 0.74);
+}
+.hud-dpad.touch-mode .hud-dpad-grid {
+  grid-template-columns: 30px 30px 30px;
+  grid-template-rows: 30px 30px 30px;
+  gap: 3px;
+}
+.hud-dpad.touch-mode .hud-dpad-slot {
+  pointer-events: auto;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.hud-dpad.touch-mode .hud-dpad-slot:active {
+  background: #3a2a08;
+  transform: scale(0.94);
+}
+.hud-dpad.touch-mode .hud-dpad-mode {
+  pointer-events: auto;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 3px 0 5px;
+  background: rgba(80, 60, 16, 0.4);
+}
+.hud-dpad.touch-mode .hud-dpad-mode:active {
+  background: rgba(120, 90, 24, 0.7);
+}
+.hud-dpad.touch-mode .hud-dpad-hint {
+  font-size: 8px;
+  line-height: 1.3;
+  padding-top: 4px;
 }
 .hud-dpad-mode {
   text-align: center;

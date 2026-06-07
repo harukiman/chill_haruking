@@ -5892,17 +5892,24 @@
     if (type === 'green') b.classList.add('primary');
   }
 
-  // Update the on-screen D-pad HUD (mode + 4 slots)
+  // Update the on-screen D-pad HUD (mode + 4 slots).
+  // Without a gamepad the HUD doubles as a tap quick-bar: it's lifted higher
+  // on screen (touch-mode class), each slot fires quickUseAssignedItem on
+  // tap, and the mode label toggles items/weapons on tap.
   function updateDpadHud() {
     var hud = el('dpadHud');
     if (!hud) return;
-    if (!gamepadConnected || state !== ST.PLAYING) {
+    if (state !== ST.PLAYING) {
       hud.style.display = 'none';
       return;
     }
     hud.style.display = 'block';
+    var touchMode = !gamepadConnected;
+    hud.classList.toggle('touch-mode', touchMode);
     var modeEl = el('dpadHudMode');
     if (modeEl) modeEl.textContent = dpadMode === 'weapon' ? '武器' : 'アイテム';
+    var hintEl = hud.querySelector('.hud-dpad-hint');
+    if (hintEl) hintEl.textContent = touchMode ? 'タップで使用 / モードはタップ切替' : 'R1 切替';
     var slots = dpadAssignments[dpadMode] || {};
     var dirIds = ['Up', 'Down', 'Left', 'Right'];
     for (var i = 0; i < dirIds.length; i++) {
@@ -5910,8 +5917,6 @@
       if (!slotEl) continue;
       var id = slots[dirIds[i].toLowerCase()];
       if (id && ITEMS[id]) {
-        // Icon + count badge. Count = 0 -> shows "0" with .out so the player
-        // can still see the binding but knows the item is depleted.
         var count = player.inventory[id] || 0;
         slotEl.innerHTML = '<span class="dpad-slot-icon">' + ITEMS[id].icon + '</span>' +
                            '<span class="dpad-slot-count' + (count === 0 ? ' out' : '') + '">'
@@ -5922,6 +5927,32 @@
         slotEl.innerHTML = '';
         slotEl.classList.add('empty');
         slotEl.title = '未割当';
+      }
+    }
+    // Bind tap handlers once. Slots use stored direction string so we can use
+    // the same updateDpadHud refresh each frame without re-binding.
+    if (!hud._tapBound) {
+      hud._tapBound = true;
+      ['Up','Down','Left','Right'].forEach(function (d) {
+        var s = el('dpadSlot' + d);
+        if (!s) return;
+        s.addEventListener('click', function (e) {
+          e.stopPropagation();
+          if (state !== ST.PLAYING) return;
+          var aid = (dpadAssignments[dpadMode] || {})[d.toLowerCase()];
+          if (aid) quickUseAssignedItem(aid);
+        });
+      });
+      if (modeEl) {
+        modeEl.addEventListener('click', function (e) {
+          e.stopPropagation();
+          if (state !== ST.PLAYING) return;
+          dpadMode = dpadMode === 'weapon' ? 'item' : 'weapon';
+          try { localStorage.setItem('bk_dpad_mode_v1', dpadMode); } catch (er) {}
+          updateDpadHud();
+          if (audioInitialized) GameEngine.playSound('ui_tap');
+        });
+        modeEl.style.cursor = 'pointer';
       }
     }
   }
