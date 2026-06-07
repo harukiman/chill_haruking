@@ -439,7 +439,15 @@ body {
   z-index: 19;
   font-family: 'Hiragino Sans', 'Yu Gothic', sans-serif;
 }
-.boss-hp-banner.show { display: flex; }
+.boss-hp-banner.show {
+  display: flex;
+  animation: boss-banner-in 0.45s cubic-bezier(0.18, 0.7, 0.34, 1.4);
+}
+@keyframes boss-banner-in {
+  0%   { opacity: 0; transform: translateX(-50%) translateY(-30px) scale(0.85); }
+  60%  { opacity: 1; transform: translateX(-50%) translateY(4px) scale(1.04); }
+  100% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.0); }
+}
 .boss-hp-name {
   font-size: 13px;
   font-weight: 800;
