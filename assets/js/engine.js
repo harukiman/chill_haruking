@@ -1161,6 +1161,22 @@
         ctx.strokeRect(barX, barY, barW, barH);
       }
     }
+    // ── Hit-confirmation red flash ──
+    // game.js sets entity._lastHitAt = performance.now() on damage.
+    // We tint the sprite bounding box red for ~150 ms so the player
+    // gets unmistakeable visual feedback that the shot connected.
+    if (entity._lastHitAt) {
+      var sinceHit = performance.now() - entity._lastHitAt;
+      if (sinceHit < 150) {
+        var flashA = (1 - sinceHit / 150) * 0.55;
+        ctx.globalAlpha = flashA;
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.fillStyle = '#ff4040';
+        ctx.fillRect(drawStartX, drawStartY, spriteWidth, spriteHeight);
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.globalAlpha = 1.0;
+      }
+    }
 
     ctx.restore();
   }

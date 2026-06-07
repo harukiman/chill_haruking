@@ -1833,6 +1833,9 @@
         _grantCoinsForKill(bestE.type, bestE);
       }
     }
+    // Mark the entity as just hit — renderSprite reads _lastHitAt
+    // and tints it red briefly, sells the hit-confirmation feel.
+    bestE._lastHitAt = performance.now();
     // Crit if the weapon multiplier is > 1.2 against this enemy.
     var isCrit = wMul >= 1.4;
     // Damage popup always shown for the hit. On kill we ALSO spawn a
