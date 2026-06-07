@@ -11663,7 +11663,23 @@
         spawn: { x: player.x, y: player.y, angle: player.angle }
       };
       localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+      // Brief save indicator — slides in the corner once per save so the
+      // player has visible confirmation. Cooldown 4s so rapid-fire saves
+      // (level transitions etc) don't spam the icon.
+      try { _flashSaveIndicator(); } catch (e) {}
     } catch (e) { console.warn('Save failed', e); }
+  }
+  var _lastSaveFlashAt = 0;
+  function _flashSaveIndicator() {
+    var now = performance.now();
+    if (now - _lastSaveFlashAt < 4000) return;
+    _lastSaveFlashAt = now;
+    var ind = el('saveIndicator');
+    if (!ind) return;
+    ind.classList.remove('show');
+    void ind.offsetWidth;
+    ind.classList.add('show');
+    setTimeout(function () { if (ind) ind.classList.remove('show'); }, 1600);
   }
 
   function loadGame() {

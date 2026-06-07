@@ -20,7 +20,7 @@
   <meta name="twitter:title" content="THE BACKROOMS — featuring HARUKI">
   <meta name="twitter:description" content="一人称モバイル探索ホラー。Level 0 から no-clip で階層を降下。壁の向こうにカレが待つ。">
   <title>THE BACKROOMS</title>
-  <link rel="stylesheet" href="assets/css/game.css?v=249">
+  <link rel="stylesheet" href="assets/css/game.css?v=250">
 </head>
 <body oncontextmenu="return false;">
 
@@ -130,6 +130,11 @@
 
   <!-- Low-HP red vignette pulse -->
   <div id="lowHpVignette" class="low-hp-vignette" aria-hidden="true"></div>
+
+  <!-- Save indicator — slides in briefly when auto-save fires -->
+  <div id="saveIndicator" class="save-indicator" aria-hidden="true">
+    <span class="save-ind-icon">💾</span><span class="save-ind-label">SAVED</span>
+  </div>
 
   <!-- Boss HP banner — appears at top of screen when boss is in line of sight -->
   <div id="bossHpBanner" class="boss-hp-banner" aria-hidden="true">
@@ -1069,8 +1074,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="assets/js/engine.js?v=249"></script>
-  <script src="assets/js/game.js?v=249"></script>
+  <script src="assets/js/engine.js?v=250"></script>
+  <script src="assets/js/game.js?v=250"></script>
 
   <!-- POST-LOAD VERIFICATION + DIRECT BINDING FALLBACK
        After game.js IIFE runs, this script confirms __titleAction is the real one.

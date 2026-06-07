@@ -387,6 +387,35 @@ body {
   .wcf-text { font-size: 20px; }
 }
 
+/* Save indicator — small chip that slides in/out when the game auto-saves */
+.save-indicator {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 8px);
+  right: calc(env(safe-area-inset-right, 0px) + 14px);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: rgba(20, 40, 16, 0.85);
+  border: 1px solid #88c050;
+  border-radius: 12px;
+  color: #d8f0a0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-shadow: 0 0 6px rgba(120, 200, 80, 0.55);
+  pointer-events: none;
+  z-index: 18;
+  opacity: 0;
+  transform: translateY(-12px);
+  transition: opacity 0.25s ease-out, transform 0.25s ease-out;
+}
+.save-indicator.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+.save-ind-icon { font-size: 13px; }
+
 /* Boss HP banner — top-of-screen golden HP bar shown while a boss is
    alive on this level. Hidden by default; toggled by per-frame HUD code. */
 .boss-hp-banner {
