@@ -932,24 +932,27 @@ button {
   95%           { opacity: 0.7; filter: blur(0.8px); }
 }
 
-/* Haruki face mosaic — user request 2026-06-07 (strength bumped:
-   「顔が判別できないぐらいに」). Heavy blur + saturate fallback so
-   even browsers that ignore the SVG filter render an indistinct
-   silhouette. SVG filter still provides true blocky pixelation. */
+/* Haruki face mosaic — user request 2026-06-07. !important throughout
+   because parent selectors (e.g. .title-haruki-silhouette img with its
+   own filter:) and the loading-haruki, gameover-haruki-bg wrappers
+   override the bare .haruki-mosaic rule without it, leaving the face
+   visible. The mosaic MUST always win. */
+img.haruki-mosaic,
 .haruki-mosaic {
   filter:
     url(#haruki-mosaic-filter)
     blur(8px)
     contrast(1.2)
-    saturate(1.3);
-  -webkit-filter: blur(18px) contrast(1.3) saturate(1.4);
-  image-rendering: pixelated;
-  image-rendering: -moz-crisp-edges;
-  image-rendering: crisp-edges;
+    saturate(1.3) !important;
+  -webkit-filter: blur(18px) contrast(1.3) saturate(1.4) !important;
+  image-rendering: pixelated !important;
+  image-rendering: -moz-crisp-edges !important;
+  image-rendering: crisp-edges !important;
 }
 @supports (filter: url(#x)) {
+  img.haruki-mosaic,
   .haruki-mosaic {
-    -webkit-filter: url(#haruki-mosaic-filter) blur(8px) contrast(1.2) saturate(1.3);
+    -webkit-filter: url(#haruki-mosaic-filter) blur(8px) contrast(1.2) saturate(1.3) !important;
   }
 }
 

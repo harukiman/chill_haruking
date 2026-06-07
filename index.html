@@ -27,9 +27,24 @@
   <!-- Apple touch icon — used when added to home screen on iOS. Same
        SVG as the favicon, sized 180×180 so iOS rasterizes cleanly. -->
   <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' fill='%23d4b340'/><rect x='0' y='90' width='180' height='90' fill='%23b08628'/><circle cx='90' cy='90' r='10' fill='%23000'/><text x='90' y='150' text-anchor='middle' fill='%23382a08' font-family='Times New Roman' font-weight='bold' font-size='22' letter-spacing='2'>THE</text></svg>">
-  <link rel="stylesheet" href="assets/css/game.css?v=325">
+  <link rel="stylesheet" href="assets/css/game.css?v=326">
 </head>
 <body oncontextmenu="return false;">
+
+  <!-- Haruki mosaic SVG filter — MUST be defined before any <img class="haruki-mosaic">
+       so the filter URL resolves the moment the first img is laid out.
+       (Previously sat lower in the body, hence the title silhouette
+        rendered un-mosaicked on first paint on some engines.) -->
+  <svg width="0" height="0" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
+    <filter id="haruki-mosaic-filter" x="0" y="0" width="100%" height="100%">
+      <feGaussianBlur stdDeviation="12" />
+      <feComponentTransfer>
+        <feFuncR type="discrete" tableValues="0 0.25 0.5 0.75" />
+        <feFuncG type="discrete" tableValues="0 0.25 0.5 0.75" />
+        <feFuncB type="discrete" tableValues="0 0.25 0.5 0.75" />
+      </feComponentTransfer>
+    </filter>
+  </svg>
 
   <!-- Early no-op fallback for __titleAction — overridden by game.js IIFE. -->
   <script>
@@ -204,23 +219,7 @@
         <button id="titleSettingsBtn" class="menu-btn" type="button" onclick="window.__titleAction&&window.__titleAction('settings')">設定</button>
       </div>
     </div>
-    <!-- SVG mosaic filter — defined once, referenced by .haruki-mosaic
-       images. Discrete feComponentTransfer steps give the blocky look
-       beyond what pure CSS blur can achieve. Hidden via aria + size 0. -->
-  <svg width="0" height="0" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
-    <!-- Strength bumped 2026-06-07: stdDeviation 5 → 12,
-         feComponentTransfer reduced to 4 levels for blockier color
-         quantization. Combined with CSS blur(8) the face is unreadable. -->
-    <filter id="haruki-mosaic-filter" x="0" y="0" width="100%" height="100%">
-      <feGaussianBlur stdDeviation="12" />
-      <feComponentTransfer>
-        <feFuncR type="discrete" tableValues="0 0.25 0.5 0.75" />
-        <feFuncG type="discrete" tableValues="0 0.25 0.5 0.75" />
-        <feFuncB type="discrete" tableValues="0 0.25 0.5 0.75" />
-      </feComponentTransfer>
-    </filter>
-  </svg>
-  <button id="titleResetBtn" class="title-reset-btn" type="button" onclick="window.__titleAction&&window.__titleAction('reset')">⚠ 全データ削除</button>
+    <button id="titleResetBtn" class="title-reset-btn" type="button" onclick="window.__titleAction&&window.__titleAction('reset')">⚠ 全データ削除</button>
     <button id="titleReloadBtn" class="title-reload-btn" type="button" onclick="window.__hardReload&&window.__hardReload()">↻ 再読込</button>
     <div id="tapToStartHint" class="tap-to-start-hint hidden"></div>
     <p class="copyright">THE BACKROOMS — featuring HARUKI &copy; 2026</p>
@@ -1122,8 +1121,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="assets/js/engine.js?v=325"></script>
-  <script src="assets/js/game.js?v=325"></script>
+  <script src="assets/js/engine.js?v=326"></script>
+  <script src="assets/js/game.js?v=326"></script>
 
   <!-- POST-LOAD VERIFICATION + DIRECT BINDING FALLBACK
        After game.js IIFE runs, this script confirms __titleAction is the real one.
