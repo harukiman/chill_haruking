@@ -8977,6 +8977,8 @@
     summary.push('<span style="color:#b09040;">現在階層:</span> ' + (currentLevelDef ? currentLevelDef.name + ' / ' + currentLevelDef.subtitle : 'LV?'));
     summary.push('<span style="color:#b09040;">クリア階層数:</span> ' + clears);
     summary.push('<span style="color:#b09040;">収集ノート:</span> ' + discoveredNotes.length);
+    summary.push('<span style="color:#b09040;">秘匿書類:</span> ' +
+                 Object.keys(collectedSecretDocs).length + ' / ' + SECRET_DOCS.length);
     if (gameMode === 'endless') {
       saveEndlessBest();
       summary.push('<span style="color:#b09040;">ENDLESS Floor:</span> ' + endlessFloor);
