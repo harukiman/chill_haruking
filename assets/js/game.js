@@ -1027,12 +1027,13 @@
          timeLimit: null },
     13: { id: 13, name: 'LEVEL 13', subtitle: 'THE LIBRARY',
           rows: LV13_ROWS, theme: 5,
-          hint: '無限の書架。本に触れると過去のささやきが聞こえる。',
-          intro: '紙の匂い。誰も読まない文献が、私たちを読んでいる。',
+          hint: '無限の書架。本に触れると過去のささやきが聞こえる。\n奥に祭壇 (A) があるが、近付かない方が良いとも噂される。',
+          intro: '紙の匂い。誰も読まない文献が、私たちを読んでいる。\n中央付近に石造りの祭壇 — 誰かが祈りを捧げ続けている。',
           entities: [
             { type: 'smiler', gx: 14, gy: 12 },
             { type: 'partygoer', gx: 5, gy: 16 },
-            { type: 'hound', gx: 24, gy: 4 }
+            { type: 'hound', gx: 24, gy: 4 },
+            { type: 'witness', gx: 12, gy: 17 } // standing near the altar, dead-eyed
           ],
           timeLimit: null },
     9: { id: 9, name: 'LEVEL 9', subtitle: 'THE SUBURBS',
