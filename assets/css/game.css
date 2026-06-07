@@ -117,6 +117,24 @@ body {
 .vital-bar {
   background: rgba(0,0,0,0.55) !important;
 }
+.vital-coin-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  padding: 2px 8px;
+  background: rgba(40, 30, 8, 0.65);
+  border: 1px solid rgba(212, 179, 64, 0.5);
+  border-radius: 10px;
+  color: #f0c850;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  font-family: 'Courier New', monospace;
+  text-shadow: 0 0 6px rgba(240, 200, 80, 0.4);
+  width: max-content;
+}
+.vital-coin-icon { font-size: 13px; }
 
 /* ============================================================
  *  OVERLAY (shared)

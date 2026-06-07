@@ -4268,6 +4268,11 @@
     if (el('hpNum')) el('hpNum').textContent = Math.ceil(player.hp);
     if (el('sanNum')) el('sanNum').textContent = Math.ceil(player.san);
     if (el('stamNum')) el('stamNum').textContent = Math.ceil(player.stam);
+    var coinNumEl = el('vitalCoinNum');
+    if (coinNumEl && player._hudCache.coins !== player.coins) {
+      coinNumEl.textContent = player.coins || 0;
+      player._hudCache.coins = player.coins;
+    }
 
     // HP/SAN screen state effects
     var hpFx = el('hpScreenEffect');
