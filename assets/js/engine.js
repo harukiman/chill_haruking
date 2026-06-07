@@ -946,6 +946,14 @@
         // Default ceiling: theme-driven (else dark warm tone)
         var defCeil = (engine.theme && engine.theme.ceilingDefault) || [30, 24, 20];
         var cR = defCeil[0], cG = defCeil[1], cB = defCeil[2];
+        // V8 2026-06-07: Per-tile ceiling color jitter to match the
+        // wall + floor variation, killing the last "uniform sheet"
+        // surface in the raycaster. Slightly tighter swing (±4%) since
+        // the ceiling is usually less visible.
+        var cJit = (seededRandom(cgx * 17, cgy * 29, 67) - 0.5) * 0.08;
+        cR = Math.max(0, Math.min(255, (cR * (1 + cJit)) | 0));
+        cG = Math.max(0, Math.min(255, (cG * (1 + cJit * 0.85)) | 0));
+        cB = Math.max(0, Math.min(255, (cB * (1 + cJit * 0.7)) | 0));
         // Backrooms-style fluorescent grid ceiling
         if (engine.theme && engine.theme.ceilingPattern === 'grid') {
           var gridU = ((cgx + cgy) & 1);
