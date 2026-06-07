@@ -2171,6 +2171,9 @@
         case 'weapon_snap':
           this._playWeaponSnap(now);
           break;
+        case 'weapon_pickup':
+          this._playWeaponPickup(now);
+          break;
         // S4: Horror stingers and whispers
         case 'stinger':
           this._playStinger(now);
@@ -3338,6 +3341,34 @@
       }
       oneClick(now, 2200, 0.45);
       oneClick(now + 0.06, 1700, 0.32);
+    },
+
+    _playWeaponPickup: function (now) {
+      // Metal clink + chamber chamber-back — sells "you picked up a real
+      // weapon" rather than the cheery item_get chime.
+      var dest = seGain || masterGain;
+      // Phase 1: high metal clink
+      var clink = audioCtx.createOscillator();
+      clink.type = 'triangle';
+      clink.frequency.setValueAtTime(1400, now);
+      clink.frequency.exponentialRampToValueAtTime(900, now + 0.08);
+      var cG = audioCtx.createGain();
+      cG.gain.setValueAtTime(0.001, now);
+      cG.gain.linearRampToValueAtTime(0.32, now + 0.005);
+      cG.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+      clink.connect(cG); cG.connect(dest);
+      clink.start(now); clink.stop(now + 0.2);
+      // Phase 2: low chamber chunk
+      var chunk = audioCtx.createOscillator();
+      chunk.type = 'square';
+      chunk.frequency.setValueAtTime(180, now + 0.10);
+      chunk.frequency.exponentialRampToValueAtTime(80, now + 0.18);
+      var chG = audioCtx.createGain();
+      chG.gain.setValueAtTime(0.001, now + 0.10);
+      chG.gain.linearRampToValueAtTime(0.20, now + 0.115);
+      chG.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+      chunk.connect(chG); chG.connect(dest);
+      chunk.start(now + 0.10); chunk.stop(now + 0.24);
     },
 
     _playWeaponSnap: function (now) {

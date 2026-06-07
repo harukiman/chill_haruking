@@ -8811,7 +8811,13 @@
     // Pass the item id (not the emoji) so the discovery popup can use
     // the realistic SVG when available, falling back to icon otherwise.
     showDiscovery(WEAPON_SVG[itemId] ? itemId : item.icon, 'アイテム入手', nameLabel);
-    if (audioInitialized) GameEngine.playSound('item_get');
+    if (audioInitialized) {
+      // Weapons get the heavier metal-clink + chamber-chunk pickup;
+      // consumables keep the lighter item_get chime.
+      try {
+        GameEngine.playSound(item.category === 'weapon' ? 'weapon_pickup' : 'item_get');
+      } catch (e) {}
+    }
     if (navigator.vibrate) navigator.vibrate(20);
     // Refresh the quick HUD so the slot bound to this item shows the new count
     // immediately (otherwise the change only surfaced on the next per-frame
