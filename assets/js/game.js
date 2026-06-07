@@ -1464,6 +1464,79 @@
     }
   }
 
+  // Damage multipliers per enemy type × weapon item. Default 1.0 (normal).
+  // Higher numbers mean the weapon is "strong" against that enemy; lower
+  // numbers mean it's "weak". Lets the bestiary surface 「有効」「無効」.
+  var WEAPON_DAMAGE_MULT = {
+    hound: {
+      pistol: 1.2,  shotgun: 1.8,  revolver: 1.2, katana: 0.9,
+      flare: 1.0,   architect_blade: 1.6, revenant_blade: 1.4,
+      void_grenade: 1.5
+    },
+    smiler: {
+      pistol: 0.8,  shotgun: 0.9,  revolver: 0.8, katana: 1.4,
+      flare: 1.8,   architect_blade: 1.4, revenant_blade: 1.2,
+      mirror: 1.5,  void_grenade: 0.8
+    },
+    skinstealer: {
+      pistol: 1.0,  shotgun: 1.6,  revolver: 1.2, katana: 1.6,
+      flare: 1.2,   architect_blade: 1.8, mirror: 2.0,
+      revenant_blade: 1.4, void_grenade: 1.2
+    },
+    wretch: {
+      pistol: 0.7,  shotgun: 1.0,  revolver: 0.8, katana: 0.6,
+      flare: 1.8,   architect_blade: 1.2, soul_lantern: 2.0,
+      siren_whistle: 1.6, void_grenade: 1.0
+    },
+    partygoer: {
+      pistol: 1.2,  shotgun: 1.6,  revolver: 1.4, katana: 1.0,
+      flare: 0.8,   architect_blade: 1.2, void_grenade: 1.5
+    },
+    crawler: {
+      pistol: 1.0,  shotgun: 1.4,  revolver: 1.0, katana: 1.6,
+      flare: 0.6,   architect_blade: 1.4, void_grenade: 1.2
+    },
+    haruki: {
+      pistol: 0.5,  shotgun: 0.6,  revolver: 0.5, katana: 1.0,
+      flare: 0.4,   architect_blade: 1.2, haruki_charm: 2.0,
+      mirror_shard: 1.8, revenant_blade: 0.8
+    },
+    echo: {
+      pistol: 0.8,  shotgun: 1.0,  katana: 0.6, flare: 1.6,
+      siren_whistle: 2.0, void_grenade: 1.2
+    },
+    faceling: {
+      pistol: 1.0,  shotgun: 1.4,  revolver: 1.0, katana: 1.2,
+      mirror: 1.8,  mirror_shard: 1.6, architect_blade: 1.4
+    },
+    civilian: { /* attacks on civilians stay at 1.0 — the moral cost is the
+                   real penalty, no need to also nerf damage */ },
+    mrhotel: {
+      pistol: 0.4,  shotgun: 0.5,  katana: 1.4, flare: 0.6,
+      architect_blade: 1.8, mirror: 2.0, revenant_blade: 1.2,
+      haruki_charm: 1.6
+    },
+    boss: {
+      pistol: 0.6,  shotgun: 0.8,  revolver: 0.7, katana: 1.0,
+      architect_blade: 1.4, void_grenade: 1.2
+    },
+    haruki_boss: {
+      pistol: 0.4,  shotgun: 0.5,  revolver: 0.5, katana: 1.2,
+      architect_blade: 1.6, mirror: 1.8, mirror_shard: 1.6,
+      haruki_charm: 0.0,  // charm WARDS, doesn't damage
+      void_grenade: 1.0,  revenant_blade: 1.0
+    }
+  };
+  function _weaponDamageMultiplier(weaponId, enemyType) {
+    var row = WEAPON_DAMAGE_MULT[enemyType];
+    if (!row) return 1.0;
+    var v = row[weaponId];
+    return (v === undefined) ? 1.0 : v;
+  }
+  // Expose for bestiary lookup
+  window.WEAPON_DAMAGE_MULT = WEAPON_DAMAGE_MULT;
+  window._weaponDamageMultiplier = _weaponDamageMultiplier;
+
   function _attackForward(p, opts) {
     var bestE = null, bestDist = Infinity;
     var ang = p.angle;
@@ -1482,7 +1555,10 @@
       if (d < bestDist) { bestDist = d; bestE = e; }
     }
     if (!bestE) return null;
-    var dmg = opts.dmg * (cheatActive ? 3 : 1);
+    // Apply per-enemy weapon damage multiplier when caller specifies which
+    // weapon (opts.weaponId). Falls back to 1.0 for legacy callers.
+    var wMul = opts.weaponId ? _weaponDamageMultiplier(opts.weaponId, bestE.type) : 1.0;
+    var dmg = opts.dmg * (cheatActive ? 3 : 1) * wMul;
     if (bestE.type === 'boss' || bestE.type === 'haruki_boss') {
       bestE.bossHp = (bestE.bossHp !== undefined ? bestE.bossHp : 200) - dmg;
       if (bestE.bossHp <= 0) {
@@ -1523,7 +1599,7 @@
         GameEngine.playSound('hit');
         GameEngine.playSound('clock_tick'); // sharp click as report
       }
-      var hit = _attackForward(p, { dmg: 60, rangeTiles: 8, coneDeg: 14 });
+      var hit = _attackForward(p, { dmg: 60, rangeTiles: 8, coneDeg: 14, weaponId: 'pistol' });
       GameEngine.shakeScreen(6, 0.2);
       if (hit) _hitParticles(hit, 4, 'spark');
       if (navigator.vibrate) navigator.vibrate(15);
@@ -1542,7 +1618,7 @@
       }
       var hits = 0, lastHit = null;
       for (var s = 0; s < 5; s++) {
-        var h = _attackForward(p, { dmg: 35, rangeTiles: 4.5, coneDeg: 55 });
+        var h = _attackForward(p, { dmg: 35, rangeTiles: 4.5, coneDeg: 55, weaponId: 'shotgun' });
         if (h) { hits++; lastHit = h; }
       }
       GameEngine.shakeScreen(14, 0.45);
@@ -1562,7 +1638,7 @@
         GameEngine.playSound('hit');
         GameEngine.playSound('paper'); // sharp swish-like overlay
       }
-      var hit = _attackForward(p, { dmg: 95, rangeTiles: 1.6, coneDeg: 80 });
+      var hit = _attackForward(p, { dmg: 95, rangeTiles: 1.6, coneDeg: 80, weaponId: 'katana' });
       GameEngine.shakeScreen(7, 0.22);
       if (hit) _hitParticles(hit, 10, 'spark');
       if (navigator.vibrate) navigator.vibrate(20);
@@ -1580,7 +1656,7 @@
         GameEngine.playSound('hit');
         GameEngine.playSound('stinger');
       }
-      var hit = _attackForward(p, { dmg: 85, rangeTiles: 12, coneDeg: 8 });
+      var hit = _attackForward(p, { dmg: 85, rangeTiles: 12, coneDeg: 8, weaponId: 'revolver' });
       GameEngine.shakeScreen(9, 0.3);
       if (hit) _hitParticles(hit, 6, 'spark');
       if (navigator.vibrate) navigator.vibrate(25);
@@ -1616,7 +1692,7 @@
     desc: 'ユニーク武器。前方扇形に巨大なダメージ。命中で1消費、空振りは消費しない。',
     category: 'weapon',
     effect: function (p) {
-      var hit = _attackForward(p, { dmg: 150, rangeTiles: 5, coneDeg: 100 });
+      var hit = _attackForward(p, { dmg: 150, rangeTiles: 5, coneDeg: 100, weaponId: 'architect_blade' });
       if (audioInitialized) { GameEngine.playSound('hit'); GameEngine.playSound('thunder'); }
       GameEngine.shakeScreen(12, 0.5);
       GameEngine.redFlash();
@@ -1652,7 +1728,7 @@
     desc: 'ユニーク武器。命中時 HP +12 回復。中距離扇形。空振りは消費しない。',
     category: 'weapon',
     effect: function (p) {
-      var hit = _attackForward(p, { dmg: 80, rangeTiles: 3, coneDeg: 70 });
+      var hit = _attackForward(p, { dmg: 80, rangeTiles: 3, coneDeg: 70, weaponId: 'revenant_blade' });
       if (hit) {
         p.hp = Math.min(p.hpMax, p.hp + 12);
         toast('★ 吸血: ' + getEntityLabel(hit.type) + ' HP +12');
