@@ -521,6 +521,13 @@ button {
 .halluc-text.show {
   animation: hallucTextFlash 1.8s ease-out forwards;
 }
+/* Level flavor text — same flash animation but tinted warm + slower fade,
+   so it reads as setting flavor (not a horror hallucination). */
+.halluc-text.flavor.show {
+  color: #f0dc8a !important;
+  text-shadow: 0 0 8px rgba(212,179,64,0.6), 0 2px 6px rgba(0,0,0,0.9) !important;
+  animation: hallucTextFlash 2.2s ease-out forwards;
+}
 @keyframes hallucTextFlash {
   0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.95); }
   15%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }

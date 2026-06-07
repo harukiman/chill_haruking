@@ -4506,6 +4506,18 @@
     playTime += dt;
     inLevelTime += dt;
 
+    // Per-level flavor lines — rolled at ~12s, cooldown 35s, separate from
+    // the micro-event channel so each one feels like its own beat.
+    if (typeof _isGamePaused !== 'function' || !_isGamePaused()) {
+      if (!_inCinematic) {
+        _flavorRollT = (_flavorRollT || 0) - dt;
+        if (_flavorRollT <= 0) {
+          _flavorRollT = 12;
+          if (Math.random() < 0.35) maybeFireLevelFlavor();
+        }
+      }
+    }
+
     // Ambient micro-events — break the monotony of long traversals with
     // scripted sensory beats. Rolled at ~5s intervals, never within 25s of
     // the previous beat so they stay surprising. Skipped during cutscenes,
@@ -6540,6 +6552,50 @@
     } catch (e) {}
   }
 
+  // Per-level flavor lines — sells the setting that the geometry alone can't.
+  // The user explicitly asked for "ホテルであればベッドや照明、カウンターなど、
+  // オフィスであればデスクとチェアやpcなど小物もきちんと配置するように" — until
+  // the engine can render props, these short flavor lines do the same job by
+  // describing what the room SHOULD look like.
+  var LEVEL_FLAVOR_LINES = {
+    0:  ['湿った絨毯。', '蛍光灯のハム音。', '黄色い壁紙。'],
+    1:  ['冷たいコンクリートの匂い。', '遠くに M.E.G. の旗。'],
+    2:  ['配管から水が滴る。', '床は浅い水たまり。'],
+    3:  ['火花の臭い。', '剥き出しのケーブル。'],
+    4:  ['キュービクル間のデスク。', 'PC のモニターが微かに光っている。', '会議椅子が散らばっている。'],
+    5:  ['ベッドメイクされたままの部屋。', 'シャンデリアの灯り。', 'フロントカウンターに鈴。'],
+    6:  ['消毒液の匂い。', 'カルテが床に散らかっている。'],
+    7:  ['芝生の上を歩く感触。', '誰もいない家々の窓。'],
+    8:  ['ギャラリーの絵画。', '蜂の羽音が低く響く。'],
+    9:  ['ハルキ — そこに、いる。'],
+    11: ['露店主の呼び声。', '行き交うサラリーマン。', 'コーヒーの香り。'],
+    12: ['ピンクの照明。', '誰かが笑っている。'],
+    13: ['古書の匂い。', '本棚の列が無限に伸びている。'],
+    14: ['冷たい海水。', '魚が泳いでいく影。'],
+    15: ['生垣の影。', '夜の鳥の声。']
+  };
+  var _flavorRollT = 12;
+  var _lastFlavorAt = 0;
+  function maybeFireLevelFlavor() {
+    var lines = LEVEL_FLAVOR_LINES[currentLevel];
+    if (!lines || !lines.length) return;
+    var nowF = performance.now();
+    if (nowF - _lastFlavorAt < 35000) return; // sparse — once per ~35s+
+    _lastFlavorAt = nowF;
+    var line = lines[Math.floor(Math.random() * lines.length)];
+    var htxt = el('hallucText');
+    if (htxt) {
+      htxt.textContent = '— ' + line;
+      htxt.classList.remove('show', 'flavor');
+      void htxt.offsetWidth;
+      htxt.classList.add('show', 'flavor');
+      var hLayerF = el('hallucinationLayer');
+      if (hLayerF) hLayerF.style.display = 'block';
+      setTimeout(function () {
+        if (htxt) { htxt.classList.remove('show', 'flavor'); }
+      }, 2200);
+    }
+  }
   // Ambient micro-event state — see fireAmbientMicroEvent() below.
   var _lastAmbientEventAt = 0;
   var _ambientEventRollT = 5;
