@@ -1357,6 +1357,8 @@
       player.inventory[itemId] = (player.inventory[itemId] || 0) + 1;
       toast('購入: ' + (item ? item.name : itemId));
       if (audioInitialized) GameEngine.playSound('item_get');
+      unlockAchievement('first_purchase');
+      if (isUnique) unlockAchievement('bought_unique');
       renderShop();
     });
     return row;
@@ -1380,6 +1382,7 @@
       player.coins = (player.coins || 0) + price;
       toast('売却: ' + (item ? item.name : itemId) + ' +🪙' + price);
       if (audioInitialized) GameEngine.playSound('ui_tap');
+      unlockAchievement('first_sale');
       renderShop();
     });
     return row;
@@ -1411,6 +1414,7 @@
       }
       try { GameEngine.redFlash(); GameEngine.shakeScreen(10, 0.5); } catch (e) {}
       toast('— 何かを失った。');
+      try { unlockAchievement('civilian_killed'); } catch (e) {}
     }
   }
 
@@ -4927,7 +4931,11 @@
     collect_all_items:{ name: '全 10 種類入手', icon: '◈' },
     silent_run:       { name: '無音 (アイテム未使用) 1階クリア', icon: '◐' },
     survive_haruki:   { name: 'HARUKI を振り切る', icon: '🩸' },
-    encounter_haruki: { name: 'HARUKI と遭遇', icon: '👁' }
+    encounter_haruki: { name: 'HARUKI と遭遇', icon: '👁' },
+    first_purchase:   { name: '初めての買い物', icon: '🪙' },
+    first_sale:       { name: '初めての売却', icon: '💰' },
+    bought_unique:    { name: 'ユニーク品を購入', icon: '★' },
+    civilian_killed:  { name: '何かを失った', icon: '🩸' }
   };
 
   function unlockAchievement(id) {
