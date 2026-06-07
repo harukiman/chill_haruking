@@ -107,6 +107,47 @@ body {
   width: 1.5px; height: 18px;
   transform: translate(-50%, -50%);
 }
+
+/* Weapon Attack Button — placed below the red interact action button
+   so the player can fire the equipped weapon without opening menus. */
+.weapon-attack-btn {
+  position: fixed;
+  right: calc(env(safe-area-inset-right, 0px) + 28px);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 28px);
+  width: 78px;
+  height: 78px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #284060 0%, #182840 65%, #081020 100%);
+  border: 2px solid #5080c0;
+  color: #fff;
+  font-family: inherit;
+  z-index: 15;
+  box-shadow: 0 0 14px rgba(80, 128, 192, 0.6);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+.weapon-attack-btn.show { display: flex; }
+.weapon-attack-btn:active {
+  background: radial-gradient(circle, #5080c0 0%, #284060 65%, #102040 100%);
+  transform: scale(0.94);
+}
+.weapon-attack-btn.empty {
+  background: radial-gradient(circle, #303030 0%, #181818 65%, #080808 100%);
+  border-color: #555;
+  opacity: 0.7;
+}
+.wab-icon { font-size: 30px; line-height: 1; }
+.wab-count {
+  font-size: 10px;
+  color: #f0c850;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 0.1em;
+  margin-top: 2px;
+  font-weight: 700;
+}
 #vitalBars.show { display: flex; }
 
 .vital-row {
@@ -3734,6 +3775,20 @@ button {
   background: rgba(60, 50, 30, 0.6);
   color: #c8b078;
   border: 1px solid rgba(120, 96, 32, 0.4);
+}
+.iu-btn.equip {
+  background: linear-gradient(180deg, #5080c0 0%, #284060 100%);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(80, 128, 192, 0.45);
+}
+.iu-btn.equip:active {
+  background: linear-gradient(180deg, #284060 0%, #102030 100%);
+  transform: scale(0.985);
+}
+.iu-btn.equip:disabled {
+  background: rgba(60, 60, 60, 0.55);
+  color: #888;
+  cursor: not-allowed;
 }
 .iu-btn.cancel:active {
   background: rgba(40, 30, 8, 0.8);

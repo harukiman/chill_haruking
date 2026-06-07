@@ -2382,6 +2382,7 @@
     stam: 100, stamMax: 100,
     sprintCooldown: 0,
     inventory: {},          // {itemId: count}
+    equippedWeapon: null,   // itemId of the currently equipped weapon — fired by weaponAttackBtn / R1
     coins: 0,               // shop currency — earned from kills / sold items
     flashlightOn: false,
     flashlightBattery: 0,    // 0-100 %; consumed at 1%/s while ON
@@ -3033,14 +3034,23 @@
         gp._hudTogglePressed = false;
       }
     }
-    // R1: toggle D-pad mode (weapon ⇄ item)
-    var r1Btn = gp.buttons[5];
-    if (r1Btn && r1Btn.pressed && !gp._r1Pressed) {
-      gp._r1Pressed = true;
+    // L1 (button 4): toggle D-pad mode (weapon ⇄ item)
+    // R1 (button 5): fire equipped weapon (was mode toggle — user remap
+    // per directive PPP).
+    var l1Btn = gp.buttons[4];
+    if (l1Btn && l1Btn.pressed && !gp._l1Pressed) {
+      gp._l1Pressed = true;
       dpadMode = (dpadMode === 'weapon') ? 'item' : 'weapon';
       saveDpadAssignments();
       toast(dpadMode === 'weapon' ? '武器モード' : 'アイテムモード');
       updateDpadHud();
+    } else if (!(l1Btn && l1Btn.pressed)) {
+      gp._l1Pressed = false;
+    }
+    var r1Btn = gp.buttons[5];
+    if (r1Btn && r1Btn.pressed && !gp._r1Pressed) {
+      gp._r1Pressed = true;
+      try { fireEquippedWeapon(); } catch (e) {}
     } else if (!(r1Btn && r1Btn.pressed)) {
       gp._r1Pressed = false;
     }
@@ -4603,10 +4613,57 @@
     }
   }
 
+  // Set the player's equipped weapon. Used by Phone Item modal「装備」button
+  // and by tap on the D-pad widget when in weapon mode.
+  function equipWeapon(itemId) {
+    if (!ITEMS[itemId] || ITEMS[itemId].category !== 'weapon') return;
+    player.equippedWeapon = itemId;
+    try { updateWeaponAttackBtn(); } catch (e) {}
+    toast('装備: ' + ITEMS[itemId].name);
+    if (audioInitialized) try { GameEngine.playSound('ui_tap'); } catch (e) {}
+  }
+  // Refresh weapon attack button icon + count to reflect equipped weapon.
+  function updateWeaponAttackBtn() {
+    var btn = el('weaponAttackBtn');
+    if (!btn) return;
+    var ic = el('wabIcon');
+    var cn = el('wabCount');
+    var id = player.equippedWeapon;
+    if (id && ITEMS[id]) {
+      var it = ITEMS[id];
+      if (ic) ic.textContent = it.icon || '⚔';
+      var cnt = player.inventory[id] || 0;
+      var charm = hasEternalCharm();
+      if (cn) cn.textContent = charm ? '∞' : ('×' + cnt);
+      btn.classList.toggle('empty', cnt <= 0 && !charm);
+    } else {
+      if (ic) ic.textContent = '⚔';
+      if (cn) cn.textContent = '—';
+      btn.classList.add('empty');
+    }
+  }
+  // Fire the equipped weapon — used by weaponAttackBtn / R1 gamepad.
+  function fireEquippedWeapon() {
+    if (state !== ST.PLAYING) return;
+    if (_inCinematic) return;
+    if (typeof _isGamePaused === 'function' && _isGamePaused()) return;
+    var id = player.equippedWeapon;
+    if (!id) { toast('武器未装備'); return; }
+    if (!ITEMS[id] || ITEMS[id].category !== 'weapon') return;
+    _pendingItemId = id;
+    confirmItemUse();
+    updateWeaponAttackBtn();
+  }
+  // Expose for inline handlers / gamepad poll
+  window.equipWeapon = equipWeapon;
+  window.fireEquippedWeapon = fireEquippedWeapon;
+
   function startPlaying() {
     state = ST.PLAYING;
     updateChaosLayer();
     var rt = el('reticle'); if (rt) rt.classList.add('show');
+    var wab = el('weaponAttackBtn'); if (wab) wab.classList.add('show');
+    updateWeaponAttackBtn();
     // Give the player a brief invulnerability window to read the surroundings.
     var graceMs = getSpawnGraceMs(currentLevel);
     spawnGraceUntil = performance.now() + graceMs;
@@ -6854,7 +6911,7 @@
     var modeEl = el('dpadHudMode');
     if (modeEl) modeEl.textContent = dpadMode === 'weapon' ? '武器' : 'アイテム';
     var hintEl = hud.querySelector('.hud-dpad-hint');
-    if (hintEl) hintEl.textContent = touchMode ? 'タップで使用 / モードはタップ切替' : 'R1 切替';
+    if (hintEl) hintEl.textContent = touchMode ? 'タップで使用 / モードはタップ切替' : 'L1: モード切替 / R1: 武器使用';
     var slots = dpadAssignments[dpadMode] || {};
     var dirIds = ['Up', 'Down', 'Left', 'Right'];
     for (var i = 0; i < dirIds.length; i++) {
@@ -6941,6 +6998,22 @@
     el('itemUseIcon').textContent = it.icon;
     el('itemUseName').textContent = it.name;
     el('itemUseDesc').textContent = it.desc;
+    // 装備する button only shown for weapons; also dims if already equipped.
+    var equipBtn = el('itemUseEquipBtn');
+    if (equipBtn) {
+      if (it.category === 'weapon') {
+        equipBtn.style.display = '';
+        if (player.equippedWeapon === itemId) {
+          equipBtn.textContent = '装備中';
+          equipBtn.disabled = true;
+        } else {
+          equipBtn.textContent = '装備する';
+          equipBtn.disabled = false;
+        }
+      } else {
+        equipBtn.style.display = 'none';
+      }
+    }
     refreshIuAssignUI();
     showOverlay('itemUseModal');
   }
@@ -9769,6 +9842,7 @@
     state = ST.DEAD;
     updateChaosLayer();
     var rtD = el('reticle'); if (rtD) rtD.classList.remove('show');
+    var wabD = el('weaponAttackBtn'); if (wabD) wabD.classList.remove('show');
     stats.totalDeaths++;
     saveStats();
     el('vitalBars').classList.remove('show');
@@ -11121,6 +11195,7 @@
     state = ST.TITLE;
     updateChaosLayer();
     var rt2 = el('reticle'); if (rt2) rt2.classList.remove('show');
+    var wab2 = el('weaponAttackBtn'); if (wab2) wab2.classList.remove('show');
     gameMode = 'normal';
     GameEngine.stopAll();
     GameEngine.fadeFromBlack(500);
@@ -11506,6 +11581,24 @@
       if (audioInitialized) GameEngine.playSound('ui_tap');
       closeItemUseModal();
     });
+    // 「装備する」 — only shown for weapons. Sets player.equippedWeapon so
+    // the lower-right weapon attack button fires this weapon on tap / R1.
+    var iueBtn = el('itemUseEquipBtn');
+    if (iueBtn) {
+      iueBtn.addEventListener('click', function () {
+        if (audioInitialized) GameEngine.playSound('ui_tap');
+        if (_pendingItemId) equipWeapon(_pendingItemId);
+        closeItemUseModal();
+      });
+    }
+    // weaponAttackBtn → fire equipped weapon
+    var wabBtn = el('weaponAttackBtn');
+    if (wabBtn) {
+      wabBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        fireEquippedWeapon();
+      });
+    }
 
     // Mini-game controls
     el('minigameActionBtn').addEventListener('click', function () {
