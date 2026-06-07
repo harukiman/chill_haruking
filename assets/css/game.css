@@ -1298,6 +1298,146 @@ img.haruki-mosaic,
  *  TITLE SETTINGS OVERLAY
  * ============================================================ */
 /* Title archive overlay — same card-owns-scroll pattern as settings. */
+/* Title Slots overlay — 5 named save slots. Reuses the archive palette
+   so the title flow feels cohesive. */
+.title-slots-overlay {
+  z-index: 55;
+  background: rgba(0, 0, 0, 0.88);
+  align-items: center;
+  justify-content: center;
+  padding: calc(env(safe-area-inset-top, 0px) + 8px) 12px
+           calc(env(safe-area-inset-bottom, 0px) + 8px);
+  box-sizing: border-box;
+}
+.tsl-card {
+  width: min(94vw, 440px);
+  max-height: calc(100vh - 24px);
+  max-height: calc(100svh - 24px);
+  max-height: calc(100dvh - 24px);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  background: linear-gradient(180deg, rgba(35, 26, 6, 0.95) 0%, rgba(15, 12, 4, 0.95) 100%);
+  border: 1px solid rgba(212, 179, 64, 0.55);
+  border-radius: 14px;
+  padding: 14px 16px 18px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(240, 220, 138, 0.1);
+}
+.tsl-close-x {
+  position: sticky;
+  top: 0;
+  align-self: flex-end;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(60, 24, 24, 0.85);
+  color: #fff;
+  border: 1px solid rgba(220, 60, 60, 0.7);
+  font-size: 20px;
+  cursor: pointer;
+  z-index: 2;
+}
+.tsl-title {
+  font-family: 'Times New Roman', serif;
+  font-size: 20px;
+  letter-spacing: 0.35em;
+  text-align: center;
+  color: #e8d57a;
+  margin: 0 0 6px;
+  text-shadow: 0 0 12px rgba(212, 179, 64, 0.4);
+  flex-shrink: 0;
+}
+.tsl-hint {
+  font-size: 10px;
+  color: #b09040;
+  letter-spacing: 0.12em;
+  text-align: center;
+  margin: 0 0 12px;
+  line-height: 1.55;
+}
+.tsl-list { display: flex; flex-direction: column; gap: 8px; }
+.tsl-row {
+  padding: 10px 12px;
+  background: rgba(40, 30, 8, 0.55);
+  border: 1px solid #483910;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.tsl-row.active {
+  background: rgba(80, 60, 16, 0.7);
+  border-color: #d4b340;
+  box-shadow: 0 0 12px rgba(212, 179, 64, 0.25);
+}
+.tsl-row-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.tsl-num {
+  font-size: 16px;
+  font-weight: 700;
+  color: #f0dc8a;
+  letter-spacing: 0.1em;
+  min-width: 28px;
+}
+.tsl-name-input {
+  flex: 1;
+  background: rgba(20, 14, 4, 0.7);
+  border: 1px solid #6a5418;
+  color: #f0dc8a;
+  border-radius: 5px;
+  padding: 6px 8px;
+  font-family: inherit;
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  min-width: 0;
+}
+.tsl-name-input::placeholder { color: #6a5418; }
+.tsl-meta {
+  font-size: 10px;
+  color: #b09040;
+  letter-spacing: 0.12em;
+  line-height: 1.4;
+}
+.tsl-meta.empty { color: #6a5418; }
+.tsl-row-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.tsl-btn {
+  padding: 6px 12px;
+  background: rgba(28, 22, 8, 0.6);
+  border: 1px solid #786020;
+  color: #b09040;
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  cursor: pointer;
+  border-radius: 5px;
+  font-family: inherit;
+  min-height: 30px;
+}
+.tsl-btn:active { background: rgba(120, 90, 24, 0.7); }
+.tsl-btn.primary {
+  background: rgba(120, 90, 24, 0.8);
+  color: #fff2a0;
+  border-color: #d4b340;
+}
+.tsl-btn.danger {
+  background: rgba(60, 24, 24, 0.55);
+  color: #d49090;
+  border-color: #783030;
+}
+.tsl-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
 .title-archive-overlay {
   z-index: 55;
   background: rgba(0, 0, 0, 0.88);

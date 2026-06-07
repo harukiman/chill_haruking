@@ -2608,7 +2608,55 @@
   // Toast
   var toastTimer = null;
 
-  // Save key
+  // ── Save slots ──
+  // User request 2026-06-08: 「IP アドレスごとにセーブデータを別に
+  // 保存することはできないか」. True IP-based separation isn't
+  // feasible in a static-site context (no backend, IP isn't visible
+  // client-side; external APIs are unreliable + privacy-sensitive).
+  // Named save slots cover the same use case (multiple users on the
+  // same browser, or separate playthroughs by one user).
+  // currentSaveSlot picks the suffix appended to SAVE_KEY. Other
+  // cross-run state (achievements, defeated bestiary, lifetime notes,
+  // cheat unlock) stays GLOBAL so the player keeps their meta
+  // progression regardless of which slot they're playing.
+  var SLOT_KEY = 'thebackrooms_current_slot_v1';
+  var SLOT_NAMES_KEY = 'thebackrooms_slot_names_v1';
+  var SLOT_COUNT = 5; // user spec 2026-06-08: 「セーブスロットは５つにする」
+  var currentSaveSlot = 1;
+  var slotNames = { 1: '', 2: '', 3: '', 4: '', 5: '' };
+  try {
+    var _stored = parseInt(localStorage.getItem(SLOT_KEY) || '1', 10);
+    if (_stored >= 1 && _stored <= SLOT_COUNT) currentSaveSlot = _stored;
+    var _sn = localStorage.getItem(SLOT_NAMES_KEY);
+    if (_sn) {
+      var _parsed = JSON.parse(_sn);
+      if (_parsed && typeof _parsed === 'object') {
+        for (var _si = 1; _si <= SLOT_COUNT; _si++) {
+          if (typeof _parsed[_si] === 'string') slotNames[_si] = _parsed[_si];
+        }
+      }
+    }
+  } catch (e) {}
+  function _saveSlotKey() { return 'thebackrooms_save_v1_s' + currentSaveSlot; }
+  function _slotKeyFor(slotNum) { return 'thebackrooms_save_v1_s' + slotNum; }
+  function slotHasSave(slotNum) {
+    try { return !!localStorage.getItem(_slotKeyFor(slotNum)); } catch (e) { return false; }
+  }
+  function setCurrentSaveSlot(slotNum) {
+    if (slotNum < 1 || slotNum > SLOT_COUNT) return;
+    currentSaveSlot = slotNum;
+    try { localStorage.setItem(SLOT_KEY, String(slotNum)); } catch (e) {}
+  }
+  function setSlotName(slotNum, name) {
+    if (slotNum < 1 || slotNum > SLOT_COUNT) return;
+    slotNames[slotNum] = String(name || '').slice(0, 12);
+    try { localStorage.setItem(SLOT_NAMES_KEY, JSON.stringify(slotNames)); } catch (e) {}
+  }
+
+  // Save key — slot-aware accessor. Legacy code that reads SAVE_KEY
+  // directly via property access still works because we redefine it
+  // via a getter further down. To keep diff minimal we expose a
+  // function and update the few save/load sites to call it.
   var SAVE_KEY = 'thebackrooms_save_v1';
   var ACH_KEY = 'thebackrooms_ach_v1';
   var BEST_KEY = 'thebackrooms_best_v1';
@@ -11554,8 +11602,9 @@
       showOverlay('endingScreen');
     });
 
-    // Clear save on ending
-    localStorage.removeItem(SAVE_KEY);
+    // Clear save on ending — current slot only.
+    try { localStorage.removeItem(_saveSlotKey()); } catch (e) {}
+    try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
   }
 
   // ============================================================
@@ -12226,7 +12275,7 @@
         mgPlayedAt: mgPlayedAt,
         spawn: { x: player.x, y: player.y, angle: player.angle }
       };
-      localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+      localStorage.setItem(_saveSlotKey(), JSON.stringify(data));
       // Brief save indicator — slides in the corner once per save so the
       // player has visible confirmation. Cooldown 4s so rapid-fire saves
       // (level transitions etc) don't spam the icon.
@@ -12261,7 +12310,20 @@
 
   function loadGame() {
     try {
-      var s = localStorage.getItem(SAVE_KEY);
+      // Slot-aware load — falls back to the legacy un-slotted key once
+      // for backwards compatibility with players whose save existed
+      // before slots were introduced.
+      var s = localStorage.getItem(_saveSlotKey());
+      if (!s) {
+        var legacy = localStorage.getItem(SAVE_KEY);
+        if (legacy && currentSaveSlot === 1) {
+          // Promote legacy save into slot 1 so future operations are
+          // slot-consistent. Removed from the un-slotted key.
+          localStorage.setItem(_saveSlotKey(), legacy);
+          try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+          s = legacy;
+        }
+      }
       if (!s) return false;
       var data = JSON.parse(s);
       currentLevel = data.currentLevel || 0;
@@ -12307,7 +12369,12 @@
   }
 
   function hasSave() {
-    return !!localStorage.getItem(SAVE_KEY);
+    try {
+      if (localStorage.getItem(_saveSlotKey())) return true;
+      // Legacy un-slotted save counts as slot-1 backing storage.
+      if (currentSaveSlot === 1 && localStorage.getItem(SAVE_KEY)) return true;
+    } catch (e) {}
+    return false;
   }
 
   // ============================================================
@@ -12815,6 +12882,116 @@
     if (eb && endlessBestScore > 0) {
       eb.textContent = 'ENDLESS モード (Best ' + endlessBestScore + ')';
     }
+    var sb = el('titleSlotsBtn');
+    if (sb) {
+      var nm = (slotNames && slotNames[currentSaveSlot]) ? slotNames[currentSaveSlot] : '';
+      sb.textContent = 'セーブスロット: ' + currentSaveSlot + (nm ? ' — ' + nm : '');
+    }
+  }
+
+  function _slotSummary(slotNum) {
+    try {
+      var raw = localStorage.getItem(_slotKeyFor(slotNum));
+      if (!raw) return null;
+      var d = JSON.parse(raw);
+      var lvl = (d && typeof d.currentLevel === 'number') ? d.currentLevel : 0;
+      var def = LEVELS[lvl];
+      var lvlName = def ? def.name : ('LEVEL ' + lvl);
+      var hp = (d && d.player && typeof d.player.hp === 'number') ? Math.round(d.player.hp) : '?';
+      var diff = (d && d.currentDifficulty) ? String(d.currentDifficulty).toUpperCase() : '';
+      return { lvlName: lvlName, hp: hp, diff: diff };
+    } catch (e) { return null; }
+  }
+
+  function renderTitleSlots() {
+    var list = el('tslList');
+    if (!list) return;
+    list.innerHTML = '';
+    for (var i = 1; i <= SLOT_COUNT; i++) {
+      (function (slotNum) {
+        var row = document.createElement('div');
+        row.className = 'tsl-row' + (slotNum === currentSaveSlot ? ' active' : '');
+
+        var head = document.createElement('div');
+        head.className = 'tsl-row-head';
+        var num = document.createElement('div');
+        num.className = 'tsl-num';
+        num.textContent = '#' + slotNum;
+        var nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.className = 'tsl-name-input';
+        nameInput.maxLength = 12;
+        nameInput.placeholder = 'プレイヤー名 (任意)';
+        nameInput.value = (slotNames && slotNames[slotNum]) || '';
+        nameInput.addEventListener('change', function () {
+          setSlotName(slotNum, nameInput.value);
+          if (slotNum === currentSaveSlot) updateTitleButtons();
+        });
+        nameInput.addEventListener('blur', function () {
+          setSlotName(slotNum, nameInput.value);
+          if (slotNum === currentSaveSlot) updateTitleButtons();
+        });
+        head.appendChild(num);
+        head.appendChild(nameInput);
+        row.appendChild(head);
+
+        var meta = document.createElement('div');
+        var sum = _slotSummary(slotNum);
+        if (sum) {
+          meta.className = 'tsl-meta';
+          meta.textContent = sum.lvlName + ' / HP ' + sum.hp + (sum.diff ? ' / ' + sum.diff : '');
+        } else {
+          meta.className = 'tsl-meta empty';
+          meta.textContent = '— 空きスロット —';
+        }
+        row.appendChild(meta);
+
+        var actions = document.createElement('div');
+        actions.className = 'tsl-row-actions';
+
+        var selectBtn = document.createElement('button');
+        selectBtn.type = 'button';
+        selectBtn.className = 'tsl-btn' + (slotNum === currentSaveSlot ? ' primary' : '');
+        selectBtn.textContent = slotNum === currentSaveSlot ? '✓ 選択中' : '選択';
+        selectBtn.addEventListener('click', function () {
+          if (slotNum === currentSaveSlot) return;
+          setCurrentSaveSlot(slotNum);
+          // Re-load this slot's save into memory so つづきから immediately
+          // picks up the right run. loadGame() only mutates state when it
+          // finds a save, so empty slots leave defaults intact.
+          try { loadGame(); } catch (e) {}
+          updateTitleButtons();
+          renderTitleSlots();
+          try { if (audioInitialized) GameEngine.playSound('ui_tap'); } catch (e) {}
+          toast('スロット ' + slotNum + ' を選択しました');
+        });
+        actions.appendChild(selectBtn);
+
+        var delBtn = document.createElement('button');
+        delBtn.type = 'button';
+        delBtn.className = 'tsl-btn danger';
+        delBtn.textContent = '削除';
+        delBtn.disabled = !sum;
+        if (sum) {
+          delBtn.addEventListener('click', function () {
+            if (!confirm('スロット ' + slotNum + ' のセーブを削除しますか?')) return;
+            try { localStorage.removeItem(_slotKeyFor(slotNum)); } catch (e) {}
+            // Legacy un-slotted save also counts as slot 1; clear it too
+            // so the slot reads as empty on the next render.
+            if (slotNum === 1) {
+              try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+            }
+            updateTitleButtons();
+            renderTitleSlots();
+            toast('スロット ' + slotNum + ' を削除しました');
+          });
+        }
+        actions.appendChild(delBtn);
+
+        row.appendChild(actions);
+        list.appendChild(row);
+      })(i);
+    }
   }
 
   function openLevelSelect() {
@@ -13034,8 +13211,17 @@
         'thebackrooms_mg_played_v1', // single-use minigame lock
         'bk_view_smooth',            // title settings view smoothing
         'bk_tts_voices',             // TTS uncanny voice toggle
-        'thebackrooms_gamepad_v1'];  // gamepad button map
+        'thebackrooms_gamepad_v1',   // gamepad button map
+        // 2026-06-08 additions:
+        'thebackrooms_current_slot_v1', // active save slot
+        'thebackrooms_slot_names_v1'];  // per-slot display names
       keys.forEach(function (k) { try { localStorage.removeItem(k); } catch (e) {} });
+      // Per-slot save data — slot 1 covered by legacy key above, others
+      // need explicit cleanup so the freshly-reset profile sees a clean
+      // slate across all 5 slots.
+      for (var _sk = 1; _sk <= 5; _sk++) {
+        try { localStorage.removeItem('thebackrooms_save_v1_s' + _sk); } catch (e) {}
+      }
       // Reset in-memory state
       unlockedAchievements = {};
       bestTimes = {};
@@ -13272,8 +13458,9 @@
       else toast('セーブデータなし');
     });
     el('optResetBtn').addEventListener('click', function () {
-      if (confirm('セーブデータを削除しますか?')) {
-        localStorage.removeItem(SAVE_KEY);
+      if (confirm('現在のスロットのセーブを削除しますか?')) {
+        try { localStorage.removeItem(_saveSlotKey()); } catch (e) {}
+        try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
         // Also clear D-pad assignments so the slot UI starts fresh and the
         // spoiler guard re-evaluates from scratch on the next run.
         try {
@@ -14203,6 +14390,15 @@
         case 'closeArchive':
           stage = 'closeArchive';
           hideOverlay('titleArchiveOverlay');
+          break;
+        case 'slots':
+          stage = 'slots';
+          renderTitleSlots();
+          showOverlay('titleSlotsOverlay');
+          break;
+        case 'closeSlots':
+          stage = 'closeSlots';
+          hideOverlay('titleSlotsOverlay');
           break;
         case 'settings':
           stage = 'settings';

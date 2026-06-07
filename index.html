@@ -27,7 +27,7 @@
   <!-- Apple touch icon — used when added to home screen on iOS. Same
        SVG as the favicon, sized 180×180 so iOS rasterizes cleanly. -->
   <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' fill='%23d4b340'/><rect x='0' y='90' width='180' height='90' fill='%23b08628'/><circle cx='90' cy='90' r='10' fill='%23000'/><text x='90' y='150' text-anchor='middle' fill='%23382a08' font-family='Times New Roman' font-weight='bold' font-size='22' letter-spacing='2'>THE</text></svg>">
-  <link rel="stylesheet" href="assets/css/game.css?v=335">
+  <link rel="stylesheet" href="assets/css/game.css?v=336">
 </head>
 <body oncontextmenu="return false;">
 
@@ -210,6 +210,7 @@
       <div class="title-menu">
         <button id="startBtn" class="menu-btn" type="button" onclick="window.__titleAction&&window.__titleAction('start')">はじめから</button>
         <button id="continueBtn" class="menu-btn" type="button" style="display:none;" onclick="window.__titleAction&&window.__titleAction('continue')">つづきから</button>
+        <button id="titleSlotsBtn" class="menu-btn" type="button" onclick="window.__titleAction&&window.__titleAction('slots')">セーブスロット: 1</button>
         <button id="freeRoamBtn" class="menu-btn" type="button" style="display:none;" onclick="window.__titleAction&&window.__titleAction('freeroam')">フリーローム</button>
         <button id="endlessBtn" class="menu-btn" type="button" onclick="window.__titleAction&&window.__titleAction('endless')">ENDLESS モード</button>
         <button id="difficultyBtn" class="menu-btn" type="button" onclick="window.__titleAction&&window.__titleAction('difficulty')">難易度: NORMAL</button>
@@ -261,6 +262,16 @@
         <p class="ta-counter" id="taAchsCount">— / —</p>
         <div id="taAchsList" class="ta-list"></div>
       </div>
+    </div>
+  </div>
+
+  <!-- Title Slots Overlay (セーブスロット 5基) -->
+  <div id="titleSlotsOverlay" class="overlay title-slots-overlay" style="display:none;">
+    <div class="tsl-card">
+      <button class="tsl-close-x" type="button" aria-label="閉じる" onclick="window.__titleAction&&window.__titleAction('closeSlots')">×</button>
+      <h2 class="tsl-title">セーブスロット</h2>
+      <p class="tsl-hint">スロット毎に独立したセーブ。名前を付けて家族や友達と分けて遊べる。<br>※ 実績・図鑑・アーカイブは全スロット共通。</p>
+      <div id="tslList" class="tsl-list"></div>
     </div>
   </div>
 
@@ -1121,8 +1132,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="assets/js/engine.js?v=335"></script>
-  <script src="assets/js/game.js?v=335"></script>
+  <script src="assets/js/engine.js?v=336"></script>
+  <script src="assets/js/game.js?v=336"></script>
 
   <!-- POST-LOAD VERIFICATION + DIRECT BINDING FALLBACK
        After game.js IIFE runs, this script confirms __titleAction is the real one.
