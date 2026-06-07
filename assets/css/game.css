@@ -231,13 +231,13 @@ body {
 }
 .weapon-hand-grip {
   display: inline-block;
-  width: 140px;   /* SVG sizing — emoji fallback respects font-size below */
-  height: 140px;
+  width: 160px;   /* SVG sizing — emoji fallback respects font-size below */
+  height: 160px;
   transform: rotate(-18deg); /* tilted like a held weapon */
   position: relative;
   filter:
-    drop-shadow(0 4px 6px rgba(0, 0, 0, 0.92))
-    drop-shadow(0 0 2px rgba(255, 255, 255, 0.20));
+    drop-shadow(0 5px 8px rgba(0, 0, 0, 0.95))
+    drop-shadow(0 0 2px rgba(255, 255, 255, 0.22));
 }
 .weapon-hand-grip > svg {
   width: 100%;
@@ -247,6 +247,9 @@ body {
 .weapon-hand-grip .weapon-emoji {
   font-size: 110px;
   line-height: 1;
+}
+@media (max-width: 600px) {
+  .weapon-hand-grip { width: 130px; height: 130px; }
 }
 .weapon-hand-flash {
   position: absolute;
