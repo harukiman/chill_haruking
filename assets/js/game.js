@@ -6643,7 +6643,9 @@
   }
 
   function pickNextEndlessLevel() {
-    var allLevels = [0, 1, 2, 3, 4, 5, 6, 7, 8, 11, 12, 9];
+    // Match the campaign level set so endless rotates through every level
+    // the player has access to. Previously missed Lv13/14/15.
+    var allLevels = [0, 1, 2, 3, 4, 5, 6, 7, 8, 11, 12, 13, 14, 15, 9];
     // Remove already visited this cycle
     var avail = allLevels.filter(function (l) { return endlessVisitedLevels.indexOf(l) < 0; });
     if (avail.length === 0) {
