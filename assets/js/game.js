@@ -13518,6 +13518,21 @@
         if (!document.hidden && GameEngine._resize) {
           setTimeout(GameEngine._resize.bind(GameEngine), 100);
         }
+        // When tab is hidden, stop the chase BGM loop so audio doesn't
+        // keep going in background. Resume on visibility return only
+        // if the player is still in chase state.
+        if (document.hidden) {
+          try { if (GameEngine.stopAll) GameEngine.stopAll(); } catch (e) {}
+        } else {
+          // Re-arm theme loops on resume if still playing the level.
+          try {
+            if (state === ST.PLAYING && currentLevelDef) {
+              var theme = THEMES[currentLevelDef.theme];
+              if (theme && theme.ambientLoop && audioInitialized) GameEngine.startLoop(theme.ambientLoop);
+              if (theme && theme.bgmLoop && audioInitialized) GameEngine.startLoop(theme.bgmLoop);
+            }
+          } catch (e) {}
+        }
       });
       window.addEventListener('orientationchange', function () {
         setTimeout(function () { if (GameEngine._resize) GameEngine._resize(); }, 200);
