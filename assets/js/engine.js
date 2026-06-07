@@ -2127,6 +2127,15 @@
         case 'paper':
           this._playPaper(now);
           break;
+        case 'gulp':
+          this._playGulp(now);
+          break;
+        case 'crunch':
+          this._playCrunch(now);
+          break;
+        case 'unwrap':
+          this._playUnwrap(now);
+          break;
         case 'key_unlock':
           this._playKeyUnlock(now);
           break;
@@ -3228,6 +3237,71 @@
       g2.connect(dest);
       osc2.start(now);
       osc2.stop(now + 0.3);
+    },
+
+    _playGulp: function (now) {
+      // 「ごくごく」 — 3 quick low-frequency throat swallows
+      var dest = seGain || masterGain;
+      for (var i = 0; i < 3; i++) {
+        var t = now + i * 0.18;
+        var osc = audioCtx.createOscillator();
+        var gain = audioCtx.createGain();
+        var lp = audioCtx.createBiquadFilter();
+        lp.type = 'lowpass'; lp.frequency.value = 380;
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(180 - i * 12, t);
+        osc.frequency.exponentialRampToValueAtTime(110, t + 0.13);
+        gain.gain.setValueAtTime(0.0001, t);
+        gain.gain.linearRampToValueAtTime(0.22, t + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
+        osc.connect(lp); lp.connect(gain); gain.connect(dest);
+        osc.start(t); osc.stop(t + 0.16);
+      }
+    },
+    _playCrunch: function (now) {
+      // 「サクサク」 — 4 short noise bursts of decreasing intensity
+      var dest = seGain || masterGain;
+      var sr = audioCtx.sampleRate;
+      for (var i = 0; i < 4; i++) {
+        var t = now + i * 0.12;
+        var bufLen = (sr * 0.06) | 0;
+        var buf = audioCtx.createBuffer(1, bufLen, sr);
+        var d = buf.getChannelData(0);
+        for (var k = 0; k < bufLen; k++) {
+          d[k] = (Math.random() * 2 - 1) * Math.pow(1 - k / bufLen, 1.8);
+        }
+        var src = audioCtx.createBufferSource();
+        src.buffer = buf;
+        var hp = audioCtx.createBiquadFilter();
+        hp.type = 'highpass'; hp.frequency.value = 1200;
+        var gain = audioCtx.createGain();
+        gain.gain.setValueAtTime(0.18 * (1 - i * 0.15), t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.07);
+        src.connect(hp); hp.connect(gain); gain.connect(dest);
+        src.start(t);
+      }
+    },
+    _playUnwrap: function (now) {
+      // 「カサカサ」 — crinkle / wrapper sound
+      var dest = seGain || masterGain;
+      var sr = audioCtx.sampleRate;
+      var bufLen = (sr * 0.35) | 0;
+      var buf = audioCtx.createBuffer(1, bufLen, sr);
+      var d = buf.getChannelData(0);
+      for (var k = 0; k < bufLen; k++) {
+        // Sparse noise — only fire on ~30% of samples (crinkle texture)
+        d[k] = (Math.random() < 0.3 ? (Math.random() * 2 - 1) : 0) * 0.7;
+      }
+      var src = audioCtx.createBufferSource();
+      src.buffer = buf;
+      var hp = audioCtx.createBiquadFilter();
+      hp.type = 'highpass'; hp.frequency.value = 1800;
+      var gain = audioCtx.createGain();
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.linearRampToValueAtTime(0.16, now + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
+      src.connect(hp); hp.connect(gain); gain.connect(dest);
+      src.start(now);
     },
 
     _playPaper: function (now) {

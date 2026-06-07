@@ -1082,16 +1082,19 @@
     almond_water: {
       id: 'almond_water', name: 'アーモンドウォーター',
       icon: '🥤', desc: 'バックルームで最も普通の飲料。SAN を回復する。',
+      useSound: 'gulp',
       effect: function (p) { p.san = Math.min(p.sanMax, p.san + 35); toast('SAN +35'); }
     },
     bandage: {
       id: 'bandage', name: '応急手当キット',
       icon: '🩹', desc: '出血を止め、HP を大きく回復する。',
+      useSound: 'unwrap',
       effect: function (p) { p.hp = Math.min(p.hpMax, p.hp + 50); toast('HP +50'); }
     },
     energy_bar: {
       id: 'energy_bar', name: 'エナジーバー',
       icon: '🍫', desc: 'スタミナを満タンにする。',
+      useSound: 'crunch',
       effect: function (p) { p.stam = p.stamMax; toast('STA 全回復'); }
     },
     flashlight: {
@@ -1214,6 +1217,7 @@
     almond_milk: {
       id: 'almond_milk', name: 'アーモンドミルク',
       icon: '🥛', desc: '最高級品。HP/SAN/STA を全回復。',
+      useSound: 'gulp',
       effect: function (p) {
         p.hp = p.hpMax;
         p.san = p.sanMax;
@@ -1225,6 +1229,7 @@
     antacid: {
       id: 'antacid', name: 'アーモンド胃薬',
       icon: '💊', desc: 'HP+35 & SAN+35。だが 3 秒間移動速度 70% 低下。',
+      useSound: 'unwrap',
       effect: function (p) {
         p.hp = Math.min(p.hpMax, p.hp + 35);
         p.san = Math.min(p.sanMax, p.san + 35);
@@ -7120,6 +7125,11 @@
         closeItemUseModal();
         return;
       }
+    }
+    // Item use SE — per-item useSound played alongside the effect so the
+    // player gets audible feedback distinct from the generic item_get pickup.
+    if (it.useSound && audioInitialized) {
+      try { GameEngine.playSound(it.useSound); } catch (e) {}
     }
     // effect() may return `false` to signal "no consume" (e.g. melee weapons
     // on a clean miss). undefined / true => consume as usual.
