@@ -10311,9 +10311,21 @@
         }
       }
     } else {
-      // Default — basic blob
-      drawShapedSprite(ctx, startX, startY, spriteW, spriteH, screenX, depthTiles, zBuf, w,
-        e.color || '#444', '#222');
+      // Default — try the engine's detailed renderSprite path which has
+      // bespoke face/body details for witness/lurker/shadow/drowned/
+      // vinewalker/civilian/faceling. Fall back to the basic blob if
+      // the engine doesn't expose drawEntity.
+      if (typeof GameEngine.drawEntity === 'function') {
+        // Close our own ctx.save (from the death-fade wrapper) first if
+        // present, then re-open after. drawEntity manages its own save.
+        try { GameEngine.drawEntity(e); } catch (err) {
+          drawShapedSprite(ctx, startX, startY, spriteW, spriteH, screenX, depthTiles, zBuf, w,
+            e.color || '#444', '#222');
+        }
+      } else {
+        drawShapedSprite(ctx, startX, startY, spriteW, spriteH, screenX, depthTiles, zBuf, w,
+          e.color || '#444', '#222');
+      }
     }
 
     // Stun marker (animated stars above sprite)
