@@ -3472,13 +3472,19 @@
   function runLrFpsDescent(levelDef, durationMs) {
     var cvs = el('lrFpsCanvas');
     if (!cvs) return function () {};
+    // Performance: skip the raycaster entirely on LOW graphics quality. The
+    // level-reach card by itself is plenty atmospheric and we save a 1.6s
+    // RAF loop on every level transition.
+    if (gfxQuality === 'low') return function () {};
     var ctx = cvs.getContext('2d');
-    var dpr = Math.min(window.devicePixelRatio || 1, 1.25);
+    // Lower DPR than the boss/ending canvases — the descent is brief so we
+    // can afford a chunkier image, and the savings on mobile are huge.
+    var dpr = Math.min(window.devicePixelRatio || 1, 0.85);
     function resize() {
       var cw = cvs.clientWidth || window.innerWidth;
       var ch = cvs.clientHeight || window.innerHeight;
-      cvs.width = Math.max(280, Math.floor(cw * dpr));
-      cvs.height = Math.max(200, Math.floor(ch * dpr));
+      cvs.width = Math.max(240, Math.floor(cw * dpr));
+      cvs.height = Math.max(180, Math.floor(ch * dpr));
     }
     resize();
     cvs.classList.add('show');
@@ -3544,7 +3550,8 @@
       ctx.rotate(rollAngle);
       ctx.translate(-w / 2, -h / 2);
       var FOV = Math.PI / 2.5;
-      var stripW = 4;
+      // Wider strip = half as many rays = ~50% cheaper per frame.
+      var stripW = 8;
       var rays = Math.ceil(w / stripW);
       var camAngle = Math.PI / 2;
       for (var i = 0; i < rays; i++) {
@@ -3559,7 +3566,7 @@
         else          { stepX = 1;  sdX = (mapX + 1 - px) * ddx; }
         if (rsin < 0) { stepY = -1; sdY = (py - mapY) * ddy; }
         else          { stepY = 1;  sdY = (mapY + 1 - py) * ddy; }
-        var hit = 0, side = 0, safety = 60;
+        var hit = 0, side = 0, safety = 40;
         while (!hit && safety-- > 0) {
           if (sdX < sdY) { sdX += ddx; mapX += stepX; side = 0; }
           else           { sdY += ddy; mapY += stepY; side = 1; }
@@ -3611,9 +3618,10 @@
       setTimeout(function () { speakSituational('level_descent', { cooldownMs: 25000 }); }, 600);
     }
     var lrOverlay = el('levelReachCinematic');
-    // FPS descent shot for the first 1.6s — fades behind title card text.
+    // FPS descent shot — shorter (1.1s) to reduce transition cost on mobile.
+    // Skipped entirely when gfxQuality === 'low' (handled inside the runner).
     // Cancelled on advance() so skipping doesn't leave a RAF running.
-    var lrFpsCancel = runLrFpsDescent(def, 1600);
+    var lrFpsCancel = runLrFpsDescent(def, 1100);
     // Clean up previous listeners (each setLevel re-uses this overlay)
     if (lrOverlay._cleanup) { try { lrOverlay._cleanup(); } catch (e) {} }
     var done = false;
