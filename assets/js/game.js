@@ -12729,7 +12729,12 @@
         'bk_dpad_assignments_v1', 'bk_dpad_mode_v1',
         'thebackrooms_secret_docs_v1', 'thebackrooms_defeated_entities_v1',
         'thebackrooms_hidden_boss_kill_v1', 'thebackrooms_just_died_v1',
-        'thebackrooms_cheat_unlocked_v1'];
+        'thebackrooms_cheat_unlocked_v1',
+        // 2026-06-07 additions:
+        'thebackrooms_mg_played_v1', // single-use minigame lock
+        'bk_view_smooth',            // title settings view smoothing
+        'bk_tts_voices',             // TTS uncanny voice toggle
+        'thebackrooms_gamepad_v1'];  // gamepad button map
       keys.forEach(function (k) { try { localStorage.removeItem(k); } catch (e) {} });
       // Reset in-memory state
       unlockedAchievements = {};
