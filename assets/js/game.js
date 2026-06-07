@@ -3110,6 +3110,30 @@
     // Ensure at least one weapon option even if the level pool has none — a
     // 'w' tile is a promise that the player will find a weapon here.
     if (weaponPool.length === 0) weaponPool = ['pistol'];
+
+    // Build a level-specific BIASED weapon pool. For every entity placed on
+    // this level, look up WEAPON_DAMAGE_MULT and add weapons that are strong
+    // (mul > 1.0) against that enemy as extra entries so the random roll
+    // is more likely to give the player something useful here.
+    // Example: a level with WRETCHes will spawn more flares / soul_lanterns.
+    var biasedWeapons = weaponPool.slice();
+    if (def.entities) {
+      for (var bei = 0; bei < def.entities.length; bei++) {
+        var et = def.entities[bei].type;
+        var mults = WEAPON_DAMAGE_MULT[et];
+        if (!mults) continue;
+        for (var wkey in mults) {
+          if (!Object.prototype.hasOwnProperty.call(mults, wkey)) continue;
+          if (mults[wkey] <= 1.05) continue;
+          if (!weaponPool.indexOf || weaponPool.indexOf(wkey) < 0) continue;
+          // Add a duplicate entry for every level above 1.0 — 1.4 → +1 entry,
+          // 1.8 → +2 entries, 2.0 → +2 entries (caps to keep balance).
+          var extra = Math.min(2, Math.floor((mults[wkey] - 1.0) * 2));
+          for (var ee = 0; ee < extra; ee++) biasedWeapons.push(wkey);
+        }
+      }
+    }
+
     for (var i = 0; i < parsed.itemSpots.length; i++) {
       var spot = parsed.itemSpots[i];
       var key = gridKey(spot.gx, spot.gy);
@@ -3117,7 +3141,7 @@
       if (pickedUpItems[levelId] && pickedUpItems[levelId][key]) continue;
       var itemId;
       if (weaponSpotSet[key]) {
-        itemId = weaponPool[Math.floor(Math.random() * weaponPool.length)];
+        itemId = biasedWeapons[Math.floor(Math.random() * biasedWeapons.length)];
       } else {
         itemId = pool[Math.floor(Math.random() * pool.length)];
       }
@@ -7434,6 +7458,10 @@
     showDiscovery(item.icon, 'アイテム入手', nameLabel);
     if (audioInitialized) GameEngine.playSound('item_get');
     if (navigator.vibrate) navigator.vibrate(20);
+    // Refresh the quick HUD so the slot bound to this item shows the new count
+    // immediately (otherwise the change only surfaced on the next per-frame
+    // refresh anchor).
+    try { updateDpadHud(); } catch (e) {}
     stats.totalItemsCollected++;
     saveStats();
     // Track all-time collected items
