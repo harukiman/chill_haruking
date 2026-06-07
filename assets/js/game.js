@@ -5635,6 +5635,34 @@
       }
     }
 
+    // ── Auto-collect already-read notes ──
+    // User request 2026-06-08: 「すでに読んだ書類は触ったら自動取得で
+    // マップから消えるようにする」.
+    // When the player walks onto (or directly adjacent to) a note tile
+    // whose TITLE has been read in any past run (lifetimeNoteTitles),
+    // silently mark this run's instance as read so the world glow
+    // disappears and the player doesn't have to re-read it.
+    // Same-tile + 4-neighbor sweep — the note glow is centered on the
+    // tile, so touching adjacency reads as "通った時に拾う".
+    if (noteSpots && lifetimeNoteTitles) {
+      for (var aDy = -1; aDy <= 1; aDy++) {
+        for (var aDx = -1; aDx <= 1; aDx++) {
+          if (aDx !== 0 && aDy !== 0) continue; // 4-neighbor only (no diag)
+          var nKey = gridKey(gx + aDx, gy + aDy);
+          var nObj = noteSpots[nKey];
+          if (!nObj) continue;
+          if (!lifetimeNoteTitles[nObj.title]) continue; // not previously read
+          if (!readNotes[currentLevel]) readNotes[currentLevel] = {};
+          if (readNotes[currentLevel][nKey]) continue;   // already auto-collected this run
+          readNotes[currentLevel][nKey] = true;
+          stats.totalNotesRead++;
+          // Toast + paper SE so the player knows the note was auto-acquired
+          try { toast('既読の書類を自動取得: ' + nObj.title); } catch (e) {}
+          if (audioInitialized) try { GameEngine.playSound('paper'); } catch (e) {}
+        }
+      }
+    }
+
     // Tile interactions
     var here = currentMap.tiles[gy][gx];
     player.inWater = (here === 7);
@@ -10694,6 +10722,30 @@
     return off2;
   }
 
+  // ── Rasterized weapon SVG cache for world pickups ──
+  // The WEAPON_SVG strings are SVG markup; the world pickup renderer
+  // needs to drawImage them to the offscreen pickup canvas. We cache
+  // an HTMLImageElement per weapon id so the encode-and-load happens
+  // once per session.
+  var _weaponWorldImgCache = {};
+  function _getWeaponWorldImage(itemId) {
+    if (_weaponWorldImgCache[itemId] !== undefined) return _weaponWorldImgCache[itemId];
+    var svg = WEAPON_SVG[itemId];
+    if (!svg) { _weaponWorldImgCache[itemId] = null; return null; }
+    try {
+      var blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+      var url = URL.createObjectURL(blob);
+      var img = new Image();
+      img.onload = function () { /* keep blob URL alive — released on session end */ };
+      img.onerror = function () { _weaponWorldImgCache[itemId] = null; };
+      img.src = url;
+      _weaponWorldImgCache[itemId] = img;
+      return img;
+    } catch (e) {
+      _weaponWorldImgCache[itemId] = null;
+      return null;
+    }
+  }
   // World-space pickup renderer with proper z-buffer occlusion per column
   function drawWorldPickup(ctx, wx, wy, phase, color, icon, itemId) {
     var w = GameEngine.width;
@@ -10737,6 +10789,13 @@
 
     // Render the icon to offscreen canvas, then blit column-by-column with z-buffer check
     var displayIcon = (itemId && ITEMS[itemId]) ? ITEMS[itemId].icon : icon;
+    // User request 2026-06-08: 「道に落ちている武器のアイコンも
+    // リアルなものに合わせて」. If this pickup is a weapon with a
+    // SVG silhouette, switch to drawing the rasterized SVG instead of
+    // the emoji glyph below. Falls back to emoji if the image hasn't
+    // loaded yet (first-frame race).
+    var harukiWeaponImg = (itemId && WEAPON_SVG[itemId]) ? _getWeaponWorldImage(itemId) : null;
+    var useSvg = harukiWeaponImg && harukiWeaponImg.complete && harukiWeaponImg.naturalWidth > 0;
     var offSize = Math.ceil(iconSize * 2.2);
     var off = getPickupOffCanvas(offSize);
     var octx = _pickupOffCtx;
@@ -10775,18 +10834,35 @@
     octx.beginPath();
     octx.arc(oCenterX, offSize / 2, plateR, 0, Math.PI * 2);
     octx.fill();
-    // Icon with strong outline
+    // Icon with strong outline.
     octx.globalAlpha = 1;
-    octx.font = 'bold ' + iconSize + 'px sans-serif';
-    octx.textAlign = 'center';
-    octx.textBaseline = 'middle';
-    octx.fillStyle = 'rgba(0,0,0,1)';
-    for (var ox = -2; ox <= 2; ox++) for (var oy = -2; oy <= 2; oy++) {
-      if (ox === 0 && oy === 0) continue;
-      octx.fillText(displayIcon, oCenterX + ox, offSize / 2 + oy);
+    if (useSvg) {
+      // Draw the realistic SVG weapon silhouette. Sized slightly larger
+      // than the emoji glyph used to be so the silhouette reads as a
+      // proper "pickup on the floor" instead of a tiny rune.
+      var svgSize = iconSize * 1.35;
+      var svgX = oCenterX - svgSize / 2;
+      var svgY = offSize / 2 - svgSize / 2;
+      // Subtle dark drop-shadow under the SVG so it pops off the
+      // ground ring against bright wallpaper themes.
+      octx.save();
+      octx.shadowColor = 'rgba(0,0,0,0.75)';
+      octx.shadowBlur = 6;
+      octx.shadowOffsetY = 2;
+      octx.drawImage(harukiWeaponImg, svgX, svgY, svgSize, svgSize);
+      octx.restore();
+    } else {
+      octx.font = 'bold ' + iconSize + 'px sans-serif';
+      octx.textAlign = 'center';
+      octx.textBaseline = 'middle';
+      octx.fillStyle = 'rgba(0,0,0,1)';
+      for (var ox = -2; ox <= 2; ox++) for (var oy = -2; oy <= 2; oy++) {
+        if (ox === 0 && oy === 0) continue;
+        octx.fillText(displayIcon, oCenterX + ox, offSize / 2 + oy);
+      }
+      octx.fillStyle = color;
+      octx.fillText(displayIcon, oCenterX, offSize / 2);
     }
-    octx.fillStyle = color;
-    octx.fillText(displayIcon, oCenterX, offSize / 2);
 
     // Blit column by column with per-column z-buffer test
     ctx.save();
