@@ -20,7 +20,7 @@
   <meta name="twitter:title" content="THE BACKROOMS — featuring HARUKI">
   <meta name="twitter:description" content="一人称モバイル探索ホラー。Level 0 から no-clip で階層を降下。壁の向こうにカレが待つ。">
   <title>THE BACKROOMS</title>
-  <link rel="stylesheet" href="assets/css/game.css?v=115">
+  <link rel="stylesheet" href="assets/css/game.css?v=116">
 </head>
 <body oncontextmenu="return false;">
 
@@ -332,6 +332,8 @@
 
   <!-- Ending Sequence (after boss defeated) -->
   <div id="endingSequence" class="overlay ending-sequence" style="display:none;">
+    <!-- FPS walk-out: opens with player stepping out of the corridor toward sunrise -->
+    <canvas id="esFpsCanvas" class="es-fps-canvas"></canvas>
     <div class="es-sky"></div>
     <div class="es-sun"></div>
     <div class="es-ground"></div>
@@ -896,8 +898,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="assets/js/engine.js?v=115"></script>
-  <script src="assets/js/game.js?v=115"></script>
+  <script src="assets/js/engine.js?v=116"></script>
+  <script src="assets/js/game.js?v=116"></script>
 
   <!-- POST-LOAD VERIFICATION + DIRECT BINDING FALLBACK
        After game.js IIFE runs, this script confirms __titleAction is the real one.

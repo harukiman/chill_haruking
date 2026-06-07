@@ -3042,6 +3042,124 @@
     later(10500, finish);
   }
 
+  // Mini FPS raycaster for the ending sequence: player walks down a corridor
+  // toward a bright sunrise at the end. Fades out via CSS class toggle after
+  // durationMs to hand off to the existing sky/walk-away CSS.
+  function runEsFpsWalkout(durationMs) {
+    var cvs = el('esFpsCanvas');
+    if (!cvs) return function () {};
+    var ctx = cvs.getContext('2d');
+    var dpr = Math.min(window.devicePixelRatio || 1, 1.25);
+    function resize() {
+      var cw = cvs.clientWidth || window.innerWidth;
+      var ch = cvs.clientHeight || window.innerHeight;
+      cvs.width = Math.max(280, Math.floor(cw * dpr));
+      cvs.height = Math.max(200, Math.floor(ch * dpr));
+    }
+    resize();
+    cvs.classList.add('show');
+    window.addEventListener('resize', resize);
+    var MAP_W = 5, MAP_H = 60;
+    var map = new Uint8Array(MAP_W * MAP_H);
+    for (var my = 0; my < MAP_H; my++) {
+      for (var mx = 0; mx < MAP_W; mx++) {
+        map[my * MAP_W + mx] = (mx === 0 || mx === MAP_W - 1) ? 1 : 0;
+      }
+    }
+    var FOV = Math.PI / 3;
+    var startT = performance.now();
+    var lastNow = startT;
+    var totalProgress = 0;
+    var cancelled = false;
+    var rafId = 0;
+    var fadeT = null;
+    function cancel() {
+      cancelled = true;
+      if (rafId) cancelAnimationFrame(rafId);
+      if (fadeT) clearTimeout(fadeT);
+      try { cvs.classList.remove('show'); } catch (e) {}
+      try { window.removeEventListener('resize', resize); } catch (e) {}
+    }
+    fadeT = setTimeout(function () {
+      try { cvs.classList.remove('show'); } catch (e) {}
+      setTimeout(cancel, 900);
+    }, durationMs);
+    function step(now) {
+      if (cancelled) return;
+      var dt = Math.min(0.05, (now - lastNow) / 1000);
+      lastNow = now;
+      var t01 = (now - startT) / durationMs;
+      var speed = 1.4 + t01 * 0.8;
+      totalProgress += speed * dt;
+      var py = 1 + (MAP_H - 4) * Math.min(0.97, totalProgress / 10);
+      var px = MAP_W / 2 + Math.sin(now * 0.004) * 0.06;
+      var w = cvs.width, h = cvs.height;
+      // Bright sunrise sky → warm ground; brightens over time.
+      var skyBri = 0.4 + Math.min(0.55, t01 * 0.9);
+      var sg = ctx.createLinearGradient(0, 0, 0, h / 2);
+      sg.addColorStop(0, 'rgba(255,244,200,' + skyBri.toFixed(2) + ')');
+      sg.addColorStop(1, 'rgba(255,186,112,' + skyBri.toFixed(2) + ')');
+      ctx.fillStyle = sg; ctx.fillRect(0, 0, w, h / 2);
+      var fg = ctx.createLinearGradient(0, h / 2, 0, h);
+      fg.addColorStop(0, '#3a2410');
+      fg.addColorStop(1, '#1c1208');
+      ctx.fillStyle = fg; ctx.fillRect(0, h / 2, w, h / 2);
+      var bobY = Math.sin(now * 0.013) * 0.035;
+      var stripW = 4;
+      var rays = Math.ceil(w / stripW);
+      var camAngle = Math.PI / 2;
+      for (var i = 0; i < rays; i++) {
+        var sx = i * stripW;
+        var rayAng = camAngle - FOV / 2 + (i / rays) * FOV;
+        var rcos = Math.cos(rayAng), rsin = Math.sin(rayAng);
+        var mapX = Math.floor(px), mapY = Math.floor(py);
+        var ddx = Math.abs(1 / rcos) || 1e9;
+        var ddy = Math.abs(1 / rsin) || 1e9;
+        var stepX, stepY, sdX, sdY;
+        if (rcos < 0) { stepX = -1; sdX = (px - mapX) * ddx; }
+        else          { stepX = 1;  sdX = (mapX + 1 - px) * ddx; }
+        if (rsin < 0) { stepY = -1; sdY = (py - mapY) * ddy; }
+        else          { stepY = 1;  sdY = (mapY + 1 - py) * ddy; }
+        var hit = 0, side = 0, safety = 60;
+        while (!hit && safety-- > 0) {
+          if (sdX < sdY) { sdX += ddx; mapX += stepX; side = 0; }
+          else           { sdY += ddy; mapY += stepY; side = 1; }
+          if (mapX < 0 || mapY < 0 || mapX >= MAP_W || mapY >= MAP_H) { hit = 1; break; }
+          if (map[mapY * MAP_W + mapX] === 1) hit = 1;
+        }
+        var dist = side === 0
+          ? (mapX - px + (1 - stepX) / 2) / rcos
+          : (mapY - py + (1 - stepY) / 2) / rsin;
+        dist = Math.max(0.1, dist);
+        var wallH = Math.min(h * 4, h / dist);
+        var drawStart = (h - wallH) / 2 + bobY * h;
+        var fog = Math.max(0.4, 1 - dist / 18);
+        var base = side === 1 ? 0.78 : 1.0;
+        // Warm yellow walls (backrooms exit feel)
+        ctx.fillStyle = 'rgb(' + Math.floor(212 * fog * base) + ',' +
+                                  Math.floor(170 * fog * base) + ',' +
+                                  Math.floor(58 * fog * base) + ')';
+        ctx.fillRect(sx, drawStart, stripW + 1, wallH);
+      }
+      // Bright bloom at the end of the corridor — grows as t01 → 1
+      var bloomR = Math.min(w, h) * (0.25 + t01 * 0.7);
+      var grdEnd = ctx.createRadialGradient(w / 2, h / 2 + bobY * h, 4,
+                                             w / 2, h / 2 + bobY * h, bloomR);
+      grdEnd.addColorStop(0, 'rgba(255,250,220,' + (0.6 + t01 * 0.4).toFixed(2) + ')');
+      grdEnd.addColorStop(1, 'rgba(255,250,220,0)');
+      ctx.fillStyle = grdEnd;
+      ctx.fillRect(0, 0, w, h);
+      // Full white-out flash at the very end
+      if (t01 > 0.85) {
+        ctx.fillStyle = 'rgba(255,250,230,' + ((t01 - 0.85) / 0.15).toFixed(2) + ')';
+        ctx.fillRect(0, 0, w, h);
+      }
+      rafId = requestAnimationFrame(step);
+    }
+    rafId = requestAnimationFrame(step);
+    return cancel;
+  }
+
   // ── Ending Sequence (after final boss defeat) ──
   // Plays when the player passes the X tile on Lv9 after killing the boss.
   function playEndingSequence(onDone) {
@@ -3051,6 +3169,9 @@
     showOverlay('endingSequence');
     var esText = el('esText');
     if (esText) { esText.classList.remove('show'); esText.textContent = ''; }
+    // FPS walk-out — player exits the corridor into sunrise during the first
+    // ~3.5s, matching the "朝が来た" beat. Fades out before "歩き続ける".
+    var esFpsCancel = runEsFpsWalkout(3500);
     if (audioInitialized) {
       GameEngine.playSound('level_clear');
       GameEngine.playSound('stinger');
@@ -3071,6 +3192,7 @@
       if (cancelled) return;
       cancelled = true;
       for (var ti = 0; ti < timers.length; ti++) clearTimeout(timers[ti]);
+      try { if (esFpsCancel) esFpsCancel(); } catch (e) {}
       hideOverlay('endingSequence');
       _inCinematic = false;
       try { overlay.removeEventListener('click', finish); } catch (e) {}
