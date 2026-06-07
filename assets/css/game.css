@@ -2080,11 +2080,16 @@ button {
 .encounter-eye-shape {
   position: absolute;
   inset: 0;
-  font-size: 80px;
+  font-size: 96px;
   display: flex;
   align-items: center;
   justify-content: center;
-  filter: drop-shadow(0 0 12px rgba(220, 50, 50, 0.7));
+  filter: drop-shadow(0 0 18px rgba(220, 50, 50, 0.85));
+  animation: encounter-shape-pulse 1.6s ease-in-out infinite;
+}
+@keyframes encounter-shape-pulse {
+  0%, 100% { transform: scale(1.0); filter: drop-shadow(0 0 18px rgba(220, 50, 50, 0.85)); }
+  50%      { transform: scale(1.07); filter: drop-shadow(0 0 28px rgba(255, 80, 80, 1)); }
 }
 .encounter-name {
   font-family: 'Times New Roman', serif;
