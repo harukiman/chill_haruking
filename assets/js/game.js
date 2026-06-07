@@ -6649,6 +6649,31 @@
     } catch (e) {}
   }
 
+  // Civilian chatter — short greetings / small talk surfaced when the player
+  // brushes past a Lv11 NPC. No TTS (uncanny voice would be tonally wrong);
+  // just a brief flavor text via the existing halluc-text layer.
+  var CIVILIAN_CHATTER = [
+    'おはよう。', 'こんにちは。', '今日は寒いね。',
+    '何かお探し?', 'お疲れさま。', '気をつけて。',
+    'よく来たね。', 'いい一日を。', 'また会おう。'
+  ];
+  var _lastCivilianChatterAt = 0;
+  function maybeFireCivilianChatter() {
+    var now = performance.now();
+    if (now - _lastCivilianChatterAt < 6000) return;
+    _lastCivilianChatterAt = now;
+    var line = CIVILIAN_CHATTER[Math.floor(Math.random() * CIVILIAN_CHATTER.length)];
+    var htxt = el('hallucText');
+    if (!htxt) return;
+    htxt.textContent = '— ' + line;
+    htxt.classList.remove('show', 'flavor');
+    void htxt.offsetWidth;
+    htxt.classList.add('show', 'flavor');
+    var hLayerC = el('hallucinationLayer');
+    if (hLayerC) hLayerC.style.display = 'block';
+    setTimeout(function () { if (htxt) htxt.classList.remove('show', 'flavor'); }, 2000);
+  }
+
   // Per-level flavor lines — sells the setting that the geometry alone can't.
   // The user explicitly asked for "ホテルであればベッドや照明、カウンターなど、
   // オフィスであればデスクとチェアやpcなど小物もきちんと配置するように" — until
@@ -7281,6 +7306,13 @@
         if (distP < 2.0 * TS) {
           // Stall their wander step by zeroing their angular drift this frame
           e.angle = (e.angle || 0) + (Math.random() - 0.5) * dt * 0.4;
+          // Occasional chatter — every civilian rolls their own cooldown so a
+          // group doesn't all greet at once.
+          e._chatterCdT = (e._chatterCdT || 0) - dt;
+          if (e._chatterCdT <= 0) {
+            e._chatterCdT = 8 + Math.random() * 6;
+            maybeFireCivilianChatter();
+          }
         }
       } else if (e.type === 'crawler') {
         // Fast attacker that retreats after hitting
