@@ -4942,6 +4942,14 @@
           if (hand) hand.classList.remove('equip-in');
         }, 320);
       }
+      // Pop the weapon name caption under the FPS hand for 2.4s
+      var nameEl = el('weaponHandName');
+      if (nameEl && ITEMS[itemId]) {
+        nameEl.textContent = ITEMS[itemId].name;
+        nameEl.classList.remove('show');
+        void nameEl.offsetWidth;
+        nameEl.classList.add('show');
+      }
     }
   }
   // Refresh weapon attack button icon + count to reflect equipped weapon.

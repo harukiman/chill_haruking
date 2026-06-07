@@ -245,6 +245,30 @@ body {
 .weapon-hand.fire.heavy {
   transform: translateX(-50%) translateY(0%) rotate(-18deg);
 }
+.weapon-hand-name {
+  position: absolute;
+  bottom: -36px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  color: #c0e0ff;
+  text-shadow:
+    0 0 8px rgba(40, 80, 140, 0.9),
+    1px 1px 0 #000,
+    -1px -1px 0 #000;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+}
+.weapon-hand-name.show { animation: weapon-name-pop 2.4s ease-out forwards; }
+@keyframes weapon-name-pop {
+  0%   { opacity: 0;   transform: translateX(-50%) translateY(8px); }
+  10%  { opacity: 1;   transform: translateX(-50%) translateY(0); }
+  75%  { opacity: 1;   transform: translateX(-50%) translateY(0); }
+  100% { opacity: 0;   transform: translateX(-50%) translateY(-6px); }
+}
 .weapon-hand-grip {
   display: inline-block;
   width: 160px;   /* SVG sizing — emoji fallback respects font-size below */
