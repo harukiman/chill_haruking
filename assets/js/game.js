@@ -1547,8 +1547,11 @@
     row.className = 'shop-row' + (isUnique ? ' unique' : '');
     var afford = (player.coins || 0) >= price;
     if (!afford) row.classList.add('disabled');
+    var shopIconHtml = WEAPON_SVG[itemId]
+      ? '<span class="shop-row-icon shop-row-svg">' + WEAPON_SVG[itemId] + '</span>'
+      : '<span class="shop-row-icon">' + (item ? item.icon : '?') + '</span>';
     row.innerHTML =
-      '<span class="shop-row-icon">' + (item ? item.icon : '?') + '</span>' +
+      shopIconHtml +
       '<div class="shop-row-info">' +
         '<div class="shop-row-name">' + (item ? item.name : itemId) + '</div>' +
         '<div class="shop-row-desc">' + (item && item.desc ? item.desc.slice(0, 32) : '') + '</div>' +
@@ -1579,8 +1582,11 @@
     var row = document.createElement('div');
     row.className = 'shop-row';
     var cnt = player.inventory[itemId] || 0;
+    var sellIconHtml = WEAPON_SVG[itemId]
+      ? '<span class="shop-row-icon shop-row-svg">' + WEAPON_SVG[itemId] + '</span>'
+      : '<span class="shop-row-icon">' + (item ? item.icon : '?') + '</span>';
     row.innerHTML =
-      '<span class="shop-row-icon">' + (item ? item.icon : '?') + '</span>' +
+      sellIconHtml +
       '<div class="shop-row-info">' +
         '<div class="shop-row-name">' + (item ? item.name : itemId) + ' ×' + cnt + '</div>' +
         '<div class="shop-row-desc">' + (item && item.desc ? item.desc.slice(0, 32) : '') + '</div>' +
@@ -11171,7 +11177,11 @@
           ? '<span class="inv-perm">∞</span>'
           : (isWeapon ? '<span class="inv-count ammo">×' + cnt + '</span>'
                       : (cnt > 1 ? '<span class="inv-count">' + cnt + '</span>' : ''));
-        slot.innerHTML = '<span style="font-size:22px;">' + item.icon + '</span>' +
+        // Weapons get the realistic SVG; everything else stays emoji.
+        var invIconHtml = WEAPON_SVG[id]
+          ? '<span class="inv-svg">' + WEAPON_SVG[id] + '</span>'
+          : '<span style="font-size:22px;">' + item.icon + '</span>';
+        slot.innerHTML = invIconHtml +
           countBadge +
           stateMark +
           '<span class="inv-name">' + item.name.slice(0, 6) + '</span>';

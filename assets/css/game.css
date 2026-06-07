@@ -2851,6 +2851,22 @@ button {
 @media (min-width: 520px) {
   .inv-grid { grid-template-columns: repeat(5, 1fr); gap: 10px; }
 }
+.inv-svg {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.inv-svg > svg { width: 100%; height: 100%; display: block; }
+.shop-row-svg {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.shop-row-svg > svg { width: 100%; height: 100%; display: block; }
 .inv-slot {
   position: relative;
   aspect-ratio: 1;
