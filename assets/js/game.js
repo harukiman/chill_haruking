@@ -4688,25 +4688,30 @@
 
     var inp = GameEngine.input;
     var sens = 2.5 * (parseInt(localStorage.getItem('bk_sens') || '100', 10) / 100);
-    // View smoothing: 0 = instant (default / stiff), 100 = heavy easing.
-    // Stored 0-100; converted to a lerp factor where higher = MORE smoothing.
+    // View smoothing: 0 = instant (default), 100 = heavy easing.
+    // Track a smoothed `look` rate (not an accumulator) so the rotation
+    // STOPS when the player stops swiping. The previous implementation
+    // integrated decayed delta into a residual buffer and kept rotating
+    // the camera for ~1s after input ceased — read as 「勝手に移動」 bug.
     var smoothPct = parseInt(localStorage.getItem('bk_view_smooth') || '0', 10);
     var smoothFactor = Math.max(0, Math.min(0.85, smoothPct / 100 * 0.85));
     var look = inp.lookDx || 0;
     if (smoothFactor > 0) {
-      // Low-pass filter: accumulate target deltas in a buffer that decays.
-      player._lookBuf = (player._lookBuf || 0) * smoothFactor + (look * sens * dt) * (1 - smoothFactor);
-      player.angle += player._lookBuf;
+      // EMA: smoothed look approaches target (raw look) at rate (1 - smoothFactor)
+      // and decays toward 0 when no input — eventually clamping to 0 below
+      // a very small threshold so the camera comes to a complete stop.
+      player._smoothLook = (player._smoothLook || 0) * smoothFactor + look * (1 - smoothFactor);
+      if (Math.abs(player._smoothLook) < 0.005) player._smoothLook = 0;
+      player.angle += player._smoothLook * sens * dt;
     } else {
+      // Default path — instant, no residual.
       player.angle += look * sens * dt;
+      player._smoothLook = 0;
     }
-    // Swipe-impulse look: consume accumulated swipe delta this frame
+    // Swipe-impulse look: applied directly (it's already a one-shot delta,
+    // smoothing it would just delay it without benefit).
     if (inp.lookImpulse) {
-      if (smoothFactor > 0) {
-        player._lookBuf = (player._lookBuf || 0) * smoothFactor + (inp.lookImpulse * sens) * (1 - smoothFactor);
-      } else {
-        player.angle += inp.lookImpulse * sens;
-      }
+      player.angle += inp.lookImpulse * sens;
       inp.lookImpulse = 0;
     }
 

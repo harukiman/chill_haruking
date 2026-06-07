@@ -133,6 +133,10 @@ body {
   font-family: 'Courier New', monospace;
   text-shadow: 0 0 6px rgba(240, 200, 80, 0.4);
   width: max-content;
+  /* CRITICAL: vitalBars parent has pointer-events: none, but flex children
+     reset to auto by default and were intercepting touches in the upper-left
+     joystick zone → 「左上に常に入力が入る」. */
+  pointer-events: none;
 }
 .vital-coin-icon { font-size: 13px; }
 .vital-charm-row {
@@ -150,6 +154,7 @@ body {
   letter-spacing: 0.15em;
   text-shadow: 0 0 8px rgba(240, 200, 80, 0.55);
   width: max-content;
+  pointer-events: none;
 }
 .vital-charm-icon { font-size: 14px; }
 
