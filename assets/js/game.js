@@ -10776,7 +10776,15 @@
       var facingGy = Math.floor((player.y + Math.sin(player.angle) * TS * 0.7) / TS);
       var ft = currentMap.tiles[facingGy] && currentMap.tiles[facingGy][facingGx];
       var fkey = gridKey(facingGx, facingGy);
-      if (ft === 2) { showAct = true; label = 'ドア'; }
+      if (ft === 2) {
+        showAct = true;
+        // Show key-specific prompt when the facing door is locked so the
+        // player knows what they need.
+        var fds = doorStates[fkey];
+        if (fds && fds.locked && fds.keyLabel) label = fds.keyLabel + 'で解錠';
+        else if (fds && fds.locked) label = 'カードキーで解錠';
+        else label = 'ドア';
+      }
       else if (ft === 5 && pickupSpots[fkey]) { showAct = true; label = '拾う'; }
       else if (ft === 6 && noteSpots[fkey] && !(readNotes[currentLevel] && readNotes[currentLevel][fkey])) { showAct = true; label = '読む'; }
       else if (ft === 3) { showAct = true; label = '降りる'; }
