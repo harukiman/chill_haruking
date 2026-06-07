@@ -3401,14 +3401,15 @@
     }
     if (skipBtn) skipBtn.addEventListener('click', finish);
     overlay.addEventListener('click', finish);
-    // Scripted beats
-    later(400,  function () { setText('— LEVEL 9 — THE SUBURBS'); });
-    later(800,  function () { speakSituational('boss_approach', { cooldownMs: 20000 }); });
-    later(1700, flashLightning);
-    later(2200, function () { setText('空に月はない。\n月のような、何かがある。'); });
-    later(4200, flashLightning);
-    later(4600, function () { setText('— 待っていたのは、ハルキだった。'); });
-    later(6800, function () {
+    // Scripted beats — timings widened so each line has ~3.5s of reading
+    // time before the next beat overrides it.
+    later(600,  function () { setText('— LEVEL 9 — THE SUBURBS'); });
+    later(1100, function () { speakSituational('boss_approach', { cooldownMs: 20000 }); });
+    later(2400, flashLightning);
+    later(3200, function () { setText('空に月はない。\n月のような、何かがある。'); });
+    later(6200, flashLightning);
+    later(6800, function () { setText('— 待っていたのは、ハルキだった。'); });
+    later(9800, function () {
       if (portrait) portrait.classList.add('zoom');
       if (audioInitialized) {
         GameEngine.playSound('jumpscare');
@@ -3416,8 +3417,8 @@
       }
       GameEngine.shakeScreen(30, 1.2);
     });
-    later(8200, function () { setText('— おかえり。'); });
-    later(10500, finish);
+    later(11200, function () { setText('— おかえり。'); });
+    later(14000, finish);
   }
 
   // Mini FPS raycaster for the ending sequence: player walks down a corridor
@@ -3655,10 +3656,12 @@
       onDone();
     }
     overlay.addEventListener('click', finish);
-    later(1200, function () { setText('— 朝が来た。'); });
-    later(4000, function () { setText('お前は、歩き続ける。'); });
-    later(7000, function () { setText('THE BACKROOMS — END'); });
-    later(11000, finish);
+    // Slowed: each line now sits for ~4s before being replaced so the
+    // player has time to actually read it.
+    later(1500, function () { setText('— 朝が来た。'); });
+    later(5800, function () { setText('お前は、歩き続ける。'); });
+    later(10200, function () { setText('THE BACKROOMS — END'); });
+    later(14500, finish);
   }
 
   // ── Unique Reward Visual Flash ──
@@ -6658,9 +6661,19 @@
   // brushes past a Lv11 NPC. No TTS (uncanny voice would be tonally wrong);
   // just a brief flavor text via the existing halluc-text layer.
   var CIVILIAN_CHATTER = [
-    'おはよう。', 'こんにちは。', '今日は寒いね。',
-    '何かお探し?', 'お疲れさま。', '気をつけて。',
-    'よく来たね。', 'いい一日を。', 'また会おう。'
+    // greetings
+    'おはよう。', 'こんにちは。', 'こんばんは。', 'やあ。',
+    // small-talk weather
+    '今日は寒いね。', '天気いいね。', '雨、来そうだ。', '風が強い。',
+    // service offers
+    '何かお探し?', '案内が要る?', '寄ってかない?',
+    // closings
+    'お疲れさま。', '気をつけて。', 'また会おう。', 'いい一日を。', 'よく来たね。',
+    // backrooms flavor
+    'ここ、慣れる?', 'あなたも降りてきた人?', '出口は探さないほうがいい。',
+    '長居しないことだ。', 'ハルキを見かけたら、目を逸らせ。',
+    // shop hints
+    '露店主、今日はいい品揃えだ。', '彼から物を買うといい。'
   ];
   var _lastCivilianChatterAt = 0;
   function maybeFireCivilianChatter() {
@@ -8752,19 +8765,19 @@
     var lines;
     if (type === 'truend') {
       lines = [
-        { text: '', delay: 800 },
-        { text: 'お前は黒い扉に手をかけた。', delay: 2800 },
-        { text: '振り返れば、9 つの階層と無数の影。', delay: 3200 },
-        { text: '前を向けば、何かが待っている。', delay: 3000 },
-        { text: '扉が、開く。', delay: 2400 },
-        { text: '光、または、無。', delay: 2800 },
-        { text: '...', delay: 1600 }
+        { text: '', delay: 1200 },
+        { text: 'お前は黒い扉に手をかけた。', delay: 4200 },
+        { text: '振り返れば、9 つの階層と無数の影。', delay: 4600 },
+        { text: '前を向けば、何かが待っている。', delay: 4400 },
+        { text: '扉が、開く。', delay: 3800 },
+        { text: '光、または、無。', delay: 4200 },
+        { text: '...', delay: 2400 }
       ];
     } else {
       lines = [
-        { text: '', delay: 800 },
-        { text: 'お前は壁を抜けた。', delay: 2800 },
-        { text: '...', delay: 2200 }
+        { text: '', delay: 1200 },
+        { text: 'お前は壁を抜けた。', delay: 4200 },
+        { text: '...', delay: 3000 }
       ];
     }
     var idx = 0;
@@ -9804,7 +9817,8 @@
     if (s1) { s1.classList.remove('active'); s1.style.display = 'none'; }
     if (s2) { s2.classList.remove('active'); s2.style.display = 'none'; }
     if (s3) { s3.classList.remove('active'); s3.style.display = 'none'; }
-    var INTRO_LEN = 13500;
+    // Lengthened from 13.5s → 20s so each beat sits ~3.5-4s before the next.
+    var INTRO_LEN = 20000;
     setTimeout(function () {
       if (cancelled) return;
       startFootsteps();
@@ -9816,35 +9830,35 @@
         setLine('[ 画面をタップして開始 ]');
       });
     }, 200);
-    // Narrative text beats — synced with raycaster phases (street/wall/fall/yellow)
-    setTimeout(function () { if (!cancelled) setLine('いつもの裏路地 — の、はずだった。'); }, 2400);
+    // Narrative text beats — widened spacing so the player has time to read.
+    setTimeout(function () { if (!cancelled) setLine('いつもの裏路地 — の、はずだった。'); }, 3600);
     setTimeout(function () {
       if (cancelled) return;
       setLine('— 壁が、近づく。');
       if (audioInitialized) GameEngine.playSound('static');
-    }, 3100);
+    }, 6400);
     setTimeout(function () {
       if (cancelled) return;
       setLine('— 足元の感触が、消えた。');
       if (audioInitialized) GameEngine.playSound('thunder');
       GameEngine.shakeScreen(22, 1.4);
-    }, 4600);
+    }, 9400);
     setTimeout(function () {
       if (cancelled) return;
       setLine('黄色い、無限の、壁紙の世界へ。');
-    }, 6300);
+    }, 12400);
     setTimeout(function () {
       if (cancelled) return;
       setLine('— 立ち上がる。果てしなく続く、黄色い廊下。');
-    }, 8800);
+    }, 15400);
     setTimeout(function () {
       if (cancelled) return;
       setLine('— 遠くで、誰かが、笑った。');
       if (audioInitialized) GameEngine.playSound('whisper');
-    }, 11400);
+    }, 18000);
     // No auto-finish — user taps overlay or skip button to advance
-    // Safety net: auto-finish after 30s if no tap
-    setTimeout(finish, 30000);
+    // Safety net: auto-finish after 40s if no tap (was 30 — but intro now 20s)
+    setTimeout(finish, 40000);
   }
 
   // Death penalty: after dying, every vital is clamped to 50% of max on the
