@@ -10778,13 +10778,31 @@
     function bindManualScroll(el_) {
       if (!el_ || el_._manualScrollBound) return;
       el_._manualScrollBound = true;
-      var startY = 0, startTop = 0, dragging = false, isScrolling = false;
-      var DEAD_ZONE = 8; // px before a touch becomes a scroll, so taps still work
+      var startY = 0, startTop = 0, lastY = 0, lastT = 0;
+      var velocity = 0, dragging = false, isScrolling = false;
+      var DEAD_ZONE = 8;
+      var momentumRaf = 0;
+      function cancelMomentum() {
+        if (momentumRaf) { cancelAnimationFrame(momentumRaf); momentumRaf = 0; }
+      }
+      function momentum() {
+        if (Math.abs(velocity) < 0.05) { momentumRaf = 0; return; }
+        var max = el_.scrollHeight - el_.clientHeight;
+        el_.scrollTop = Math.max(0, Math.min(max, el_.scrollTop - velocity));
+        velocity *= 0.93; // friction
+        // Snap to boundary if hit
+        if (el_.scrollTop <= 0 && velocity > 0) { velocity = 0; momentumRaf = 0; return; }
+        if (el_.scrollTop >= max && velocity < 0) { velocity = 0; momentumRaf = 0; return; }
+        momentumRaf = requestAnimationFrame(momentum);
+      }
       el_.addEventListener('touchstart', function (e) {
+        cancelMomentum();
         var t = e.changedTouches && e.changedTouches[0];
         if (!t) return;
-        startY = t.clientY;
+        startY = lastY = t.clientY;
+        lastT = performance.now();
         startTop = el_.scrollTop;
+        velocity = 0;
         dragging = true;
         isScrolling = false;
       }, { passive: true });
@@ -10793,16 +10811,26 @@
         var t = e.changedTouches && e.changedTouches[0];
         if (!t) return;
         var dy = t.clientY - startY;
-        if (!isScrolling && Math.abs(dy) < DEAD_ZONE) return; // still a tap
+        if (!isScrolling && Math.abs(dy) < DEAD_ZONE) return;
         isScrolling = true;
+        var now = performance.now();
+        var dt = now - lastT;
+        if (dt > 0) velocity = (t.clientY - lastY) / dt * 16; // ~px/frame @60fps
+        lastY = t.clientY;
+        lastT = now;
         el_.scrollTop = Math.max(0, Math.min(el_.scrollHeight - el_.clientHeight, startTop - dy));
         if (e.cancelable) e.preventDefault();
       }, { passive: false });
       el_.addEventListener('touchend', function () {
-        dragging = false; isScrolling = false;
+        dragging = false;
+        if (isScrolling && Math.abs(velocity) > 0.2) {
+          // Kick off momentum scroll on flick
+          momentumRaf = requestAnimationFrame(momentum);
+        }
+        isScrolling = false;
       }, { passive: true });
       el_.addEventListener('touchcancel', function () {
-        dragging = false; isScrolling = false;
+        dragging = false; isScrolling = false; velocity = 0;
       }, { passive: true });
     }
     bindManualScroll(el('titleArchiveOverlay') && el('titleArchiveOverlay').querySelector('.ta-card'));
