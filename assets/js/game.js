@@ -13581,7 +13581,16 @@
       try { if (audioInitialized) GameEngine.playSound('ui_tap'); } catch (e) {}
       stage = 'switch:' + action;
       switch (action) {
-        case 'start': stage = 'startNewGame'; startNewGame(); break;
+        case 'start':
+          // Confirm-overwrite when a save already exists, so players don't
+          // accidentally nuke a long run by tapping はじめから.
+          stage = 'startNewGame';
+          if (typeof hasSave === 'function' && hasSave()) {
+            var ok = window.confirm('既存のセーブを上書きして最初から始めますか？');
+            if (!ok) return;
+          }
+          startNewGame();
+          break;
         case 'continue': stage = 'continueGame'; continueGame(); break;
         case 'endless': stage = 'startEndlessMode'; startEndlessMode(); break;
         case 'freeroam': stage = 'openLevelSelect'; openLevelSelect(); break;
