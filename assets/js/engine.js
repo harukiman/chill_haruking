@@ -649,7 +649,9 @@
     // Cast rays
     // Adaptive strip width: lower quality = wider strips = faster.
     // Default 3 (was 2) for better mobile performance, 4 if lowQuality enabled.
-    var stripWidth = (engine.theme && engine.theme.lowQuality) ? 4 : 3;
+    // lowResMode doubles strip width — fewer raycasts per frame, big perf win.
+    var stripWidth = engine.lowResMode ? 6
+                   : ((engine.theme && engine.theme.lowQuality) ? 4 : 3);
     var numRays = Math.ceil(w / stripWidth);
 
     for (var i = 0; i < numRays; i++) {
@@ -1248,6 +1250,13 @@
     chromaticLevel: 0,
     vignetteIntensity: 0.3,
 
+    // ── Performance toggles (game.js wires these from phone settings) ──
+    particlesEnabled: true,   // gates addParticle + particle render
+    postFxEnabled:   true,    // gates chromatic / vignette / grain
+    shakeEnabled:    true,    // gates shakeScreen
+    bgmEnabled:      true,    // gates startLoop for background music
+    lowResMode:      false,   // doubles raycaster strip width
+
     // ── Backrooms: Level theme (palette, fog, patterns) ──
     theme: null,
 
@@ -1299,6 +1308,7 @@
 
     // ── V7: Particle system API ──
     addParticle: function (type, wx, wy) {
+      if (!this.particlesEnabled) return;
       if (particles.length >= MAX_PARTICLES) return;
       var p = { x: wx, y: wy, vx: 0, vy: 0, life: 0, maxLife: 2, type: type, size: 2 };
       if (type === 'dust') {
@@ -1621,6 +1631,7 @@
     },
 
     shakeScreen: function (intensity, duration) {
+      if (!this.shakeEnabled) return;
       shakeIntensity = intensity || 5;
       shakeDuration = duration > 10 ? duration / 1000 : (duration || 0.3);
       shakeTimer = 0;
@@ -2136,6 +2147,14 @@
     startLoop: function (type) {
       if (!audioCtx) return;
       if (activeLoops[type]) return;
+      // Performance toggle: skip BGM-tier loops when disabled. Ambient FX
+      // (wind / pipe_drip / fluorescent) stay on; the heavy procedural music
+      // beds (breath_drone / classical / chase / nostalgic / lobby_music)
+      // are gated by bgmEnabled.
+      if (!this.bgmEnabled) {
+        var bgmList = ['breath_drone','classical','chase','nostalgic','lobby_music','pulse','dissonance','drone'];
+        if (bgmList.indexOf(type) >= 0) return;
+      }
 
       if (audioCtx.state === 'suspended') audioCtx.resume();
 
@@ -4205,8 +4224,8 @@
         this._drawStatic(ctx, staticIntensity);
       }
 
-      // V6: Film grain — subtle every frame
-      if (this.grainIntensity > 0) {
+      // V6: Film grain — subtle every frame (postFX toggle gates this)
+      if (this.postFxEnabled && this.grainIntensity > 0) {
         this._drawGrain(ctx, this.grainIntensity);
       }
 
@@ -4220,8 +4239,8 @@
         }
       }
 
-      // V6: Dynamic vignette
-      if (this.vignetteIntensity > 0) {
+      // V6: Dynamic vignette (postFX toggle gates this)
+      if (this.postFxEnabled && this.vignetteIntensity > 0) {
         var w = this.width;
         var h = this.height;
         var grad = ctx.createRadialGradient(w / 2, h / 2, w * 0.25, w / 2, h / 2, w * 0.85);
@@ -4231,8 +4250,8 @@
         ctx.fillRect(0, 0, w, h);
       }
 
-      // V6: Chromatic aberration at edges
-      if (this.chromaticLevel > 0) {
+      // V6: Chromatic aberration at edges (postFX toggle gates this)
+      if (this.postFxEnabled && this.chromaticLevel > 0) {
         this._drawChromaticAberration(ctx, this.chromaticLevel);
       }
 

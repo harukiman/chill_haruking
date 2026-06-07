@@ -20,7 +20,7 @@
   <meta name="twitter:title" content="THE BACKROOMS — featuring HARUKI">
   <meta name="twitter:description" content="一人称モバイル探索ホラー。Level 0 から no-clip で階層を降下。壁の向こうにカレが待つ。">
   <title>THE BACKROOMS</title>
-  <link rel="stylesheet" href="assets/css/game.css?v=110">
+  <link rel="stylesheet" href="assets/css/game.css?v=111">
 </head>
 <body oncontextmenu="return false;">
 
@@ -598,6 +598,36 @@
             </div>
 
             <div class="settings-section">
+              <div class="settings-section-title">パフォーマンス</div>
+              <div class="settings-card">
+                <button id="perfParticlesBtn" type="button" class="settings-row settings-action">
+                  <span class="settings-label">パーティクル</span>
+                  <span class="settings-value-pill" id="perfParticlesValue">ON</span>
+                </button>
+                <div class="settings-divider"></div>
+                <button id="perfPostFxBtn" type="button" class="settings-row settings-action">
+                  <span class="settings-label">ポストエフェクト (グレイン/色収差/ビネット)</span>
+                  <span class="settings-value-pill" id="perfPostFxValue">ON</span>
+                </button>
+                <div class="settings-divider"></div>
+                <button id="perfShakeBtn" type="button" class="settings-row settings-action">
+                  <span class="settings-label">画面シェイク</span>
+                  <span class="settings-value-pill" id="perfShakeValue">ON</span>
+                </button>
+                <div class="settings-divider"></div>
+                <button id="perfBgmBtn" type="button" class="settings-row settings-action">
+                  <span class="settings-label">BGM (procedural music)</span>
+                  <span class="settings-value-pill" id="perfBgmValue">ON</span>
+                </button>
+                <div class="settings-divider"></div>
+                <button id="perfLowResBtn" type="button" class="settings-row settings-action">
+                  <span class="settings-label">低解像度モード (raycaster 高速)</span>
+                  <span class="settings-value-pill" id="perfLowResValue">OFF</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="settings-section">
               <div class="settings-section-title">セーブデータ</div>
               <div class="settings-card">
                 <button id="optSaveBtn" type="button" class="settings-row settings-action">
@@ -841,8 +871,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="assets/js/engine.js?v=110"></script>
-  <script src="assets/js/game.js?v=110"></script>
+  <script src="assets/js/engine.js?v=111"></script>
+  <script src="assets/js/game.js?v=111"></script>
 
   <!-- POST-LOAD VERIFICATION + DIRECT BINDING FALLBACK
        After game.js IIFE runs, this script confirms __titleAction is the real one.

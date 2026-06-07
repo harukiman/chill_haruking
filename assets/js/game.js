@@ -3494,6 +3494,8 @@
     sanDrain *= diff.sanMul;
     // Endless: scale per floor (slower)
     if (gameMode === 'endless') sanDrain *= (1 + endlessFloor * 0.05);
+    // Safe area: no SAN drain (the safe-area regen below handles healing).
+    if (player.inSafeZone) sanDrain = 0;
     player.san = Math.max(0, player.san - sanDrain * dt);
 
     // Flashlight battery drain: 1%/s while ON. When depleted, auto-swap to
@@ -5908,6 +5910,13 @@
     if (_isGamePaused()) return;
     var diffE = DIFFICULTIES[currentDifficulty] || DIFFICULTIES.normal;
     var sMul = diffE.enemySpeedMul;
+    // Safe-area complete immunity: entities still wander/animate but their
+    // ambient SAN drains (smiler gaze, echo mimic, etc.) and any direct
+    // attackPlayer calls are reverted. We snapshot player.san here and
+    // restore it after the iteration; attackPlayer() itself bails on
+    // inSafeZone so HP is already protected.
+    var _safeSanSnapshot = player.inSafeZone ? player.san : null;
+    var _safeHpSnapshot  = player.inSafeZone ? player.hp  : null;
 
     for (var i = 0; i < entities.length; i++) {
       var e = entities[i];
@@ -6236,6 +6245,9 @@
         attackPlayer(10 * dt);
       }
     }
+    // Safe-area: restore snapshots so ambient entity drains are reverted.
+    if (_safeSanSnapshot !== null) player.san = _safeSanSnapshot;
+    if (_safeHpSnapshot  !== null) player.hp  = _safeHpSnapshot;
   }
 
   function isFacingPlayer(e) {
@@ -6259,6 +6271,9 @@
     if (_inCinematic) return;
     // No damage while overlays freeze gameplay (phone, settings, note viewer)
     if (typeof _isGamePaused === 'function' && _isGamePaused()) return;
+    // Safe-area complete immunity: while standing on a safe tile, no damage
+    // can land. SAN drain is similarly skipped elsewhere via player.inSafeZone.
+    if (player.inSafeZone) return;
     if (cheatActive) dmg *= 0.4;
     // Mirror shard: reflect 80% of incoming damage onto the nearest entity
     // and absorb the rest. While the shard is active, damage is greatly
@@ -8915,6 +8930,32 @@
       });
       applyGfxQuality();
     }
+
+    // Performance toggles — individual switches in addition to the global
+    // graphics quality. All persist in localStorage and apply immediately to
+    // the engine flags. Default to ON for parity with current behaviour, but
+    // mobile users on the LOW quality preset already get most of these off.
+    function setupPerfToggle(btnId, valueId, flagKey, engineProp, defaultOn) {
+      var btn = el(btnId);
+      var valEl = el(valueId);
+      if (!btn) return;
+      var storedRaw = localStorage.getItem(flagKey);
+      var on = (storedRaw === null) ? !!defaultOn : (storedRaw === '1');
+      GameEngine[engineProp] = on;
+      if (valEl) valEl.textContent = on ? 'ON' : 'OFF';
+      btn.addEventListener('click', function () {
+        on = !on;
+        GameEngine[engineProp] = on;
+        try { localStorage.setItem(flagKey, on ? '1' : '0'); } catch (e) {}
+        if (valEl) valEl.textContent = on ? 'ON' : 'OFF';
+        toast(btn.querySelector('.settings-label').textContent + ': ' + (on ? 'ON' : 'OFF'));
+      });
+    }
+    setupPerfToggle('perfParticlesBtn', 'perfParticlesValue', 'bk_perf_particles', 'particlesEnabled', true);
+    setupPerfToggle('perfPostFxBtn',    'perfPostFxValue',    'bk_perf_postfx',    'postFxEnabled',    true);
+    setupPerfToggle('perfShakeBtn',     'perfShakeValue',     'bk_perf_shake',     'shakeEnabled',     true);
+    setupPerfToggle('perfBgmBtn',       'perfBgmValue',       'bk_perf_bgm',       'bgmEnabled',       true);
+    setupPerfToggle('perfLowResBtn',    'perfLowResValue',    'bk_perf_lowres',    'lowResMode',       false);
 
     el('optReturnTitleBtn').addEventListener('click', function () {
       if (confirm('進捗を保存してタイトルへ戻りますか?')) {
