@@ -797,13 +797,17 @@ button {
   opacity: 1;
 }
 
-/* Scene 0: real-time FPS corridor canvas */
-.intro-scene-fps { background: #000; }
+/* Scene 0: real-time FPS corridor canvas. Force the parent visible the moment
+   it's added to the DOM so the raycaster output is on-screen the entire intro
+   (no opacity fade-in delay). */
+.intro-scene-fps { background: #000; opacity: 1 !important; }
+.intro-scene-fps.active { opacity: 1 !important; }
 .intro-fps-canvas {
   position: absolute; inset: 0;
   width: 100%; height: 100%;
   display: block;
   image-rendering: pixelated;
+  background: #000;
 }
 
 /* Scene 1: Night BACK-ALLEY POV (narrow, brick walls on sides) */

@@ -1301,7 +1301,7 @@
     }
   };
   ITEMS.shotgun = {
-    id: 'shotgun', name: 'ショットガン', icon: '🪓',
+    id: 'shotgun', name: 'ショットガン', icon: '💥',
     desc: '近距離・広範囲。大ダメージだが弾数少。',
     category: 'weapon',
     effect: function (p) {
@@ -1406,7 +1406,7 @@
     }
   };
   ITEMS.mirror_shard = {
-    id: 'mirror_shard', name: '鏡片 (ユニーク)', icon: '🪞',
+    id: 'mirror_shard', name: '鏡片 (ユニーク)', icon: '💎',
     desc: 'ユニーク。15秒間、被ダメージを跳ね返す。',
     category: 'consumable',
     effect: function (p) {
@@ -1416,7 +1416,7 @@
     }
   };
   ITEMS.revenant_blade = {
-    id: 'revenant_blade', name: '亡者の刃 (ユニーク武器)', icon: '🗡',
+    id: 'revenant_blade', name: '亡者の刃 (ユニーク武器)', icon: '🩸',
     desc: 'ユニーク武器。命中時 HP +12 回復。中距離扇形。',
     category: 'weapon',
     effect: function (p) {
@@ -5299,7 +5299,10 @@
       }
     }
     it.effect(player);
-    if (!it.persistent && !cheatActive) {
+    // Weapons always consume on use even in cheat mode — "weapons are scarce"
+    // is a core mechanic; non-weapon items stay infinite when cheat is on.
+    var isWeapon = it.category === 'weapon';
+    if (!it.persistent && (!cheatActive || isWeapon)) {
       player.inventory[itemId]--;
       if (player.inventory[itemId] <= 0) delete player.inventory[itemId];
       player._itemsUsedThisLevel = (player._itemsUsedThisLevel || 0) + 1;
@@ -7346,6 +7349,9 @@
       sumEl.innerHTML = summary.join('<br>');
     }
     GameEngine.stopAll();
+    // Flag set on death so the next startNewGame/continueGame begins each
+    // vital at 50% of max as a soft penalty.
+    try { localStorage.setItem('thebackrooms_just_died_v1', '1'); } catch (e) {}
     GameEngine.fadeToBlack(800, function () {
       showOverlay('gameOverScreen');
     });
@@ -8384,10 +8390,16 @@
     // as raycaster phase parameters in runIntroFpsScene, so the player sees
     // a continuously moving first-person view from the very first frame.
     // CSS layers (s1/s2/s3) are not used — only text overlay + scene 0 canvas.
-    if (s0) s0.classList.add('active');
-    if (s1) s1.classList.remove('active');
-    if (s2) s2.classList.remove('active');
-    if (s3) s3.classList.remove('active');
+    if (s0) {
+      s0.classList.add('active');
+      // Belt-and-braces: also force inline styles so any leftover CSS rule
+      // can't fade the canvas out.
+      s0.style.opacity = '1';
+      s0.style.display = 'block';
+    }
+    if (s1) { s1.classList.remove('active'); s1.style.display = 'none'; }
+    if (s2) { s2.classList.remove('active'); s2.style.display = 'none'; }
+    if (s3) { s3.classList.remove('active'); s3.style.display = 'none'; }
     var INTRO_LEN = 13500;
     setTimeout(function () {
       if (cancelled) return;
@@ -8461,11 +8473,28 @@
 
     var diff = DIFFICULTIES[currentDifficulty] || DIFFICULTIES.normal;
     player.hpMax = Math.round(100 * diff.hpMul);
-    player.hp = player.hpMax;
     player.san = player.sanMax = 100;
     player.stam = player.stamMax = 100;
+    // After a death, every vital starts at half max as a soft penalty until
+    // the player heals. Flag is consumed (cleared) on use.
+    var justDied = false;
+    try {
+      if (localStorage.getItem('thebackrooms_just_died_v1') === '1') {
+        justDied = true;
+        localStorage.removeItem('thebackrooms_just_died_v1');
+      }
+    } catch (e) {}
+    if (justDied) {
+      player.hp = Math.round(player.hpMax * 0.5);
+      player.san = Math.round(player.sanMax * 0.5);
+      player.stam = Math.round(player.stamMax * 0.5);
+      toast('— 再起。半身で立ち上がる。');
+    } else {
+      player.hp = player.hpMax;
+    }
     player.inventory = {};
     player.flashlightOn = false;
+    player.flashlightBattery = 0;
     player.radioOn = false;
     playTime = 0;
     visitedLevels = {};
@@ -8837,7 +8866,8 @@
     var grainS = el('grainSlider');
     var grainV = el('grainValue');
     if (grainS) {
-      grainS.value = parseInt(localStorage.getItem('bk_grain') || '30', 10);
+      // Default grain bumped down to 0 — lightest setting for mobile performance.
+      grainS.value = parseInt(localStorage.getItem('bk_grain') || '0', 10);
       grainV.textContent = grainS.value + '%';
       grainS.addEventListener('input', function () {
         var v = parseInt(grainS.value, 10);
@@ -8855,7 +8885,16 @@
     el('optResetBtn').addEventListener('click', function () {
       if (confirm('セーブデータを削除しますか?')) {
         localStorage.removeItem(SAVE_KEY);
-        toast('セーブを削除');
+        // Also clear D-pad assignments so the slot UI starts fresh and the
+        // spoiler guard re-evaluates from scratch on the next run.
+        try {
+          localStorage.removeItem('bk_dpad_assignments_v1');
+          localStorage.removeItem('bk_dpad_mode_v1');
+        } catch (e) {}
+        dpadAssignments = { weapon: { up: '', down: '', left: '', right: '' },
+                            item:   { up: '', down: '', left: '', right: '' } };
+        dpadMode = 'item';
+        toast('セーブを削除 (割当もリセット)');
         updateTitleButtons();
       }
     });
@@ -8863,7 +8902,9 @@
     var gfxBtn = el('gfxQualityBtn');
     var gfxValueEl = el('gfxQualityValue');
     if (gfxBtn) {
-      gfxQuality = localStorage.getItem(GFX_KEY) === 'low' ? 'low' : 'high';
+      // Default graphics quality LOW — heavy mobile bias. Users can switch to HIGH manually.
+      var gfxStored = localStorage.getItem(GFX_KEY);
+      gfxQuality = (gfxStored === 'high') ? 'high' : 'low';
       if (gfxValueEl) gfxValueEl.textContent = gfxQuality === 'high' ? 'HIGH' : 'LOW';
       gfxBtn.addEventListener('click', function () {
         gfxQuality = (gfxQuality === 'high') ? 'low' : 'high';

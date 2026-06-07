@@ -20,7 +20,7 @@
   <meta name="twitter:title" content="THE BACKROOMS — featuring HARUKI">
   <meta name="twitter:description" content="一人称モバイル探索ホラー。Level 0 から no-clip で階層を降下。壁の向こうにカレが待つ。">
   <title>THE BACKROOMS</title>
-  <link rel="stylesheet" href="assets/css/game.css?v=109">
+  <link rel="stylesheet" href="assets/css/game.css?v=110">
 </head>
 <body oncontextmenu="return false;">
 
@@ -157,8 +157,8 @@
           <input type="range" id="tsSens" min="50" max="200" value="100">
         </div>
         <div class="ts-row">
-          <label for="tsGrain">フィルムグレイン <span id="tsGrainVal">中</span></label>
-          <input type="range" id="tsGrain" min="0" max="2" value="1" step="1">
+          <label for="tsGrain">フィルムグレイン <span id="tsGrainVal">オフ</span></label>
+          <input type="range" id="tsGrain" min="0" max="2" value="0" step="1">
         </div>
         <div class="ts-row ts-toggle-row">
           <span>グラフィック品質</span>
@@ -587,7 +587,7 @@
                 <div class="settings-row slider-row">
                   <span class="settings-label">グレイン強度</span>
                   <input type="range" id="grainSlider" min="0" max="100" value="30" class="settings-slider">
-                  <span class="settings-value" id="grainValue">30%</span>
+                  <span class="settings-value" id="grainValue">0%</span>
                 </div>
                 <div class="settings-divider"></div>
                 <button id="gfxQualityBtn" type="button" class="settings-row settings-action">
@@ -841,8 +841,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="assets/js/engine.js?v=109"></script>
-  <script src="assets/js/game.js?v=109"></script>
+  <script src="assets/js/engine.js?v=110"></script>
+  <script src="assets/js/game.js?v=110"></script>
 
   <!-- POST-LOAD VERIFICATION + DIRECT BINDING FALLBACK
        After game.js IIFE runs, this script confirms __titleAction is the real one.
