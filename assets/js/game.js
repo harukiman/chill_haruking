@@ -12020,6 +12020,11 @@
       return true;
     } catch (e) {
       console.warn('Load failed', e);
+      // Notify the user that the save existed but was corrupt — was
+      // previously silently failing into the generic 「セーブデータが
+      // 見つかりません」 path, which made the user think they had no
+      // save when in fact the save was just unparseable.
+      try { toast('セーブが壊れていたため読込失敗。新規ゲームを開始してください。', 4000); } catch (tx) {}
       return false;
     }
   }
