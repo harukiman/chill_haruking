@@ -989,11 +989,15 @@
          timeLimit: null },
     8: { id: 8, name: 'LEVEL 8', subtitle: 'THE HIVE',
          rows: LV8_ROWS, theme: 8,
-         hint: '六角形のセル。吊るされた何かが揺れている。',
-         intro: '甘い腐臭。蜂の巣のような部屋が並ぶ。',
+         hint: '六角形のセル。吊るされた何かが揺れている。\n角の影から、何かがついてくる。',
+         intro: '甘い腐臭。蜂の巣のような部屋が並ぶ。\n背後の足音が、止まったり、また鳴ったり。',
          entities: [
            { type: 'smiler', gx: 8, gy: 14 },
-           { type: 'partygoer', gx: 14, gy: 8 }
+           { type: 'partygoer', gx: 14, gy: 8 },
+           { type: 'lurker', gx: 2, gy: 6 },
+           { type: 'lurker', gx: 18, gy: 20 },
+           // sd_8 kill-target stays — FACELING was already required to drop the doc
+           { type: 'faceling', gx: 12, gy: 8 }
          ],
          timeLimit: null },
     11: { id: 11, name: 'LEVEL !', subtitle: 'OFFICE DISTRICT',
@@ -1550,7 +1554,8 @@
     // Civilians are neutral — killing them gives a token coin (1) but a heavy
     // SAN hit (handled in _grantCoinsForKill) so it's never the easy path.
     civilian: 1,
-    witness: 4
+    witness: 4,
+    lurker: 5
   };
   function _grantCoinsForKill(type, entity) {
     var amt = COIN_DROPS[type] || 1;
@@ -1647,6 +1652,11 @@
       pistol: 1.0,  shotgun: 1.2,  revolver: 1.0, katana: 1.4,
       flare: 2.0,   mirror: 1.4,  mirror_shard: 1.6,
       architect_blade: 1.4
+    },
+    lurker: {
+      pistol: 0.9,  shotgun: 1.2,  revolver: 1.0, katana: 1.6,
+      flare: 1.4,   mirror: 1.6,  architect_blade: 1.5,
+      void_grenade: 1.4, siren_whistle: 1.8
     },
     mrhotel: {
       pistol: 0.4,  shotgun: 0.5,  katana: 1.4, flare: 0.6,
@@ -2429,7 +2439,8 @@
     haruki_boss: { name: 'HARUKI 真', desc: '— 全ての階層の終着点に、彼女は立っていた。\n3 段階の追跡形態。第3段階で影分身が出現する。\nハルキの護符 (ユニーク) があれば一時的に退避可能。' },
     echo: { name: 'ECHO', desc: 'バックルーム未分類。\nお前の動きを 0.6 秒遅れで完全模倣する亡霊。\n直視すると鏡を見ているような感覚に襲われ、SAN が削れる。\n振り切るには思考しない急な動きが有効。' },
     faceling: { name: 'FACELING', desc: 'バックルーム公式分類 Class 1 (擬態型)。\nM.E.G. メンバーや過去の no-clipper の姿に化ける。\n顔は常に「ぼやけて」見える。\n敵対的ではないが、稀に視線を合わせると SAN を引き抜く。' },
-    witness: { name: 'WITNESS', desc: 'バックルーム公式分類 Class 1 (静止型)。\nLevel 6 暗闇の中で、ただ立ち、お前を見続ける。\n視線が交わる時、SAN だけが静かに削れていく。\n目を逸らせば実害は無いが、振り返ると ── まだ、そこにいる。' }
+    witness: { name: 'WITNESS', desc: 'バックルーム公式分類 Class 1 (静止型)。\nLevel 6 暗闇の中で、ただ立ち、お前を見続ける。\n視線が交わる時、SAN だけが静かに削れていく。\n目を逸らせば実害は無いが、振り返ると ── まだ、そこにいる。' },
+    lurker: { name: 'LURKER', desc: 'バックルーム公式分類 Class 2 (追跡型)。\n薄暗い角に潜み、お前から目を逸らした瞬間に一歩近付く。\n振り向く時には既に距離が縮まっている。\n直視している間は動かない。捕まれば SAN を大量に奪われる。' }
   };
   // NOTE: ENTITY_SOUND_MAP.echo / .faceling are added inline in ENTITY_SOUND_MAP literal
   // below (line ~3957). Don't reference ENTITY_SOUND_MAP here — it's declared later via var
@@ -4322,6 +4333,7 @@
       case 'partygoer': return '#502828';
       case 'civilian': return '#cd9b6c'; // warm beige — clearly human, non-threatening
       case 'witness':  return '#0e0e12'; // near-black, just barely a silhouette
+      case 'lurker':   return '#1a141e'; // deep purple-black
       default: return '#444';
     }
   }
@@ -8101,6 +8113,21 @@
         wanderEntity(e, dt, 40 * sMul);
         if (distP < 1.5 * TS) {
           attackPlayer(15 * dt);
+        }
+      } else if (e.type === 'lurker') {
+        // Weeping Angel rule: stops dead when in the player's view cone,
+        // sneaks forward whenever the player looks away. SAN drains when
+        // it gets close enough to touch (< 1.5 tiles).
+        if (!isFacingPlayer(e) && distP > 1.4 * TS) {
+          var luSpd = 60 * sMul;
+          var lux = (dx / distP) * luSpd * dt;
+          var luy = (dy / distP) * luSpd * dt;
+          if (isWalkable(e.x + lux, e.y)) e.x += lux;
+          if (isWalkable(e.x, e.y + luy)) e.y += luy;
+        }
+        if (distP < 1.5 * TS) {
+          player.san = Math.max(0, player.san - 6 * dt);
+          attackPlayer(8 * dt);
         }
       } else if (e.type === 'witness') {
         // Stationary observer: never moves, just stands. SAN drains slowly
@@ -12024,6 +12051,7 @@
       faceling:    { icon: '🫥', name: 'FACELING' },
       civilian:    { icon: '🧍', name: 'CIVILIAN' },
       witness:     { icon: '👁‍🗨', name: 'WITNESS' },
+      lurker:      { icon: '🕵', name: 'LURKER' },
       mrhotel:     { icon: '🎩', name: 'MR.HOTEL' },
       boss:        { icon: '👹', name: 'BOSS' },
       haruki_boss: { icon: '🩸', name: 'HARUKI 真' }
