@@ -274,7 +274,7 @@
     '#..F..D......D..F..#',
     '#.....#......#.....#',
     '######........#####.',
-    '#..........S.#.....#',
+    '#............#.....#',
     '#....F..X....#.n.i.#',
     '#............#.....#',
     '####################'
@@ -352,7 +352,7 @@
     '#...U.....................d..#',
     '#............................#',
     '##############D###############',
-    '#.S..........................#',
+    '#............................#',
     '#......n.........F..........X#',
     '#............................#',
     '##############################'
@@ -1445,6 +1445,21 @@
       toast('— 何かを失った。');
       try { unlockAchievement('civilian_killed'); } catch (e) {}
     }
+    // Kill-conditional secret docs — when the player drops an enemy that
+    // matches an undiscovered doc's acquisition.enemyType on the right level,
+    // unlock the doc (showNoteViewer pauses gameplay anyway so the player
+    // can read it immediately).
+    for (var sdi = 0; sdi < SECRET_DOCS.length; sdi++) {
+      var sdoc = SECRET_DOCS[sdi];
+      var acq = sdoc.acquisition || {};
+      if (acq.type !== 'kill') continue;
+      if (acq.enemyType !== type) continue;
+      if (acq.levelId !== currentLevel) continue;
+      if (collectedSecretDocs[sdoc.id]) continue;
+      discoverSecretDoc(sdoc.id);
+      toast('★ 秘匿書類: ' + sdoc.title);
+      break; // only one per kill
+    }
   }
 
   function _attackForward(p, opts) {
@@ -1697,40 +1712,54 @@
   // 9 fragments, each placed on a specific level. Collecting ALL of them
   // before defeating HARUKI unlocks the TRUE END. Discovery is persistent
   // across runs via localStorage 'thebackrooms_secret_docs_v1'.
+  // Each entry has an `acquisition` describing how to unlock it. The Archive
+  // shows this hint on locked rows so the player knows where/how to look:
+  //   { type: 'pickup', levelId } — find an 'S' tile in that level
+  //   { type: 'kill',   levelId, enemyType, label } — defeat a specific
+  //                                                   entity on that level
   var SECRET_DOCS = [
     { id: 'sd_1', levelId: 0,
+      acquisition: { type: 'pickup', levelId: 0 },
       title: '秘匿書類 — 第一号',
       text:
         '機密 — 第九四四特別作戦班\n昭和十九年六月\n\n大本営直轄、満洲奥地に置かれた当班は、\n敵性勢力の士気を内側から崩壊させる「精神兵器」\nの開発を目的とする。\n\n第一段階 — 「壁を抜ける」現象の再現実験、進行中。' },
     { id: 'sd_2', levelId: 1,
+      acquisition: { type: 'pickup', levelId: 1 },
       title: '秘匿書類 — 第二号',
       text:
         '研究日誌 / 班長 春木保 (はるき たもつ)\n昭和十九年八月\n\n第七実験室にて、被験者三名が同時に「消失」。\n物質的に検出不能。しかし、彼らの声は\n依然として壁の向こうで響き続けている。\n\nこれは ── 別の階層に「降りた」のではないか。' },
     { id: 'sd_3', levelId: 2,
+      acquisition: { type: 'pickup', levelId: 2 },
       title: '秘匿書類 — 第三号',
       text:
         '報告書 — 観測室 B-7\n昭和十九年十月\n\n「黄色い無限の壁紙」「湿った絨毯」── 被験者\nの帰還報告が一致。だが、誰も帰還していない。\n声だけが、彼らが「降りた」階層から届く。\n\n班長春木は、「自分も降りてみたい」と申し出た。' },
     { id: 'sd_4', levelId: 3,
+      acquisition: { type: 'kill', levelId: 3, enemyType: 'wretch', label: 'WRETCH を撃破' },
       title: '秘匿書類 — 第四号',
       text:
-        '緊急電 — 司令部宛\n昭和十九年十一月\n\n春木班長、第七実験室に単独入室。\n三時間後、室内の壁紙が「黄色く」変色。\n春木の所在、不明。\n音声記録のみ残存 ──「ここは、深い」' },
+        '緊急電 — 司令部宛\n昭和十九年十一月\n\n春木班長、第七実験室に単独入室。\n三時間後、室内の壁紙が「黄色く」変色。\n春木の所在、不明。\n音声記録のみ残存 ──「ここは、深い」\n\n— 焼け焦げた小型録音機より回収。' },
     { id: 'sd_5', levelId: 4,
+      acquisition: { type: 'pickup', levelId: 4 },
       title: '秘匿書類 — 第五号',
       text:
         '内部報告 — 第二補佐官\n昭和十九年十二月\n\n春木の妹、晴美 (はるみ) が当班に編入された。\n兄を救出するためと本人は主張するが、\n上層部の真の意図は、彼女を「次の鍵」とする\nことにあるという。\n\n彼女は実に、嬉しそうだった。' },
     { id: 'sd_6', levelId: 5,
+      acquisition: { type: 'kill', levelId: 5, enemyType: 'mrhotel', label: 'MR.HOTEL を撃破' },
       title: '秘匿書類 — 第六号',
       text:
-        '観測室 C-3 — 音声記録\n昭和二十年三月\n\n春木保の声、確認。\n「ここに、誰もいない。\nだが、誰もが、ここにいる。\nおかえり。」\n\n— 春木晴美、行方不明。' },
+        '観測室 C-3 — 音声記録\n昭和二十年三月\n\n春木保の声、確認。\n「ここに、誰もいない。\nだが、誰もが、ここにいる。\nおかえり。」\n\n— 春木晴美、行方不明。\n\n録音機は MR.HOTEL の遺骸から発見された。' },
     { id: 'sd_7', levelId: 7,
+      acquisition: { type: 'pickup', levelId: 7 },
       title: '秘匿書類 — 第七号',
       text:
         '機密 — 終戦直前\n昭和二十年八月\n\n第九四四班、解散命令。\n実験施設、爆破。資料、焼却。\n\nだが ── 階層は、閉じない。\n壁の向こうで、二人は今も、待っている。' },
     { id: 'sd_8', levelId: 8,
+      acquisition: { type: 'kill', levelId: 8, enemyType: 'faceling', label: 'FACELING を撃破' },
       title: '秘匿書類 — 第八号',
       text:
-        '匿名の手記 — 戦後\n\n父は第九四四班の主任だった。\n父は「黄色い夢」を毎晩見るようになり、\nそして消えた。\n\n姉も同じ夢を見た後、消えた。\n\n私の夢にも、最近、黄色が見える。' },
+        '匿名の手記 — 戦後\n\n父は第九四四班の主任だった。\n父は「黄色い夢」を毎晩見るようになり、\nそして消えた。\n\n姉も同じ夢を見た後、消えた。\n\n私の夢にも、最近、黄色が見える。\n\n— 手記は顔のないものの胸から見つかった。' },
     { id: 'sd_9', levelId: 9,
+      acquisition: { type: 'pickup', levelId: 9 },
       title: '秘匿書類 — 第九号 / 最終',
       text:
         '「私は春木晴美。\n兄を捜してここに降りた。\n兄はもう、ハルキではない。\nここの全てが、ハルキだ。\n\nもし、これを読んでいる貴方が\n全ての書類を集めたなら ──\n\n出口は、扉ではない。\n書類こそが、鍵だ。」' }
@@ -11073,9 +11102,17 @@
             '<div class="ta-note-body">' + doc.text + '</div>';
           row.addEventListener('click', function () { row.classList.toggle('open'); });
         } else {
+          // Acquisition hint — pickup vs kill conditions read differently
+          var acqDesc;
+          var acqHere = doc.acquisition || { type: 'pickup', levelId: doc.levelId };
+          if (acqHere.type === 'kill') {
+            acqDesc = 'LEVEL ' + acqHere.levelId + ' で ' + acqHere.label;
+          } else {
+            acqDesc = 'LEVEL ' + acqHere.levelId + ' で取得可能';
+          }
           row.innerHTML =
             '<div class="ta-note-title">— 第' + (idx + 1) + '号 (未収集)</div>' +
-            '<div class="ta-note-level">LEVEL ' + doc.levelId + ' のどこかに眠る</div>';
+            '<div class="ta-note-level">' + acqDesc + '</div>';
         }
         secretList.appendChild(row);
       });
