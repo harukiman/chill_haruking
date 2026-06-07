@@ -148,6 +148,31 @@ body {
   margin-top: 2px;
   font-weight: 700;
 }
+
+/* FPS hand view — equipped weapon rendered above the canvas as if held in
+   front of the player. Pulses subtly on attack. */
+.weapon-hand {
+  position: fixed;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 0px);
+  transform: translateX(-50%) translateY(20%);
+  pointer-events: none;
+  z-index: 14; /* below action button (15) so the button stays on top */
+  display: none;
+  font-size: 110px;
+  line-height: 1;
+  filter: drop-shadow(0 -2px 12px rgba(0,0,0,0.75));
+  opacity: 0.95;
+  transition: transform 0.07s ease-out;
+}
+.weapon-hand.show { display: block; }
+.weapon-hand.fire {
+  transform: translateX(-50%) translateY(15%) rotate(-8deg);
+}
+.weapon-hand-grip {
+  display: inline-block;
+  transform: rotate(-18deg); /* tilted like a held weapon */
+}
 #vitalBars.show { display: flex; }
 
 .vital-row {

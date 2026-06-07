@@ -4646,6 +4646,24 @@
       if (cn) cn.textContent = '—';
       btn.classList.add('empty');
     }
+    // Mirror to FPS hand view
+    var hand = el('weaponHand');
+    var handIc = el('weaponHandIcon');
+    if (hand && handIc) {
+      if (id && ITEMS[id]) {
+        handIc.textContent = ITEMS[id].icon || '⚔';
+        if (state === ST.PLAYING) hand.classList.add('show');
+      } else {
+        hand.classList.remove('show');
+      }
+    }
+  }
+  // Trigger a brief tilt animation on the FPS hand view when the weapon fires.
+  function _animateWeaponHandFire() {
+    var hand = el('weaponHand');
+    if (!hand || !hand.classList.contains('show')) return;
+    hand.classList.add('fire');
+    setTimeout(function () { if (hand) hand.classList.remove('fire'); }, 110);
   }
   // Fire the equipped weapon — used by weaponAttackBtn / R1 gamepad.
   function fireEquippedWeapon() {
@@ -4656,6 +4674,7 @@
     if (!id) { toast('武器未装備'); return; }
     if (!ITEMS[id] || ITEMS[id].category !== 'weapon') return;
     _pendingItemId = id;
+    _animateWeaponHandFire();
     confirmItemUse();
     updateWeaponAttackBtn();
   }
@@ -9853,6 +9872,7 @@
     updateChaosLayer();
     var rtD = el('reticle'); if (rtD) rtD.classList.remove('show');
     var wabD = el('weaponAttackBtn'); if (wabD) wabD.classList.remove('show');
+    var whD = el('weaponHand'); if (whD) whD.classList.remove('show');
     stats.totalDeaths++;
     saveStats();
     el('vitalBars').classList.remove('show');
@@ -11206,6 +11226,7 @@
     updateChaosLayer();
     var rt2 = el('reticle'); if (rt2) rt2.classList.remove('show');
     var wab2 = el('weaponAttackBtn'); if (wab2) wab2.classList.remove('show');
+    var wh2 = el('weaponHand'); if (wh2) wh2.classList.remove('show');
     gameMode = 'normal';
     GameEngine.stopAll();
     GameEngine.fadeFromBlack(500);
