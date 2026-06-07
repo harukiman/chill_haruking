@@ -241,6 +241,37 @@ body {
 .weapon-hand-flash.flash {
   animation: weapon-flash 0.16s ease-out;
 }
+/* Low-HP vignette — pulses red around screen edges as HP drops */
+.low-hp-vignette {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 22;
+  opacity: 0;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(255, 0, 0, 0)    50%,
+    rgba(160, 0, 0, 0.35) 80%,
+    rgba(200, 0, 0, 0.75) 100%
+  );
+  mix-blend-mode: multiply;
+  transition: opacity 0.4s ease-out;
+}
+.low-hp-vignette.show {
+  opacity: 1;
+  animation: low-hp-pulse 2.0s ease-in-out infinite;
+}
+.low-hp-vignette.critical {
+  animation: low-hp-pulse-fast 0.9s ease-in-out infinite;
+}
+@keyframes low-hp-pulse {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 0.95; }
+}
+@keyframes low-hp-pulse-fast {
+  0%, 100% { opacity: 0.75; }
+  50%      { opacity: 1.0;  }
+}
 /* Floating damage numbers — spawned at screen-center on weapon hits */
 .damage-popup {
   position: fixed;

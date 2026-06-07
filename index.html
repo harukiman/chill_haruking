@@ -20,7 +20,7 @@
   <meta name="twitter:title" content="THE BACKROOMS — featuring HARUKI">
   <meta name="twitter:description" content="一人称モバイル探索ホラー。Level 0 から no-clip で階層を降下。壁の向こうにカレが待つ。">
   <title>THE BACKROOMS</title>
-  <link rel="stylesheet" href="assets/css/game.css?v=228">
+  <link rel="stylesheet" href="assets/css/game.css?v=229">
 </head>
 <body oncontextmenu="return false;">
 
@@ -122,6 +122,9 @@
     <span class="wab-icon" id="wabIcon">⚔</span>
     <span class="wab-count" id="wabCount">—</span>
   </button>
+
+  <!-- Low-HP red vignette pulse -->
+  <div id="lowHpVignette" class="low-hp-vignette" aria-hidden="true"></div>
 
   <!-- FPS hand view — equipped weapon shown at screen bottom center -->
   <div id="weaponHand" class="weapon-hand" aria-hidden="true">
@@ -1043,8 +1046,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="assets/js/engine.js?v=228"></script>
-  <script src="assets/js/game.js?v=228"></script>
+  <script src="assets/js/engine.js?v=229"></script>
+  <script src="assets/js/game.js?v=229"></script>
 
   <!-- POST-LOAD VERIFICATION + DIRECT BINDING FALLBACK
        After game.js IIFE runs, this script confirms __titleAction is the real one.

@@ -5184,6 +5184,15 @@
       el('hpFill').style.width = (hpRatio * 100) + '%';
       el('hpFill').classList.toggle('low', hpRatio < 0.25);
       player._hudCache.hp = hpRatio;
+      // Low-HP vignette — pulse red around the screen edges. Three tiers:
+      //   < 0.30 → soft pulse
+      //   < 0.15 → fast, intense pulse
+      //   >= 0.30 → off
+      var vig = el('lowHpVignette');
+      if (vig) {
+        vig.classList.toggle('show', hpRatio < 0.30);
+        vig.classList.toggle('critical', hpRatio < 0.15);
+      }
     }
     if (Math.abs(sanRatio0 - player._hudCache.san) > 0.005) {
       el('sanFill').style.width = (sanRatio0 * 100) + '%';
