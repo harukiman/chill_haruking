@@ -17,6 +17,58 @@
   // ============================================================
   var TS = 48;
 
+  // ── Multi-user / multi-tab session isolation ────────────────
+  // The game ships statically from GitHub Pages, so different *devices*
+  // already have isolated state. The conflict surface is multi-tab on a
+  // single browser: localStorage is per-origin and shared across tabs,
+  // so two tabs would race on save data, sens, gamepad map etc.
+  //
+  // Solution: an optional ?session=<id> URL parameter (or ?profile=<name>)
+  // namespaces every storage key. Without the parameter, default shared
+  // behaviour is preserved so existing players see no change.
+  // Detect a concurrent tab BEFORE we shadow window.localStorage, so the
+  // detection itself uses the raw storage. SESSION_ID stays empty for the
+  // common single-tab case to preserve the existing save's namespace.
+  var _rawLS = window.localStorage;
+  var SESSION_ID = (function () {
+    try {
+      var sp = new URLSearchParams(window.location.search);
+      var explicit = sp.get('session') || sp.get('profile') || '';
+      if (explicit) {
+        return '_' + String(explicit).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 24);
+      }
+      // Auto-detect: sessionStorage is per-tab; if this tab already chose
+      // a per-tab id (e.g. after a reload), reuse it. Otherwise check the
+      // shared last_open timestamp — if another tab opened the game within
+      // the last 3s, allocate a unique per-tab id to avoid save-race.
+      var TAB_KEY = 'thebackrooms_tab_session_v1';
+      var perTab = '';
+      try { perTab = sessionStorage.getItem(TAB_KEY) || ''; } catch (e) {}
+      if (perTab) return '_' + perTab;
+      try {
+        var OPEN_KEY = 'thebackrooms_last_open_v1';
+        var lastOpen = parseInt(_rawLS.getItem(OPEN_KEY) || '0', 10);
+        var now = Date.now();
+        _rawLS.setItem(OPEN_KEY, String(now));
+        if (lastOpen > 0 && (now - lastOpen) < 3000) {
+          var tid = 't' + Math.random().toString(36).slice(2, 10);
+          try { sessionStorage.setItem(TAB_KEY, tid); } catch (e) {}
+          return '_' + tid;
+        }
+      } catch (e) {}
+      return '';
+    } catch (e) { return ''; }
+  })();
+  function _lsKey(k) { return SESSION_ID ? (k + SESSION_ID) : k; }
+  // Shadow the global `localStorage` inside this IIFE so every existing call
+  // automatically goes through the namespaced wrapper without touching call
+  // sites.
+  var localStorage = {
+    getItem: function (k) { try { return _rawLS.getItem(_lsKey(k)); } catch (e) { return null; } },
+    setItem: function (k, v) { try { _rawLS.setItem(_lsKey(k), v); } catch (e) {} },
+    removeItem: function (k) { try { _rawLS.removeItem(_lsKey(k)); } catch (e) {} }
+  };
+
   // Game state machine
   var ST = {
     TITLE: 'title',
@@ -54,6 +106,8 @@
     var noteSpots = [];
     var hazards = [];
     var safes = [];
+    var stairsUp = [];
+    var stairsDown = [];
 
     for (var y = 0; y < h; y++) {
       var row = [];
@@ -72,6 +126,8 @@
           case '@': t = 9; break;
           case '!': t = 10; hazards.push({ gx: x, gy: y }); break;
           case 's': t = 11; safes.push({ gx: x, gy: y }); break;
+          case 'U': t = 0; stairsUp.push({ gx: x, gy: y }); break;
+          case 'd': t = 0; stairsDown.push({ gx: x, gy: y }); break;
           case 'P': t = 0; spawn = { gx: x, gy: y }; break;
           default:  t = 0; break;
         }
@@ -88,7 +144,9 @@
       itemSpots: itemSpots,
       noteSpots: noteSpots,
       hazards: hazards,
-      safes: safes
+      safes: safes,
+      stairsUp: stairsUp,
+      stairsDown: stairsDown
     };
   }
 
@@ -240,30 +298,35 @@
 
   // ── LEVEL 5 — THE HOTEL ─────────────────────────────────
   // Long carpet corridor with doors. Partygoers / Mr.Hotel
+  // Lv5 redesigned as a Resident-Evil-style mansion: entrance hall, four
+  // north chambers, central safe room, deep wings, a 2F stair pair (U/d)
+  // that teleports between locations to simulate a second floor without a
+  // multi-floor renderer, and a southern exit corridor with the X tile.
   var LV5_ROWS = [
-    '######################',
-    '#......D....D....D...#',
-    '#P.F...#....#....#.n.#',
-    '#......#.i..#..F.#...#',
-    '#......######....#...#',
-    '#......#....######...#',
-    '#......#....#....#...#',
-    '#..n...#....#....D...#',
-    '#......D....D........#',
-    '#......#....#...F....#',
-    '#......######........#',
-    '#..........s.........#',
-    '#.....################',
-    '#......D....D....D...#',
-    '#......#....#....#...#',
-    '#..i...#.F..#....#.n.#',
-    '#......######....#...#',
-    '#......#....######...#',
-    '#......#....#....#.F.#',
-    '#......#....#....#...#',
-    '#......D....D....D...#',
-    '#.................X..#',
-    '######################'
+    '##############################',
+    '#P..F.....F.....F.....F.....F#',
+    '#............................#',
+    '####D######.######.######D####',
+    '#...#......D......D......#...#',
+    '#.i.#..n...#..i...#..F...#.n.#',
+    '#...#......#......#......#...#',
+    '####D######D######D######D####',
+    '#............................#',
+    '#..F.................F.......#',
+    '#............s...............#',
+    '####.######D######D######.####',
+    '#............................#',
+    '#...n........F........F...n..#',
+    '#............................#',
+    '####.######.######.######.####',
+    '#............................#',
+    '#..F....U.................d..#',
+    '#............................#',
+    '####D######D######D######D####',
+    '#...#......#......#......#...#',
+    '#.i.D..F...D..n...D..F...D.X.#',
+    '#...#......#......#......#...#',
+    '##############################'
   ];
 
   // ── LEVEL 6 — LIGHTS OUT (stretch) ──────────────────────
@@ -413,24 +476,24 @@
     '##########################',
     '#P.......................#',
     '#..####....####....####..#',
-    '#..#FF#....#..#....#FF#..#',
-    '#..#i.#....#.n#....#..#..#',
+    '#..#Fi#....#i.#....#FF#..#',
+    '#..#ii#....#.n#....#i.#..#',
     '#..#..D....D..D....D..D..#',
     '#..####....####....####..#',
     '#........................#',
-    '#........................#',
+    '#....i..............i....#',
     '#........................#',
     '#..####....####....####..#',
-    '#..#..#....#FF#....#F.#..#',
-    '#..#.n#....#..#....#.F#..#',
+    '#..#i.#....#FF#....#F.#..#',
+    '#..#.n#....#i.#....#iF#..#',
     '#..#..D....D.i#....D..D..#',
     '#..####....####....####..#',
-    '#........................#',
+    '#....i..............i....#',
     '#............s...........#',
     '#........................#',
     '#..####....####....####..#',
-    '#..#FF#....#..#....#FF#..#',
-    '#..#..#....#X.#....#..#..#',
+    '#..#FF#....#i.#....#Fi#..#',
+    '#..#ii#....#X.#....#ii#..#',
     '#..#..D....D..D....D..D..#',
     '#..####....####....####..#',
     '##########################'
@@ -823,10 +886,10 @@
           timeLimit: null },
     9: { id: 9, name: 'LEVEL 9', subtitle: 'THE SUBURBS',
          rows: LV9_ROWS, theme: 9,
-         hint: 'BOSS を倒さなければ THE END の扉は開かない。武器を集めろ。',
-         intro: '空に月はない。月のような何かがある。— ここで終わる。',
+         hint: 'ハルキを倒さなければ THE END の扉は開かない。武器をかき集めろ。',
+         intro: '空に月はない。月のような何かがある。— ハルキが、待っている。',
          entities: [
-           { type: 'boss', gx: 12, gy: 9 },
+           { type: 'haruki_boss', gx: 12, gy: 9 },
            { type: 'crawler', gx: 5, gy: 16 },
            { type: 'hound', gx: 18, gy: 7 },
            { type: 'hound', gx: 4, gy: 8 },
@@ -899,12 +962,12 @@
             e.stunned = true;
             e.stunTimer = 4;
             stunned++;
-            if (e.type === 'boss') {
+            if (e.type === 'boss' || e.type === 'haruki_boss') {
               e.bossHp = (e.bossHp !== undefined ? e.bossHp : 200) - 50;
               bossHit++;
               if (e.bossHp <= 0) {
                 e.alive = false;
-                toast('BOSS 撃破!');
+                toast(e.type === 'haruki_boss' ? '★ ハルキ 撃破! ★' : 'BOSS 撃破!');
                 unlockAchievement('defeat_boss');
               }
             }
@@ -933,7 +996,7 @@
           if (e.type === 'skinstealer') {
             e.alive = false;
             reflected++;
-          } else if (e.type === 'boss') {
+          } else if (e.type === 'boss' || e.type === 'haruki_boss') {
             var dx = e.x - p.x, dy = e.y - p.y;
             var d = Math.sqrt(dx * dx + dy * dy);
             if (d < 8 * TS) {
@@ -941,7 +1004,7 @@
               bossDmg++;
               if (e.bossHp <= 0) {
                 e.alive = false;
-                toast('BOSS 撃破!');
+                toast(e.type === 'haruki_boss' ? '★ ハルキ 撃破! ★' : 'BOSS 撃破!');
                 unlockAchievement('defeat_boss');
               }
             }
@@ -1038,12 +1101,12 @@
     }
     if (!bestE) return null;
     var dmg = opts.dmg * (cheatActive ? 3 : 1);
-    if (bestE.type === 'boss') {
+    if (bestE.type === 'boss' || bestE.type === 'haruki_boss') {
       bestE.bossHp = (bestE.bossHp !== undefined ? bestE.bossHp : 200) - dmg;
       if (bestE.bossHp <= 0) {
         bestE.alive = false;
         unlockAchievement('defeat_boss');
-        toast('★ BOSS 撃破!');
+        toast(bestE.type === 'haruki_boss' ? '★ ハルキ 撃破! ★' : '★ BOSS 撃破!');
       }
     } else {
       bestE.hp = (bestE.hp !== undefined ? bestE.hp : 100) - dmg;
@@ -1057,7 +1120,8 @@
   }
   function getEntityLabel(t) {
     return ({ hound: 'HOUND', skinstealer: 'SKIN-STEALER', smiler: 'SMILER',
-              partygoer: 'PARTYGOER', boss: 'BOSS', haruki: 'HARUKI', crawler: 'CRAWLER' })[t] || t;
+              partygoer: 'PARTYGOER', boss: 'BOSS', haruki: 'HARUKI',
+              haruki_boss: 'HARUKI 真', crawler: 'CRAWLER' })[t] || t;
   }
   // Register weapons into the global ITEMS map (defined above)
   ITEMS.pistol = {
@@ -1108,6 +1172,42 @@
       if (audioInitialized) GameEngine.playSound('hit');
       GameEngine.shakeScreen(6, 0.22);
       toast(hit ? '貫通: ' + getEntityLabel(hit.type) : '空振り');
+    }
+  };
+
+  // ── UNIQUE MINI-GAME REWARDS ────────────────────────────
+  // These items only spawn as mini-game prizes and are intentionally rare.
+  ITEMS.soul_lantern = {
+    id: 'soul_lantern', name: '灯霊 (ユニーク)', icon: '🏮',
+    desc: 'ユニーク。10秒間、近くの全エンティティ位置を脳裏に映す。',
+    category: 'consumable',
+    effect: function (p) {
+      // Stash a timestamp so the renderer can reveal nearby entities.
+      p._soulLanternUntil = performance.now() + 10000;
+      toast('★ 灯霊 — 全エンティティ位置が見える');
+      if (audioInitialized) GameEngine.playSound('item_get');
+    }
+  };
+  ITEMS.haruki_charm = {
+    id: 'haruki_charm', name: 'ハルキの護符 (ユニーク)', icon: '🪬',
+    desc: 'ユニーク。30秒間、ハルキ系エンティティが接近不能になる。',
+    category: 'consumable',
+    effect: function (p) {
+      p._harukiWardUntil = performance.now() + 30000;
+      toast('★ ハルキの護符 — 30秒間 ハルキを退ける');
+      if (audioInitialized) GameEngine.playSound('item_get');
+    }
+  };
+  ITEMS.architect_blade = {
+    id: 'architect_blade', name: '建築家の刃 (ユニーク武器)', icon: '⚔',
+    desc: 'ユニーク武器。前方扇形に巨大なダメージ。ボスにも有効、耐久度3。',
+    category: 'weapon',
+    effect: function (p) {
+      var hit = _attackForward(p, { dmg: 150, rangeTiles: 5, coneDeg: 100 });
+      if (audioInitialized) { GameEngine.playSound('hit'); GameEngine.playSound('thunder'); }
+      GameEngine.shakeScreen(12, 0.5);
+      GameEngine.redFlash();
+      toast(hit ? '★ 神撃: ' + getEntityLabel(hit.type) : '空振り');
     }
   };
 
@@ -2160,7 +2260,7 @@
     // Any over-cap weapons are downgraded to a non-weapon roll from the pool.
     var WEAPON_BUDGET_BY_LEVEL = {
       3: 2, 4: 2, 5: 3, 6: 3, 7: 4, 8: 3, 11: 2, 12: 3, 13: 3,
-      9: 6
+      9: 10  // final boss arena: user requested 武器を大量配置
     };
     var weaponCap = (WEAPON_BUDGET_BY_LEVEL[levelId] != null) ? WEAPON_BUDGET_BY_LEVEL[levelId] : 2;
     var nonWeaponPool = pool.filter(function (id) {
@@ -2260,6 +2360,31 @@
       for (var dx = 0; dx < currentMap.width; dx++) {
         if (currentMap.tiles[dy][dx] === 2) {
           doorStates[gridKey(dx, dy)] = { open: false, locked: false };
+        }
+      }
+    }
+    // Key-item gate: a per-level whitelist of doors that start locked and
+    // need a specific inventory item to unlock. Picked deterministically so
+    // the same door is the gate every run. Unlike the generic 'keycard' lock,
+    // these doors cannot be lockpicked — only the named key works.
+    var LEVEL_KEY_GATES = {
+      // Lv4 THE OFFICE: blueprint required to reach the deeper rooms.
+      4: [{ rel: 'first', keyId: 'keycard', label: 'カードキー' }],
+      // Lv8 THE HIVE: lockpick the staff-only inner door.
+      8: [{ rel: 'last',  keyId: 'lockpick', label: 'ロックピック' }]
+    };
+    var gateSpec = LEVEL_KEY_GATES[levelId];
+    if (gateSpec) {
+      var doorKeys = Object.keys(doorStates).sort();
+      for (var gsi = 0; gsi < gateSpec.length; gsi++) {
+        var gs = gateSpec[gsi];
+        var pickKey = (gs.rel === 'last') ? doorKeys[doorKeys.length - 1]
+                    : (gs.rel === 'mid')  ? doorKeys[Math.floor(doorKeys.length / 2)]
+                    :                       doorKeys[0];
+        if (pickKey && doorStates[pickKey]) {
+          doorStates[pickKey].locked = true;
+          doorStates[pickKey].keyId = gs.keyId;
+          doorStates[pickKey].keyLabel = gs.label;
         }
       }
     }
@@ -2823,6 +2948,42 @@
     player.inWater = (here === 7);
     player.inHazard = (here === 10);
     player.inSafeZone = (here === 11);
+    // Staircase teleport — when player steps on a stair-up tile they are sent
+    // to the paired stair-down tile (and vice versa). Used by mansion-style
+    // levels (Lv5) to simulate a 2F without needing a multi-floor renderer.
+    if (currentMap.stairsUp && currentMap.stairsUp.length &&
+        currentMap.stairsDown && currentMap.stairsDown.length) {
+      var nowMs = performance.now();
+      if (!player._stairCooldownUntil) player._stairCooldownUntil = 0;
+      if (nowMs >= player._stairCooldownUntil) {
+        var teleportTo = null;
+        var dirLabel = '';
+        for (var sui = 0; sui < currentMap.stairsUp.length; sui++) {
+          if (currentMap.stairsUp[sui].gx === gx && currentMap.stairsUp[sui].gy === gy) {
+            teleportTo = currentMap.stairsDown[sui] || currentMap.stairsDown[0];
+            dirLabel = '2F';
+            break;
+          }
+        }
+        if (!teleportTo) {
+          for (var sdi = 0; sdi < currentMap.stairsDown.length; sdi++) {
+            if (currentMap.stairsDown[sdi].gx === gx && currentMap.stairsDown[sdi].gy === gy) {
+              teleportTo = currentMap.stairsUp[sdi] || currentMap.stairsUp[0];
+              dirLabel = '1F';
+              break;
+            }
+          }
+        }
+        if (teleportTo) {
+          player.x = teleportTo.gx * TS + TS / 2;
+          player.y = teleportTo.gy * TS + TS / 2;
+          player._stairCooldownUntil = nowMs + 1200;
+          toast('— ' + dirLabel + ' —');
+          if (audioInitialized) GameEngine.playSound('door');
+          GameEngine.shakeScreen(3, 0.2);
+        }
+      }
+    }
 
     if (player.inHazard) {
       player.hp = Math.max(0, player.hp - 12 * dt);
@@ -3121,7 +3282,7 @@
       else if (ce.type === 'partygoer' && ceD < 4 * TS) isBeingChased = true;
       else if (ce.type === 'crawler' && ce.state === 'lunge') isBeingChased = true;
       else if (ce.type === 'haruki' && (ce.state === 'hunting' || ce.state === 'approach')) isBeingChased = true;
-      else if (ce.type === 'boss' && ceD < 6 * TS) isBeingChased = true;
+      else if ((ce.type === 'boss' || ce.type === 'haruki_boss') && ceD < 6 * TS) isBeingChased = true;
       else if (ce.type === 'mrhotel' && ceD < 4 * TS) isBeingChased = true;
       else if (ce.type === 'echo' && ceD < 3 * TS) isBeingChased = true;
     }
@@ -3151,7 +3312,12 @@
           }
         }
       } else {
-        if (hLayer.style.display !== 'none') hLayer.style.display = 'none';
+        // Keep visible while an enemy line is currently being shown, then hide.
+        if (player._enemyLineShownUntil && performance.now() < player._enemyLineShownUntil) {
+          if (hLayer.style.display === 'none') hLayer.style.display = 'block';
+        } else if (hLayer.style.display !== 'none') {
+          hLayer.style.display = 'none';
+        }
       }
     }
 
@@ -3200,6 +3366,54 @@
         if (threatLevel >= 3) tone = 'scrape';
         else if (threatLevel === 1 && Math.random() < 0.4) tone = 'tap';
         try { GameEngine.playPositional(tone, pan, vol); } catch (e) {}
+      }
+    }
+    // Enemy dialogue layer: occasional spoken/whispered line from nearest
+    // pursuing entity. Uses the existing hallucText HUD so we don't have to
+    // wire a new DOM element. Scales rate by proximity AND threat level.
+    if (nearestThreat && nearestThreatDist < 8 * TS) {
+      var ENEMY_LINES = {
+        haruki:      ['…見つけた', 'もう、逃げないで', 'ずっと、待ってた', '一緒に降りよう', '振り向かないで',
+                      'お前のことは知っている', 'ここで終わりにしよう'],
+        haruki_boss: ['お前の魂をくれ', 'ここが最期', '私のもとへおいで', '逃げ場はない', 'お前の名を呼ぶ',
+                      '— おかえり', '迎えに来た', 'もう、休んでもいい'],
+        boss:        ['訪問者よ', 'お前の階層は終わった', 'ここまでだ', '最後の一歩を'],
+        hound:       ['グルル……', 'ガアアッ', '— 唸り声 —', '匂いだ', '— 接近する獣 —'],
+        skinstealer: ['お前の顔をくれ', '今度はお前だ', '同じ顔だ', 'これを、剥がしてくれ'],
+        smiler:      ['にっこり', '見えるよ', '— 笑い声 —', 'こっち見て'],
+        partygoer:   ['一緒に踊ろう', 'パーティーは終わらない', 'おかわりは?'],
+        crawler:     ['— 這う音 —', 'カサ……カサ……', '見ちゃダメ'],
+        wretch:      ['たすけ……', 'もう、戻れない', '記憶が無い'],
+        echo:        ['— 反響 —', 'こだま、こだま', '昔の声'],
+        faceling:    ['顔が、ない', '名前を呼んで', '— 静寂 —'],
+        mrhotel:     ['チェックインです', 'お部屋へご案内', 'ベルは、もう鳴った']
+      };
+      player._enemyLineTimer = (player._enemyLineTimer || 0) - (1 / 60);
+      if (player._enemyLineTimer <= 0) {
+        var lineProx = Math.max(0, 1 - nearestThreatDist / (8 * TS));
+        // 10s far → 3s very close, modulated by threat
+        player._enemyLineTimer = 10 - lineProx * 7 - threatLevel * 0.5 + Math.random() * 2;
+        var bank = ENEMY_LINES[nearestThreat.type] || ENEMY_LINES.crawler;
+        var line = bank[Math.floor(Math.random() * bank.length)];
+        var htxt = el('hallucText');
+        if (htxt) {
+          htxt.textContent = line;
+          htxt.classList.remove('show');
+          void htxt.offsetWidth;
+          htxt.classList.add('show');
+        }
+        // Force the hallucination layer visible briefly so the line shows
+        // even when the player's SAN is high.
+        var hLayerNow = el('hallucinationLayer');
+        if (hLayerNow) {
+          hLayerNow.style.display = 'block';
+          player._enemyLineShownUntil = performance.now() + 1400;
+        }
+        // Bosses also play a whisper cue when they speak
+        if ((nearestThreat.type === 'haruki_boss' || nearestThreat.type === 'haruki' || nearestThreat.type === 'boss')
+            && audioInitialized) {
+          GameEngine.playSound('whisper');
+        }
       }
     }
     // Apply BGM layer adjustments by threat level (live blending)
@@ -3905,13 +4119,20 @@
             mgState.phase = 'win';
             setMGStatus('クリア! 報酬獲得');
             setMGAction('終了', 'green');
-            // Upgraded reward pool — mini-games are harder now so the prizes are weapons.
-            var rewards = ['katana', 'pistol', 'flare', 'shotgun', 'revolver', 'almond_milk'];
-            var rwd = rewards[Math.floor(Math.random() * rewards.length)];
+            // Tiered reward pool. ~12% chance of a UNIQUE prize, otherwise a
+            // standard weapon / consumable. Uniques are rare and powerful.
+            var uniques = ['soul_lantern', 'haruki_charm', 'architect_blade'];
+            var commons = ['katana', 'pistol', 'flare', 'shotgun', 'revolver', 'almond_milk'];
+            var rwd = (Math.random() < 0.12)
+              ? uniques[Math.floor(Math.random() * uniques.length)]
+              : commons[Math.floor(Math.random() * commons.length)];
             player.inventory[rwd] = (player.inventory[rwd] || 0) + 1;
             toast('★ ' + ITEMS[rwd].name + ' を入手');
             unlockAchievement('won_minigame');
-            if (audioInitialized) GameEngine.playSound('level_clear');
+            if (audioInitialized) {
+              GameEngine.playSound('level_clear');
+              if (uniques.indexOf(rwd) >= 0) GameEngine.playSound('stinger');
+            }
           }
         } else {
           mgState.snake.pop();
@@ -4288,7 +4509,7 @@
       var hasTarget = false;
       for (var mi = 0; mi < entities.length; mi++) {
         if (!entities[mi].alive) continue;
-        if (entities[mi].type !== 'skinstealer' && entities[mi].type !== 'boss') continue;
+        if (entities[mi].type !== 'skinstealer' && entities[mi].type !== 'boss' && entities[mi].type !== 'haruki_boss') continue;
         var mdx = entities[mi].x - player.x, mdy = entities[mi].y - player.y;
         if (Math.sqrt(mdx * mdx + mdy * mdy) < 8 * TS) { hasTarget = true; break; }
       }
@@ -4434,15 +4655,19 @@
       var ds = doorStates[fkey];
       if (ds) {
         if (ds.locked) {
-          if (player.inventory.keycard) {
+          // Per-door key whitelist: doors with a specific keyId require that
+          // exact item; generic locked doors accept 'keycard' as before.
+          var requiredKey = ds.keyId || 'keycard';
+          var requiredLabel = ds.keyLabel || 'カードキー';
+          if (player.inventory[requiredKey]) {
             ds.locked = false;
             ds.open = true;
-            player.inventory.keycard--;
-            if (player.inventory.keycard <= 0) delete player.inventory.keycard;
-            toast('カードキーで解錠');
+            player.inventory[requiredKey]--;
+            if (player.inventory[requiredKey] <= 0) delete player.inventory[requiredKey];
+            toast(requiredLabel + 'で解錠');
             if (audioInitialized) GameEngine.playSound('key_unlock');
           } else {
-            toast('鍵がかかっている');
+            toast(requiredLabel + 'が必要');
             if (audioInitialized) GameEngine.playSound('door');
           }
         } else {
@@ -4559,15 +4784,20 @@
       }
       GameEngine.staticEffect(0.6);
       setTimeout(function () { GameEngine.staticEffect(0); }, 1200);
-    } else if (killerType === 'boss') {
-      // Architect — dramatic
+    } else if (killerType === 'boss' || killerType === 'haruki_boss') {
+      // Architect / Haruki真 — dramatic; haruki variant layers an extra whisper
+      // and tinnitus for thematic continuity with the Lv5 haruki encounter.
       if (audioInitialized) {
         GameEngine.playSound('stinger');
         GameEngine.playSound('thunder');
         GameEngine.playSound('scream');
+        if (killerType === 'haruki_boss') {
+          GameEngine.playSound('whisper');
+          GameEngine.playSound('tinnitus');
+        }
       }
       GameEngine.redFlash();
-      GameEngine.shakeScreen(30, 1.5);
+      GameEngine.shakeScreen(killerType === 'haruki_boss' ? 40 : 30, 1.7);
     } else if (killerType === 'mrhotel') {
       if (audioInitialized) {
         GameEngine.playSound('clock_tick');
@@ -4718,10 +4948,11 @@
     if (def && def.bossRequired) {
       var bossAlive = false;
       for (var bi = 0; bi < entities.length; bi++) {
-        if (entities[bi].type === 'boss' && entities[bi].alive) { bossAlive = true; break; }
+        if ((entities[bi].type === 'boss' || entities[bi].type === 'haruki_boss')
+            && entities[bi].alive) { bossAlive = true; break; }
       }
       if (bossAlive) {
-        toast('★ BOSS を倒さねば扉は開かない');
+        toast(currentLevel === 9 ? '★ ハルキを倒さねば扉は開かない' : '★ BOSS を倒さねば扉は開かない');
         if (audioInitialized) GameEngine.playSound('door');
         return;
       }
@@ -4871,7 +5102,7 @@
       var distP = Math.sqrt(dx * dx + dy * dy);
 
       // Perf: skip AI when very far (>16 TS) — wretches and bosses always update
-      if (distP > 16 * TS && e.type !== 'wretch' && e.type !== 'boss') {
+      if (distP > 16 * TS && e.type !== 'wretch' && e.type !== 'boss' && e.type !== 'haruki_boss') {
         continue;
       }
 
@@ -5062,6 +5293,13 @@
         //  Phase 1 (>12 TS): 遠い - phone bell only, wanders slowly
         //  Phase 2 (6-12 TS): 視認 - approaches with female humming
         //  Phase 3 (<6 TS): 接触寸前 - sprint speed, breath/whisper, jumpscare risk
+        // Haruki charm: while the ward is active, force haruki into a
+        // wandering "repelled" state and skip the approach/contact phases.
+        if (player._harukiWardUntil && performance.now() < player._harukiWardUntil) {
+          e.state = 'repelled';
+          wanderEntity(e, dt, 18 * sMul);
+          continue;
+        }
         var harPhase = 1;
         if (distP < 12 * TS) harPhase = 2;
         if (distP < 6 * TS) harPhase = 3;
@@ -5114,7 +5352,7 @@
             if (audioInitialized) GameEngine.playSound('jumpscare');
           }
         }
-      } else if (e.type === 'boss') {
+      } else if (e.type === 'boss' || e.type === 'haruki_boss') {
         // Boss: multi-phase, boss HP tracked separately
         e.bossHp = e.bossHp !== undefined ? e.bossHp : 200;
         // Phase determined by HP
@@ -5122,9 +5360,15 @@
         if (e.bossHp < 130) phase = 2;
         if (e.bossHp < 60)  phase = 3;
         var bossSpd = (50 + phase * 25) * sMul;
+        // Haruki charm warding also blocks haruki_boss approach (the boss
+        // becomes a slow wanderer and cannot close to attack range).
+        var bossWarded = (e.type === 'haruki_boss'
+                         && player._harukiWardUntil
+                         && performance.now() < player._harukiWardUntil);
+        if (bossWarded) bossSpd *= 0.25;
         wanderEntity(e, dt, bossSpd);
         // Move toward player if in range
-        if (distP < 10 * TS) {
+        if (!bossWarded && distP < 10 * TS) {
           var bsx = (dx / distP) * bossSpd * dt;
           var bsy = (dy / distP) * bossSpd * dt;
           if (isWalkable(e.x + bsx, e.y)) e.x += bsx;
@@ -5654,14 +5898,33 @@
         if (mhfc < 0 || mhfc >= w) continue;
         if (zBuf[mhfc] > depthTiles) ctx.fillRect(mhfc, faceY2, 1, faceH2);
       }
-    } else if (e.type === 'boss') {
+    } else if (e.type === 'boss' || e.type === 'haruki_boss') {
       // Large humanoid with crown and floating presence
       var bsH = spriteH * 1.1;
       var bsY = startY - spriteH * 0.05;
       var bsW = spriteW * 0.6;
       var bsX = screenX - bsW / 2;
+      // Haruki variant: deeper crimson aura and use haruki head sprite instead of crown silhouette.
+      var isHk = (e.type === 'haruki_boss');
       drawShapedSprite(ctx, bsX, bsY, bsW, bsH, screenX, depthTiles, zBuf, w,
-        '#1c0028', '#0a0010');
+        isHk ? '#2a0808' : '#1c0028',
+        isHk ? '#100202' : '#0a0010');
+      if (isHk) {
+        // Haruki head: replace the crown with the haruki_scary.png portrait floating above body.
+        var hkBImg = GameEngine.images['assets/img/haruki_scary.png'] || GameEngine.images['assets/img/haruki.png'];
+        if (hkBImg && hkBImg.complete && hkBImg.naturalWidth) {
+          var hkBHeadH = bsH * 0.48;
+          var hkBHeadW = hkBHeadH * (hkBImg.naturalWidth / hkBImg.naturalHeight);
+          var hkBHeadX = screenX - hkBHeadW / 2;
+          var hkBHeadY = bsY - hkBHeadH * 0.3;
+          if (zBuf[Math.round(screenX)] > depthTiles) {
+            ctx.save();
+            ctx.globalAlpha = Math.min(1, fogFactor * 1.2);
+            ctx.drawImage(hkBImg, hkBHeadX, hkBHeadY, hkBHeadW, hkBHeadH);
+            ctx.restore();
+          }
+        }
+      }
       // Crown spikes
       ctx.fillStyle = 'rgba(212,179,64,' + fogFactor + ')';
       for (var bks = -2; bks <= 2; bks++) {
@@ -6777,6 +7040,24 @@
         }
       }
     }
+    // Soul lantern: while active, reveal every live entity as a glowing red
+    // dot regardless of map discovery state. This is the lantern's payoff.
+    if (player._soulLanternUntil && performance.now() < player._soulLanternUntil) {
+      for (var sli = 0; sli < entities.length; sli++) {
+        var se = entities[sli];
+        if (!se.alive) continue;
+        var sgx = se.x / TS, sgy = se.y / TS;
+        ctx.fillStyle = 'rgba(220, 40, 40, 0.9)';
+        ctx.beginPath();
+        ctx.arc(ox + sgx * ts, oy + sgy * ts, Math.max(2, ts * 0.5), 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255, 80, 80, 0.5)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(ox + sgx * ts, oy + sgy * ts, Math.max(4, ts * 0.9), 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
     // Player
     var pgx = player.x / TS, pgy = player.y / TS;
     ctx.fillStyle = '#88b033';
@@ -7152,38 +7433,64 @@
     el('introSkipBtn').addEventListener('click', skipHandler);
     el('introOverlay').addEventListener('click', skipHandler);
 
-    // Cinematic plays scenes, but final frame waits for tap to proceed.
-    // Scene 1: night back-alley walking (3s)
-    // Scene 0 (FPS) is now the PRIMARY background — runs the whole intro.
-    // Text + brief CSS scenes layer on top so the moving footage is always visible.
+    // Cinematic now orchestrates four moving scenes in sequence with a final
+    // cliff-hanger frame waiting for the player to tap "開始".
+    //  ~0.0s  scene 1  night street POV with walking shoes
+    //  ~3.0s  scene 2  wall closeup, vertigo
+    //  ~5.0s  scene 3  falling-blur transition
+    //  ~6.5s  scene 0  raycaster yellow corridor (the actual world)
+    //  ~11.0s eyes partial + tap-to-start prompt
+    function gotoScene(target) {
+      [s0, s1, s2, s3].forEach(function (s) { if (s) s.classList.remove('active'); });
+      if (target) target.classList.add('active');
+    }
     setTimeout(function () {
       if (cancelled) return;
-      if (s0) s0.classList.add('active');
+      gotoScene(s1);
       startFootsteps();
       setLine('...深夜、会社からの帰り道。');
-      // Long-running FPS walk for the full intro length
-      fpsCancel = runIntroFpsScene(11000, function () {
+    }, 200);
+    setTimeout(function () {
+      if (cancelled) return;
+      setLine('いつもの裏路地 — の、はずだった。');
+    }, 2600);
+    setTimeout(function () {
+      if (cancelled) return;
+      gotoScene(s2);
+      stopFootsteps();
+      setLine('— 壁が、近づく。');
+      if (audioInitialized) GameEngine.playSound('static');
+    }, 4200);
+    setTimeout(function () {
+      if (cancelled) return;
+      gotoScene(s3);
+      setLine('— 足元の感触が、消えた。');
+      if (audioInitialized) GameEngine.playSound('thunder');
+      GameEngine.shakeScreen(20, 1.2);
+    }, 5600);
+    setTimeout(function () {
+      if (cancelled) return;
+      gotoScene(s0);
+      setLine('黄色い、無限の、壁紙の世界へ。');
+      // Resume footsteps once standing in the corridor
+      startFootsteps();
+      // Long-running FPS walk through the corridor
+      fpsCancel = runIntroFpsScene(8500, function () {
         if (cancelled) return;
         stopFootsteps();
         eyes.classList.add('partial');
         setLine('[ 画面をタップして開始 ]');
       });
-    }, 200);
-    setTimeout(function () { if (!cancelled) setLine('いつもの裏路地 — の、はずだった。'); }, 2400);
-    setTimeout(function () {
-      if (cancelled) return;
-      setLine('— 足元の感触が、消えた。');
-      if (audioInitialized) GameEngine.playSound('static');
-    }, 4500);
-    setTimeout(function () {
-      if (cancelled) return;
-      setLine('黄色い、無限の、壁紙の世界へ。');
-      if (audioInitialized) GameEngine.playSound('thunder');
-    }, 7000);
+    }, 6700);
     setTimeout(function () {
       if (cancelled) return;
       setLine('— 立ち上がる。果てしなく続く、黄色い廊下。');
-    }, 8500);
+    }, 9000);
+    setTimeout(function () {
+      if (cancelled) return;
+      setLine('— 遠くで、誰かが、笑った。');
+      if (audioInitialized) GameEngine.playSound('whisper');
+    }, 11500);
     // No auto-finish — user taps overlay or skip button to advance
     // Safety net: auto-finish after 30s if no tap
     setTimeout(finish, 30000);
