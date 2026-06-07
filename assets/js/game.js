@@ -259,27 +259,30 @@
 
   // ── LEVEL 3 — ELECTRICAL STATION ────────────────────────
   // Dark, electric hazards, sparks
+  // Lv3 — ELECTRICAL. Repopulated with broken-equipment F decor
+  // (server racks, fallen wires, breaker panels) and an extra note +
+  // safe-pocket s tile so the corridors don't feel like bare dungeon.
   var LV3_ROWS = [
     '####################',
-    '#P.....F....!......#',
-    '#......F....!......#',
-    '#..............n...#',
-    '#.....#####D####...#',
-    '#.....#.........#..#',
-    '#.....#..i..F...#..#',
-    '#..n..#.........#..#',
-    '#.....D.....F...#.w#',
-    '#.....#.........#..#',
+    '#P.F...F....!....F.#',
+    '#..F..F.F...!......#',
+    '#.F.........F..n.F.#',
+    '#.F...#####D####.F.#',
+    '#.....#.F.....F.#..#',
+    '#.F.F.#..i..F...#.F#',
+    '#..n..#..F......#..#',
+    '#..F..D.....F...#.w#',
+    '#.F.F.#..F......#.F#',
     '#######!!!!!####...#',
-    '#.....#......#.....#',
+    '#..F..#..F...#..F..#',
     '#.....#..i...#..F..#',
-    '#.....#......#.....#',
-    '#..F..D......D..F..#',
-    '#.....#......#.....#',
-    '######........######',
-    '#............#.....#',
+    '#..F..#.F....#.....#',
+    '#..F..D...s..D.F.F.#', // central safe pocket s
+    '#..F..#......#..F..#',
+    '######...F....######',
+    '#..F.F.......#..F..#',
     '#....F..X....D.n.i.#',
-    '#............#.....#',
+    '#.F.....F.F..#..F..#',
     '####################'
   ];
 
@@ -419,35 +422,40 @@
   // a single 'M' marking the lone street vendor in this district. The user
   // explicitly wanted Lv11 to break the "enclosed building" pattern, so the
   // central plaza is wide-open with light cover from kiosks (single # blocks).
+  // Lv11 redesigned 2026-06-07 — the original was an empty mall of ###
+  // blocks. User feedback: 「オブジェクトも少なく単調」. Now packed with
+  // F decor (street furniture: benches, planters, trash, signs), an s
+  // safe pocket (bus stop cafe), more notes for lore, and a clearer
+  // walking path between buildings.
   var LV11_ROWS = [
     '################################',
-    '#P............................i#',
-    '#.............................##',
-    '#..####....####....####........#',
-    '#..####....####....####........#',
-    '#..####....####....####......w.#',
+    '#P..F........F........F........#', // sidewalk, scattered street decor
+    '#............F................i#',
+    '#..####.F..####...F..####.....F#', // building row 1
+    '#..####....####......####......#',
+    '#..####.F..####...F..####....w.#',
+    '#..F.........................F.#',
+    '#....F.n....F.....F...n.F......#',
+    '#..F.........#####.........F...#', // building row 2 (taller central)
+    '#............#####...........F.#',
+    '#....F.......#####.F......F....#',
     '#..............................#',
-    '#.....n........................#',
-    '#............#####.............#',
-    '#............#####.............#',
-    '#............#####.............#',
-    '#......................i.......#',
+    '#..####.F..####....####.F....i.#', // building row 3
     '#..####....####....####........#',
-    '#..####....####....####........#',
-    '#..####....####....####........#',
-    '#..............................#',
-    '#.....M........................#',
-    '#......................i.......#',
-    '#..####....####....####........#',
-    '#..####....####....####........#',
-    '#..####....####....####........#',
-    '#......n.......................#',
-    '#..............................#',
-    '#............#####.............#',
-    '#............#####.............#',
-    '#............#####.............#',
-    '#..............................#',
-    '#.................X............#',
+    '#..####.F..####....####...F....#',
+    '#..F....s.s....F...F.s.s...F...#', // bus stop cafe safe pockets
+    '#.....M..F..F.................F#', // shop merchant
+    '#..............F............i..#',
+    '#..####....####.F..####........#',
+    '#..####.F..####....####.F......#',
+    '#..####....####.F..####........#',
+    '#......n....F.....F....n.F.....#',
+    '#..F.............F............F#',
+    '#..F.........#####...........F.#', // building row 4
+    '#............#####.F...........#',
+    '#..F....F....#####.........F...#',
+    '#......F.....F....F....F.......#',
+    '#..F....F........X.....F....F..#',
     '################################'
   ];
 
@@ -480,30 +488,33 @@
 
   // ── LEVEL 7 — RUN FOR YOUR LIFE (chase corridor) ────────
   // Long narrow corridor with Hound pack chasing from spawn end
+  // Lv7 — THE INFINITE CORRIDOR. Repopulated with broken-floor F decor
+  // and an extra note + secret-doc spawn so the chase corridor doesn't
+  // feel like an empty pipe. User feedback: 「オブジェクトも少なく単調」
   var LV7_ROWS = [
     '########',
-    '#P.....#',
-    '#......#',
+    '#P.F...#',
+    '#.....F#',
     '#..F...#',
+    '#.F..F.#',
     '#......#',
-    '#......#',
-    '#......#',
-    '#....F.#',
-    '#......#',
-    '#......#',
-    '#.i....#',
-    '#......#',
-    '#......#',
-    '#..F...#',
-    '#......#',
-    '#......#',
-    '#......#',
+    '#..F.F.#',
+    '#.F..F.#',
+    '#...F..#',
+    '#.F....#',
+    '#.i..F.#',
+    '#...F..#',
+    '#.F....#',
+    '#..F..F#',
+    '#.F....#',
+    '#...F.F#',
+    '#.F.n..#',
     '#....S.#',
-    '#......#',
-    '#..n...#',
-    '#......#',
-    '#......#',
-    '#......#',
+    '#.F....#',
+    '#..n.F.#',
+    '#.F....#',
+    '#...F..#',
+    '#.F.F..#',
     '#......#',
     '#.....X#',
     '########'
@@ -3396,6 +3407,20 @@
       }
     }
 
+    // Per-difficulty spawn density. User request 2026-06-07:
+    // 「武器orアイテムの出現箇所をもう少し増やしてもいい。chaos難易度
+    //   だけ少ないようにする」.
+    // We treat every non-weapon item spot as eligible for a difficulty-
+    // gated drop chance. Chaos drops 30% of spots; easy keeps every spot.
+    // Weapon-only 'w' tiles always spawn (they are the level designer's
+    // promised drops — gating them would break the weapon budget logic).
+    var DIFF_SPAWN_KEEP = { easy: 1.00, normal: 1.00, hard: 0.85, chaos: 0.50 };
+    var keepChance = DIFF_SPAWN_KEEP[currentDifficulty] != null
+                   ? DIFF_SPAWN_KEEP[currentDifficulty] : 1.0;
+    // Skipped spots are kept aside so the required-items pass can still
+    // place flashlight / keycard / lockpick on chaos when most rolls are
+    // dropped.
+    var _skippedSpots = [];
     for (var i = 0; i < parsed.itemSpots.length; i++) {
       var spot = parsed.itemSpots[i];
       var key = gridKey(spot.gx, spot.gy);
@@ -3405,6 +3430,11 @@
       if (weaponSpotSet[key]) {
         itemId = biasedWeapons[Math.floor(Math.random() * biasedWeapons.length)];
       } else {
+        // Difficulty-gated drop: chaos = 50% kept, hard = 85%, normal/easy = 100%.
+        if (keepChance < 1.0 && Math.random() > keepChance) {
+          _skippedSpots.push({ key: key, gx: spot.gx, gy: spot.gy });
+          continue;
+        }
         itemId = pool[Math.floor(Math.random() * pool.length)];
       }
       pickupSpots[key] = itemId;
@@ -3429,33 +3459,49 @@
     };
     var required = LEVEL_REQUIRED_ITEMS[levelId];
     if (required && required.length) {
-      // Walkable item spot keys we haven't reserved as guaranteed weapon
-      // tiles (those are intentional weapon drops).
-      var nonWeaponKeys = [];
+      // Candidate spots: any non-weapon tile in pickupSpots PLUS any
+      // _skippedSpots that the difficulty-gate dropped. Skipped ones
+      // get re-activated for required items so even chaos can't lock
+      // the player out of the flashlight.
+      var candidateSpots = []; // {key, gx, gy}
       for (var kk in pickupSpots) {
         if (!Object.prototype.hasOwnProperty.call(pickupSpots, kk)) continue;
         if (weaponSpotSet[kk]) continue;
-        nonWeaponKeys.push(kk);
+        var rl = null;
+        for (var rli = 0; rli < pickupRenderList.length; rli++) {
+          if (pickupRenderList[rli].key === kk) { rl = pickupRenderList[rli]; break; }
+        }
+        if (rl) candidateSpots.push({ key: kk, gx: Math.floor(rl.wx / TS), gy: Math.floor(rl.wy / TS) });
+      }
+      for (var ssi = 0; ssi < _skippedSpots.length; ssi++) {
+        candidateSpots.push(_skippedSpots[ssi]);
       }
       for (var ri = 0; ri < required.length; ri++) {
         var reqId = required[ri];
-        // Already covered by a random roll?
         var have = false;
-        for (var pk in pickupSpots) {
-          if (pickupSpots[pk] === reqId) { have = true; break; }
-        }
+        for (var pk in pickupSpots) { if (pickupSpots[pk] === reqId) { have = true; break; } }
         if (have) continue;
-        // Already in player inventory from an earlier level? Skip.
         if ((player.inventory[reqId] || 0) > 0) continue;
-        // Force-assign: pick the first non-weapon spot we have available.
-        if (nonWeaponKeys.length > 0) {
-          var pickKey = nonWeaponKeys.shift();
-          pickupSpots[pickKey] = reqId;
-          for (var pri = 0; pri < pickupRenderList.length; pri++) {
-            if (pickupRenderList[pri].key === pickKey) {
-              pickupRenderList[pri].itemId = reqId;
-              break;
+        if (candidateSpots.length > 0) {
+          var c = candidateSpots.shift();
+          if (pickupSpots[c.key]) {
+            // Existing spot — just override the itemId and update render list.
+            pickupSpots[c.key] = reqId;
+            for (var pri = 0; pri < pickupRenderList.length; pri++) {
+              if (pickupRenderList[pri].key === c.key) {
+                pickupRenderList[pri].itemId = reqId;
+                break;
+              }
             }
+          } else {
+            // Was skipped by difficulty gate — register a fresh render entry.
+            pickupSpots[c.key] = reqId;
+            pickupRenderList.push({
+              key: c.key,
+              wx: c.gx * TS + TS / 2,
+              wy: c.gy * TS + TS / 2,
+              itemId: reqId
+            });
           }
         }
       }
