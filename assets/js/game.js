@@ -5008,6 +5008,18 @@
       }
     }
 
+    // Level-specific ambient events — every ~8s rolls, with a 14s cooldown
+    // inside maybeFireLevelAmbientEvent so each fires roughly once per 20s.
+    if (typeof _isGamePaused !== 'function' || !_isGamePaused()) {
+      if (!_inCinematic && !player.inSafeZone) {
+        _levelEventRollT = (_levelEventRollT || 0) - dt;
+        if (_levelEventRollT <= 0) {
+          _levelEventRollT = 8;
+          if (Math.random() < 0.5) maybeFireLevelAmbientEvent();
+        }
+      }
+    }
+
     // Ambient micro-events — break the monotony of long traversals with
     // scripted sensory beats. Rolled at ~5s intervals, never within 25s of
     // the previous beat so they stay surprising. Skipped during cutscenes,
@@ -7378,6 +7390,113 @@
   // Pick and execute one random ambient micro-event. Sensory beats only —
   // never hurts the player, just thickens the atmosphere. Some events are
   // tuned to fire more often in specific levels.
+  // ── LEVEL-SPECIFIC AMBIENT EVENTS ─────────────────────────
+  // Each level rolls its own atmospheric beat every ~15s. Functions are
+  // intentionally lightweight — small SE + brief hallu-text or shake.
+  var LEVEL_AMBIENT_EVENTS = {
+    0: [
+      function () { try { GameEngine.playSound('fluorescent'); } catch (e) {} },
+      function () {
+        var hl = el('hallucinationLayer');
+        if (hl) {
+          hl.style.display = 'block';
+          var prev = hl.style.opacity;
+          hl.style.opacity = '0.85'; setTimeout(function () { if (hl) hl.style.opacity = prev || ''; }, 110);
+        }
+      }
+    ],
+    1: [
+      function () { try { GameEngine.playSound('footstep'); } catch (e) {} },
+      function () { try { GameEngine.playSound('pipe_creak'); } catch (e) {} }
+    ],
+    2: [
+      function () { try { GameEngine.playSound('pipe_drip'); } catch (e) {} },
+      function () { try { GameEngine.playSound('pipe_creak'); } catch (e) {} }
+    ],
+    3: [
+      function () {
+        try { GameEngine.playSound('static'); } catch (e) {}
+        GameEngine.shakeScreen(3, 0.1);
+      },
+      function () { try { GameEngine.playSound('clock_tick'); } catch (e) {} }
+    ],
+    4: [
+      function () { try { GameEngine.playSound('phone'); } catch (e) {} },
+      function () { try { GameEngine.playSound('clock_tick'); } catch (e) {} },
+      function () { try { GameEngine.playSound('paper'); } catch (e) {} }
+    ],
+    5: [
+      function () { try { GameEngine.playSound('glass_rattle'); } catch (e) {} },
+      function () { try { GameEngine.playSound('phone'); } catch (e) {} },
+      function () { try { GameEngine.playSound('elevator_hum'); } catch (e) {} }
+    ],
+    6: [
+      function () {
+        var hl = el('hallucinationLayer');
+        if (hl) {
+          hl.style.display = 'block';
+          hl.style.opacity = '0.6'; setTimeout(function () { if (hl) hl.style.opacity = '0'; }, 90);
+        }
+        try { GameEngine.playSound('static'); } catch (e) {}
+      },
+      function () { try { GameEngine.playSound('breath'); } catch (e) {} }
+    ],
+    7: [
+      function () { try { GameEngine.playSound('wind'); } catch (e) {} },
+      function () { try { GameEngine.playSound('whisper'); } catch (e) {} }
+    ],
+    8: [
+      function () { try { GameEngine.playSound('breath'); } catch (e) {} },
+      function () { try { GameEngine.playSound('whisper'); } catch (e) {} }
+    ],
+    9: [
+      function () {
+        try { GameEngine.playSound('thunder'); } catch (e) {}
+        GameEngine.shakeScreen(10, 0.4);
+      },
+      function () { try { _uncannySpeak('まだ、いるよ。'); } catch (e) {} }
+    ],
+    11: [
+      function () { try { GameEngine.playSound('clock_tick'); } catch (e) {} },
+      function () { try { GameEngine.playSound('paper'); } catch (e) {} }
+    ],
+    12: [
+      function () { try { GameEngine.playSound('stinger'); } catch (e) {} },
+      function () {
+        var hl = el('hallucinationLayer');
+        if (hl) {
+          hl.style.display = 'block';
+          hl.style.background = 'rgba(200, 80, 160, 0.18)';
+          setTimeout(function () { if (hl) hl.style.background = ''; }, 220);
+        }
+      }
+    ],
+    13: [
+      function () { try { GameEngine.playSound('paper'); } catch (e) {} },
+      function () { try { GameEngine.playSound('clock_tick'); } catch (e) {} },
+      function () { try { GameEngine.playSound('footstep'); } catch (e) {} }
+    ],
+    14: [
+      function () { try { GameEngine.playSound('pipe_drip'); } catch (e) {} },
+      function () { try { GameEngine.playSound('breath'); } catch (e) {} }
+    ],
+    15: [
+      function () { try { GameEngine.playSound('wind'); } catch (e) {} },
+      function () { try { GameEngine.playSound('whisper'); } catch (e) {} }
+    ]
+  };
+  var _levelEventRollT = 8;
+  var _lastLevelEventAt = 0;
+  function maybeFireLevelAmbientEvent() {
+    var bank = LEVEL_AMBIENT_EVENTS[currentLevel];
+    if (!bank || !bank.length) return;
+    var now = performance.now();
+    if (now - _lastLevelEventAt < 14000) return; // ~14s cooldown
+    _lastLevelEventAt = now;
+    var fn = bank[Math.floor(Math.random() * bank.length)];
+    try { fn(); } catch (e) {}
+  }
+
   function fireAmbientMicroEvent() {
     var pool = [
       'distant_footsteps', 'distant_door_slam', 'light_flicker',
