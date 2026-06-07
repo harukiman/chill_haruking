@@ -4510,15 +4510,14 @@
         this.fadeScreen(fadeAlpha);
       }
 
-      // Flash image — mosaic Haruki's face per user request 2026-06-07.
-      // ctx.filter blur emulates the SVG haruki-mosaic CSS filter for
-      // the canvas render path.
+      // Flash image — Haruki's face heavily mosaicked per user request:
+      // 顔が判別できないぐらいに. Blur bumped 6 → 18, contrast 1.25 → 1.4.
       if (flashImg) {
         var fiSrc = flashImg.src || '';
         var isHarukiFlash = fiSrc.indexOf('haruki') >= 0;
         if (isHarukiFlash) {
           ctx.save();
-          ctx.filter = 'blur(6px) contrast(1.25)';
+          ctx.filter = 'blur(18px) contrast(1.4) saturate(1.4)';
           ctx.drawImage(flashImg, 0, 0, this.width, this.height);
           ctx.restore();
         } else {

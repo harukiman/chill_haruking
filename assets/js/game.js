@@ -10613,10 +10613,11 @@
     if (cached) return cached;
     var w = srcImg.naturalWidth;
     var h = srcImg.naturalHeight;
-    // Mosaic block size in source-pixel units. ~16 wide blocks.
-    var blockCount = 16;
-    var smallW = Math.max(4, Math.round(blockCount));
-    var smallH = Math.max(4, Math.round(blockCount * (h / w)));
+    // Mosaic block count — bumped to 8 wide blocks per user request
+    // 2026-06-07 (顔が判別できないぐらいに). Lower count = bigger blocks.
+    var blockCount = 8;
+    var smallW = Math.max(3, Math.round(blockCount));
+    var smallH = Math.max(3, Math.round(blockCount * (h / w)));
     var off1 = document.createElement('canvas');
     off1.width = smallW; off1.height = smallH;
     var c1 = off1.getContext('2d');
