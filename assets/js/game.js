@@ -6087,14 +6087,20 @@
         }
       }
     }
+    // User grain pref scales the SAN-modulated grain. 0 = SAN drives
+    // freely, slider value 0-100 scales the BASE so 0% kills the grain
+    // and 100% restores the original strength. Without this scale, the
+    // phone-slider value got obliterated every frame.
+    var userGrainPct = 1.0;
+    try { userGrainPct = parseInt(localStorage.getItem('bk_grain') || '100', 10) / 100; } catch (e) {}
     if (gfxQuality === 'low') {
       GameEngine.vignetteIntensity = 0.15 + (1 - sanRatio) * 0.15;
       GameEngine.chromaticLevel = 0;
-      GameEngine.grainIntensity = 0.05;
+      GameEngine.grainIntensity = 0.05 * userGrainPct;
     } else {
       GameEngine.vignetteIntensity = (theme.vignette || 0.3) + (1 - sanRatio) * 0.4 + harukiNear * 0.3;
       GameEngine.chromaticLevel = (theme.chromatic || 0) + (1 - sanRatio) * 0.4 + harukiNear * 0.4;
-      GameEngine.grainIntensity = (theme.grain || 0.3) + (1 - sanRatio) * 0.2 + harukiNear * 0.2;
+      GameEngine.grainIntensity = ((theme.grain || 0.3) + (1 - sanRatio) * 0.2 + harukiNear * 0.2) * userGrainPct;
     }
 
     // SAN whisper on low SAN
