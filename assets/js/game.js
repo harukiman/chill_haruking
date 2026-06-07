@@ -8126,9 +8126,16 @@
       player._itemsUsedThisLevel = (player._itemsUsedThisLevel || 0) + 1;
       if (!player._itemsUsedAllRun) player._itemsUsedAllRun = {};
       player._itemsUsedAllRun[itemId] = true;
-      if (player._itemsUsedAllRun.flare && player._itemsUsedAllRun.mirror) {
-        unlockAchievement('use_all_weapons');
+      // 「全武器使用」 — was incorrectly checking only flare && mirror.
+      // Now requires every base weapon to have been used in this run.
+      // Unique weapons stay optional since they're rare and not always
+      // obtainable in a given run.
+      var REQUIRED_WEAPONS = ['pistol', 'shotgun', 'revolver', 'katana', 'flare', 'mirror'];
+      var allUsed = true;
+      for (var rwi = 0; rwi < REQUIRED_WEAPONS.length; rwi++) {
+        if (!player._itemsUsedAllRun[REQUIRED_WEAPONS[rwi]]) { allUsed = false; break; }
       }
+      if (allUsed) unlockAchievement('use_all_weapons');
     }
     if (navigator.vibrate) navigator.vibrate(30);
     closeItemUseModal();
