@@ -2148,6 +2148,12 @@
         case 'key_unlock':
           this._playKeyUnlock(now);
           break;
+        case 'empty_click':
+          this._playEmptyClick(now);
+          break;
+        case 'weapon_snap':
+          this._playWeaponSnap(now);
+          break;
         // S4: Horror stingers and whispers
         case 'stinger':
           this._playStinger(now);
@@ -3290,6 +3296,67 @@
         src.start(t);
       }
     },
+    _playEmptyClick: function (now) {
+      // Dry-fire / out-of-ammo click — sharp, mechanical, metallic.
+      // Two close-spaced sub-clicks so it reads as "trigger + hammer fall".
+      var dest = seGain || masterGain;
+      function oneClick(t0, freq, gainAmt) {
+        var sr = audioCtx.sampleRate;
+        var bufLen = (sr * 0.04) | 0;
+        var buf = audioCtx.createBuffer(1, bufLen, sr);
+        var d = buf.getChannelData(0);
+        for (var k = 0; k < bufLen; k++) d[k] = (Math.random() * 2 - 1);
+        var src = audioCtx.createBufferSource();
+        src.buffer = buf;
+        var bp = audioCtx.createBiquadFilter();
+        bp.type = 'bandpass';
+        bp.frequency.value = freq;
+        bp.Q.value = 6;
+        var g = audioCtx.createGain();
+        g.gain.setValueAtTime(0.001, t0);
+        g.gain.linearRampToValueAtTime(gainAmt, t0 + 0.004);
+        g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.045);
+        src.connect(bp); bp.connect(g); g.connect(dest);
+        src.start(t0);
+      }
+      oneClick(now, 2200, 0.45);
+      oneClick(now + 0.06, 1700, 0.32);
+    },
+
+    _playWeaponSnap: function (now) {
+      // Blade snap / break — a low crack followed by a high splinter ring.
+      var dest = seGain || masterGain;
+      // Low crack: short tone burst
+      var crack = audioCtx.createOscillator();
+      crack.type = 'square';
+      crack.frequency.setValueAtTime(180, now);
+      crack.frequency.exponentialRampToValueAtTime(60, now + 0.12);
+      var crackG = audioCtx.createGain();
+      crackG.gain.setValueAtTime(0.001, now);
+      crackG.gain.linearRampToValueAtTime(0.35, now + 0.005);
+      crackG.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+      crack.connect(crackG); crackG.connect(dest);
+      crack.start(now); crack.stop(now + 0.2);
+      // High splinter: brief noise burst with band-pass
+      var sr = audioCtx.sampleRate;
+      var nLen = (sr * 0.18) | 0;
+      var nBuf = audioCtx.createBuffer(1, nLen, sr);
+      var nd = nBuf.getChannelData(0);
+      for (var i = 0; i < nLen; i++) nd[i] = (Math.random() * 2 - 1);
+      var noise = audioCtx.createBufferSource();
+      noise.buffer = nBuf;
+      var bp = audioCtx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = 3800;
+      bp.Q.value = 4;
+      var nG = audioCtx.createGain();
+      nG.gain.setValueAtTime(0.001, now + 0.02);
+      nG.gain.linearRampToValueAtTime(0.22, now + 0.025);
+      nG.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+      noise.connect(bp); bp.connect(nG); nG.connect(dest);
+      noise.start(now + 0.02);
+    },
+
     _playUnwrap: function (now) {
       // 「カサカサ」 — crinkle / wrapper sound
       var dest = seGain || masterGain;

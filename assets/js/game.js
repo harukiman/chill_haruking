@@ -1930,7 +1930,7 @@
   };
 
   ITEMS.revolver = {
-    id: 'revolver', name: 'リボルバー', icon: '🎯',
+    id: 'revolver', name: 'リボルバー', icon: '🔫',
     desc: '長距離・高貫通。6発まで装填、命中力高い。',
     category: 'weapon',
     effect: function (p) {
@@ -2010,7 +2010,7 @@
     }
   };
   ITEMS.revenant_blade = {
-    id: 'revenant_blade', name: '亡者の刃 (ユニーク武器)', icon: '🩸',
+    id: 'revenant_blade', name: '亡者の刃 (ユニーク武器)', icon: '🗡',
     desc: 'ユニーク武器。命中時 HP +12 回復。中距離扇形。空振りは消費しない。',
     category: 'weapon',
     effect: function (p) {
@@ -7362,9 +7362,24 @@
     var it = ITEMS[itemId];
     if (!it) { closeItemUseModal(); return; }
     // 0-ammo weapons can't be fired. Modal stays open so the player can pick
-    // a different action (or close manually).
+    // a different action (or close manually). Play a category-appropriate
+    // SE (user request: 「弾切れの時は相応の音を出す。刀系も折れた音
+    // などを出す」).
     if (it.category === 'weapon' && (player.inventory[itemId] || 0) <= 0) {
-      toast(it.name + ': 弾切れ (×0)');
+      var GUNS = { pistol:1, shotgun:1, revolver:1, void_grenade:1, flare:1 };
+      var BLADES = { katana:1, architect_blade:1, revenant_blade:1 };
+      var MIRRORS = { mirror:1, mirror_shard:1 };
+      if (audioInitialized) {
+        try {
+          if (GUNS[itemId])         GameEngine.playSound('empty_click');
+          else if (BLADES[itemId])  GameEngine.playSound('weapon_snap');
+          else if (MIRRORS[itemId]) GameEngine.playSound('glass_rattle');
+          else                       GameEngine.playSound('empty_click');
+        } catch (e) {}
+      }
+      var label = GUNS[itemId] ? '弾切れ' : BLADES[itemId] ? '折れた' :
+                  MIRRORS[itemId] ? '砕けた' : '使用不可';
+      toast(it.name + ': ' + label + ' (×0)');
       return;
     }
     // Guard against wasting items where they have no effect
@@ -8219,18 +8234,18 @@
   // weapon auto-deletes from inventory but the D-pad binding stays bound at
   // ×0 so the player can re-bind on re-pickup.
   var WEAPON_AMMO_PICKUP = {
-    pistol:          [2, 4],   // 2–4 shots
-    shotgun:         [1, 2],   // 1–2 shells
-    revolver:        [1, 3],
-    katana:          [3, 5],
+    pistol:          [4, 8],   // 4–8 shots (user request 2026-06-07)
+    shotgun:         [2, 4],   // shells
+    revolver:        [3, 6],
+    katana:          [4, 7],
     flare:           [1, 1],   // single use
     mirror:          [1, 1],   // single use
     soul_lantern:    [1, 1],
     haruki_charm:    [1, 1],
-    architect_blade: [2, 3],
+    architect_blade: [2, 4],
     siren_whistle:   [1, 1],
     mirror_shard:    [1, 1],
-    revenant_blade:  [2, 4],
+    revenant_blade:  [3, 5],
     void_grenade:    [1, 2]
   };
   function _rollWeaponPickupCount(itemId) {
