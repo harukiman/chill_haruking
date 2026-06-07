@@ -20,7 +20,7 @@
   <meta name="twitter:title" content="THE BACKROOMS — featuring HARUKI">
   <meta name="twitter:description" content="一人称モバイル探索ホラー。Level 0 から no-clip で階層を降下。壁の向こうにカレが待つ。">
   <title>THE BACKROOMS</title>
-  <link rel="stylesheet" href="assets/css/game.css?v=218">
+  <link rel="stylesheet" href="assets/css/game.css?v=219">
 </head>
 <body oncontextmenu="return false;">
 
@@ -100,6 +100,14 @@
     </div>
     <div class="vital-coin-row" id="vitalCoinRow"><span class="vital-coin-icon">🪙</span><span id="vitalCoinNum">0</span></div>
     <div class="vital-charm-row" id="vitalCharmRow" style="display:none;"><span class="vital-charm-icon">♾</span><span>永遠の護符</span></div>
+  </div>
+
+  <!-- Reticle / crosshair — fixed center of viewport, points where the
+       weapon attack cone is centered. -->
+  <div id="reticle" class="reticle" aria-hidden="true">
+    <div class="reticle-dot"></div>
+    <div class="reticle-cross reticle-cross-h"></div>
+    <div class="reticle-cross reticle-cross-v"></div>
   </div>
 
   <!-- Title Screen Overlay -->
@@ -1015,8 +1023,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="assets/js/engine.js?v=218"></script>
-  <script src="assets/js/game.js?v=218"></script>
+  <script src="assets/js/engine.js?v=219"></script>
+  <script src="assets/js/game.js?v=219"></script>
 
   <!-- POST-LOAD VERIFICATION + DIRECT BINDING FALLBACK
        After game.js IIFE runs, this script confirms __titleAction is the real one.

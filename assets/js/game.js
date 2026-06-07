@@ -4606,6 +4606,7 @@
   function startPlaying() {
     state = ST.PLAYING;
     updateChaosLayer();
+    var rt = el('reticle'); if (rt) rt.classList.add('show');
     // Give the player a brief invulnerability window to read the surroundings.
     var graceMs = getSpawnGraceMs(currentLevel);
     spawnGraceUntil = performance.now() + graceMs;
@@ -9767,6 +9768,7 @@
     if (state === ST.DEAD || state === ST.ENDED) return;
     state = ST.DEAD;
     updateChaosLayer();
+    var rtD = el('reticle'); if (rtD) rtD.classList.remove('show');
     stats.totalDeaths++;
     saveStats();
     el('vitalBars').classList.remove('show');
@@ -11118,6 +11120,7 @@
   function returnToTitle() {
     state = ST.TITLE;
     updateChaosLayer();
+    var rt2 = el('reticle'); if (rt2) rt2.classList.remove('show');
     gameMode = 'normal';
     GameEngine.stopAll();
     GameEngine.fadeFromBlack(500);

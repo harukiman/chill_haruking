@@ -64,6 +64,49 @@ body {
    eats the touch before the joystick handler sees it ─ symptom: 「左上に
    常に入力が入る / 勝手に移動」. */
 #vitalBars * { pointer-events: none; }
+/* Reticle / crosshair — center of viewport. Center dot + thin
+   horizontal/vertical hairlines. Default hidden; revealed during
+   ST.PLAYING via JS. pointer-events: none so it never intercepts taps. */
+.reticle {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 26px;
+  height: 26px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 23; /* below chaos overlay (24), well above the canvas */
+  display: none;
+  opacity: 0.85;
+  mix-blend-mode: screen;
+}
+.reticle.show { display: block; }
+.reticle-dot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 3px;
+  height: 3px;
+  background: #f0dc8a;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 4px rgba(240, 220, 138, 0.6);
+}
+.reticle-cross {
+  position: absolute;
+  background: rgba(240, 220, 138, 0.75);
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.7);
+}
+.reticle-cross-h {
+  left: 50%; top: 50%;
+  width: 18px; height: 1.5px;
+  transform: translate(-50%, -50%);
+}
+.reticle-cross-v {
+  left: 50%; top: 50%;
+  width: 1.5px; height: 18px;
+  transform: translate(-50%, -50%);
+}
 #vitalBars.show { display: flex; }
 
 .vital-row {
