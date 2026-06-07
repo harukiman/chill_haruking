@@ -4658,11 +4658,25 @@
 
     var inp = GameEngine.input;
     var sens = 2.5 * (parseInt(localStorage.getItem('bk_sens') || '100', 10) / 100);
+    // View smoothing: 0 = instant (default / stiff), 100 = heavy easing.
+    // Stored 0-100; converted to a lerp factor where higher = MORE smoothing.
+    var smoothPct = parseInt(localStorage.getItem('bk_view_smooth') || '0', 10);
+    var smoothFactor = Math.max(0, Math.min(0.85, smoothPct / 100 * 0.85));
     var look = inp.lookDx || 0;
-    player.angle += look * sens * dt;
+    if (smoothFactor > 0) {
+      // Low-pass filter: accumulate target deltas in a buffer that decays.
+      player._lookBuf = (player._lookBuf || 0) * smoothFactor + (look * sens * dt) * (1 - smoothFactor);
+      player.angle += player._lookBuf;
+    } else {
+      player.angle += look * sens * dt;
+    }
     // Swipe-impulse look: consume accumulated swipe delta this frame
     if (inp.lookImpulse) {
-      player.angle += inp.lookImpulse * sens;
+      if (smoothFactor > 0) {
+        player._lookBuf = (player._lookBuf || 0) * smoothFactor + (inp.lookImpulse * sens) * (1 - smoothFactor);
+      } else {
+        player.angle += inp.lookImpulse * sens;
+      }
       inp.lookImpulse = 0;
     }
 
@@ -11331,6 +11345,8 @@
       function (x) { try { GameEngine.setSeVolume(x / 100); } catch (e) {} });
     bindTitleSetting('tsSens', 'tsSensVal', 'bk_sens',
       function (x) { return (x / 100).toFixed(1) + '×'; });
+    bindTitleSetting('tsViewSmooth', 'tsViewSmoothVal', 'bk_view_smooth',
+      function (x) { return x + (x == 0 ? ' (硬)' : ''); });
     bindTitleSetting('tsGrain', 'tsGrainVal', 'bk_grain_level',
       function (x) { return ['オフ', '中', '高'][parseInt(x, 10)] || '中'; },
       function (x) {
