@@ -1193,6 +1193,7 @@
           if (d < stunRange) {
             e.stunned = true;
             e.stunTimer = 4;
+            e._lastHitAt = performance.now(); // sprite hit-flash
             stunned++;
             if (e.type === 'boss' || e.type === 'haruki_boss') {
               e.bossHp = (e.bossHp !== undefined ? e.bossHp : 200) - 50;
@@ -1227,12 +1228,15 @@
           if (!e.alive) continue;
           if (e.type === 'skinstealer') {
             e.alive = false;
+            e.deathAt = performance.now(); // pick up the death fade
             reflected++;
           } else if (e.type === 'boss' || e.type === 'haruki_boss') {
             var dx = e.x - p.x, dy = e.y - p.y;
             var d = Math.sqrt(dx * dx + dy * dy);
             if (d < 8 * TS) {
               e.bossHp = (e.bossHp !== undefined ? e.bossHp : 200) - 100;
+              e._lastHitAt = performance.now();
+              e._hitWasCrit = true; // mirror vs boss is a designated weakness
               bossDmg++;
               if (e.bossHp <= 0) {
                 e.alive = false;
@@ -2083,9 +2087,11 @@
         var vdx = ve.x - p.x, vdy = ve.y - p.y;
         var vd = Math.sqrt(vdx * vdx + vdy * vdy);
         if (vd < 3 * TS) {
+          ve._lastHitAt = performance.now();
+          ve._hitWasCrit = true; // explosion is always a crit-style impact
           if (ve.type === 'boss' || ve.type === 'haruki_boss') {
             ve.bossHp = (ve.bossHp !== undefined ? ve.bossHp : 200) - 70;
-            if (ve.bossHp <= 0) { ve.alive = false; killed++; }
+            if (ve.bossHp <= 0) { ve.alive = false; ve.deathAt = performance.now(); killed++; }
           } else {
             ve.hp = (ve.hp !== undefined ? ve.hp : 100) - 120;
             if (ve.hp <= 0) { ve.alive = false; ve.deathAt = performance.now(); killed++; }
