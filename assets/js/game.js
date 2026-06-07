@@ -342,8 +342,8 @@
     '#....####D####....####D####..#',
     '#....#........#...#........#.#',
     '#....#...i....#...#...n....#.#',
-    '#....#........D...D....s....#',
-    '#....#...F....#...#.........#',
+    '#....#........D...D....s....##',
+    '#....#...F....#...#.........##',
     '#....####D####....####D####..#',
     '#............................#',
     '####D######D######D######D####',
@@ -4643,7 +4643,11 @@
     if (!currentMap) return false;
     if (gx < 0 || gy < 0 || gx >= currentMap.width || gy >= currentMap.height) return false;
     var t = currentMap.tiles[gy][gx];
-    if (t === 1 || t === 4 || t === 8 || t === 9) return false;
+    // Type 4 (F tile) is decorative floor — should be walkable. Previously
+    // returned false here which made LV1/14/15 etc. partially unreachable
+    // ("到達不可能な領域がある"). Walls (1), hives (8), pump rooms (9) stay
+    // non-walkable.
+    if (t === 1 || t === 8 || t === 9) return false;
     if (t === 2) {
       var ds = doorStates[gridKey(gx, gy)];
       if (ds) return ds.open;
