@@ -4642,8 +4642,11 @@
         this._drawChromaticAberration(ctx, this.chromaticLevel);
       }
 
-      // V6: Scanlines (subtle)
-      this._drawScanlines(ctx);
+      // V6: Scanlines (subtle) — auto-skip if FPS sags. 150+ fillRect
+      // calls per frame at h=600 — non-trivial.
+      if (this.postFxEnabled && (this._fpsEma === undefined || this._fpsEma >= 40)) {
+        this._drawScanlines(ctx);
+      }
 
       // Dialogue
       this._drawDialogue(ctx);
