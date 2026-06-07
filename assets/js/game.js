@@ -4467,8 +4467,9 @@
     lrOverlay.style.pointerEvents = 'auto';
     lrOverlay.addEventListener('click', advance);
     lrOverlay.addEventListener('touchstart', advance);
-    // Safety net: auto-advance after 60s
-    setTimeout(function () { canAdvance = true; advance(); }, 60000);
+    // Safety net: auto-advance after 8s (was 60s — caused users to think
+    // they were stuck after the Haruki boss cutscene if they didn't tap).
+    setTimeout(function () { canAdvance = true; advance(); }, 8000);
   }
 
   function getEntityColor(type) {
@@ -7523,16 +7524,42 @@
   }
 
   function playBossIntroSequence() {
-    // Sequence: silence → deep rumble → red flash → encounter cinematic
+    // Sequence: silence → deep rumble → red flash → encounter cinematic.
+    // Bug fix (2026-06-07): user reported "ムービー後動けない" — earlier
+    // version used overlapping setTimeout chains with no tap-to-close and
+    // no defensive _inCinematic clear. Now there is a single finish()
+    // path that always clears _inCinematic, hides the overlay, restores
+    // ambient/BGM, and removes its own tap handler. Tap or wait 7500ms.
     _inCinematic = true;
     if (audioInitialized) {
       GameEngine.stopAll();
       GameEngine.playSound('thunder');
     }
-    // Phase 1: 1.5s silent with red tint
     GameEngine.redFlash();
-    setTimeout(function () {
-      // Phase 2: stinger + heavy shake
+    var encOverlay = el('encounterCinematic');
+    var done = false;
+    var timers = [];
+    function later(ms, fn) {
+      timers.push(setTimeout(function () { if (!done) fn(); }, ms));
+    }
+    function finish() {
+      if (done) return;
+      done = true;
+      for (var ti = 0; ti < timers.length; ti++) clearTimeout(timers[ti]);
+      try { hideOverlay('encounterCinematic'); } catch (e) {}
+      _inCinematic = false;
+      if (encOverlay) {
+        encOverlay.style.pointerEvents = 'none';
+        try { encOverlay.removeEventListener('click', finish); } catch (e) {}
+        try { encOverlay.removeEventListener('touchstart', finish); } catch (e) {}
+      }
+      try {
+        var theme = THEMES[currentLevelDef.theme];
+        if (theme && theme.ambientLoop && audioInitialized) GameEngine.startLoop(theme.ambientLoop);
+        if (theme && theme.bgmLoop && audioInitialized) GameEngine.startLoop(theme.bgmLoop);
+      } catch (e) {}
+    }
+    later(1500, function () {
       if (audioInitialized) {
         GameEngine.playSound('stinger');
         GameEngine.playSound('scream');
@@ -7540,24 +7567,22 @@
       GameEngine.shakeScreen(25, 1.5);
       GameEngine.staticEffect(0.7);
       setTimeout(function () { GameEngine.staticEffect(0); }, 1200);
-    }, 1500);
-    // Phase 3: encounter cinematic (using existing system)
-    setTimeout(function () {
-      _inCinematic = false;
+    });
+    later(3200, function () {
+      _inCinematic = false; // allow input during the read-the-intro card
       var intro = ENTITY_INTROS.boss;
-      el('encounterShape').textContent = '👑';
-      el('encounterName').textContent = intro.name;
-      el('encounterDesc').textContent = intro.desc + '\n\n— 用意できたら扉を探せ。';
+      try { el('encounterShape').textContent = '👑'; } catch (e) {}
+      try { el('encounterName').textContent = intro.name; } catch (e) {}
+      try { el('encounterDesc').textContent = intro.desc + '\n\n[ 画面をタップして閉じる ]'; } catch (e) {}
       showOverlay('encounterCinematic');
+      if (encOverlay) {
+        encOverlay.style.pointerEvents = 'auto';
+        encOverlay.addEventListener('click', finish);
+        encOverlay.addEventListener('touchstart', finish);
+      }
       if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 200]);
-      setTimeout(function () {
-        hideOverlay('encounterCinematic');
-        // Resume ambient/BGM
-        var theme = THEMES[currentLevelDef.theme];
-        if (theme.ambientLoop && audioInitialized) GameEngine.startLoop(theme.ambientLoop);
-        if (theme.bgmLoop && audioInitialized) GameEngine.startLoop(theme.bgmLoop);
-      }, 4500);
-    }, 3200);
+    });
+    later(7500, finish); // hard auto-close (down from 4500 + no fallback)
   }
 
   function playEntityDeathScene(killerType) {
@@ -11285,12 +11310,12 @@
       }
     } catch (e) {}
     if (!justDied) return;
-    var halfHp  = Math.round(player.hpMax  * 0.5);
-    var halfSan = Math.round(player.sanMax * 0.5);
-    var halfSt  = Math.round(player.stamMax * 0.5);
-    player.hp   = Math.min(player.hp,   halfHp);
-    player.san  = Math.min(player.san,  halfSan);
-    player.stam = Math.min(player.stam, halfSt);
+    // User intent: "hp,sanは最大値の半分からスタート" — assign exactly half
+    // (previously Math.min(current, half) could leave the player BELOW half
+    //  if autosave caught them already wounded, which violated the spec).
+    player.hp   = Math.round(player.hpMax  * 0.5);
+    player.san  = Math.round(player.sanMax * 0.5);
+    player.stam = Math.round(player.stamMax * 0.5);
     toast('— 再起。半身で立ち上がる。');
   }
 
