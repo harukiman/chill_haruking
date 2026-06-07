@@ -9792,6 +9792,36 @@
       if (readNotesLvl && readNotesLvl[nrl.key]) continue;
       drawWorldPickup(ctx, nrl.wx, nrl.wy, glowPhase + 1, '#5a82c8', '📄', null);
     }
+    // Shop merchant marker — visible glowing icon so the player can find
+    // the vendor on Lv11 / hotel / etc instead of brute-force scanning floor.
+    if (currentMap.shopSpots && currentMap.shopSpots.length) {
+      for (var shi = 0; shi < currentMap.shopSpots.length; shi++) {
+        var ssp = currentMap.shopSpots[shi];
+        var swx = ssp.gx * TS + TS / 2;
+        var swy = ssp.gy * TS + TS / 2;
+        drawWorldPickup(ctx, swx, swy, glowPhase + 0.5, '#f0c850', '🛒', null);
+      }
+    }
+    // Altar marker (Lv12+) — purple ring, hidden after first use this run.
+    if (currentMap.altarSpots && currentMap.altarSpots.length && currentLevel >= 12) {
+      for (var ali2 = 0; ali2 < currentMap.altarSpots.length; ali2++) {
+        var alt2 = currentMap.altarSpots[ali2];
+        if (alt2._used) continue;
+        var awx = alt2.gx * TS + TS / 2;
+        var awy = alt2.gy * TS + TS / 2;
+        drawWorldPickup(ctx, awx, awy, glowPhase + 1.5, '#c060f0', '⛩', null);
+      }
+    }
+    // Secret doc marker — gold scroll. Each spot disappears after pickup
+    // because pickHandler splices the entry out of secretSpots.
+    if (currentMap.secretSpots && currentMap.secretSpots.length) {
+      for (var sdi = 0; sdi < currentMap.secretSpots.length; sdi++) {
+        var sds = currentMap.secretSpots[sdi];
+        var sdwx = sds.gx * TS + TS / 2;
+        var sdwy = sds.gy * TS + TS / 2;
+        drawWorldPickup(ctx, sdwx, sdwy, glowPhase + 2.5, '#f0a040', '📜', null);
+      }
+    }
     // No-clip exit (large beam)
     if (currentMap.noclipExits) {
       for (var ei = 0; ei < currentMap.noclipExits.length; ei++) {
