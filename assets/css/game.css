@@ -3494,11 +3494,14 @@ button {
   margin: 0 auto 8px;
 }
 .item-use-icon {
-  font-size: 64px;
+  font-size: 48px;
   text-align: center;
   margin: 4px 0;
-  filter: drop-shadow(0 0 16px rgba(212, 179, 64, 0.5));
+  filter: drop-shadow(0 0 14px rgba(212, 179, 64, 0.45));
   line-height: 1;
+}
+@media (max-width: 520px) {
+  .item-use-icon { font-size: 38px; }
 }
 .item-use-name {
   font-family: 'Times New Roman', serif;
