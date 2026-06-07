@@ -8387,13 +8387,15 @@
       var mgId = _pickMinigameForSafeZone(currentLevel, gx, gy);
       if (mgId) {
         var safeKey = currentLevel + '_' + gridKey(gx, gy);
-        // Persistent per-spot lock — single use ever across all runs.
-        if (mgPlayedPersistent[safeKey] || mgPlayedAt[safeKey]) {
-          toast('このセーフエリアは利用済み');
+        // Per-run lock only (was "single use ever" — user report
+        // 2026-06-08「レベル〇のミニゲームが消えている」 was caused
+        // by the cross-run lock from earlier persistent play).
+        // mgPlayedAt resets at startNewGame/Endless/FreeRoam, so each
+        // new run gets fresh minigames at every safe zone.
+        if (mgPlayedAt[safeKey]) {
+          toast('このセーフエリアは利用済み (この run)');
         } else {
           mgPlayedAt[safeKey] = true;
-          mgPlayedPersistent[safeKey] = true;
-          _saveMgPlayed();
           openMiniGame(mgId);
         }
         return;
@@ -11179,8 +11181,9 @@
     else if (here === 11) {
       var safeKey2 = currentLevel + '_' + key;
       var poolHere = LEVEL_MINIGAME_POOLS[currentLevel];
-      if (poolHere && poolHere.length &&
-          !mgPlayedPersistent[safeKey2] && !mgPlayedAt[safeKey2]) {
+      // Per-run only — drop the cross-run mgPlayedPersistent gate so
+      // every fresh run shows PLAY on Lv0+ safe zones again.
+      if (poolHere && poolHere.length && !mgPlayedAt[safeKey2]) {
         showAct = true; label = 'PLAY';
       } else {
         showAct = false;
