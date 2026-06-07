@@ -3238,7 +3238,16 @@
       try { window._discoveryCloseFn(); } catch (e) {}
     }
     if (_discoveryTimer) clearTimeout(_discoveryTimer);
-    el('discoveryIcon').textContent = icon;
+    // Discovery icon — accept either an emoji or an item id (so weapon
+    // pickups can show the realistic SVG instead of the cartoon emoji).
+    var iconEl = el('discoveryIcon');
+    if (iconEl) {
+      if (typeof icon === 'string' && ITEMS[icon] && WEAPON_SVG[icon]) {
+        iconEl.innerHTML = '<span style="display:inline-block;width:48px;height:48px;vertical-align:middle">' + WEAPON_SVG[icon] + '</span>';
+      } else {
+        iconEl.textContent = icon;
+      }
+    }
     el('discoveryLabel').textContent = label;
     el('discoveryName').textContent = name;
     pop.classList.remove('show');
@@ -4642,7 +4651,14 @@
   function playLevelReachCinematic(def, onDone) {
     el('lrLevelNum').textContent = def.name;
     el('lrSubtitle').textContent = def.subtitle;
-    el('lrFlavor').textContent = (def.hint || '') + '\n\n[ 画面をタップして始める ]';
+    // Build flavor text: intro flavor first (narrative beat), then a blank
+    // line, then the hint (mechanics). Old version only used hint, which
+    // hid the level's signature line entirely.
+    var flavorLines = [];
+    if (def.intro) flavorLines.push('— ' + def.intro);
+    if (def.hint)  flavorLines.push(def.hint);
+    flavorLines.push('[ 画面をタップして始める ]');
+    el('lrFlavor').textContent = flavorLines.join('\n\n');
     showOverlay('levelReachCinematic');
     if (audioInitialized) GameEngine.playSound('stinger');
     // Sparse situational whisper on level entry — sells the "descent" theme.
@@ -7626,7 +7642,12 @@
         // Eternal charm makes every slot read as ∞ — the count is meaningless
         // because nothing actually decrements.
         var displayCount = hasEternalCharm() ? '∞' : ('×' + count);
-        slotEl.innerHTML = '<span class="dpad-slot-icon">' + ITEMS[id].icon + '</span>' +
+        // Use the realistic SVG icon for weapons when available, else
+        // fall back to the emoji string.
+        var dpadIconHtml = WEAPON_SVG[id]
+          ? '<span class="dpad-slot-icon dpad-slot-svg">' + WEAPON_SVG[id] + '</span>'
+          : '<span class="dpad-slot-icon">' + ITEMS[id].icon + '</span>';
+        slotEl.innerHTML = dpadIconHtml +
                            '<span class="dpad-slot-count' + (count === 0 && !hasEternalCharm() ? ' out' : '') + '">'
                            + displayCount + '</span>';
         slotEl.classList.remove('empty');
@@ -8733,7 +8754,9 @@
     pickedUpItems[currentLevel][gridKey(gx, gy)] = true;
     delete pickupSpots[gridKey(gx, gy)];
     var nameLabel = item.name + (item.category === 'weapon' ? ' (×' + addAmount + ')' : '');
-    showDiscovery(item.icon, 'アイテム入手', nameLabel);
+    // Pass the item id (not the emoji) so the discovery popup can use
+    // the realistic SVG when available, falling back to icon otherwise.
+    showDiscovery(WEAPON_SVG[itemId] ? itemId : item.icon, 'アイテム入手', nameLabel);
     if (audioInitialized) GameEngine.playSound('item_get');
     if (navigator.vibrate) navigator.vibrate(20);
     // Refresh the quick HUD so the slot bound to this item shows the new count
