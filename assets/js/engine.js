@@ -1061,6 +1061,40 @@
       ctx.fillRect(glowCenterX - glowRadius, glowCenterY - glowRadius, glowRadius * 2, glowRadius * 2);
     }
 
+    // HP bar — drawn above the sprite head. Bosses get a wider/taller bar
+    // with an outline; regular entities get a thin minimal bar that only
+    // shows once they've taken damage so a full-HP zoo doesn't clutter
+    // the FOV.
+    var maxHp = entity.bossHp !== undefined ? 200
+              : (entity.hpMax !== undefined ? entity.hpMax : 100);
+    var curHp = entity.bossHp !== undefined ? entity.bossHp
+              : (entity.hp !== undefined ? entity.hp : maxHp);
+    var isBoss = (entity.type === 'boss' || entity.type === 'haruki_boss');
+    var showBar = isBoss || (curHp < maxHp - 0.01);
+    if (showBar && curHp > 0) {
+      ctx.globalAlpha = fogFactor;
+      var barW = isBoss ? spriteWidth * 1.1 : spriteWidth * 0.7;
+      var barH = isBoss ? Math.max(4, spriteHeight * 0.04) : Math.max(2, spriteHeight * 0.025);
+      var barX = spriteScreenX - barW / 2;
+      var barY = drawStartY - barH - 4;
+      var centerCol = Math.round(spriteScreenX);
+      // Same z-buffer occlusion as the sprite body — if a wall is in front,
+      // the HP bar wouldn't make sense either.
+      if (centerCol >= 0 && centerCol < w && zBuf[centerCol] > depthInTiles) {
+        ctx.fillStyle = 'rgba(0,0,0,0.7)';
+        ctx.fillRect(barX, barY, barW, barH);
+        var pct = Math.max(0, Math.min(1, curHp / maxHp));
+        var rgb = pct > 0.55 ? '40,200,80' : pct > 0.3 ? '230,190,40' : '230,40,40';
+        ctx.fillStyle = 'rgb(' + rgb + ')';
+        ctx.fillRect(barX + 1, barY + 1, (barW - 2) * pct, barH - 2);
+        if (isBoss) {
+          ctx.strokeStyle = 'rgba(220,180,60,0.85)';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(barX, barY, barW, barH);
+        }
+      }
+    }
+
     ctx.restore();
   }
 
