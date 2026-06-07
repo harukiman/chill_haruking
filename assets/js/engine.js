@@ -1061,6 +1061,42 @@
       ctx.fillRect(glowCenterX - glowRadius, glowCenterY - glowRadius, glowRadius * 2, glowRadius * 2);
     }
 
+    // Type-specific face/body details — small touches that make entities
+    // read as distinct silhouettes at a glance. Drawn on top of the base
+    // color block, with z-buffer respect so walls still occlude them.
+    if (entity.type && zBuf[Math.round(spriteScreenX)] > depthInTiles) {
+      var faceY = headStartY + headHeight * 0.45;
+      var pairW = spriteWidth * 0.12;
+      if (entity.type === 'witness') {
+        // Two pale white eyes — the only thing visible on the silhouette.
+        ctx.fillStyle = 'rgba(220, 215, 200, ' + fogFactor.toFixed(2) + ')';
+        ctx.fillRect(spriteScreenX - pairW * 1.4, faceY, pairW, pairW * 0.6);
+        ctx.fillRect(spriteScreenX + pairW * 0.4, faceY, pairW, pairW * 0.6);
+      } else if (entity.type === 'smiler') {
+        // Wide grin — long thin horizontal slit + 3 teeth gaps.
+        ctx.fillStyle = 'rgba(240, 240, 230, ' + fogFactor.toFixed(2) + ')';
+        var mouthY = faceY + headHeight * 0.20;
+        ctx.fillRect(spriteScreenX - spriteWidth * 0.18, mouthY, spriteWidth * 0.36, pairW * 0.5);
+        // Two glowing eyes.
+        ctx.fillRect(spriteScreenX - pairW * 1.2, faceY, pairW, pairW * 0.5);
+        ctx.fillRect(spriteScreenX + pairW * 0.2, faceY, pairW, pairW * 0.5);
+      } else if (entity.type === 'lurker') {
+        // Single dim eye — barely there, the hunter only shows when not seen.
+        ctx.fillStyle = 'rgba(180, 100, 100, ' + (fogFactor * 0.7).toFixed(2) + ')';
+        ctx.fillRect(spriteScreenX - pairW * 0.5, faceY, pairW, pairW * 0.4);
+      } else if (entity.type === 'civilian') {
+        // Two warm-toned eyes (more human) + a flesh-tone "mouth" line.
+        ctx.fillStyle = 'rgba(40, 30, 20, ' + fogFactor.toFixed(2) + ')';
+        ctx.fillRect(spriteScreenX - pairW * 1.2, faceY, pairW * 0.7, pairW * 0.45);
+        ctx.fillRect(spriteScreenX + pairW * 0.5, faceY, pairW * 0.7, pairW * 0.45);
+      } else if (entity.type === 'haruki' || entity.type === 'haruki_boss') {
+        // Two red eyes — the only feature that should glow on her.
+        ctx.fillStyle = 'rgba(220, 40, 60, ' + fogFactor.toFixed(2) + ')';
+        ctx.fillRect(spriteScreenX - pairW * 1.1, faceY, pairW, pairW * 0.55);
+        ctx.fillRect(spriteScreenX + pairW * 0.1, faceY, pairW, pairW * 0.55);
+      }
+    }
+
     // HP bar — drawn above the sprite head. Bosses get a wider/taller bar
     // with an outline; regular entities get a thin minimal bar that only
     // shows once they've taken damage so a full-HP zoo doesn't clutter
