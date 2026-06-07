@@ -12021,6 +12021,10 @@
           var weakStr   = weakest.length
             ? weakest.map(function (e) { return e.name + ' (×' + e.mul.toFixed(1) + ')'; }).join(' / ')
             : '— 特になし';
+          var intro = ENTITY_INTROS[t];
+          var descHtml = intro
+            ? '<div style="color:#d8d2bc;margin-top:6px;font-size:11px;line-height:1.6;white-space:pre-wrap;">' + intro.desc + '</div>'
+            : '';
           row.innerHTML =
             '<div class="ta-item-head">' +
               '<span class="ta-item-icon">' + d.icon + '</span>' +
@@ -12030,6 +12034,7 @@
             '<div class="ta-note-body" style="display:block;">' +
               '<div style="color:#88c050;">有効: ' + strongStr + '</div>' +
               '<div style="color:#c63a3a;">不得手: ' + weakStr + '</div>' +
+              descHtml +
             '</div>';
         } else {
           row.innerHTML =
