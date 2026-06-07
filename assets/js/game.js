@@ -374,24 +374,31 @@
 
   // ── LEVEL 6 — LIGHTS OUT (stretch) ──────────────────────
   // Pitch dark, very short fog
+  // Lv6 — LIGHTS OUT. Pitch-dark with very short fog distance. Even
+  // empty floor is invisible, so excess F decor just clutters BFS
+  // without adding visual feel. Decor restrained on purpose; still
+  // bumped a couple corner motes so the player can find walls by
+  // bumping landmarks. User feedback: 「オブジェクトも少なく単調」
+  // — for Lv6 the *low* density IS the level identity, but corner
+  // hint F bumps mark a few orientation points.
   var LV6_ROWS = [
     '##################',
-    '#P...............#',
+    '#P...F........F..#',
     '#......F....F....#',
-    '#................#',
+    '#..F............F#',
     '#.....######.....#',
     '#.....#....#.....#',
     '#..F..#..i.#..F..#',
-    '#.....#....#.....#',
+    '#..F..#....#..F..#',
     '#.....D....D.....#',
-    '#................#',
+    '#..F..........F..#',
     '#......n.........#',
-    '#................#',
+    '#..F..F....F..F..#',
     '#.....##D###.....#',
-    '#.....#....#.....#',
+    '#..F..#....#..F..#',
     '#.....#.X..#.....#',
     '#.....######.....#',
-    '#......w.........#',
+    '#..F...w......F..#',
     '##################'
   ];
 
