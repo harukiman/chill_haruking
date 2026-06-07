@@ -3075,7 +3075,16 @@
         if (nowMs - gp._dpadLastFire[dpDir] >= 120) {
           gp._dpadLastFire[dpDir] = nowMs;
           var assignedId = (dpadAssignments[dpadMode] || {})[dpDir];
-          if (assignedId) quickUseAssignedItem(assignedId);
+          if (assignedId) {
+            // 「十字キーはあくまで武器選択、攻撃自体はr1か右の攻撃ボタン」
+            // weapon mode → equip only. item mode → use directly.
+            if (dpadMode === 'weapon' && ITEMS[assignedId] &&
+                ITEMS[assignedId].category === 'weapon') {
+              equipWeapon(assignedId);
+            } else {
+              quickUseAssignedItem(assignedId);
+            }
+          }
         }
       } else if (!(dbtn && dbtn.pressed)) {
         gp._dpadHeld[dpDir] = false;
@@ -6969,7 +6978,13 @@
           e.stopPropagation();
           if (state !== ST.PLAYING) return;
           var aid = (dpadAssignments[dpadMode] || {})[d.toLowerCase()];
-          if (aid) quickUseAssignedItem(aid);
+          if (!aid) return;
+          // 武器モード = 装備のみ。アイテムモード = 直接使用。
+          if (dpadMode === 'weapon' && ITEMS[aid] && ITEMS[aid].category === 'weapon') {
+            equipWeapon(aid);
+          } else {
+            quickUseAssignedItem(aid);
+          }
         });
       });
       if (modeEl) {
