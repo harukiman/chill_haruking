@@ -1375,8 +1375,13 @@
         return;
       }
       player.coins -= price;
-      player.inventory[itemId] = (player.inventory[itemId] || 0) + 1;
-      toast('購入: ' + (item ? item.name : itemId));
+      // Weapons gain a random ammo count, same rule as world pickups, so a
+      // purchased pistol gives 2-4 shots instead of a single shot for 120
+      // coins. Non-weapons add +1 as before.
+      var addAmt = (item && item.category === 'weapon') ? _rollWeaponPickupCount(itemId) : 1;
+      player.inventory[itemId] = (player.inventory[itemId] || 0) + addAmt;
+      var nameStr = (item ? item.name : itemId) + (addAmt > 1 ? ' (×' + addAmt + ')' : '');
+      toast('購入: ' + nameStr);
       if (audioInitialized) GameEngine.playSound('item_get');
       unlockAchievement('first_purchase');
       if (isUnique) unlockAchievement('bought_unique');

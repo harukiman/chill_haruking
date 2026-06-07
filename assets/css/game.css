@@ -712,24 +712,27 @@ button {
   flex-shrink: 0;
 }
 .ts-close-x {
+  /* In a flex column container, float doesn't work — use align-self instead.
+     The button sticks to the top of the scrollable card so it remains
+     reachable however far down the user has scrolled. */
   position: sticky;
   top: 0;
-  float: right;
-  width: 38px;
-  height: 38px;
+  align-self: flex-end;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   background: rgba(180, 30, 30, 0.85);
   color: #fff;
   border: 1px solid rgba(220, 60, 60, 0.9);
   font-family: inherit;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: bold;
   line-height: 1;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation !important;
   pointer-events: auto !important;
-  margin-bottom: -38px;
+  margin-bottom: -6px;
   z-index: 10;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
 }
