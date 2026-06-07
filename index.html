@@ -20,7 +20,7 @@
   <meta name="twitter:title" content="THE BACKROOMS — featuring HARUKI">
   <meta name="twitter:description" content="一人称モバイル探索ホラー。Level 0 から no-clip で階層を降下。壁の向こうにカレが待つ。">
   <title>THE BACKROOMS</title>
-  <link rel="stylesheet" href="assets/css/game.css?v=148">
+  <link rel="stylesheet" href="assets/css/game.css?v=149">
 </head>
 <body oncontextmenu="return false;">
 
@@ -141,11 +141,17 @@
       <h2 class="ta-title">アーカイブ</h2>
       <div class="ta-tabs">
         <button type="button" class="ta-tab active" data-ta-tab="notes">書類</button>
+        <button type="button" class="ta-tab" data-ta-tab="secret">秘匿</button>
         <button type="button" class="ta-tab" data-ta-tab="achs">実績</button>
       </div>
       <div class="ta-panel" id="taPanelNotes">
         <p class="ta-counter" id="taNotesCount">— / —</p>
         <div id="taNotesList" class="ta-list"></div>
+      </div>
+      <div class="ta-panel" id="taPanelSecret" style="display:none;">
+        <p class="ta-counter" id="taSecretCount">— / —</p>
+        <p class="ta-secret-hint">★ 全資料を集めて HARUKI を倒すと、TRUE END に到達する。</p>
+        <div id="taSecretList" class="ta-list"></div>
       </div>
       <div class="ta-panel" id="taPanelAchs" style="display:none;">
         <p class="ta-counter" id="taAchsCount">— / —</p>
@@ -981,8 +987,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="assets/js/engine.js?v=148"></script>
-  <script src="assets/js/game.js?v=148"></script>
+  <script src="assets/js/engine.js?v=149"></script>
+  <script src="assets/js/game.js?v=149"></script>
 
   <!-- POST-LOAD VERIFICATION + DIRECT BINDING FALLBACK
        After game.js IIFE runs, this script confirms __titleAction is the real one.

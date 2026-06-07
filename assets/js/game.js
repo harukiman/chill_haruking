@@ -110,6 +110,7 @@
     var stairsDown = [];
     var weaponSpots = [];  // dedicated weapon-only pickup tiles ('w')
     var shopSpots = [];    // shopkeeper interaction tiles ('M') — open shop on action
+    var secretSpots = [];  // secret doc tiles ('S') — pick up lore document on action
 
     for (var y = 0; y < h; y++) {
       var row = [];
@@ -132,6 +133,7 @@
           case 'd': t = 0; stairsDown.push({ gx: x, gy: y }); break;
           case 'w': t = 5; itemSpots.push({ gx: x, gy: y }); weaponSpots.push({ gx: x, gy: y }); break;
           case 'M': t = 0; shopSpots.push({ gx: x, gy: y }); break;
+          case 'S': t = 0; secretSpots.push({ gx: x, gy: y }); break;
           case 'P': t = 0; spawn = { gx: x, gy: y }; break;
           default:  t = 0; break;
         }
@@ -152,7 +154,8 @@
       stairsUp: stairsUp,
       stairsDown: stairsDown,
       weaponSpots: weaponSpots,
-      shopSpots: shopSpots
+      shopSpots: shopSpots,
+      secretSpots: secretSpots
     };
   }
 
@@ -179,7 +182,7 @@
     '#......#....##..#####.##',
     '######.D.####..........#',
     '#......#.#......n......#',
-    '#.i..F.#.#.............#',
+    '#.i..F.#.#............S#',
     '#......#.#....F........#',
     '#......#.#.....s.......#',
     '#......#.#.............#',
@@ -214,7 +217,7 @@
     '#.F................F.....FF......#',
     '#......FFFF........FF...FF.F.....#',
     '#......FFFF........FF............#',
-    '#..F...FFFF..........n...........#',
+    '#..F...FFFF..........n.........S.#',
     '#..F.................F......i....#',
     '#......F....X........F....w......#',
     '#......F.........FF..............#',
@@ -245,7 +248,7 @@
     '##D###~~~~~~~........#',
     '#....#~~~.......i....#',
     '#.n..#~~~............#',
-    '#....D~~~............#',
+    '#....D~~~..........S.#',
     '#....#~~~....X.......#',
     '#....#~~~....w.......#',
     '######################'
@@ -271,7 +274,7 @@
     '#..F..D......D..F..#',
     '#.....#......#.....#',
     '######........#####.',
-    '#............#.....#',
+    '#..........S.#.....#',
     '#....F..X....#.n.i.#',
     '#............#.....#',
     '####################'
@@ -309,7 +312,7 @@
     '#..####..####..####..####....#',
     '#..####..####..####..####...w#',
     '#............................#',
-    '#............................#',
+    '#..S.........................#',
     '#........X...................#',
     '##############################'
   ];
@@ -349,7 +352,7 @@
     '#...U.....................d..#',
     '#............................#',
     '##############D###############',
-    '#............................#',
+    '#.S..........................#',
     '#......n.........F..........X#',
     '#............................#',
     '##############################'
@@ -398,7 +401,7 @@
     '#....................#',
     '#....................#',
     '#..FFF...FFF...FFF...#',
-    '#..F.F...F.F...F.F...#',
+    '#..F.F...F.F...F.F.S.#',
     '#..F.F...F.F.X.F.F...#',
     '#..F.F...F.F...F.F...#',
     '#..FFF.s.FFF...FFF...#',
@@ -492,7 +495,7 @@
     '#......#',
     '#......#',
     '#......#',
-    '#......#',
+    '#....S.#',
     '#......#',
     '#..n...#',
     '#......#',
@@ -525,7 +528,7 @@
     '#............s...........#',
     '#........................#',
     '#..####....####....####..#',
-    '#..#FF#....#i.#....#Fi#..#',
+    '#..#FF#....#iS#....#Fi#..#',
     '#..#ii#....#X.#....#ii#..#',
     '#..#..D....D..D....D..D..#',
     '#..####....####....####..#',
@@ -1689,6 +1692,53 @@
     14: ['almond_water', 'bandage', 'flare', 'antacid', 'flashlight', 'pistol', 'katana'],
     15: ['almond_water', 'bandage', 'energy_bar', 'compass', 'flare', 'pistol', 'shotgun']
   };
+
+  // ── SECRET DOCUMENTS (太平洋戦争 帝国軍秘匿部隊「九四四班」 lore) ──
+  // 9 fragments, each placed on a specific level. Collecting ALL of them
+  // before defeating HARUKI unlocks the TRUE END. Discovery is persistent
+  // across runs via localStorage 'thebackrooms_secret_docs_v1'.
+  var SECRET_DOCS = [
+    { id: 'sd_1', levelId: 0,
+      title: '秘匿書類 — 第一号',
+      text:
+        '機密 — 第九四四特別作戦班\n昭和十九年六月\n\n大本営直轄、満洲奥地に置かれた当班は、\n敵性勢力の士気を内側から崩壊させる「精神兵器」\nの開発を目的とする。\n\n第一段階 — 「壁を抜ける」現象の再現実験、進行中。' },
+    { id: 'sd_2', levelId: 1,
+      title: '秘匿書類 — 第二号',
+      text:
+        '研究日誌 / 班長 春木保 (はるき たもつ)\n昭和十九年八月\n\n第七実験室にて、被験者三名が同時に「消失」。\n物質的に検出不能。しかし、彼らの声は\n依然として壁の向こうで響き続けている。\n\nこれは ── 別の階層に「降りた」のではないか。' },
+    { id: 'sd_3', levelId: 2,
+      title: '秘匿書類 — 第三号',
+      text:
+        '報告書 — 観測室 B-7\n昭和十九年十月\n\n「黄色い無限の壁紙」「湿った絨毯」── 被験者\nの帰還報告が一致。だが、誰も帰還していない。\n声だけが、彼らが「降りた」階層から届く。\n\n班長春木は、「自分も降りてみたい」と申し出た。' },
+    { id: 'sd_4', levelId: 3,
+      title: '秘匿書類 — 第四号',
+      text:
+        '緊急電 — 司令部宛\n昭和十九年十一月\n\n春木班長、第七実験室に単独入室。\n三時間後、室内の壁紙が「黄色く」変色。\n春木の所在、不明。\n音声記録のみ残存 ──「ここは、深い」' },
+    { id: 'sd_5', levelId: 4,
+      title: '秘匿書類 — 第五号',
+      text:
+        '内部報告 — 第二補佐官\n昭和十九年十二月\n\n春木の妹、晴美 (はるみ) が当班に編入された。\n兄を救出するためと本人は主張するが、\n上層部の真の意図は、彼女を「次の鍵」とする\nことにあるという。\n\n彼女は実に、嬉しそうだった。' },
+    { id: 'sd_6', levelId: 5,
+      title: '秘匿書類 — 第六号',
+      text:
+        '観測室 C-3 — 音声記録\n昭和二十年三月\n\n春木保の声、確認。\n「ここに、誰もいない。\nだが、誰もが、ここにいる。\nおかえり。」\n\n— 春木晴美、行方不明。' },
+    { id: 'sd_7', levelId: 7,
+      title: '秘匿書類 — 第七号',
+      text:
+        '機密 — 終戦直前\n昭和二十年八月\n\n第九四四班、解散命令。\n実験施設、爆破。資料、焼却。\n\nだが ── 階層は、閉じない。\n壁の向こうで、二人は今も、待っている。' },
+    { id: 'sd_8', levelId: 8,
+      title: '秘匿書類 — 第八号',
+      text:
+        '匿名の手記 — 戦後\n\n父は第九四四班の主任だった。\n父は「黄色い夢」を毎晩見るようになり、\nそして消えた。\n\n姉も同じ夢を見た後、消えた。\n\n私の夢にも、最近、黄色が見える。' },
+    { id: 'sd_9', levelId: 9,
+      title: '秘匿書類 — 第九号 / 最終',
+      text:
+        '「私は春木晴美。\n兄を捜してここに降りた。\n兄はもう、ハルキではない。\nここの全てが、ハルキだ。\n\nもし、これを読んでいる貴方が\n全ての書類を集めたなら ──\n\n出口は、扉ではない。\n書類こそが、鍵だ。」' }
+  ];
+
+  // Collected secret docs — set keyed by doc id. Loaded from localStorage on
+  // bootstrap; updated when a player picks up a hidden 'S' tile.
+  var collectedSecretDocs = {};
 
   // ── NOTES ───────────────────────────────────────────────
   var NOTES_POOL = {
@@ -4965,7 +5015,9 @@
     first_purchase:   { name: '初めての買い物', icon: '🪙' },
     first_sale:       { name: '初めての売却', icon: '💰' },
     bought_unique:    { name: 'ユニーク品を購入', icon: '★' },
-    civilian_killed:  { name: '何かを失った', icon: '🩸' }
+    civilian_killed:  { name: '何かを失った', icon: '🩸' },
+    found_secret_doc: { name: '秘匿書類 — 第一号', icon: '✉' },
+    all_secret_docs:  { name: '九四四班 — 全資料', icon: '✦' }
   };
 
   function unlockAchievement(id) {
@@ -4988,6 +5040,45 @@
       if (s) unlockedAchievements = JSON.parse(s) || {};
     } catch (e) { unlockedAchievements = {}; }
   }
+
+  var SECRET_DOCS_KEY = 'thebackrooms_secret_docs_v1';
+  function loadSecretDocs() {
+    try {
+      var s = localStorage.getItem(SECRET_DOCS_KEY);
+      if (s) collectedSecretDocs = JSON.parse(s) || {};
+    } catch (e) { collectedSecretDocs = {}; }
+  }
+  function saveSecretDocs() {
+    try { localStorage.setItem(SECRET_DOCS_KEY, JSON.stringify(collectedSecretDocs)); } catch (e) {}
+  }
+  function discoverSecretDoc(docId) {
+    if (collectedSecretDocs[docId]) return false; // already had it
+    var doc = null;
+    for (var i = 0; i < SECRET_DOCS.length; i++) {
+      if (SECRET_DOCS[i].id === docId) { doc = SECRET_DOCS[i]; break; }
+    }
+    if (!doc) return false;
+    collectedSecretDocs[docId] = true;
+    saveSecretDocs();
+    // Achievement: first secret doc + all docs collected
+    try { unlockAchievement('found_secret_doc'); } catch (e) {}
+    var total = SECRET_DOCS.length;
+    var have  = Object.keys(collectedSecretDocs).length;
+    if (have >= total) {
+      try { unlockAchievement('all_secret_docs'); } catch (e) {}
+    }
+    // Show the doc the same way regular notes are shown so the player reads it
+    showNoteViewer(doc.title, doc.text);
+    if (audioInitialized) GameEngine.playSound('paper');
+    return true;
+  }
+  function hasAllSecretDocs() {
+    return Object.keys(collectedSecretDocs).length >= SECRET_DOCS.length;
+  }
+  // Expose for renderTitleArchive and TRUE END check
+  window.SECRET_DOCS = SECRET_DOCS;
+  window.collectedSecretDocs = collectedSecretDocs;
+  window.hasAllSecretDocs = hasAllSecretDocs;
 
   function loadBestTimes() {
     try {
@@ -6432,6 +6523,35 @@
         if (Math.abs(sp.gx - gx) <= 1 && Math.abs(sp.gy - gy) <= 1) {
           openShop();
           return;
+        }
+      }
+    }
+
+    // Secret doc tile — picks up the next undiscovered doc for this level.
+    // Each S tile is single-use per run (removed from secretSpots on pickup).
+    if (currentMap.secretSpots && currentMap.secretSpots.length) {
+      for (var sci = 0; sci < currentMap.secretSpots.length; sci++) {
+        var sps = currentMap.secretSpots[sci];
+        if (sps.gx === gx && sps.gy === gy) {
+          // Pick the first undiscovered doc that belongs to currentLevel
+          var pick = null;
+          for (var dj = 0; dj < SECRET_DOCS.length; dj++) {
+            var d = SECRET_DOCS[dj];
+            if (d.levelId !== currentLevel) continue;
+            if (collectedSecretDocs[d.id]) continue;
+            pick = d; break;
+          }
+          if (pick) {
+            discoverSecretDoc(pick.id);
+            toast('★ 秘匿書類: ' + pick.title);
+            // Remove this S spot so it doesn't show up again this session
+            currentMap.secretSpots.splice(sci, 1);
+            return;
+          } else {
+            // All docs from this level already collected on a previous run
+            toast('既に読んだ書類');
+            return;
+          }
         }
       }
     }
@@ -10091,7 +10211,7 @@
   //  EVENT BINDINGS
   // ============================================================
   function bindEvents() {
-    // Title archive: tab buttons
+    // Title archive: tab buttons (3 panels: notes / secret / achs)
     var taTabs = document.querySelectorAll('.ta-tab');
     for (var taI = 0; taI < taTabs.length; taI++) {
       (function (btn) {
@@ -10100,9 +10220,11 @@
           var tabs = document.querySelectorAll('.ta-tab');
           for (var x = 0; x < tabs.length; x++) tabs[x].classList.toggle('active', tabs[x] === btn);
           var pn = el('taPanelNotes');
+          var ps = el('taPanelSecret');
           var pa = el('taPanelAchs');
-          if (pn) pn.style.display = (which === 'notes') ? 'block' : 'none';
-          if (pa) pa.style.display = (which === 'achs')  ? 'block' : 'none';
+          if (pn) pn.style.display = (which === 'notes')  ? 'block' : 'none';
+          if (ps) ps.style.display = (which === 'secret') ? 'block' : 'none';
+          if (pa) pa.style.display = (which === 'achs')   ? 'block' : 'none';
         });
       })(taTabs[taI]);
     }
@@ -10843,6 +10965,7 @@
     try { loadEndlessBest(); } catch (e) {}
     try { loadStats(); } catch (e) {}
     try { loadGamepadMap(); } catch (e) {}
+    try { loadSecretDocs(); } catch (e) {}
 
     // CRITICAL: bind button events FIRST so title is interactive
     // even if any later setup throws
@@ -10929,6 +11052,33 @@
           notesList.appendChild(row);
         });
       }
+    }
+    // Secret docs panel — placeholder rows for locked items so the player
+    // sees the total count + which slots are still missing.
+    var secretList = el('taSecretList');
+    var secretCount = el('taSecretCount');
+    var sdHave = Object.keys(collectedSecretDocs).length;
+    var sdTotal = SECRET_DOCS.length;
+    if (secretCount) secretCount.textContent = sdHave + ' / ' + sdTotal + ' 秘匿書類';
+    if (secretList) {
+      secretList.innerHTML = '';
+      SECRET_DOCS.forEach(function (doc, idx) {
+        var unlocked = !!collectedSecretDocs[doc.id];
+        var row = document.createElement('div');
+        row.className = 'ta-note-row' + (unlocked ? '' : ' locked');
+        if (unlocked) {
+          row.innerHTML =
+            '<div class="ta-note-title">' + doc.title + '</div>' +
+            '<div class="ta-note-level">LEVEL ' + doc.levelId + '</div>' +
+            '<div class="ta-note-body">' + doc.text + '</div>';
+          row.addEventListener('click', function () { row.classList.toggle('open'); });
+        } else {
+          row.innerHTML =
+            '<div class="ta-note-title">— 第' + (idx + 1) + '号 (未収集)</div>' +
+            '<div class="ta-note-level">LEVEL ' + doc.levelId + ' のどこかに眠る</div>';
+        }
+        secretList.appendChild(row);
+      });
     }
     // Achievements panel
     var achsList = el('taAchsList');
