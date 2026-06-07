@@ -1308,6 +1308,26 @@
         target.x + spread, target.y + spread);
     }
   }
+  // ── Floating damage number popups ──
+  // Spawn a short-lived screen-anchored DOM element showing the damage value.
+  // We anchor at screen center (where the reticle is) and apply a small random
+  // horizontal offset so rapid multi-shots don't perfectly stack.
+  function _spawnDamagePopup(dmg, opts) {
+    opts = opts || {};
+    if (typeof document === 'undefined' || !document.body) return;
+    var rounded = Math.max(1, Math.round(dmg));
+    var node = document.createElement('div');
+    node.className = 'damage-popup';
+    if (opts.kill)      node.classList.add('kill');
+    else if (opts.crit) node.classList.add('crit');
+    node.textContent = opts.kill ? (rounded + ' KILL') : String(rounded);
+    var dx = (Math.random() - 0.5) * 80; // -40..40 px
+    node.style.setProperty('--dx', dx.toFixed(1) + 'px');
+    document.body.appendChild(node);
+    setTimeout(function () {
+      if (node && node.parentNode) node.parentNode.removeChild(node);
+    }, 900);
+  }
   // ── ALTAR / HIDDEN BOSS ──
   // Opens a yes/no prompt 「祈りを捧げますか？」. Picking はい spawns the
   // hidden boss next to the altar. Picking いいえ closes the prompt.
@@ -1758,10 +1778,12 @@
     // weapon (opts.weaponId). Falls back to 1.0 for legacy callers.
     var wMul = opts.weaponId ? _weaponDamageMultiplier(opts.weaponId, bestE.type) : 1.0;
     var dmg = opts.dmg * (cheatActive ? 3 : 1) * wMul;
+    var killed = false;
     if (bestE.type === 'boss' || bestE.type === 'haruki_boss') {
       bestE.bossHp = (bestE.bossHp !== undefined ? bestE.bossHp : 200) - dmg;
       if (bestE.bossHp <= 0) {
         bestE.alive = false;
+        killed = true;
         unlockAchievement('defeat_boss');
         toast(bestE.type === 'haruki_boss' ? '★ ハルキ 撃破! ★' : '★ BOSS 撃破!');
         _grantCoinsForKill(bestE.type, bestE);
@@ -1770,11 +1792,15 @@
       bestE.hp = (bestE.hp !== undefined ? bestE.hp : 100) - dmg;
       if (bestE.hp <= 0) {
         bestE.alive = false;
+        killed = true;
         bestE.deathAt = performance.now();
         toast(getEntityLabel(bestE.type) + ' 撃破');
         _grantCoinsForKill(bestE.type, bestE);
       }
     }
+    // Crit if the weapon multiplier is > 1.2 against this enemy.
+    var isCrit = wMul >= 1.4;
+    _spawnDamagePopup(dmg, { crit: isCrit, kill: killed });
     // Blood/spark feedback at the hit location
     _hitParticles(bestE, 6, 'spark');
     return bestE;

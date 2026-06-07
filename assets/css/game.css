@@ -203,6 +203,54 @@ body {
 .weapon-hand-flash.flash {
   animation: weapon-flash 0.16s ease-out;
 }
+/* Floating damage numbers — spawned at screen-center on weapon hits */
+.damage-popup {
+  position: fixed;
+  left: 50%;
+  top: 45%;
+  transform: translate(-50%, -50%);
+  font-weight: 900;
+  font-size: 28px;
+  letter-spacing: 0.04em;
+  color: #ffe9a0;
+  text-shadow:
+    0 0 6px rgba(0,0,0,0.95),
+    1px 1px 0 #000,
+    -1px -1px 0 #000,
+    1px -1px 0 #000,
+    -1px 1px 0 #000;
+  pointer-events: none;
+  z-index: 25;
+  animation: dmg-float 0.85s ease-out forwards;
+  font-family: 'Hiragino Sans', 'Yu Gothic', sans-serif;
+  will-change: transform, opacity;
+}
+.damage-popup.crit {
+  color: #ffb060;
+  font-size: 38px;
+  text-shadow:
+    0 0 10px rgba(255, 140, 0, 0.9),
+    1px 1px 0 #000,
+    -1px -1px 0 #000,
+    1px -1px 0 #000,
+    -1px 1px 0 #000;
+}
+.damage-popup.kill {
+  color: #ff5050;
+  font-size: 34px;
+  text-shadow:
+    0 0 12px rgba(255, 0, 0, 0.95),
+    1px 1px 0 #000,
+    -1px -1px 0 #000,
+    1px -1px 0 #000,
+    -1px 1px 0 #000;
+}
+@keyframes dmg-float {
+  0%   { opacity: 0;    transform: translate(calc(-50% + var(--dx, 0px)), -50%) scale(0.6); }
+  15%  { opacity: 1;    transform: translate(calc(-50% + var(--dx, 0px)), calc(-50% - 8px)) scale(1.15); }
+  35%  { opacity: 1;    transform: translate(calc(-50% + var(--dx, 0px)), calc(-50% - 24px)) scale(1.0); }
+  100% { opacity: 0;    transform: translate(calc(-50% + var(--dx, 0px)), calc(-50% - 72px)) scale(0.9); }
+}
 @keyframes weapon-flash {
   0%   { opacity: 0;    transform: scale(0.4); }
   20%  { opacity: 1;    transform: scale(1.1); }
