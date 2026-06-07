@@ -2839,6 +2839,138 @@
   // ── Haruki Boss Reveal Cutscene ──
   // ~8s animated CSS sequence: silhouette walks forward through rain,
   // lightning strikes twice, portrait zooms in, then transitions out.
+  // Mini FPS raycaster for the boss-reveal cutscene. Plays at the start of the
+  // cutscene to show the player walking down a dark suburban corridor toward
+  // HARUKI before the lightning/silhouette reveal. Fades out via CSS after
+  // `durationMs`. Returns a cancel() so finish() can stop the RAF loop early.
+  function runHbcFpsApproach(durationMs) {
+    var cvs = el('hbcFpsCanvas');
+    if (!cvs) return function () {};
+    var ctx = cvs.getContext('2d');
+    var dpr = Math.min(window.devicePixelRatio || 1, 1.25);
+    function resize() {
+      var cw = cvs.clientWidth || window.innerWidth;
+      var ch = cvs.clientHeight || window.innerHeight;
+      cvs.width = Math.max(280, Math.floor(cw * dpr));
+      cvs.height = Math.max(200, Math.floor(ch * dpr));
+    }
+    resize();
+    cvs.classList.add('show');
+    window.addEventListener('resize', resize);
+    var MAP_W = 5, MAP_H = 90;
+    var map = new Uint8Array(MAP_W * MAP_H);
+    for (var my = 0; my < MAP_H; my++) {
+      for (var mx = 0; mx < MAP_W; mx++) {
+        map[my * MAP_W + mx] = (mx === 0 || mx === MAP_W - 1) ? 1 : 0;
+      }
+    }
+    var FOV = Math.PI / 3.2;
+    var startT = performance.now();
+    var lastNow = startT;
+    var totalProgress = 0;
+    var cancelled = false;
+    var rafId = 0;
+    var fadeT = null;
+    function cancel() {
+      cancelled = true;
+      if (rafId) cancelAnimationFrame(rafId);
+      if (fadeT) clearTimeout(fadeT);
+      try { cvs.classList.remove('show'); } catch (e) {}
+      try { window.removeEventListener('resize', resize); } catch (e) {}
+    }
+    // Schedule fade-out + cancel after `durationMs`. CSS does the fade; we just
+    // toggle the class and stop the loop ~600ms later (= transition duration).
+    fadeT = setTimeout(function () {
+      try { cvs.classList.remove('show'); } catch (e) {}
+      setTimeout(cancel, 700);
+    }, durationMs);
+    function step(now) {
+      if (cancelled) return;
+      var dt = Math.min(0.05, (now - lastNow) / 1000);
+      lastNow = now;
+      // Suburban corridor — slow, dread-heavy walk. Picks up speed near the end.
+      var t01 = (now - startT) / durationMs;
+      var speed = 0.8 + t01 * 0.7;
+      totalProgress += speed * dt;
+      var py = 1 + (MAP_H - 4) * Math.min(0.97, totalProgress / 10);
+      var px = MAP_W / 2 + Math.sin(now * 0.005) * 0.08;
+      var w = cvs.width, h = cvs.height;
+      // Sky → ground gradient (deep red suburb sky)
+      var sg = ctx.createLinearGradient(0, 0, 0, h / 2);
+      sg.addColorStop(0, '#080203');
+      sg.addColorStop(1, '#2a060a');
+      ctx.fillStyle = sg; ctx.fillRect(0, 0, w, h / 2);
+      var fg = ctx.createLinearGradient(0, h / 2, 0, h);
+      fg.addColorStop(0, '#0a0205');
+      fg.addColorStop(1, '#1a0408');
+      ctx.fillStyle = fg; ctx.fillRect(0, h / 2, w, h / 2);
+      var bobY = Math.sin(now * 0.011) * 0.04;
+      var stripW = 4;
+      var rays = Math.ceil(w / stripW);
+      var camAngle = Math.PI / 2;
+      for (var i = 0; i < rays; i++) {
+        var sx = i * stripW;
+        var rayAng = camAngle - FOV / 2 + (i / rays) * FOV;
+        var rcos = Math.cos(rayAng), rsin = Math.sin(rayAng);
+        var mapX = Math.floor(px), mapY = Math.floor(py);
+        var ddx = Math.abs(1 / rcos) || 1e9;
+        var ddy = Math.abs(1 / rsin) || 1e9;
+        var stepX, stepY, sdX, sdY;
+        if (rcos < 0) { stepX = -1; sdX = (px - mapX) * ddx; }
+        else          { stepX = 1;  sdX = (mapX + 1 - px) * ddx; }
+        if (rsin < 0) { stepY = -1; sdY = (py - mapY) * ddy; }
+        else          { stepY = 1;  sdY = (mapY + 1 - py) * ddy; }
+        var hit = 0, side = 0, safety = 60;
+        while (!hit && safety-- > 0) {
+          if (sdX < sdY) { sdX += ddx; mapX += stepX; side = 0; }
+          else           { sdY += ddy; mapY += stepY; side = 1; }
+          if (mapX < 0 || mapY < 0 || mapX >= MAP_W || mapY >= MAP_H) { hit = 1; break; }
+          if (map[mapY * MAP_W + mapX] === 1) hit = 1;
+        }
+        var dist = side === 0
+          ? (mapX - px + (1 - stepX) / 2) / rcos
+          : (mapY - py + (1 - stepY) / 2) / rsin;
+        dist = Math.max(0.1, dist);
+        var wallH = Math.min(h * 4, h / dist);
+        var drawStart = (h - wallH) / 2 + bobY * h;
+        // Wall color: warm sepia, fades to black at distance (heavy fog)
+        var fog = Math.max(0.05, 1 - dist / 18);
+        var base = side === 1 ? 0.7 : 1.0;
+        ctx.fillStyle = 'rgb(' + Math.floor(70 * fog * base) + ',' +
+                                  Math.floor(40 * fog * base) + ',' +
+                                  Math.floor(24 * fog * base) + ')';
+        ctx.fillRect(sx, drawStart, stripW + 1, wallH);
+      }
+      // Distant silhouette: a black shape grows on the horizon as we approach,
+      // hinting at HARUKI waiting at the end of the corridor.
+      var silProg = Math.min(1, t01 * 1.4);
+      var silH = h * (0.18 + silProg * 0.45);
+      var silW = silH * 0.4;
+      var silX = w / 2 - silW / 2 + Math.sin(now * 0.003) * 4;
+      var silY = h / 2 - silH * 0.55 + bobY * h;
+      ctx.fillStyle = 'rgba(0,0,0,' + (0.55 + silProg * 0.35).toFixed(2) + ')';
+      ctx.beginPath();
+      ctx.ellipse(silX + silW / 2, silY + silH * 0.18, silW * 0.3, silH * 0.18, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillRect(silX, silY + silH * 0.15, silW, silH * 0.85);
+      // Red sky lightning rim (subtle)
+      if (Math.random() < 0.02 + t01 * 0.04) {
+        ctx.fillStyle = 'rgba(180,40,40,0.15)';
+        ctx.fillRect(0, 0, w, h * 0.5);
+      }
+      // Vignette
+      var grd = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.25,
+                                          w / 2, h / 2, Math.max(w, h) * 0.7);
+      grd.addColorStop(0, 'rgba(0,0,0,0)');
+      grd.addColorStop(1, 'rgba(0,0,0,0.9)');
+      ctx.fillStyle = grd;
+      ctx.fillRect(0, 0, w, h);
+      rafId = requestAnimationFrame(step);
+    }
+    rafId = requestAnimationFrame(step);
+    return cancel;
+  }
+
   function playHarukiBossCutscene(onDone) {
     var overlay = el('harukiBossCutscene');
     if (!overlay) { onDone(); return; }
@@ -2850,6 +2982,10 @@
     var skipBtn = el('hbcSkipBtn');
     if (portrait) portrait.classList.remove('zoom');
     if (hbcText) { hbcText.classList.remove('show'); hbcText.textContent = ''; }
+    // FPS approach — player walks down a dark suburban corridor toward HARUKI.
+    // Runs alongside the first text beats (LEVEL 9 → 月のような何か), then
+    // fades out before the lightning + portrait reveal at ~4.2s.
+    var hbcFpsCancel = runHbcFpsApproach(3800);
     if (audioInitialized) {
       GameEngine.startLoop('wind');
       GameEngine.playSound('breath_drone');
@@ -2878,6 +3014,7 @@
       if (cancelled) return;
       cancelled = true;
       for (var ti = 0; ti < timers.length; ti++) clearTimeout(timers[ti]);
+      try { if (hbcFpsCancel) hbcFpsCancel(); } catch (e) {}
       hideOverlay('harukiBossCutscene');
       if (audioInitialized) GameEngine.stopLoop('wind');
       _inCinematic = false;

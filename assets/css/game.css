@@ -3427,6 +3427,22 @@ button {
   background: #000;
   overflow: hidden;
 }
+/* FPS approach canvas — fills the overlay during the first ~3.8s of the
+   cutscene then fades out before the silhouette + lightning reveal. */
+.hbc-fps-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  image-rendering: pixelated;
+  z-index: 0;
+  opacity: 0;
+  transition: opacity 600ms ease-out;
+  pointer-events: none;
+  background: #000;
+}
+.hbc-fps-canvas.show { opacity: 1; }
 .hbc-sky {
   position: absolute;
   inset: 0 0 35% 0;
