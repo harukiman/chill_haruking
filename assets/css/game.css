@@ -3694,6 +3694,11 @@ button {
   letter-spacing: 0;
   text-shadow: 0 0 4px rgba(80, 128, 192, 0.95), 1px 1px 0 #000;
   pointer-events: none;
+  animation: equipped-pulse 1.4s ease-in-out infinite;
+}
+@keyframes equipped-pulse {
+  0%, 100% { opacity: 1; text-shadow: 0 0 4px rgba(80, 128, 192, 0.95), 1px 1px 0 #000; }
+  50%      { opacity: 0.7; text-shadow: 0 0 8px rgba(120, 160, 255, 1), 1px 1px 0 #000; }
 }
 .hud-dpad-slot .dpad-slot-count {
   position: absolute;
