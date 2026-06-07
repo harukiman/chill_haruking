@@ -1053,11 +1053,13 @@
          timeLimit: null },
     14: { id: 14, name: 'LEVEL 14', subtitle: 'THE TRENCH',
           rows: LV14_ROWS, theme: 14,
-          hint: '海底のごとき廃ステーション。床のほとんどが浸水しSANを削る。',
-          intro: '塩の匂い。足元は水。— 深くまで、降りて来てしまった。',
+          hint: '海底のごとき廃ステーション。床のほとんどが浸水しSANを削る。\n溺死者 (DROWNED) が水中を走る — 懐中電灯で抑えろ。',
+          intro: '塩の匂い。足元は水。— 深くまで、降りて来てしまった。\n水面下で、何かが動いた。',
           entities: [
             { type: 'crawler', gx: 8, gy: 8 },
-            { type: 'skinstealer', gx: 18, gy: 13 }
+            { type: 'skinstealer', gx: 18, gy: 13 },
+            { type: 'drowned', gx: 12, gy: 1 },
+            { type: 'drowned', gx: 6, gy: 15 }
           ],
           timeLimit: null },
     15: { id: 15, name: 'LEVEL 15', subtitle: 'THE GARDEN',
@@ -1559,7 +1561,8 @@
     civilian: 1,
     witness: 4,
     lurker: 5,
-    shadow: 6
+    shadow: 6,
+    drowned: 5
   };
   function _grantCoinsForKill(type, entity) {
     var amt = COIN_DROPS[type] || 1;
@@ -1667,6 +1670,11 @@
       flare: 2.2,   mirror: 1.4,  mirror_shard: 1.6,
       architect_blade: 1.2, soul_lantern: 2.4,
       siren_whistle: 1.4
+    },
+    drowned: {
+      pistol: 1.2,  shotgun: 1.6,  revolver: 1.2, katana: 1.4,
+      flare: 1.8,   architect_blade: 1.4, void_grenade: 1.5,
+      soul_lantern: 1.6
     },
     mrhotel: {
       pistol: 0.4,  shotgun: 0.5,  katana: 1.4, flare: 0.6,
@@ -2451,7 +2459,8 @@
     faceling: { name: 'FACELING', desc: 'バックルーム公式分類 Class 1 (擬態型)。\nM.E.G. メンバーや過去の no-clipper の姿に化ける。\n顔は常に「ぼやけて」見える。\n敵対的ではないが、稀に視線を合わせると SAN を引き抜く。' },
     witness: { name: 'WITNESS', desc: 'バックルーム公式分類 Class 1 (静止型)。\nLevel 6 暗闇の中で、ただ立ち、お前を見続ける。\n視線が交わる時、SAN だけが静かに削れていく。\n目を逸らせば実害は無いが、振り返ると ── まだ、そこにいる。' },
     lurker: { name: 'LURKER', desc: 'バックルーム公式分類 Class 2 (追跡型)。\n薄暗い角に潜み、お前から目を逸らした瞬間に一歩近付く。\n振り向く時には既に距離が縮まっている。\n直視している間は動かない。捕まれば SAN を大量に奪われる。' },
-    shadow: { name: 'SHADOW', desc: 'バックルーム公式分類 Class 3 (幻惑型)。\nLevel 9 でハルキの周辺に現れる影。\n4-6 マスの距離を保ち、視線が交わるとプレイヤーの SAN を絶え間なく削り続ける。\n光源 (フレア / 懐中電灯) で一時的に消滅する。' }
+    shadow: { name: 'SHADOW', desc: 'バックルーム公式分類 Class 3 (幻惑型)。\nLevel 9 でハルキの周辺に現れる影。\n4-6 マスの距離を保ち、視線が交わるとプレイヤーの SAN を絶え間なく削り続ける。\n光源 (フレア / 懐中電灯) で一時的に消滅する。' },
+    drowned: { name: 'DROWNED', desc: 'バックルーム未分類 (水生型)。\nLevel 14 の沈んだ通路に潜む溺死者。\n水タイル上では速くなり、しがみつく — 一度掴まれば離れない。\n陸 (乾いた床) では極端に遅い。光源で一時退散。' }
   };
   // NOTE: ENTITY_SOUND_MAP.echo / .faceling are added inline in ENTITY_SOUND_MAP literal
   // below (line ~3957). Don't reference ENTITY_SOUND_MAP here — it's declared later via var
@@ -4346,6 +4355,7 @@
       case 'witness':  return '#0e0e12'; // near-black, just barely a silhouette
       case 'lurker':   return '#1a141e'; // deep purple-black
       case 'shadow':   return '#080010'; // pure ink-black
+      case 'drowned':  return '#102838'; // cold deep-water blue-black
       default: return '#444';
     }
   }
@@ -4735,6 +4745,10 @@
     if (player.inWater) speed *= 0.55;
     var sprint = inp.sprint && player.stam > 5;
     if (sprint) speed *= 1.7;
+    // DROWNED grapple — player movement halved while grappled (recently touched).
+    if (player._drownedGrabUntil && performance.now() < player._drownedGrabUntil) {
+      speed *= 0.5;
+    }
     // Antacid sluggish penalty
     var nowSec = performance.now() / 1000;
     if (player._sluggishUntil && nowSec < player._sluggishUntil) speed *= 0.3;
@@ -8134,6 +8148,26 @@
         wanderEntity(e, dt, 40 * sMul);
         if (distP < 1.5 * TS) {
           attackPlayer(15 * dt);
+        }
+      } else if (e.type === 'drowned') {
+        // Aquatic predator: 2× speed when its own tile is water (type 7),
+        // 0.3× speed on dry land. Touch range deals chunky damage + slows
+        // player. Repelled by flashlight ON.
+        var drGx = Math.floor(e.x / TS), drGy = Math.floor(e.y / TS);
+        var drTile = currentMap && currentMap.tiles[drGy] && currentMap.tiles[drGy][drGx];
+        var drInWater = drTile === 7;
+        var drSpd = (drInWater ? 90 : 18) * sMul;
+        if (player.flashlightOn) drSpd *= 0.4; // light deters
+        if (distP < 9 * TS && distP > 0.5 * TS) {
+          var drx = (dx / distP) * drSpd * dt;
+          var dry = (dy / distP) * drSpd * dt;
+          if (isWalkable(e.x + drx, e.y)) e.x += drx;
+          if (isWalkable(e.x, e.y + dry)) e.y += dry;
+        }
+        if (distP < 1.4 * TS) {
+          attackPlayer(14 * dt);
+          // Slow the player while grappled
+          player._drownedGrabUntil = performance.now() + 200;
         }
       } else if (e.type === 'shadow') {
         // Hovers at mid range (4-6 tiles), drains SAN while in player FOV.
@@ -12089,6 +12123,7 @@
       witness:     { icon: '👁‍🗨', name: 'WITNESS' },
       lurker:      { icon: '🕵', name: 'LURKER' },
       shadow:      { icon: '🌑', name: 'SHADOW' },
+      drowned:     { icon: '🫧', name: 'DROWNED' },
       mrhotel:     { icon: '🎩', name: 'MR.HOTEL' },
       boss:        { icon: '👹', name: 'BOSS' },
       haruki_boss: { icon: '🩸', name: 'HARUKI 真' }

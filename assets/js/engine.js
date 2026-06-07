@@ -1088,6 +1088,14 @@
         // Pure void silhouette — vertically elongated, single faint glow point.
         ctx.fillStyle = 'rgba(120, 60, 200, ' + (fogFactor * 0.5).toFixed(2) + ')';
         ctx.fillRect(spriteScreenX - pairW * 0.3, faceY, pairW * 0.6, pairW * 0.6);
+      } else if (entity.type === 'drowned') {
+        // Two glassy eyes + tilted mouth ── drowned face look.
+        ctx.fillStyle = 'rgba(180, 220, 230, ' + (fogFactor * 0.85).toFixed(2) + ')';
+        ctx.fillRect(spriteScreenX - pairW * 1.1, faceY, pairW * 0.7, pairW * 0.5);
+        ctx.fillRect(spriteScreenX + pairW * 0.4, faceY, pairW * 0.7, pairW * 0.5);
+        // mouth slash
+        ctx.fillStyle = 'rgba(20, 40, 60, ' + fogFactor.toFixed(2) + ')';
+        ctx.fillRect(spriteScreenX - spriteWidth * 0.08, faceY + headHeight * 0.20, spriteWidth * 0.16, pairW * 0.3);
       } else if (entity.type === 'civilian') {
         // Two warm-toned eyes (more human) + a flesh-tone "mouth" line.
         ctx.fillStyle = 'rgba(40, 30, 20, ' + fogFactor.toFixed(2) + ')';
