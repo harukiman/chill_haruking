@@ -4362,6 +4362,10 @@
     if (tut_ && tut_.style.display !== 'none') return true;
     var lvl_ = el('levelSelectOverlay');
     if (lvl_ && lvl_.style.display !== 'none') return true;
+    var sho_ = el('shopOverlay');
+    if (sho_ && sho_.style.display !== 'none') return true;
+    var ta_ = el('titleArchiveOverlay');
+    if (ta_ && ta_.style.display !== 'none') return true;
     return false;
   }
 
