@@ -4954,10 +4954,15 @@
       var charm = hasEternalCharm();
       if (cn) cn.textContent = charm ? '∞' : ('×' + cnt);
       btn.classList.toggle('empty', cnt <= 0 && !charm);
+      // Show only when in PLAYING state AND we actually have a weapon to fire.
+      if (state === ST.PLAYING) btn.classList.add('show');
     } else {
       if (ic) ic.innerHTML = '<span class="weapon-emoji">⚔</span>';
       if (cn) cn.textContent = '—';
       btn.classList.add('empty');
+      // No weapon equipped — hide the button entirely so the player isn't
+      // pressing a disabled icon and wondering why nothing happens.
+      btn.classList.remove('show');
     }
     // Mirror to FPS hand view
     var hand = el('weaponHand');
