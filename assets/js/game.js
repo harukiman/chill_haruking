@@ -5826,15 +5826,23 @@
         var bMax = bossEnt.bossHpMax || bossEnt.bossHp || 200;
         var bCur = Math.max(0, bossEnt.bossHp || 0);
         var bPct = bMax > 0 ? bCur / bMax : 0;
+        // Compute phase label that matches the AI thresholds.
+        var bossPhaseLabel = '';
+        if (bossEnt.type === 'boss' || bossEnt.type === 'haruki_boss') {
+          if (bPct < 0.175 && bossEnt.type === 'haruki_boss') bossPhaseLabel = ' / 第4形態 残光';
+          else if (bPct < 0.45) bossPhaseLabel = ' / 第3形態 影分身';
+          else if (bPct < 0.75) bossPhaseLabel = ' / 第2形態 加速';
+          else bossPhaseLabel = ' / 第1形態';
+        }
         if (player._hudCache.bossPct !== bPct || player._hudCache.bossType !== bossEnt.type) {
           var fillEl = el('bossHpBarFill');
           var nameEl = el('bossHpName');
           var numEl = el('bossHpNum');
           if (fillEl) fillEl.style.width = (bPct * 100).toFixed(1) + '%';
           if (nameEl) nameEl.textContent =
-            bossEnt._isHidden ? '★ HIDDEN — 祭壇の影' :
-            bossEnt.type === 'haruki_boss' ? 'HARUKI 真' :
-            'THE ARCHITECT';
+            (bossEnt._isHidden ? '★ HIDDEN — 祭壇の影' :
+             bossEnt.type === 'haruki_boss' ? 'HARUKI 真' :
+             'THE ARCHITECT') + bossPhaseLabel;
           if (numEl) numEl.textContent = Math.ceil(bCur) + ' / ' + bMax;
           bbn.classList.toggle('low', bPct < 0.30);
           if (!bbn.classList.contains('show')) bbn.classList.add('show');
