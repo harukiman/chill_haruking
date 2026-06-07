@@ -8829,10 +8829,21 @@
     if (!pickedUpItems[currentLevel]) pickedUpItems[currentLevel] = {};
     pickedUpItems[currentLevel][gridKey(gx, gy)] = true;
     delete pickupSpots[gridKey(gx, gy)];
+    // Check lifetime-first-pickup BEFORE marking it seen below — used to
+    // upgrade the discovery label to ★ 新発見 for the very first encounter.
+    var isNewDiscovery = false;
+    try {
+      var allColl0 = JSON.parse(localStorage.getItem('thebackrooms_items_collected_v1') || '{}');
+      isNewDiscovery = !allColl0[itemId];
+    } catch (e) {}
     var nameLabel = item.name + (item.category === 'weapon' ? ' (×' + addAmount + ')' : '');
+    var discoveryLabel = isNewDiscovery ? '★ 新発見! ★' : 'アイテム入手';
     // Pass the item id (not the emoji) so the discovery popup can use
     // the realistic SVG when available, falling back to icon otherwise.
-    showDiscovery(WEAPON_SVG[itemId] ? itemId : item.icon, 'アイテム入手', nameLabel);
+    showDiscovery(WEAPON_SVG[itemId] ? itemId : item.icon, discoveryLabel, nameLabel);
+    if (isNewDiscovery && audioInitialized) {
+      try { GameEngine.playSound('stinger'); } catch (e) {}
+    }
     if (audioInitialized) {
       // Weapons get the heavier metal-clink + chamber-chunk pickup;
       // consumables keep the lighter item_get chime.
