@@ -997,6 +997,7 @@
          hint: 'オフィス街の屋外プラザ。露店主 (M) と中立の人々。\n彼らは攻撃されない限り反撃しない。コインで品を買おう。',
          intro: '駅を抜けた...空が広い。露店の声、行き交う人。',
          entities: [
+           { type: 'civilian', gx: 8,   gy: 16 }, // shopkeeper at the M tile
            { type: 'civilian', gx: 16,  gy: 6 },
            { type: 'civilian', gx: 22,  gy: 11 },
            { type: 'civilian', gx: 18,  gy: 16 },
