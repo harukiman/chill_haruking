@@ -3292,40 +3292,32 @@
     el('discoveryName').textContent = name;
     pop.classList.remove('show');
     pop.style.display = 'flex';
-    pop.style.pointerEvents = 'auto';
+    // User report 2026-06-08: 「アイテムを拾うと硬直する」.
+    // Root cause: pointer-events: 'auto' on the popup intercepted
+    // touches in its screen area while it was visible (up to 2.6s),
+    // blocking the joystick / look zone underneath. Now non-blocking
+    // — the popup is purely informational; auto-dismiss handles
+    // cleanup so no tap is needed.
+    pop.style.pointerEvents = 'none';
     void pop.offsetWidth; // force reflow
     pop.classList.add('show');
     _discoveryActive = true;
 
-    // Tap-to-dismiss, but ignore close input for the first 500ms.
-    // (The same gesture / button press that triggered the pickup often spills
-    //  over and would immediately dismiss the popup.)
     var closed = false;
-    var canClose = false;
-    setTimeout(function () { canClose = true; }, 500);
     var closeFn = function () {
       if (closed) return;
-      if (!canClose) return; // user is still holding the trigger gesture
       closed = true;
-      pop.removeEventListener('click', closeFn);
-      pop.removeEventListener('touchstart', closeFn);
       if (window._discoveryCloseFn === closeFn) window._discoveryCloseFn = null;
       pop.classList.remove('show');
       setTimeout(function () {
         pop.style.display = 'none';
-        pop.style.pointerEvents = 'none';
         _discoveryActive = false;
       }, 400);
     };
-    pop.addEventListener('click', closeFn);
-    pop.addEventListener('touchstart', closeFn);
     window._discoveryCloseFn = closeFn;
-    // Auto-dismiss after 2.6s so non-blocking pop-ups don't litter the screen.
-    // (Game is not paused, so the user keeps moving — they don't need to tap.)
-    _discoveryTimer = setTimeout(function () {
-      canClose = true;
-      closeFn();
-    }, 2600);
+    // Auto-dismiss after 1.8s (was 2.6s) — input-non-blocking now so
+    // it can clear faster without feeling rushed.
+    _discoveryTimer = setTimeout(closeFn, 1800);
   }
 
   // Encounter cinematic for entity first sighting

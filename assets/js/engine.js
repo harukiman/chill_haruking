@@ -870,12 +870,15 @@
         // Default: theme-driven (else burgundy carpet)
         var defFloor = (engine.theme && engine.theme.floorDefault) || [60, 25, 22];
         var fR = defFloor[0], fG = defFloor[1], fB = defFloor[2];
-        // V8 2026-06-07: Per-tile floor color jitter so the floor
-        // doesn't read as a single solid color across the whole level.
-        // User feedback: 「マップが全体的に四角四角」 — small ±6% per
-        // tile breaks the uniform-grid look. Same seed approach as
-        // walls so adjacent floor tiles are subtly distinct.
-        var fJit = (seededRandom(fgx * 19, fgy * 23, 53) - 0.5) * 0.12;
+        // V8 jitter — cached per tile (was per pixel which cost
+        // ~250k seededRandom calls/frame on big screens). User feedback
+        // 2026-06-08 「FPS を最低 40 程度まで上げる」.
+        var fTileK = fgy * 1024 + fgx;
+        var fJit = engine._floorJitCache[fTileK];
+        if (fJit === undefined) {
+          fJit = (seededRandom(fgx * 19, fgy * 23, 53) - 0.5) * 0.12;
+          engine._floorJitCache[fTileK] = fJit;
+        }
         fR = Math.max(0, Math.min(255, (fR * (1 + fJit)) | 0));
         fG = Math.max(0, Math.min(255, (fG * (1 + fJit * 0.85)) | 0));
         fB = Math.max(0, Math.min(255, (fB * (1 + fJit * 0.7)) | 0));
@@ -949,11 +952,14 @@
         // Default ceiling: theme-driven (else dark warm tone)
         var defCeil = (engine.theme && engine.theme.ceilingDefault) || [30, 24, 20];
         var cR = defCeil[0], cG = defCeil[1], cB = defCeil[2];
-        // V8 2026-06-07: Per-tile ceiling color jitter to match the
-        // wall + floor variation, killing the last "uniform sheet"
-        // surface in the raycaster. Slightly tighter swing (±4%) since
-        // the ceiling is usually less visible.
-        var cJit = (seededRandom(cgx * 17, cgy * 29, 67) - 0.5) * 0.08;
+        // V8 ceiling jitter — same per-tile cache pattern as the
+        // floor so we don't burn seededRandom() per-pixel.
+        var cTileK = cgy * 1024 + cgx;
+        var cJit = engine._ceilJitCache[cTileK];
+        if (cJit === undefined) {
+          cJit = (seededRandom(cgx * 17, cgy * 29, 67) - 0.5) * 0.08;
+          engine._ceilJitCache[cTileK] = cJit;
+        }
         cR = Math.max(0, Math.min(255, (cR * (1 + cJit)) | 0));
         cG = Math.max(0, Math.min(255, (cG * (1 + cJit * 0.85)) | 0));
         cB = Math.max(0, Math.min(255, (cB * (1 + cJit * 0.7)) | 0));
@@ -1371,6 +1377,12 @@
     // Constants
     TILE_SIZE: TILE_SIZE,
 
+    // V8 perf caches — per-tile color jitter for floor + ceiling so
+    // we don't burn seededRandom() per pixel during raycaster casts.
+    // Cleared by loadMap on each level switch.
+    _floorJitCache: {},
+    _ceilJitCache: {},
+
     // Canvas
     canvas: null,
     ctx: null,
@@ -1583,6 +1595,11 @@
     // ─────────────────────────────────────────────
     loadMap: function (mapData) {
       this.currentMap = mapData;
+      // Reset per-tile jitter caches each level. Faster to clear+reseed
+      // than try to keep stale data invalidated, and the keyspace is
+      // small (one entry per tile).
+      this._floorJitCache = {};
+      this._ceilJitCache = {};
     },
 
     getTile: function (gx, gy) {
@@ -4587,8 +4604,11 @@
         this._drawStatic(ctx, staticIntensity);
       }
 
-      // V6: Film grain — subtle every frame (postFX toggle gates this)
-      if (this.postFxEnabled && this.grainIntensity > 0) {
+      // V6: Film grain — subtle every frame (postFX toggle gates this).
+      // Auto-skip below 35 fps; createImageData + per-pixel random
+      // is one of the heavier per-frame ops on mobile.
+      if (this.postFxEnabled && this.grainIntensity > 0 &&
+          (this._fpsEma === undefined || this._fpsEma >= 35)) {
         this._drawGrain(ctx, this.grainIntensity);
       }
 
@@ -4613,8 +4633,12 @@
         ctx.fillRect(0, 0, w, h);
       }
 
-      // V6: Chromatic aberration at edges (postFX toggle gates this)
-      if (this.postFxEnabled && this.chromaticLevel > 0) {
+      // V6: Chromatic aberration at edges (postFX toggle gates this).
+      // Auto-skip on low FPS — getImageData/putImageData is the single
+      // most expensive post-fx on mobile and the user explicitly asked
+      // for ≥40 fps on 2026-06-08.
+      if (this.postFxEnabled && this.chromaticLevel > 0 &&
+          (this._fpsEma === undefined || this._fpsEma >= 45)) {
         this._drawChromaticAberration(ctx, this.chromaticLevel);
       }
 
