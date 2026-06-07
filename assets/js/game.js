@@ -6831,6 +6831,11 @@
         setMGStatus('スピンを押せ');
       },
       action: function () {
+        // After reels finish, the action button changes to 終了 and tap
+        // should close the minigame. Previously the early-return killed
+        // that path so the player was stuck on the spin screen until
+        // they manually re-tapped the X.
+        if (mgState.phase === 'done') { closeMiniGame(); return; }
         if (mgState.phase !== 'idle') return;
         mgState.phase = 'spinning';
         for (var i = 0; i < 3; i++) {
