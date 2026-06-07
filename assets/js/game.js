@@ -925,10 +925,12 @@
   var LEVELS = {
     0: { id: 0, name: 'LEVEL 0', subtitle: 'THE LOBBY',
          rows: LV0_ROWS, theme: 0,
-         hint: '黄色い壁紙の無限の部屋。湿った絨毯。蛍光灯のハム音。\n稀に「もう一人の自分」が現れる。',
+         hint: '黄色い壁紙の無限の部屋。湿った絨毯。蛍光灯のハム音。\n稀に「もう一人の自分」が現れる。「観測者」が遠くで見ている。',
          intro: '壁を抜けた先...黄色い廊下が、どこまでも。',
          entities: [
-           { type: 'echo', gx: 17, gy: 11 }
+           { type: 'echo', gx: 17, gy: 11 },
+           { type: 'echo', gx: 8,  gy: 8  },  // ambient echo in opposite corner
+           { type: 'witness', gx: 10, gy: 18 } // far-side voyeur, SAN drain only
          ],
          timeLimit: null },
     1: { id: 1, name: 'LEVEL 1', subtitle: 'HABITABLE ZONE',
@@ -942,9 +944,13 @@
          timeLimit: null },
     2: { id: 2, name: 'LEVEL 2', subtitle: 'PIPE DREAMS',
          rows: LV2_ROWS, theme: 2,
-         hint: '配管の迷路。足元の水が SAN を削る。',
+         hint: '配管の迷路。足元の水が SAN を削る。\n配管の隙間から「観測者」が覗いている。',
          intro: '配管から水が滴る音。空気が湿っている。',
-         entities: [ { type: 'smiler', gx: 12, gy: 12 } ],
+         entities: [
+           { type: 'smiler', gx: 12, gy: 12 },
+           { type: 'witness', gx: 5, gy: 5 },   // far-corner voyeur
+           { type: 'crawler', gx: 18, gy: 18 }  // lurking in the deep pipe
+         ],
          timeLimit: null },
     3: { id: 3, name: 'LEVEL 3', subtitle: 'ELECTRICAL STATION',
          rows: LV3_ROWS, theme: 3,
