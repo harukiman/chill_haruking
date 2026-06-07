@@ -541,6 +541,124 @@ button {
 /* ============================================================
  *  TITLE SETTINGS OVERLAY
  * ============================================================ */
+/* Title archive overlay — same card-owns-scroll pattern as settings. */
+.title-archive-overlay {
+  z-index: 55;
+  background: rgba(0, 0, 0, 0.88);
+  align-items: center;
+  justify-content: center;
+  padding: calc(env(safe-area-inset-top, 0px) + 8px) 12px
+           calc(env(safe-area-inset-bottom, 0px) + 8px);
+  box-sizing: border-box;
+}
+.ta-card {
+  width: min(94vw, 440px);
+  max-height: calc(100vh - 24px);
+  max-height: calc(100svh - 24px);
+  max-height: calc(100dvh - 24px);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  background: linear-gradient(180deg, rgba(35, 26, 6, 0.95) 0%, rgba(15, 12, 4, 0.95) 100%);
+  border: 1px solid rgba(212, 179, 64, 0.55);
+  border-radius: 14px;
+  padding: 14px 16px 18px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(240, 220, 138, 0.1);
+}
+.ta-close-x {
+  position: sticky;
+  top: 0;
+  align-self: flex-end;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(60, 24, 24, 0.85);
+  color: #fff;
+  border: 1px solid rgba(220, 60, 60, 0.7);
+  font-size: 20px;
+  cursor: pointer;
+  z-index: 2;
+}
+.ta-title {
+  font-family: 'Times New Roman', serif;
+  font-size: 20px;
+  letter-spacing: 0.35em;
+  text-align: center;
+  color: #e8d57a;
+  margin: 0 0 10px;
+  text-shadow: 0 0 12px rgba(212, 179, 64, 0.4);
+  flex-shrink: 0;
+}
+.ta-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+  flex-shrink: 0;
+}
+.ta-tab {
+  flex: 1;
+  padding: 7px 8px;
+  background: rgba(28, 22, 8, 0.6);
+  border: 1px solid #786020;
+  color: #b09040;
+  font-size: 12px;
+  letter-spacing: 0.15em;
+  cursor: pointer;
+  border-radius: 6px;
+  font-family: inherit;
+}
+.ta-tab.active {
+  background: rgba(120, 90, 24, 0.8);
+  color: #fff2a0;
+  border-color: #d4b340;
+}
+.ta-counter {
+  font-size: 11px;
+  color: #b09040;
+  letter-spacing: 0.2em;
+  margin: 0 0 8px;
+  text-align: center;
+}
+.ta-list { display: flex; flex-direction: column; gap: 6px; }
+.ta-note-row {
+  padding: 8px 10px;
+  background: rgba(40, 30, 8, 0.55);
+  border: 1px solid #483910;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.ta-note-row:active { background: rgba(80, 60, 16, 0.8); }
+.ta-note-row.locked { opacity: 0.4; cursor: default; }
+.ta-note-title { font-size: 12px; color: #f0dc8a; font-weight: 600; letter-spacing: 0.1em; }
+.ta-note-level { font-size: 9px; color: #786020; margin-top: 2px; letter-spacing: 0.15em; }
+.ta-note-body {
+  margin-top: 6px;
+  font-size: 11px;
+  color: #d8d2bc;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  display: none;
+}
+.ta-note-row.open .ta-note-body { display: block; }
+.ta-ach-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: rgba(40, 30, 8, 0.55);
+  border: 1px solid #483910;
+  border-radius: 6px;
+}
+.ta-ach-row.locked { opacity: 0.35; }
+.ta-ach-icon { font-size: 22px; min-width: 26px; text-align: center; color: #d4b340; }
+.ta-ach-row.locked .ta-ach-icon { color: #483910; }
+.ta-ach-name { font-size: 12px; color: #f0dc8a; }
+.ta-ach-row.locked .ta-ach-name { color: #786020; }
+.ta-empty { text-align: center; font-size: 11px; color: #483910; padding: 24px 12px; }
+
 /* Title settings overlay — the card itself owns the scroll. Previous
    attempts had the overlay scroll, but iOS Safari's mix of flex-center
    on the parent + tall children caused the card to be unscrollably

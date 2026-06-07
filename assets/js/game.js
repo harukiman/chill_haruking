@@ -10000,6 +10000,28 @@
   //  EVENT BINDINGS
   // ============================================================
   function bindEvents() {
+    // Title archive: tab buttons
+    var taTabs = document.querySelectorAll('.ta-tab');
+    for (var taI = 0; taI < taTabs.length; taI++) {
+      (function (btn) {
+        btn.addEventListener('click', function () {
+          var which = btn.getAttribute('data-ta-tab');
+          var tabs = document.querySelectorAll('.ta-tab');
+          for (var x = 0; x < tabs.length; x++) tabs[x].classList.toggle('active', tabs[x] === btn);
+          var pn = el('taPanelNotes');
+          var pa = el('taPanelAchs');
+          if (pn) pn.style.display = (which === 'notes') ? 'block' : 'none';
+          if (pa) pa.style.display = (which === 'achs')  ? 'block' : 'none';
+        });
+      })(taTabs[taI]);
+    }
+    var taBackdrop = el('titleArchiveOverlay');
+    if (taBackdrop) {
+      taBackdrop.addEventListener('click', function (e) {
+        if (e.target === taBackdrop) hideOverlay('titleArchiveOverlay');
+      });
+    }
+
     // Item-use modal: D-pad assignment buttons
     var iuAssignBtns = document.querySelectorAll('.iu-assign-btn');
     for (var ai = 0; ai < iuAssignBtns.length; ai++) {
@@ -10774,6 +10796,68 @@
     }
   } catch (e) {}
 
+  // ── TITLE ARCHIVE — lifetime collected notes + achievement gallery ──
+  function renderTitleArchive() {
+    // Build a title → { text, levelId } index from NOTES_POOL so we can show
+    // the full text of any note the player has ever read.
+    var byTitle = {};
+    for (var lk in NOTES_POOL) {
+      var arr = NOTES_POOL[lk] || [];
+      for (var ai = 0; ai < arr.length; ai++) {
+        byTitle[arr[ai].title] = { text: arr[ai].text, levelId: parseInt(lk, 10) };
+      }
+    }
+    var totalNotes = Object.keys(byTitle).length;
+    var lifetime = Object.keys(lifetimeNoteTitles || {});
+    var ownedNotes = lifetime.filter(function (t) { return byTitle[t]; });
+    var notesList = el('taNotesList');
+    var notesCount = el('taNotesCount');
+    if (notesCount) notesCount.textContent = ownedNotes.length + ' / ' + totalNotes + ' 書類';
+    if (notesList) {
+      notesList.innerHTML = '';
+      if (ownedNotes.length === 0) {
+        notesList.innerHTML = '<p class="ta-empty">まだ書類を読んでいない</p>';
+      } else {
+        // Sort by level then title for stable order
+        ownedNotes.sort(function (a, b) {
+          var la = byTitle[a].levelId, lb = byTitle[b].levelId;
+          if (la !== lb) return la - lb;
+          return a < b ? -1 : (a > b ? 1 : 0);
+        });
+        ownedNotes.forEach(function (title) {
+          var info = byTitle[title];
+          var row = document.createElement('div');
+          row.className = 'ta-note-row';
+          row.innerHTML =
+            '<div class="ta-note-title">' + title + '</div>' +
+            '<div class="ta-note-level">LEVEL ' + info.levelId + '</div>' +
+            '<div class="ta-note-body">' + info.text + '</div>';
+          row.addEventListener('click', function () { row.classList.toggle('open'); });
+          notesList.appendChild(row);
+        });
+      }
+    }
+    // Achievements panel
+    var achsList = el('taAchsList');
+    var achsCount = el('taAchsCount');
+    var achIds = Object.keys(ACHIEVEMENTS);
+    var achUnlocked = achIds.filter(function (id) { return !!unlockedAchievements[id]; }).length;
+    if (achsCount) achsCount.textContent = achUnlocked + ' / ' + achIds.length + ' 達成';
+    if (achsList) {
+      achsList.innerHTML = '';
+      achIds.forEach(function (id) {
+        var ach = ACHIEVEMENTS[id];
+        var unlocked = !!unlockedAchievements[id];
+        var row = document.createElement('div');
+        row.className = 'ta-ach-row' + (unlocked ? '' : ' locked');
+        row.innerHTML =
+          '<span class="ta-ach-icon">' + (unlocked ? ach.icon : '?') + '</span>' +
+          '<span class="ta-ach-name">' + (unlocked ? ach.name : '— 未達成 —') + '</span>';
+        achsList.appendChild(row);
+      });
+    }
+  }
+
   // Global title action façade — used by inline onclick attrs as a robust fallback
   // so title buttons always work even if addEventListener fails for any reason.
   window.__titleAction = function (action) {
@@ -10821,6 +10905,15 @@
           toast(cheatActive ? '★ 無双モード ON — 全アイテム無限・3倍ダメージ' : '無双モード OFF');
           break;
         case 'controls': stage = 'controls'; showOverlay('tutorialOverlay'); break;
+        case 'archive':
+          stage = 'archive';
+          renderTitleArchive();
+          showOverlay('titleArchiveOverlay');
+          break;
+        case 'closeArchive':
+          stage = 'closeArchive';
+          hideOverlay('titleArchiveOverlay');
+          break;
         case 'settings':
           stage = 'settings';
           if (typeof window.refreshTitleSettingsState === 'function') window.refreshTitleSettingsState();
