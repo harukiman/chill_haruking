@@ -5486,9 +5486,15 @@
     if (have >= total) {
       try { unlockAchievement('all_secret_docs'); } catch (e) {}
     }
-    // Show the doc the same way regular notes are shown so the player reads it
-    showNoteViewer(doc.title, doc.text);
-    if (audioInitialized) GameEngine.playSound('paper');
+    // Show the doc the same way regular notes are shown so the player reads it.
+    // 重厚 mode renders the panel with serif font + amber tint so secret docs
+    // feel distinct from regular lore notes.
+    showNoteViewer(doc.title, doc.text, { weight: 'heavy' });
+    if (audioInitialized) {
+      try { GameEngine.playSound('paper'); } catch (e) {}
+      // Double-layer paper SE — page-turn effect, sells the gravity.
+      setTimeout(function () { try { GameEngine.playSound('paper'); } catch (e) {} }, 200);
+    }
     return true;
   }
   function hasAllSecretDocs() {
@@ -7658,9 +7664,13 @@
     if (performance.now() - _noteViewerOpenedAt < NOTE_INPUT_LOCK_MS) return false;
     return true;
   }
-  function showNoteViewer(title, text) {
+  function showNoteViewer(title, text, opts) {
     el('noteTitle').textContent = title;
     el('noteText').textContent = text;
+    // Optional 重厚 mode for secret docs — serif + amber tint, applied via
+    // CSS class on the note-panel.
+    var panel = el('noteViewerOverlay') && el('noteViewerOverlay').querySelector('.note-panel');
+    if (panel) panel.classList.toggle('weight-heavy', !!(opts && opts.weight === 'heavy'));
     showOverlay('noteViewerOverlay');
     _noteViewerOpenedAt = performance.now();
     _noteCloseArmed = false;

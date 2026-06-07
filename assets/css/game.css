@@ -3152,6 +3152,28 @@ button {
   border-radius: 16px;
   box-shadow: 0 12px 36px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(240, 220, 138, 0.1);
 }
+/* 重厚 mode — applied when showing secret docs. Heavier border, deeper
+   background, serif body, gold rule under title. */
+.note-panel.weight-heavy {
+  background: linear-gradient(180deg, #2a1d0a 0%, #100a06 100%);
+  border: 1.5px solid rgba(240, 200, 80, 0.7);
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(240, 220, 138, 0.18);
+}
+.note-panel.weight-heavy .note-title {
+  color: #ffe0a0;
+  border-bottom: 1px solid rgba(212, 179, 64, 0.45);
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+  font-size: 19px;
+  text-shadow: 0 0 10px rgba(212, 179, 64, 0.55);
+}
+.note-panel.weight-heavy .note-text {
+  font-family: 'Times New Roman', serif;
+  font-size: 15px;
+  line-height: 2.0;
+  color: #f5ecca;
+  letter-spacing: 0.04em;
+}
 .note-title {
   font-size: 17px;
   letter-spacing: 0.18em;
