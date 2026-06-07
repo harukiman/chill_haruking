@@ -2297,6 +2297,72 @@
     var anyClose = (pauseBtn && pauseBtn.pressed) || (phoneBtnRaw && phoneBtnRaw.pressed);
     var anyConfirm = actionBtnRaw && actionBtnRaw.pressed;
 
+    // ── MINIGAME GAMEPAD INPUT ─────────────────────────────────
+    // Left stick / D-pad moves a virtual cursor on the minigame canvas, A
+    // taps where the cursor sits. Holding A while moving emits drag events.
+    // Mini-games already handle tap/drag via their def.onTap / def.onDrag,
+    // so no per-game wiring needed.
+    var mgOverlay = el('minigameOverlay');
+    if (mgOverlay && mgOverlay.style.display !== 'none' && mgOverlay.style.display !== '' &&
+        miniGameOpen && currentMiniGame) {
+      var mgCanvas = el('minigameCanvas');
+      if (mgCanvas) {
+        if (!gp._mgCursor) {
+          gp._mgCursor = { x: mgCanvas.width / 2, y: mgCanvas.height / 2 };
+        }
+        // Movement: left stick (axes 0,1) priority, fall back to D-pad
+        var lx = gp.axes[0] || 0;
+        var ly = gp.axes[1] || 0;
+        if (Math.abs(lx) < 0.15) lx = 0;
+        if (Math.abs(ly) < 0.15) ly = 0;
+        var dpUp    = gp.buttons[12] && gp.buttons[12].pressed;
+        var dpDown  = gp.buttons[13] && gp.buttons[13].pressed;
+        var dpLeft  = gp.buttons[14] && gp.buttons[14].pressed;
+        var dpRight = gp.buttons[15] && gp.buttons[15].pressed;
+        if (dpLeft)  lx = -1;
+        if (dpRight) lx =  1;
+        if (dpUp)    ly = -1;
+        if (dpDown)  ly =  1;
+        var spd = Math.min(mgCanvas.width, mgCanvas.height) * 0.018;
+        gp._mgCursor.x += lx * spd;
+        gp._mgCursor.y += ly * spd;
+        gp._mgCursor.x = Math.max(0, Math.min(mgCanvas.width  - 1, gp._mgCursor.x));
+        gp._mgCursor.y = Math.max(0, Math.min(mgCanvas.height - 1, gp._mgCursor.y));
+        // A button → tap (on press), B/× → close
+        var mgConfirm = gp.buttons[gamepadMap.action] && gp.buttons[gamepadMap.action].pressed;
+        var mgCancel  = gp.buttons[1] && gp.buttons[1].pressed;
+        var def = MINI_GAMES && MINI_GAMES[currentMiniGame];
+        if (def) {
+          if (mgConfirm && !gp._mgConfirmPrev) {
+            if (def.onTap) def.onTap(gp._mgCursor.x, gp._mgCursor.y, mgCanvas.width, mgCanvas.height);
+          } else if (mgConfirm && (lx !== 0 || ly !== 0)) {
+            if (def.onDrag) def.onDrag(gp._mgCursor.x, gp._mgCursor.y, mgCanvas.width, mgCanvas.height);
+          }
+        }
+        gp._mgConfirmPrev = mgConfirm;
+        if (mgCancel && !gp._mgCancelPrev) {
+          try { closeMiniGame(); } catch (e) {}
+        }
+        gp._mgCancelPrev = mgCancel;
+        // Render a cursor overlay so the player sees where the tap will land.
+        try {
+          var mgCtx = mgCanvas.getContext('2d');
+          mgCtx.save();
+          mgCtx.strokeStyle = '#ffd070';
+          mgCtx.lineWidth = 2;
+          mgCtx.beginPath();
+          mgCtx.arc(gp._mgCursor.x, gp._mgCursor.y, 10, 0, Math.PI * 2);
+          mgCtx.stroke();
+          mgCtx.strokeStyle = 'rgba(0,0,0,0.85)';
+          mgCtx.beginPath();
+          mgCtx.arc(gp._mgCursor.x, gp._mgCursor.y, 12, 0, Math.PI * 2);
+          mgCtx.stroke();
+          mgCtx.restore();
+        } catch (e) {}
+        return; // do not pass input through to the world while a minigame is up
+      }
+    }
+
     // Global lock: any overlay close path can set window._gpGlobalLockUntil
     // to suppress the still-held button from confirming a title menu item.
     if (window._gpGlobalLockUntil && performance.now() < window._gpGlobalLockUntil) {
