@@ -1069,7 +1069,9 @@
           entities: [
             { type: 'faceling', gx: 12, gy: 8 },
             { type: 'hound', gx: 18, gy: 14 },
-            { type: 'haruki', gx: 15, gy: 17 }
+            { type: 'haruki', gx: 15, gy: 17 },
+            { type: 'vinewalker', gx: 5, gy: 5 },
+            { type: 'vinewalker', gx: 20, gy: 11 }
           ],
           timeLimit: null }
   };
@@ -1562,7 +1564,8 @@
     witness: 4,
     lurker: 5,
     shadow: 6,
-    drowned: 5
+    drowned: 5,
+    vinewalker: 5
   };
   function _grantCoinsForKill(type, entity) {
     var amt = COIN_DROPS[type] || 1;
@@ -1675,6 +1678,11 @@
       pistol: 1.2,  shotgun: 1.6,  revolver: 1.2, katana: 1.4,
       flare: 1.8,   architect_blade: 1.4, void_grenade: 1.5,
       soul_lantern: 1.6
+    },
+    vinewalker: {
+      pistol: 0.8,  shotgun: 1.2,  revolver: 0.8, katana: 2.0,
+      flare: 2.0,   architect_blade: 1.6, revenant_blade: 1.4,
+      void_grenade: 1.4
     },
     mrhotel: {
       pistol: 0.4,  shotgun: 0.5,  katana: 1.4, flare: 0.6,
@@ -2460,7 +2468,8 @@
     witness: { name: 'WITNESS', desc: 'バックルーム公式分類 Class 1 (静止型)。\nLevel 6 暗闇の中で、ただ立ち、お前を見続ける。\n視線が交わる時、SAN だけが静かに削れていく。\n目を逸らせば実害は無いが、振り返ると ── まだ、そこにいる。' },
     lurker: { name: 'LURKER', desc: 'バックルーム公式分類 Class 2 (追跡型)。\n薄暗い角に潜み、お前から目を逸らした瞬間に一歩近付く。\n振り向く時には既に距離が縮まっている。\n直視している間は動かない。捕まれば SAN を大量に奪われる。' },
     shadow: { name: 'SHADOW', desc: 'バックルーム公式分類 Class 3 (幻惑型)。\nLevel 9 でハルキの周辺に現れる影。\n4-6 マスの距離を保ち、視線が交わるとプレイヤーの SAN を絶え間なく削り続ける。\n光源 (フレア / 懐中電灯) で一時的に消滅する。' },
-    drowned: { name: 'DROWNED', desc: 'バックルーム未分類 (水生型)。\nLevel 14 の沈んだ通路に潜む溺死者。\n水タイル上では速くなり、しがみつく — 一度掴まれば離れない。\n陸 (乾いた床) では極端に遅い。光源で一時退散。' }
+    drowned: { name: 'DROWNED', desc: 'バックルーム未分類 (水生型)。\nLevel 14 の沈んだ通路に潜む溺死者。\n水タイル上では速くなり、しがみつく — 一度掴まれば離れない。\n陸 (乾いた床) では極端に遅い。光源で一時退散。' },
+    vinewalker: { name: 'VINEWALKER', desc: 'バックルーム未分類 (植生型)。\nLevel 15 の庭園に棲息。\n生垣の影で静止し、プレイヤーが近付くと触手状の蔓を伸ばす。\n触れると掴まれ、徐々に SAN と HP を吸い取られる。\n刀 / フレアで一時的に焼き切れる。' }
   };
   // NOTE: ENTITY_SOUND_MAP.echo / .faceling are added inline in ENTITY_SOUND_MAP literal
   // below (line ~3957). Don't reference ENTITY_SOUND_MAP here — it's declared later via var
@@ -4356,6 +4365,7 @@
       case 'lurker':   return '#1a141e'; // deep purple-black
       case 'shadow':   return '#080010'; // pure ink-black
       case 'drowned':  return '#102838'; // cold deep-water blue-black
+      case 'vinewalker': return '#1c2810'; // mossy dark green
       default: return '#444';
     }
   }
@@ -8148,6 +8158,22 @@
         wanderEntity(e, dt, 40 * sMul);
         if (distP < 1.5 * TS) {
           attackPlayer(15 * dt);
+        }
+      } else if (e.type === 'vinewalker') {
+        // Stationary plant predator: never chases. Extends a 2.5-tile "tendril
+        // reach" that drains SAN + HP while the player is inside it.
+        var vTether = 2.5 * TS;
+        if (distP < vTether) {
+          // Slight pull — player loses 8 HP/sec and 4 SAN/sec while caught
+          player.hp = Math.max(0, player.hp - 8 * dt);
+          player.san = Math.max(0, player.san - 4 * dt);
+          // Hint visual: brief redFlash periodically so the player knows they're
+          // being drained.
+          e._vinePulseT = (e._vinePulseT || 0) - dt;
+          if (e._vinePulseT <= 0) {
+            e._vinePulseT = 0.6;
+            try { GameEngine.shakeScreen(2, 0.1); } catch (eErr) {}
+          }
         }
       } else if (e.type === 'drowned') {
         // Aquatic predator: 2× speed when its own tile is water (type 7),
@@ -12124,6 +12150,7 @@
       lurker:      { icon: '🕵', name: 'LURKER' },
       shadow:      { icon: '🌑', name: 'SHADOW' },
       drowned:     { icon: '🫧', name: 'DROWNED' },
+      vinewalker:  { icon: '🌿', name: 'VINEWALKER' },
       mrhotel:     { icon: '🎩', name: 'MR.HOTEL' },
       boss:        { icon: '👹', name: 'BOSS' },
       haruki_boss: { icon: '🩸', name: 'HARUKI 真' }

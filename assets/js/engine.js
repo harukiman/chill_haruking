@@ -1096,6 +1096,15 @@
         // mouth slash
         ctx.fillStyle = 'rgba(20, 40, 60, ' + fogFactor.toFixed(2) + ')';
         ctx.fillRect(spriteScreenX - spriteWidth * 0.08, faceY + headHeight * 0.20, spriteWidth * 0.16, pairW * 0.3);
+      } else if (entity.type === 'vinewalker') {
+        // Two pale yellow-green eyes + thin vertical stems flanking the body.
+        ctx.fillStyle = 'rgba(180, 210, 80, ' + fogFactor.toFixed(2) + ')';
+        ctx.fillRect(spriteScreenX - pairW * 1.0, faceY, pairW * 0.6, pairW * 0.45);
+        ctx.fillRect(spriteScreenX + pairW * 0.4, faceY, pairW * 0.6, pairW * 0.45);
+        // Vine tendrils — two thin vertical lines on shoulders
+        ctx.fillStyle = 'rgba(80, 130, 40, ' + fogFactor.toFixed(2) + ')';
+        ctx.fillRect(spriteScreenX - spriteWidth * 0.3, faceY + headHeight * 0.25, 2, spriteHeight * 0.4);
+        ctx.fillRect(spriteScreenX + spriteWidth * 0.28, faceY + headHeight * 0.25, 2, spriteHeight * 0.4);
       } else if (entity.type === 'civilian') {
         // Two warm-toned eyes (more human) + a flesh-tone "mouth" line.
         ctx.fillStyle = 'rgba(40, 30, 20, ' + fogFactor.toFixed(2) + ')';
