@@ -4610,10 +4610,12 @@ img.haruki-mosaic,
   top: calc(env(safe-area-inset-top, 8px) + 60px);
   right: 12px;
   transform: translateX(120%);
-  background: linear-gradient(180deg, rgba(40, 30, 8, 0.95) 0%, rgba(20, 14, 4, 0.95) 100%);
+  /* Bumped bg opacity so we can drop backdrop-filter (expensive on
+     mobile). Old: 0.95 + blur(10px). Now: 0.98, no blur. Same
+     legibility, much less per-frame compositor cost while the
+     popup is on-screen. */
+  background: linear-gradient(180deg, rgba(40, 30, 8, 0.98) 0%, rgba(20, 14, 4, 0.98) 100%);
   border: 1px solid #d4b340;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), 0 0 24px rgba(212, 179, 64, 0.2);
   padding: 8px 12px;
   display: none;
@@ -4625,7 +4627,7 @@ img.haruki-mosaic,
   max-width: 70vw;
   border-radius: 12px;
   opacity: 0;
-  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 0.35s ease-out, transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .discovery-popup.show {
   display: flex;
