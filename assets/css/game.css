@@ -1087,6 +1087,49 @@ button {
   display: none;
 }
 .ta-note-row.open .ta-note-body { display: block; }
+/* Hierarchical notes — LEVEL category headers that expand to show the
+   notes in that level. Default state is collapsed so the player isn't
+   scrolling through one giant flat list. */
+.ta-level-group {
+  margin-bottom: 6px;
+  border: 1px solid #483910;
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(20, 12, 4, 0.55);
+}
+.ta-level-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(60, 44, 12, 0.75);
+  color: #f0dc8a;
+  cursor: pointer;
+  user-select: none;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  font-size: 13px;
+  transition: background 0.15s ease-out;
+}
+.ta-level-head:active { background: rgba(95, 70, 22, 0.85); }
+.ta-level-head-name  { flex: 1; }
+.ta-level-head-count { font-size: 11px; color: #c8a850; min-width: 48px; text-align: right; }
+.ta-level-head-caret {
+  display: inline-block;
+  width: 14px;
+  text-align: center;
+  color: #b09040;
+  transition: transform 0.2s ease-out;
+}
+.ta-level-group.open .ta-level-head-caret { transform: rotate(90deg); }
+.ta-level-inner {
+  display: none;
+  padding: 8px 10px;
+  flex-direction: column;
+  gap: 6px;
+  background: rgba(28, 18, 6, 0.45);
+}
+.ta-level-group.open .ta-level-inner { display: flex; }
 .ta-ach-row {
   display: flex;
   align-items: center;

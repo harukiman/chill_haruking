@@ -6111,21 +6111,50 @@
   //  MINI-GAMES
   // ============================================================
   // Each safe zone in a level can host one mini-game.
-  // Per-level default mini-game (cycles through types).
-  var LEVEL_MINIGAMES = {
-    0: 'vending',
-    1: 'lockpick',
-    2: 'reflex',
-    4: 'dial',
-    5: 'memory',
-    7: 'whackamole',
-    8: 'snake',
-    9: 'cipher',
-    12: 'pong',
-    13: 'dial',
-    14: 'reflex',
-    15: 'whackamole'
+  // Per-level POOLS (was single id) — when a safe zone is touched we pick
+  // a deterministic minigame from the level's pool keyed on the safe-zone
+  // grid coords + per-run seed, so different safe zones in the same level
+  // give different games and replays vary too. Fixes user report
+  // 「同じミニゲームが何回も」.
+  var LEVEL_MINIGAME_POOLS = {
+    0:  ['vending', 'lockpick', 'reflex'],
+    1:  ['lockpick', 'dial', 'memory'],
+    2:  ['reflex', 'whackamole', 'snake'],
+    4:  ['dial', 'cipher', 'memory'],
+    5:  ['memory', 'pong', 'cipher'],
+    7:  ['whackamole', 'reflex', 'snake'],
+    8:  ['snake', 'pong', 'lockpick'],
+    9:  ['cipher', 'memory', 'dial'],
+    11: ['vending', 'memory', 'dial'],   // office district added
+    12: ['pong', 'reflex', 'whackamole'],
+    13: ['dial', 'cipher', 'memory'],
+    14: ['reflex', 'pong', 'snake'],
+    15: ['whackamole', 'lockpick', 'reflex']
   };
+  // Persisted "minigame played" set — survives across runs so the same
+  // safe zone can only be played ONCE EVER per user request:
+  // 「プレイできる箇所がある。1回のみにする」.
+  var MG_PLAYED_KEY = 'thebackrooms_mg_played_v1';
+  function _loadMgPlayed() {
+    try {
+      var raw = localStorage.getItem(MG_PLAYED_KEY);
+      if (!raw) return {};
+      var obj = JSON.parse(raw);
+      return obj && typeof obj === 'object' ? obj : {};
+    } catch (e) { return {}; }
+  }
+  function _saveMgPlayed() {
+    try { localStorage.setItem(MG_PLAYED_KEY, JSON.stringify(mgPlayedPersistent)); } catch (e) {}
+  }
+  var mgPlayedPersistent = _loadMgPlayed();
+  // Deterministic minigame chooser — same safe zone → same minigame, but
+  // different safe zones → different minigames.
+  function _pickMinigameForSafeZone(levelId, gx, gy) {
+    var pool = LEVEL_MINIGAME_POOLS[levelId];
+    if (!pool || !pool.length) return null;
+    var h = ((levelId * 73856093) ^ (gx * 19349663) ^ (gy * 83492791)) >>> 0;
+    return pool[h % pool.length];
+  }
 
   // Mini-game definitions
   var MINI_GAMES = {
@@ -7551,13 +7580,16 @@
 
     // Safe zone with mini-game
     if (t === 11) {
-      var mgId = LEVEL_MINIGAMES[currentLevel];
+      var mgId = _pickMinigameForSafeZone(currentLevel, gx, gy);
       if (mgId) {
         var safeKey = currentLevel + '_' + gridKey(gx, gy);
-        if (mgPlayedAt[safeKey]) {
+        // Persistent per-spot lock — single use ever across all runs.
+        if (mgPlayedPersistent[safeKey] || mgPlayedAt[safeKey]) {
           toast('このセーフエリアは利用済み');
         } else {
           mgPlayedAt[safeKey] = true;
+          mgPlayedPersistent[safeKey] = true;
+          _saveMgPlayed();
           openMiniGame(mgId);
         }
         return;
@@ -10093,7 +10125,9 @@
     if (here === 3) { showAct = true; label = '降りる'; }
     else if (here === 11) {
       var safeKey2 = currentLevel + '_' + key;
-      if (LEVEL_MINIGAMES[currentLevel] && !mgPlayedAt[safeKey2]) {
+      var poolHere = LEVEL_MINIGAME_POOLS[currentLevel];
+      if (poolHere && poolHere.length &&
+          !mgPlayedPersistent[safeKey2] && !mgPlayedAt[safeKey2]) {
         showAct = true; label = 'PLAY';
       } else {
         showAct = false;
@@ -12589,22 +12623,56 @@
       if (ownedNotes.length === 0) {
         notesList.innerHTML = '<p class="ta-empty">まだ書類を読んでいない</p>';
       } else {
-        // Sort by level then title for stable order
-        ownedNotes.sort(function (a, b) {
-          var la = byTitle[a].levelId, lb = byTitle[b].levelId;
-          if (la !== lb) return la - lb;
-          return a < b ? -1 : (a > b ? 1 : 0);
-        });
+        // Group notes by level so the player drills down LEVEL → note
+        // → content instead of scrolling one giant flat list. User
+        // request: 「項目ごとにサブ項目で分けて、選択したらそれが
+        // 表示されるようにする」.
+        var groups = {};
         ownedNotes.forEach(function (title) {
           var info = byTitle[title];
-          var row = document.createElement('div');
-          row.className = 'ta-note-row';
-          row.innerHTML =
-            '<div class="ta-note-title">' + title + '</div>' +
-            '<div class="ta-note-level">LEVEL ' + info.levelId + '</div>' +
-            '<div class="ta-note-body">' + info.text + '</div>';
-          row.addEventListener('click', function () { row.classList.toggle('open'); });
-          notesList.appendChild(row);
+          var lvl = info.levelId;
+          if (!groups[lvl]) groups[lvl] = [];
+          groups[lvl].push({ title: title, info: info });
+        });
+        var lvlKeys = Object.keys(groups).map(Number).sort(function (a, b) { return a - b; });
+        // Count totals per level for the header (owned / total)
+        var totalByLevel = {};
+        Object.keys(byTitle).forEach(function (t) {
+          var l = byTitle[t].levelId;
+          totalByLevel[l] = (totalByLevel[l] || 0) + 1;
+        });
+        lvlKeys.forEach(function (lvl) {
+          var arr = groups[lvl];
+          arr.sort(function (a, b) {
+            return a.title < b.title ? -1 : (a.title > b.title ? 1 : 0);
+          });
+          var grp = document.createElement('div');
+          grp.className = 'ta-level-group';
+          var head = document.createElement('div');
+          head.className = 'ta-level-head';
+          head.innerHTML =
+            '<span class="ta-level-head-name">LEVEL ' + lvl + '</span>' +
+            '<span class="ta-level-head-count">' + arr.length +
+            ' / ' + (totalByLevel[lvl] || arr.length) + '</span>' +
+            '<span class="ta-level-head-caret">▶</span>';
+          var inner = document.createElement('div');
+          inner.className = 'ta-level-inner';
+          arr.forEach(function (entry) {
+            var row = document.createElement('div');
+            row.className = 'ta-note-row';
+            row.innerHTML =
+              '<div class="ta-note-title">' + entry.title + '</div>' +
+              '<div class="ta-note-body">' + entry.info.text + '</div>';
+            row.addEventListener('click', function (e) {
+              e.stopPropagation();
+              row.classList.toggle('open');
+            });
+            inner.appendChild(row);
+          });
+          head.addEventListener('click', function () { grp.classList.toggle('open'); });
+          grp.appendChild(head);
+          grp.appendChild(inner);
+          notesList.appendChild(grp);
         });
       }
     }
