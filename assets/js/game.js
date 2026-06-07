@@ -10455,11 +10455,22 @@
       footstepTimer = null;
     }
 
+    // Fade out the current line (~600ms), then swap the text and fade back in.
+    // The previous implementation removed .show then re-added it in the next
+    // RAF — opacity never actually animated to 0, so the swap looked abrupt.
     function setLine(text) {
       lineEl.classList.remove('show');
-      void lineEl.offsetWidth;
-      lineEl.textContent = text;
-      requestAnimationFrame(function () { lineEl.classList.add('show'); });
+      // Wait for the opacity 1→0 transition to roughly finish before
+      // mutating textContent so the player doesn't see the new text snap
+      // into the still-bright previous line.
+      setTimeout(function () {
+        if (cancelled) return;
+        lineEl.textContent = text;
+        requestAnimationFrame(function () {
+          if (cancelled) return;
+          lineEl.classList.add('show');
+        });
+      }, 600);
     }
 
     var skipHandler;

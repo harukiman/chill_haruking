@@ -1230,7 +1230,9 @@ button {
   line-height: 2;
   text-shadow: 0 0 12px rgba(212, 179, 64, 0.4);
   opacity: 0;
-  transition: opacity 1s ease-out;
+  /* Shortened from 1s → 600ms so the setLine fade-out + swap + fade-in
+     completes in ~1.2s instead of feeling laggy. Still smooth. */
+  transition: opacity 600ms ease-out;
 }
 .intro-line.show {
   opacity: 1;
