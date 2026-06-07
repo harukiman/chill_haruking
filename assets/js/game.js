@@ -2599,23 +2599,23 @@
   var entitySeenTypes = {}; // {type: true}
 
   var ENTITY_INTROS = {
-    hound: { name: 'HOUND', desc: 'バックルーム公式分類 Class 3。\n低い四足の捕食者で人間の頭部を持つ。\n動くものに反応するため、走らずゆっくり歩け。' },
-    smiler: { name: 'SMILER', desc: 'バックルーム公式分類 Class 2。\n暗闇に浮かぶ無数の白い歯と目だけが見える。\n直視せず、視線を逸らせばすり抜ける。\n見つめ続けると引き込まれる。' },
-    skinstealer: { name: 'SKIN-STEALER', desc: 'バックルーム公式分類 Class 4。\nLevel 4 オフィスに棲息。\n死体や同僚の皮を被って近付き、触れた者の皮を奪う。\n鏡を使えば本性を晒し、消滅させられる。' },
-    partygoer: { name: 'PARTYGOER', desc: 'バックルーム公式分類 Class 3。\nLevel Fun=) の住人。塗装された笑顔と三角帽。\n陽気な暴力でお前を「祝う」。フレアで一時退避可能。' },
-    crawler: { name: 'CRAWLER', desc: 'バックルーム公式分類 Class 2。\n複数の眼と長い四肢。配管や狭い空間を好む。\n静止 → 突進 → 撤退の三段階を繰り返す。' },
-    wretch: { name: 'WRETCH', desc: 'バックルーム公式分類 Class 3 (Watcher 型)。\n動かないが、視線を合わせた者の SAN を胸の空洞へ吸い込む。\n目を逸らせば実害は無い。' },
-    boss: { name: 'THE ARCHITECT', desc: 'バックルーム公式分類 Class 5 (Apex)。\nLevel 9 The Suburbs を構築・管理する存在。\n王冠と赤い目。3 段階で攻撃パターンが変化する。\nフレア (50dmg) / 鏡 (100dmg) で抵抗可能。' },
-    mrhotel: { name: 'MR. HOTEL', desc: 'バックルーム公式分類 Class 4。\nLevel 5 ホテルの「支配人」。シルクハットに顔の無いスーツ。\n名前を尋ねられても答えるな。盗まれる。\n4 マス以内で SAN を継続吸引。' },
-    haruki: { name: 'HARUKI', desc: '非公式。前ホテルからの no-clipper。\nお前を追って壁の向こうまで来た存在。\n姿は不定形だが、お前の最も恐ろしい記憶として現れる。\n電話のベルが近接の兆候。' },
-    haruki_boss: { name: 'HARUKI 真', desc: '— 全ての階層の終着点に、彼女は立っていた。\n3 段階の追跡形態。第3段階で影分身が出現する。\nハルキの護符 (ユニーク) があれば一時的に退避可能。' },
-    echo: { name: 'ECHO', desc: 'バックルーム未分類。\nお前の動きを 0.6 秒遅れで完全模倣する亡霊。\n直視すると鏡を見ているような感覚に襲われ、SAN が削れる。\n振り切るには思考しない急な動きが有効。' },
-    faceling: { name: 'FACELING', desc: 'バックルーム公式分類 Class 1 (擬態型)。\nM.E.G. メンバーや過去の no-clipper の姿に化ける。\n顔は常に「ぼやけて」見える。\n敵対的ではないが、稀に視線を合わせると SAN を引き抜く。' },
-    witness: { name: 'WITNESS', desc: 'バックルーム公式分類 Class 1 (静止型)。\nLevel 6 暗闇の中で、ただ立ち、お前を見続ける。\n視線が交わる時、SAN だけが静かに削れていく。\n目を逸らせば実害は無いが、振り返ると ── まだ、そこにいる。' },
-    lurker: { name: 'LURKER', desc: 'バックルーム公式分類 Class 2 (追跡型)。\n薄暗い角に潜み、お前から目を逸らした瞬間に一歩近付く。\n振り向く時には既に距離が縮まっている。\n直視している間は動かない。捕まれば SAN を大量に奪われる。' },
-    shadow: { name: 'SHADOW', desc: 'バックルーム公式分類 Class 3 (幻惑型)。\nLevel 9 でハルキの周辺に現れる影。\n4-6 マスの距離を保ち、視線が交わるとプレイヤーの SAN を絶え間なく削り続ける。\n光源 (フレア / 懐中電灯) で一時的に消滅する。' },
-    drowned: { name: 'DROWNED', desc: 'バックルーム未分類 (水生型)。\nLevel 14 の沈んだ通路に潜む溺死者。\n水タイル上では速くなり、しがみつく — 一度掴まれば離れない。\n陸 (乾いた床) では極端に遅い。光源で一時退散。' },
-    vinewalker: { name: 'VINEWALKER', desc: 'バックルーム未分類 (植生型)。\nLevel 15 の庭園に棲息。\n生垣の影で静止し、プレイヤーが近付くと触手状の蔓を伸ばす。\n触れると掴まれ、徐々に SAN と HP を吸い取られる。\n刀 / フレアで一時的に焼き切れる。' }
+    hound: { name: 'HOUND', desc: 'バックルーム公式分類 Class 3。\n低い四足の捕食者で人間の頭部を持つ。\n動くものに反応するため、走らずゆっくり歩け。', voice: 'にげるな。' },
+    smiler: { name: 'SMILER', desc: 'バックルーム公式分類 Class 2。\n暗闇に浮かぶ無数の白い歯と目だけが見える。\n直視せず、視線を逸らせばすり抜ける。\n見つめ続けると引き込まれる。', voice: 'みて、いるよ。' },
+    skinstealer: { name: 'SKIN-STEALER', desc: 'バックルーム公式分類 Class 4。\nLevel 4 オフィスに棲息。\n死体や同僚の皮を被って近付き、触れた者の皮を奪う。\n鏡を使えば本性を晒し、消滅させられる。', voice: 'おまえに、なる。' },
+    partygoer: { name: 'PARTYGOER', desc: 'バックルーム公式分類 Class 3。\nLevel Fun=) の住人。塗装された笑顔と三角帽。\n陽気な暴力でお前を「祝う」。フレアで一時退避可能。', voice: 'いわって、あげる。' },
+    crawler: { name: 'CRAWLER', desc: 'バックルーム公式分類 Class 2。\n複数の眼と長い四肢。配管や狭い空間を好む。\n静止 → 突進 → 撤退の三段階を繰り返す。', voice: 'かべの、なか。' },
+    wretch: { name: 'WRETCH', desc: 'バックルーム公式分類 Class 3 (Watcher 型)。\n動かないが、視線を合わせた者の SAN を胸の空洞へ吸い込む。\n目を逸らせば実害は無い。', voice: 'みてはいけない。' },
+    boss: { name: 'THE ARCHITECT', desc: 'バックルーム公式分類 Class 5 (Apex)。\nLevel 9 The Suburbs を構築・管理する存在。\n王冠と赤い目。3 段階で攻撃パターンが変化する。\nフレア (50dmg) / 鏡 (100dmg) で抵抗可能。', voice: 'よく、ここまで来た。' },
+    mrhotel: { name: 'MR. HOTEL', desc: 'バックルーム公式分類 Class 4。\nLevel 5 ホテルの「支配人」。シルクハットに顔の無いスーツ。\n名前を尋ねられても答えるな。盗まれる。\n4 マス以内で SAN を継続吸引。', voice: 'いらっしゃい、ませ。' },
+    haruki: { name: 'HARUKI', desc: '非公式。前ホテルからの no-clipper。\nお前を追って壁の向こうまで来た存在。\n姿は不定形だが、お前の最も恐ろしい記憶として現れる。\n電話のベルが近接の兆候。', voice: 'おかえり。' },
+    haruki_boss: { name: 'HARUKI 真', desc: '— 全ての階層の終着点に、彼女は立っていた。\n3 段階の追跡形態。第3段階で影分身が出現する。\nハルキの護符 (ユニーク) があれば一時的に退避可能。', voice: 'もう、にがさない。' },
+    echo: { name: 'ECHO', desc: 'バックルーム未分類。\nお前の動きを 0.6 秒遅れで完全模倣する亡霊。\n直視すると鏡を見ているような感覚に襲われ、SAN が削れる。\n振り切るには思考しない急な動きが有効。', voice: 'おまえは、わたし。' },
+    faceling: { name: 'FACELING', desc: 'バックルーム公式分類 Class 1 (擬態型)。\nM.E.G. メンバーや過去の no-clipper の姿に化ける。\n顔は常に「ぼやけて」見える。\n敵対的ではないが、稀に視線を合わせると SAN を引き抜く。', voice: 'だれ...だっけ。' },
+    witness: { name: 'WITNESS', desc: 'バックルーム公式分類 Class 1 (静止型)。\nLevel 6 暗闇の中で、ただ立ち、お前を見続ける。\n視線が交わる時、SAN だけが静かに削れていく。\n目を逸らせば実害は無いが、振り返ると ── まだ、そこにいる。', voice: '...見て、いる。' },
+    lurker: { name: 'LURKER', desc: 'バックルーム公式分類 Class 2 (追跡型)。\n薄暗い角に潜み、お前から目を逸らした瞬間に一歩近付く。\n振り向く時には既に距離が縮まっている。\n直視している間は動かない。捕まれば SAN を大量に奪われる。', voice: 'いっぽ、ちかい。' },
+    shadow: { name: 'SHADOW', desc: 'バックルーム公式分類 Class 3 (幻惑型)。\nLevel 9 でハルキの周辺に現れる影。\n4-6 マスの距離を保ち、視線が交わるとプレイヤーの SAN を絶え間なく削り続ける。\n光源 (フレア / 懐中電灯) で一時的に消滅する。', voice: 'かのじょの、もの。' },
+    drowned: { name: 'DROWNED', desc: 'バックルーム未分類 (水生型)。\nLevel 14 の沈んだ通路に潜む溺死者。\n水タイル上では速くなり、しがみつく — 一度掴まれば離れない。\n陸 (乾いた床) では極端に遅い。光源で一時退散。', voice: 'みず、つめたい。' },
+    vinewalker: { name: 'VINEWALKER', desc: 'バックルーム未分類 (植生型)。\nLevel 15 の庭園に棲息。\n生垣の影で静止し、プレイヤーが近付くと触手状の蔓を伸ばす。\n触れると掴まれ、徐々に SAN と HP を吸い取られる。\n刀 / フレアで一時的に焼き切れる。', voice: 'ねっこ、はる。' }
   };
   // NOTE: ENTITY_SOUND_MAP.echo / .faceling are added inline in ENTITY_SOUND_MAP literal
   // below (line ~3957). Don't reference ENTITY_SOUND_MAP here — it's declared later via var
@@ -4915,13 +4915,13 @@
     var id = player.equippedWeapon;
     if (id && ITEMS[id]) {
       var it = ITEMS[id];
-      if (ic) ic.textContent = it.icon || '⚔';
+      if (ic) ic.innerHTML = getWeaponIconHTML(id);
       var cnt = player.inventory[id] || 0;
       var charm = hasEternalCharm();
       if (cn) cn.textContent = charm ? '∞' : ('×' + cnt);
       btn.classList.toggle('empty', cnt <= 0 && !charm);
     } else {
-      if (ic) ic.textContent = '⚔';
+      if (ic) ic.innerHTML = '<span class="weapon-emoji">⚔</span>';
       if (cn) cn.textContent = '—';
       btn.classList.add('empty');
     }
@@ -4930,13 +4930,265 @@
     var handIc = el('weaponHandIcon');
     if (hand && handIc) {
       if (id && ITEMS[id]) {
-        handIc.textContent = ITEMS[id].icon || '⚔';
+        handIc.innerHTML = getWeaponIconHTML(id);
         if (state === ST.PLAYING) hand.classList.add('show');
       } else {
         hand.classList.remove('show');
       }
     }
   }
+  // ── REALISTIC WEAPON SVG ICONS ──
+  // User: 「武器のアイコンをもっとリアルなものにしたい。色も含め
+  // 今はおもちゃっぽすぎる。ショットガンもフレアのように見える。
+  // きちんとこだわって作成して」.
+  // Per-weapon inline SVG with realistic silhouettes + materials
+  // (gunmetal / wood / steel / brass / blood). Each viewBox is 0 0 100 100;
+  // they render crisp at any size. The legacy emoji `icon` is kept as a
+  // fallback in case a render path doesn't yet use getWeaponIconHTML.
+  var WEAPON_SVG = {
+    pistol:
+      '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block">' +
+      // Slide (top barrel housing) — dark gunmetal
+      '<rect x="14" y="32" width="60" height="14" rx="2" fill="#3a3a3e" stroke="#1a1a1f" stroke-width="1.2"/>' +
+      // Barrel tip
+      '<rect x="70" y="35" width="14" height="8" fill="#202024" stroke="#0a0a0c" stroke-width="1"/>' +
+      // Sight rib
+      '<rect x="18" y="29" width="50" height="3" fill="#2a2a2e"/>' +
+      // Trigger guard
+      '<path d="M 30 46 Q 30 60 42 60 L 50 60 Q 58 60 56 50 Z" fill="none" stroke="#2a2a2e" stroke-width="2.5"/>' +
+      // Trigger
+      '<line x1="44" y1="51" x2="44" y2="58" stroke="#1a1a1f" stroke-width="2"/>' +
+      // Grip
+      '<path d="M 14 44 L 14 82 Q 14 88 22 88 L 38 88 Q 46 88 46 80 L 46 60 L 38 50 Z" fill="#2c2c30" stroke="#0a0a0c" stroke-width="1.2"/>' +
+      // Grip texture lines
+      '<line x1="20" y1="55" x2="20" y2="80" stroke="#404048" stroke-width="0.8"/>' +
+      '<line x1="26" y1="55" x2="26" y2="80" stroke="#404048" stroke-width="0.8"/>' +
+      '<line x1="32" y1="55" x2="32" y2="80" stroke="#404048" stroke-width="0.8"/>' +
+      // Hammer
+      '<rect x="10" y="30" width="6" height="6" fill="#1a1a1f"/>' +
+      '</svg>',
+    shotgun:
+      '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block">' +
+      // Long black barrel
+      '<rect x="6" y="38" width="60" height="10" fill="#1a1a1f" stroke="#0a0a0c" stroke-width="1"/>' +
+      // Barrel ring at muzzle
+      '<rect x="3" y="36" width="5" height="14" fill="#0a0a0c"/>' +
+      // Pump under barrel — wood grain
+      '<rect x="16" y="50" width="22" height="8" fill="#6a3818" stroke="#3a1a08" stroke-width="1"/>' +
+      '<line x1="18" y1="54" x2="36" y2="54" stroke="#4a2010" stroke-width="0.8"/>' +
+      // Receiver
+      '<rect x="58" y="38" width="14" height="14" fill="#404048" stroke="#1a1a1f" stroke-width="1"/>' +
+      // Trigger guard
+      '<path d="M 60 52 Q 60 62 68 62 L 72 62 Q 80 62 76 54 Z" fill="none" stroke="#202024" stroke-width="2.5"/>' +
+      // Wood stock — brown
+      '<path d="M 72 38 L 96 50 L 96 70 L 72 56 Z" fill="#7a4220" stroke="#3a1a08" stroke-width="1.5"/>' +
+      // Stock grain
+      '<line x1="76" y1="44" x2="92" y2="54" stroke="#5a3018" stroke-width="0.6"/>' +
+      '<line x1="76" y1="50" x2="92" y2="60" stroke="#5a3018" stroke-width="0.6"/>' +
+      // Sight
+      '<rect x="44" y="34" width="3" height="5" fill="#404048"/>' +
+      '</svg>',
+    revolver:
+      '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block">' +
+      // Barrel
+      '<rect x="50" y="36" width="34" height="8" fill="#5a5a62" stroke="#202028" stroke-width="1"/>' +
+      // Muzzle
+      '<rect x="80" y="34" width="4" height="12" fill="#1a1a22"/>' +
+      // Cylinder
+      '<circle cx="42" cy="42" r="14" fill="#6a6a72" stroke="#202028" stroke-width="1.5"/>' +
+      '<circle cx="42" cy="42" r="11" fill="none" stroke="#3a3a42" stroke-width="0.8"/>' +
+      // Chamber holes
+      '<circle cx="42" cy="33" r="2.5" fill="#1a1a22"/>' +
+      '<circle cx="50" cy="40" r="2.5" fill="#1a1a22"/>' +
+      '<circle cx="48" cy="48" r="2.5" fill="#1a1a22"/>' +
+      '<circle cx="38" cy="51" r="2.5" fill="#1a1a22"/>' +
+      '<circle cx="32" cy="44" r="2.5" fill="#1a1a22"/>' +
+      // Frame
+      '<rect x="38" y="50" width="14" height="8" fill="#404048" stroke="#1a1a22" stroke-width="1"/>' +
+      // Trigger guard
+      '<path d="M 38 56 Q 38 66 46 66 L 50 66 Q 58 66 54 58 Z" fill="none" stroke="#202028" stroke-width="2.5"/>' +
+      // Wooden grip (warm brown)
+      '<path d="M 28 50 L 28 84 Q 28 90 34 90 L 44 90 Q 50 90 50 84 L 50 64 L 42 56 Z" fill="#5a2c14" stroke="#2a1208" stroke-width="1.2"/>' +
+      // Grip diamonds
+      '<line x1="32" y1="60" x2="46" y2="80" stroke="#3a1a0c" stroke-width="0.6"/>' +
+      '<line x1="32" y1="80" x2="46" y2="60" stroke="#3a1a0c" stroke-width="0.6"/>' +
+      // Hammer
+      '<rect x="46" y="32" width="6" height="6" fill="#1a1a22"/>' +
+      '</svg>',
+    katana:
+      '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block">' +
+      // Long curved blade — polished steel
+      '<path d="M 92 22 Q 70 28 38 52 Q 22 64 18 70 L 22 76 Q 28 74 42 64 Q 72 42 96 28 Z" fill="#d8d8dc" stroke="#6a6a72" stroke-width="1.4"/>' +
+      // Hamon (temper line)
+      '<path d="M 92 24 Q 72 32 42 56 Q 26 66 22 72" fill="none" stroke="#a8a8b0" stroke-width="0.8" stroke-dasharray="2 3"/>' +
+      // Tsuba (guard) — bronze octagon
+      '<polygon points="18,68 12,74 12,82 18,88 28,88 34,82 34,74 28,68" fill="#8a6028" stroke="#3a2008" stroke-width="1.2"/>' +
+      '<rect x="18" y="74" width="10" height="8" fill="#5a3a18"/>' +
+      // Tsuka (handle) — red ito wrap on dark wood
+      '<rect x="20" y="82" width="22" height="14" fill="#2a0808" stroke="#1a0404" stroke-width="0.8" transform="rotate(35 30 90)"/>' +
+      // Ito wrap diamonds
+      '<g transform="rotate(35 30 90)">' +
+      '<line x1="22" y1="84" x2="40" y2="94" stroke="#8a1010" stroke-width="0.9"/>' +
+      '<line x1="22" y1="88" x2="40" y2="98" stroke="#8a1010" stroke-width="0.9"/>' +
+      '<line x1="22" y1="92" x2="40" y2="82" stroke="#8a1010" stroke-width="0.7"/>' +
+      '<line x1="22" y1="96" x2="40" y2="86" stroke="#8a1010" stroke-width="0.7"/>' +
+      '</g>' +
+      '</svg>',
+    flare:
+      '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block">' +
+      // Flare body — bright red
+      '<rect x="20" y="42" width="50" height="14" rx="3" fill="#d83020" stroke="#5a1008" stroke-width="1.2"/>' +
+      // Label band — yellow
+      '<rect x="25" y="44" width="40" height="3" fill="#f0d020"/>' +
+      '<rect x="25" y="51" width="40" height="3" fill="#f0d020"/>' +
+      // Cap
+      '<rect x="68" y="40" width="6" height="18" fill="#1a1a1f"/>' +
+      // Flame at end
+      '<path d="M 18 38 Q 8 28 4 14 Q 10 26 14 44 Q 14 52 18 60 Q 22 50 22 44 Z" fill="#f08020" stroke="#a02000" stroke-width="1.2"/>' +
+      '<path d="M 14 36 Q 8 28 6 18 Q 12 30 14 50 Z" fill="#ffd060"/>' +
+      // Sparks
+      '<circle cx="2" cy="20" r="1.5" fill="#ffe080"/>' +
+      '<circle cx="6" cy="8" r="1" fill="#ffd040"/>' +
+      '</svg>',
+    mirror:
+      '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block">' +
+      // Frame — dark wood
+      '<rect x="18" y="14" width="64" height="76" rx="4" fill="#5a3818" stroke="#2a1808" stroke-width="2"/>' +
+      // Glass — bluish silver
+      '<rect x="24" y="20" width="52" height="64" fill="#c8d8e0" stroke="#6a8090" stroke-width="0.8"/>' +
+      // Reflection sheen
+      '<polygon points="24,20 76,20 36,30 24,30" fill="#e8f0f4" opacity="0.8"/>' +
+      // Crack pattern (the "cracked" mirror)
+      '<line x1="40" y1="20" x2="52" y2="48" stroke="#3a4050" stroke-width="0.8"/>' +
+      '<line x1="52" y1="48" x2="48" y2="68" stroke="#3a4050" stroke-width="0.8"/>' +
+      '<line x1="52" y1="48" x2="70" y2="40" stroke="#3a4050" stroke-width="0.8"/>' +
+      '<line x1="52" y1="48" x2="36" y2="56" stroke="#3a4050" stroke-width="0.6"/>' +
+      '<line x1="52" y1="48" x2="64" y2="74" stroke="#3a4050" stroke-width="0.6"/>' +
+      '</svg>',
+    architect_blade:
+      '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block">' +
+      // Ornate golden longsword
+      '<path d="M 90 18 L 18 90 L 22 96 L 96 22 Z" fill="#f0c850" stroke="#8a6018" stroke-width="1.4"/>' +
+      // Center fuller
+      '<path d="M 88 22 L 22 88 L 24 90 L 90 24 Z" fill="#fae080" opacity="0.7"/>' +
+      // Cross-guard
+      '<rect x="6" y="78" width="32" height="6" fill="#a07820" stroke="#4a3010" stroke-width="1.2" transform="rotate(-45 22 81)"/>' +
+      // Pommel — round jewel
+      '<circle cx="14" cy="86" r="6" fill="#a07820" stroke="#4a3010" stroke-width="1"/>' +
+      '<circle cx="14" cy="86" r="2.5" fill="#d04040"/>' +
+      // Engraving on blade
+      '<line x1="76" y1="26" x2="80" y2="30" stroke="#5a4010" stroke-width="0.6"/>' +
+      '<line x1="60" y1="42" x2="64" y2="46" stroke="#5a4010" stroke-width="0.6"/>' +
+      '<line x1="44" y1="58" x2="48" y2="62" stroke="#5a4010" stroke-width="0.6"/>' +
+      '</svg>',
+    revenant_blade:
+      '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block">' +
+      // Dark cursed blade
+      '<path d="M 88 14 L 14 88 L 20 94 L 94 20 Z" fill="#2a1a22" stroke="#0a0408" stroke-width="1.4"/>' +
+      // Bloody fuller
+      '<path d="M 86 18 L 18 86 L 20 88 L 88 20 Z" fill="#5a0a14" opacity="0.85"/>' +
+      // Blood drip
+      '<path d="M 60 38 Q 60 50 56 56 Q 52 50 52 38 Z" fill="#8a0a14"/>' +
+      '<circle cx="56" cy="58" r="2.5" fill="#8a0a14"/>' +
+      // Cross-guard — dark twisted
+      '<path d="M 6 82 L 10 78 L 38 78 L 42 82 L 38 86 L 10 86 Z" fill="#1a0a14" stroke="#000" stroke-width="1.2" transform="rotate(-45 22 82)"/>' +
+      // Pommel — black skull
+      '<circle cx="10" cy="90" r="6" fill="#1a0a14" stroke="#000" stroke-width="1"/>' +
+      '<circle cx="8" cy="89" r="1.2" fill="#8a0a14"/>' +
+      '<circle cx="12" cy="89" r="1.2" fill="#8a0a14"/>' +
+      '</svg>',
+    void_grenade:
+      '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block">' +
+      // Body — dark sphere with grid
+      '<circle cx="50" cy="58" r="30" fill="#2a2a30" stroke="#0a0a0e" stroke-width="2"/>' +
+      // Grid pattern (pineapple style)
+      '<line x1="30" y1="40" x2="70" y2="76" stroke="#0a0a0e" stroke-width="1"/>' +
+      '<line x1="30" y1="76" x2="70" y2="40" stroke="#0a0a0e" stroke-width="1"/>' +
+      '<line x1="22" y1="58" x2="78" y2="58" stroke="#0a0a0e" stroke-width="1"/>' +
+      '<line x1="50" y1="28" x2="50" y2="88" stroke="#0a0a0e" stroke-width="1"/>' +
+      // Top cap
+      '<rect x="42" y="22" width="16" height="8" fill="#5a5a62" stroke="#0a0a0e" stroke-width="1"/>' +
+      // Lever
+      '<rect x="58" y="22" width="14" height="3" fill="#7a7a82" stroke="#0a0a0e" stroke-width="0.8"/>' +
+      // Pin ring
+      '<circle cx="74" cy="18" r="5" fill="none" stroke="#a0a0a8" stroke-width="2"/>' +
+      // Void glow at base
+      '<circle cx="50" cy="58" r="10" fill="#4a0050" opacity="0.6"/>' +
+      '</svg>',
+    soul_lantern:
+      '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block">' +
+      // Top cap
+      '<rect x="36" y="14" width="28" height="6" fill="#404048" stroke="#1a1a22" stroke-width="1"/>' +
+      // Handle
+      '<path d="M 40 14 Q 50 4 60 14" fill="none" stroke="#2a2a32" stroke-width="2"/>' +
+      // Lantern body — frame
+      '<rect x="30" y="20" width="40" height="50" fill="#2a2a32" stroke="#0a0a0e" stroke-width="1.5"/>' +
+      // Glass panels
+      '<rect x="34" y="24" width="32" height="42" fill="#80c8e0" opacity="0.6"/>' +
+      // Inner flame — glowing soul
+      '<ellipse cx="50" cy="46" rx="9" ry="14" fill="#c0f0ff" opacity="0.95"/>' +
+      '<ellipse cx="50" cy="46" rx="5" ry="9" fill="#fff" opacity="0.9"/>' +
+      // Bottom base
+      '<rect x="34" y="70" width="32" height="10" fill="#404048" stroke="#1a1a22" stroke-width="1"/>' +
+      // Glow halo
+      '<circle cx="50" cy="46" r="22" fill="#80e8ff" opacity="0.18"/>' +
+      '</svg>',
+    haruki_charm:
+      '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block">' +
+      // Omamori paper body
+      '<path d="M 28 18 L 72 18 Q 76 18 76 22 L 76 78 Q 76 82 72 82 L 28 82 Q 24 82 24 78 L 24 22 Q 24 18 28 18 Z" fill="#c00020" stroke="#5a0008" stroke-width="1.5"/>' +
+      // Gold accents at corners
+      '<rect x="24" y="18" width="52" height="5" fill="#f0c050"/>' +
+      '<rect x="24" y="77" width="52" height="5" fill="#f0c050"/>' +
+      // Vertical kanji line
+      '<rect x="48" y="28" width="4" height="44" fill="#f0c050"/>' +
+      // Calligraphy (stylized strokes)
+      '<line x1="42" y1="34" x2="58" y2="34" stroke="#1a1a1a" stroke-width="1.6"/>' +
+      '<line x1="42" y1="44" x2="58" y2="44" stroke="#1a1a1a" stroke-width="1.6"/>' +
+      '<line x1="46" y1="52" x2="54" y2="52" stroke="#1a1a1a" stroke-width="1.2"/>' +
+      '<line x1="42" y1="62" x2="58" y2="62" stroke="#1a1a1a" stroke-width="1.6"/>' +
+      // Tassel
+      '<line x1="50" y1="82" x2="50" y2="92" stroke="#f0c050" stroke-width="2"/>' +
+      '<circle cx="50" cy="94" r="3" fill="#f0c050"/>' +
+      '</svg>',
+    siren_whistle:
+      '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block">' +
+      // Whistle body — silver tube
+      '<rect x="16" y="46" width="48" height="14" rx="3" fill="#d0d0d8" stroke="#404048" stroke-width="1.2"/>' +
+      '<rect x="64" y="50" width="14" height="6" fill="#a0a0a8" stroke="#404048" stroke-width="1"/>' +
+      // Mouthpiece
+      '<rect x="78" y="48" width="6" height="10" fill="#80808a"/>' +
+      // Air hole
+      '<rect x="32" y="46" width="8" height="3" fill="#404048"/>' +
+      // Cord ring
+      '<circle cx="20" cy="53" r="4" fill="none" stroke="#404048" stroke-width="1.5"/>' +
+      // Cord
+      '<path d="M 16 53 Q 6 56 8 70 Q 10 80 22 78" fill="none" stroke="#5a2814" stroke-width="1.6"/>' +
+      // Shine
+      '<rect x="22" y="48" width="36" height="2" fill="#fff" opacity="0.6"/>' +
+      '</svg>',
+    mirror_shard:
+      '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block">' +
+      // Sharp irregular glass shard
+      '<polygon points="22,86 38,18 56,32 78,12 70,52 92,68 60,72 48,90 28,78" fill="#c0d8e8" stroke="#406070" stroke-width="1.2"/>' +
+      // Inner reflection lines
+      '<polygon points="38,18 48,40 56,32" fill="#e8f4fa" opacity="0.85"/>' +
+      '<polygon points="56,32 60,72 78,12" fill="#a0c0d0" opacity="0.5"/>' +
+      // Crack/edge lines
+      '<line x1="38" y1="18" x2="22" y2="86" stroke="#406070" stroke-width="0.5"/>' +
+      '<line x1="56" y1="32" x2="48" y2="90" stroke="#406070" stroke-width="0.5"/>' +
+      // Blood-stain hint at tip
+      '<polygon points="22,86 30,82 28,90" fill="#5a0010" opacity="0.6"/>' +
+      '</svg>'
+  };
+  // Returns an icon HTML snippet — SVG if available, else emoji span.
+  function getWeaponIconHTML(itemId) {
+    if (WEAPON_SVG[itemId]) return WEAPON_SVG[itemId];
+    var it = ITEMS[itemId];
+    var emoji = (it && it.icon) ? it.icon : '⚔';
+    return '<span class="weapon-emoji">' + emoji + '</span>';
+  }
+  window.getWeaponIconHTML = getWeaponIconHTML;
   // Weapons that emit a muzzle flash (guns / explosives).
   var WEAPON_FLASH_SET = { pistol: 1, shotgun: 1, revolver: 1, void_grenade: 1, flare: 1 };
   // Weapons with heavier kick (shotgun / grenade / unique blades).
