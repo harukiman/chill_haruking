@@ -2102,6 +2102,19 @@ button {
   color: #b09040;
   margin: 8px 0 14px;
 }
+.lr-step {
+  display: inline-block;
+  margin-left: 14px;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: #786020;
+  font-style: normal;
+  vertical-align: middle;
+  padding: 2px 8px;
+  border: 1px solid #483910;
+  border-radius: 10px;
+  background: rgba(40, 28, 8, 0.55);
+}
 .lr-divider {
   width: 50%;
   margin: 0 auto 14px;

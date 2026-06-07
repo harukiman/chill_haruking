@@ -4683,7 +4683,15 @@
 
   function playLevelReachCinematic(def, onDone) {
     el('lrLevelNum').textContent = def.name;
-    el('lrSubtitle').textContent = def.subtitle;
+    // Progression indicator: order-index out of total reachable levels.
+    var ORDER_FULL = [0, 1, 2, 3, 4, 5, 6, 7, 8, 11, 12, 13, 14, 15, 9];
+    var idxNow = ORDER_FULL.indexOf(def.id);
+    var subtitleHtml = def.subtitle;
+    if (idxNow >= 0) {
+      subtitleHtml += '  <span class="lr-step">' + (idxNow + 1) + ' / ' + ORDER_FULL.length + '</span>';
+    }
+    var subEl = el('lrSubtitle');
+    if (subEl) subEl.innerHTML = subtitleHtml;
     // Build flavor text: intro flavor first (narrative beat), then a blank
     // line, then the hint (mechanics). Old version only used hint, which
     // hid the level's signature line entirely.
