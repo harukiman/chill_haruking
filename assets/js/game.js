@@ -9765,6 +9765,16 @@
     var spriteW = spriteH;
     var startY = (h - spriteH) / 2;
     var startX = screenX - spriteW / 2;
+    // Death-fade ramp — render loop has already gated alive-or-recent.
+    // Apply globalAlpha + a vertical sink so dead bodies drop into the
+    // floor as they fade out. Save/restore wraps the entire entity draw.
+    var _hasFade = (!e.alive && typeof e._deathFade === 'number');
+    if (_hasFade) {
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, e._deathFade);
+      var sinkPx = spriteH * 0.5 * (e._deathSink || 0);
+      startY += sinkPx;
+    }
 
     var fogFactor = Math.max(0.15, 1 - depthTiles / maxDist);
     var zBuf = GameEngine._zBuffer;
@@ -10261,6 +10271,8 @@
       }
     }
     ctx.restore();
+    // Close the death-fade wrapper save (added at the top of this fn).
+    if (_hasFade) ctx.restore();
   }
 
   // Offscreen canvas for per-column z-occluded icon rendering
@@ -10526,11 +10538,23 @@
 
     GameEngine.drawMap();
 
-    // Draw entities (type-aware)
+    // Draw entities (type-aware). Dead entities linger for 700 ms with
+    // a fade+sink so kills feel satisfying instead of popping out.
+    var nowMs_ = performance.now();
     for (var i = 0; i < entities.length; i++) {
       var e = entities[i];
-      if (!e.alive) continue;
-      drawTypedEntity(ctx, e);
+      if (e.alive) {
+        drawTypedEntity(ctx, e);
+      } else if (e.deathAt && nowMs_ - e.deathAt < 700) {
+        var sinceDeath = nowMs_ - e.deathAt;
+        var fade = 1 - sinceDeath / 700;
+        // Hand off to engine.renderSprite via the typed path but with
+        // tweaked opacity. drawTypedEntity reads no opacity field, so
+        // we mark the entity and let engine.js pick it up.
+        e._deathFade = fade;
+        e._deathSink = sinceDeath / 700; // 0..1 sink ratio for vertical drop
+        drawTypedEntity(ctx, e);
+      }
     }
 
     // Draw item / note / exit sprites (custom visible)
