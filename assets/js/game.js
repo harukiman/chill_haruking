@@ -12530,10 +12530,28 @@
 
   function returnToTitle() {
     state = ST.TITLE;
+    // Clear lingering gameplay flags so a fresh start from the title
+    // doesn't inherit them.
+    _inCinematic = false;
+    if (player) {
+      player._beingChased = false;
+      player._wallClipPending = false;
+    }
     updateChaosLayer();
     var rt2 = el('reticle'); if (rt2) rt2.classList.remove('show');
     var wab2 = el('weaponAttackBtn'); if (wab2) wab2.classList.remove('show');
-    var wh2 = el('weaponHand'); if (wh2) wh2.classList.remove('show');
+    var wh2 = el('weaponHand'); if (wh2) {
+      wh2.classList.remove('show');
+      wh2.classList.remove('bobbing');
+      wh2.classList.remove('out-of-ammo');
+    }
+    // Also dismiss any in-game banner overlays so they don't bleed
+    // into the title transition.
+    var cbn = document.getElementById('_chaseBanner');
+    if (cbn && cbn.parentNode) cbn.parentNode.removeChild(cbn);
+    var bbn = el('bossHpBanner'); if (bbn) bbn.classList.remove('show');
+    var dirOv = el('damageDirOverlay');
+    if (dirOv) dirOv.classList.remove('flash');
     gameMode = 'normal';
     GameEngine.stopAll();
     GameEngine.fadeFromBlack(500);
