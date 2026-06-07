@@ -1801,9 +1801,24 @@
     // Crit if the weapon multiplier is > 1.2 against this enemy.
     var isCrit = wMul >= 1.4;
     _spawnDamagePopup(dmg, { crit: isCrit, kill: killed });
+    _flashHitMarker(killed);
     // Blood/spark feedback at the hit location
     _hitParticles(bestE, 6, 'spark');
     return bestE;
+  }
+  // ── Hit marker ──
+  // Flash 4 diagonal ticks around the reticle. Red+rotate on kill hits.
+  function _flashHitMarker(isKill) {
+    var hm = el('hitMarker');
+    if (!hm) return;
+    hm.classList.remove('show');
+    hm.classList.remove('kill');
+    void hm.offsetWidth;
+    if (isKill) hm.classList.add('kill');
+    hm.classList.add('show');
+    setTimeout(function () {
+      if (hm) { hm.classList.remove('show'); hm.classList.remove('kill'); }
+    }, isKill ? 460 : 290);
   }
   function getEntityLabel(t) {
     return ({ hound: 'HOUND', skinstealer: 'SKIN-STEALER', smiler: 'SMILER',
