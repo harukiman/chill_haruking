@@ -141,6 +141,10 @@ body {
   touch-action: manipulation;
   -webkit-touch-callout: default;
   pointer-events: auto;
+  /* footer reserve = copyright(34px+font) + version(16px+font) + safety buffer.
+     Used by .title-content padding-bottom + max-height so the bottom-most
+     menu button (設定) never overlaps the COPYRIGHT line at the screen base. */
+  --title-footer-reserve: calc(72px + env(safe-area-inset-bottom, 0px));
 }
 #titleScreen * {
   touch-action: manipulation;
@@ -230,9 +234,20 @@ button {
   text-align: center;
   color: #e8d57a;
   z-index: 2;
-  padding: 20px 16px;
+  /* padding-bottom reserves room for the absolutely-positioned copyright +
+     version footer so the bottom-most menu button never overlaps them.
+     max-height keeps the centered block from extending into the footer band;
+     overflow-y allows the inner menu to scroll on tiny viewports instead of
+     visually colliding with the footer text. */
+  padding: 20px 16px var(--title-footer-reserve, 80px);
   max-width: 92vw;
   width: 100%;
+  max-height: calc(100vh - 24px);
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  box-sizing: border-box;
 }
 .title-pre {
   font-size: 10px;
@@ -310,7 +325,7 @@ button {
 }
 .copyright {
   position: absolute;
-  bottom: calc(36px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(34px + env(safe-area-inset-bottom, 0px));
   left: 0;
   right: 0;
   text-align: center;
@@ -318,10 +333,11 @@ button {
   color: #786020;
   letter-spacing: 0.2em;
   z-index: 2;
+  pointer-events: none;
 }
 .version-text {
   position: absolute;
-  bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   left: 0;
   right: 0;
   text-align: center;
@@ -329,6 +345,7 @@ button {
   color: #483910;
   letter-spacing: 0.15em;
   z-index: 2;
+  pointer-events: none;
 }
 .title-ach-counter {
   position: absolute;
