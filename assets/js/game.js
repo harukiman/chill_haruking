@@ -1516,6 +1516,11 @@
     var amt = COIN_DROPS[type] || 1;
     player.coins = (player.coins || 0) + amt;
     if (amt >= 10) toast('+ ' + amt + ' コイン');
+    // Track lifetime defeats for the bestiary.
+    try {
+      defeatedEntities[type] = (defeatedEntities[type] || 0) + 1;
+      localStorage.setItem(DEFEATED_KEY, JSON.stringify(defeatedEntities));
+    } catch (e) {}
     // Hidden boss kill grants the eternal_charm + persistent flag.
     if (entity && entity._isHidden) {
       try { grantEternalCharmIfHidden(entity); } catch (e) {}
@@ -5323,6 +5328,16 @@
       var s = localStorage.getItem(ACH_KEY);
       if (s) unlockedAchievements = JSON.parse(s) || {};
     } catch (e) { unlockedAchievements = {}; }
+  }
+
+  // Lifetime defeats — keyed by entity type, value = count.
+  var DEFEATED_KEY = 'thebackrooms_defeated_entities_v1';
+  var defeatedEntities = {};
+  function loadDefeated() {
+    try {
+      var s = localStorage.getItem(DEFEATED_KEY);
+      if (s) defeatedEntities = JSON.parse(s) || {};
+    } catch (e) { defeatedEntities = {}; }
   }
 
   var SECRET_DOCS_KEY = 'thebackrooms_secret_docs_v1';
@@ -10610,7 +10625,7 @@
   //  EVENT BINDINGS
   // ============================================================
   function bindEvents() {
-    // Title archive: tab buttons (3 panels: notes / secret / achs)
+    // Title archive: tab buttons (5 panels)
     var taTabs = document.querySelectorAll('.ta-tab');
     for (var taI = 0; taI < taTabs.length; taI++) {
       (function (btn) {
@@ -10618,12 +10633,17 @@
           var which = btn.getAttribute('data-ta-tab');
           var tabs = document.querySelectorAll('.ta-tab');
           for (var x = 0; x < tabs.length; x++) tabs[x].classList.toggle('active', tabs[x] === btn);
-          var pn = el('taPanelNotes');
-          var ps = el('taPanelSecret');
-          var pa = el('taPanelAchs');
-          if (pn) pn.style.display = (which === 'notes')  ? 'block' : 'none';
-          if (ps) ps.style.display = (which === 'secret') ? 'block' : 'none';
-          if (pa) pa.style.display = (which === 'achs')   ? 'block' : 'none';
+          var panels = {
+            'notes':    'taPanelNotes',
+            'secret':   'taPanelSecret',
+            'items':    'taPanelItems',
+            'bestiary': 'taPanelBestiary',
+            'achs':     'taPanelAchs'
+          };
+          for (var k in panels) {
+            var p = el(panels[k]);
+            if (p) p.style.display = (which === k) ? 'block' : 'none';
+          }
         });
       })(taTabs[taI]);
     }
@@ -11365,6 +11385,7 @@
     try { loadStats(); } catch (e) {}
     try { loadGamepadMap(); } catch (e) {}
     try { loadSecretDocs(); } catch (e) {}
+    try { loadDefeated(); } catch (e) {}
 
     // CRITICAL: bind button events FIRST so title is interactive
     // even if any later setup throws
@@ -11491,6 +11512,126 @@
         secretList.appendChild(row);
       });
     }
+    // Items panel — lifetime collected items + descriptions
+    var itemsList = el('taItemsList');
+    var itemsCount = el('taItemsCount');
+    var lifetimeOwned = {};
+    try { lifetimeOwned = JSON.parse(localStorage.getItem('thebackrooms_items_collected_v1') || '{}'); } catch (e) {}
+    var allItemIds = Object.keys(ITEMS);
+    var ownedItemIds = allItemIds.filter(function (id) { return !!lifetimeOwned[id]; });
+    if (itemsCount) itemsCount.textContent = ownedItemIds.length + ' / ' + allItemIds.length + ' 道具/武器';
+    if (itemsList) {
+      itemsList.innerHTML = '';
+      // Show owned first; locked rows show ??
+      var weaponsHave = [], itemsHave = [], lockedAll = [];
+      allItemIds.forEach(function (id) {
+        var it = ITEMS[id];
+        if (!it) return;
+        if (lifetimeOwned[id]) {
+          if (it.category === 'weapon') weaponsHave.push(id);
+          else itemsHave.push(id);
+        } else {
+          lockedAll.push(id);
+        }
+      });
+      function addItemRow(id, unlocked) {
+        var it = ITEMS[id];
+        var row = document.createElement('div');
+        row.className = 'ta-note-row' + (unlocked ? '' : ' locked');
+        if (unlocked) {
+          row.innerHTML =
+            '<div class="ta-item-head">' +
+              '<span class="ta-item-icon">' + it.icon + '</span>' +
+              '<span class="ta-item-name">' + it.name + '</span>' +
+              '<span class="ta-item-cat">' + (it.category === 'weapon' ? '武器' : (it.persistent ? '装備' : '消耗品')) + '</span>' +
+            '</div>' +
+            '<div class="ta-note-body" style="display:block;">' + (it.desc || '').replace(/\n/g, '<br>') + '</div>';
+        } else {
+          row.innerHTML =
+            '<div class="ta-item-head">' +
+              '<span class="ta-item-icon">?</span>' +
+              '<span class="ta-item-name">— 未発見 —</span>' +
+            '</div>';
+        }
+        itemsList.appendChild(row);
+      }
+      var sec1 = document.createElement('h3'); sec1.className = 'ta-sub-h'; sec1.textContent = '武器';
+      itemsList.appendChild(sec1);
+      weaponsHave.forEach(function (id) { addItemRow(id, true); });
+      var sec2 = document.createElement('h3'); sec2.className = 'ta-sub-h'; sec2.textContent = '道具';
+      itemsList.appendChild(sec2);
+      itemsHave.forEach(function (id) { addItemRow(id, true); });
+      if (lockedAll.length > 0) {
+        var sec3 = document.createElement('h3'); sec3.className = 'ta-sub-h'; sec3.textContent = '未発見';
+        itemsList.appendChild(sec3);
+        lockedAll.forEach(function (id) { addItemRow(id, false); });
+      }
+    }
+
+    // Bestiary panel — entities the player has defeated, with weak/strong gear
+    var bestList = el('taBestiaryList');
+    var bestCount = el('taBestiaryCount');
+    var BESTIARY_DATA = {
+      hound:       { icon: '🐕', name: 'HOUND' },
+      smiler:      { icon: '👁', name: 'SMILER' },
+      skinstealer: { icon: '🧥', name: 'SKIN-STEALER' },
+      partygoer:   { icon: '🍰', name: 'PARTYGOER' },
+      crawler:     { icon: '🕷', name: 'CRAWLER' },
+      wretch:      { icon: '🌀', name: 'WRETCH' },
+      haruki:      { icon: '👤', name: 'HARUKI' },
+      echo:        { icon: '🔁', name: 'ECHO' },
+      faceling:    { icon: '🫥', name: 'FACELING' },
+      civilian:    { icon: '🧍', name: 'CIVILIAN' },
+      mrhotel:     { icon: '🎩', name: 'MR.HOTEL' },
+      boss:        { icon: '👹', name: 'BOSS' },
+      haruki_boss: { icon: '🩸', name: 'HARUKI 真' }
+    };
+    var allEntityIds = Object.keys(BESTIARY_DATA);
+    var defeatedIds = allEntityIds.filter(function (t) { return defeatedEntities[t] > 0; });
+    if (bestCount) bestCount.textContent = defeatedIds.length + ' / ' + allEntityIds.length + ' 生物';
+    if (bestList) {
+      bestList.innerHTML = '';
+      allEntityIds.forEach(function (t) {
+        var d = BESTIARY_DATA[t];
+        var killed = defeatedEntities[t] > 0;
+        var row = document.createElement('div');
+        row.className = 'ta-note-row' + (killed ? '' : ' locked');
+        if (killed) {
+          // Find strongest / weakest weapons against this enemy
+          var mults = WEAPON_DAMAGE_MULT[t] || {};
+          var entries = Object.keys(mults).map(function (wId) {
+            return { id: wId, mul: mults[wId], name: (ITEMS[wId] && ITEMS[wId].name) || wId };
+          });
+          entries.sort(function (a, b) { return b.mul - a.mul; });
+          var strongest = entries.slice(0, 2).filter(function (e) { return e.mul > 1.0; });
+          var weakest   = entries.slice(-2).filter(function (e) { return e.mul < 1.0; });
+          var strongStr = strongest.length
+            ? strongest.map(function (e) { return e.name + ' (×' + e.mul.toFixed(1) + ')'; }).join(' / ')
+            : '— 特になし';
+          var weakStr   = weakest.length
+            ? weakest.map(function (e) { return e.name + ' (×' + e.mul.toFixed(1) + ')'; }).join(' / ')
+            : '— 特になし';
+          row.innerHTML =
+            '<div class="ta-item-head">' +
+              '<span class="ta-item-icon">' + d.icon + '</span>' +
+              '<span class="ta-item-name">' + d.name + '</span>' +
+              '<span class="ta-item-cat">×' + defeatedEntities[t] + '</span>' +
+            '</div>' +
+            '<div class="ta-note-body" style="display:block;">' +
+              '<div style="color:#88c050;">有効: ' + strongStr + '</div>' +
+              '<div style="color:#c63a3a;">不得手: ' + weakStr + '</div>' +
+            '</div>';
+        } else {
+          row.innerHTML =
+            '<div class="ta-item-head">' +
+              '<span class="ta-item-icon">?</span>' +
+              '<span class="ta-item-name">— ???</span>' +
+            '</div>';
+        }
+        bestList.appendChild(row);
+      });
+    }
+
     // Achievements panel
     var achsList = el('taAchsList');
     var achsCount = el('taAchsCount');
@@ -11502,11 +11643,15 @@
       achIds.forEach(function (id) {
         var ach = ACHIEVEMENTS[id];
         var unlocked = !!unlockedAchievements[id];
+        var hidden = !!ach.hidden;
         var row = document.createElement('div');
         row.className = 'ta-ach-row' + (unlocked ? '' : ' locked');
+        // Hidden achievements show ??? until unlocked
+        var iconStr = unlocked ? ach.icon : (hidden ? '?' : '?');
+        var nameStr = unlocked ? ach.name : (hidden ? '— ??? —' : '— 未達成 —');
         row.innerHTML =
-          '<span class="ta-ach-icon">' + (unlocked ? ach.icon : '?') + '</span>' +
-          '<span class="ta-ach-name">' + (unlocked ? ach.name : '— 未達成 —') + '</span>';
+          '<span class="ta-ach-icon">' + iconStr + '</span>' +
+          '<span class="ta-ach-name">' + nameStr + '</span>';
         achsList.appendChild(row);
       });
     }

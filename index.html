@@ -20,7 +20,7 @@
   <meta name="twitter:title" content="THE BACKROOMS — featuring HARUKI">
   <meta name="twitter:description" content="一人称モバイル探索ホラー。Level 0 から no-clip で階層を降下。壁の向こうにカレが待つ。">
   <title>THE BACKROOMS</title>
-  <link rel="stylesheet" href="assets/css/game.css?v=169">
+  <link rel="stylesheet" href="assets/css/game.css?v=170">
 </head>
 <body oncontextmenu="return false;">
 
@@ -142,6 +142,8 @@
       <div class="ta-tabs">
         <button type="button" class="ta-tab active" data-ta-tab="notes">書類</button>
         <button type="button" class="ta-tab" data-ta-tab="secret">秘匿</button>
+        <button type="button" class="ta-tab" data-ta-tab="items">道具</button>
+        <button type="button" class="ta-tab" data-ta-tab="bestiary">生物</button>
         <button type="button" class="ta-tab" data-ta-tab="achs">実績</button>
       </div>
       <div class="ta-panel" id="taPanelNotes">
@@ -152,6 +154,14 @@
         <p class="ta-counter" id="taSecretCount">— / —</p>
         <p class="ta-secret-hint">★ 全資料を集めて HARUKI を倒すと、TRUE END に到達する。</p>
         <div id="taSecretList" class="ta-list"></div>
+      </div>
+      <div class="ta-panel" id="taPanelItems" style="display:none;">
+        <p class="ta-counter" id="taItemsCount">— / —</p>
+        <div id="taItemsList" class="ta-list"></div>
+      </div>
+      <div class="ta-panel" id="taPanelBestiary" style="display:none;">
+        <p class="ta-counter" id="taBestiaryCount">— / —</p>
+        <div id="taBestiaryList" class="ta-list"></div>
       </div>
       <div class="ta-panel" id="taPanelAchs" style="display:none;">
         <p class="ta-counter" id="taAchsCount">— / —</p>
@@ -981,8 +991,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="assets/js/engine.js?v=169"></script>
-  <script src="assets/js/game.js?v=169"></script>
+  <script src="assets/js/engine.js?v=170"></script>
+  <script src="assets/js/game.js?v=170"></script>
 
   <!-- POST-LOAD VERIFICATION + DIRECT BINDING FALLBACK
        After game.js IIFE runs, this script confirms __titleAction is the real one.
