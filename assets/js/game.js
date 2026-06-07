@@ -1373,6 +1373,8 @@
       try { GameEngine.playSound('whisper'); } catch (e) {}
     }
     GameEngine.shakeScreen(28, 1.4);
+    // TTS line — voice the boss reveal so the moment lands harder.
+    try { _uncannySpeak('呼んだか。'); } catch (e) {}
     unlockAchievement('altar_pray');
   }
 
@@ -3842,7 +3844,10 @@
       }
       GameEngine.shakeScreen(30, 1.2);
     });
-    later(11200, function () { setText('— おかえり。'); });
+    later(11200, function () {
+      setText('— おかえり。');
+      try { _uncannySpeak('おかえり。'); } catch (e) {}
+    });
     later(14000, finish);
   }
 
@@ -9400,16 +9405,17 @@
       // 真のトゥルーエンド: 全秘匿書類を集めた状態でのみ到達。
       // 春木保 / 晴美 兄妹の魂が解放され、プレイヤーは「鍵」を持って
       // バックルームの呪縛から本当の意味で脱出する。
+      // 各 line に voice: true を付けたものは TTS で発声する。
       lines = [
         { text: '', delay: 1400 },
         { text: 'お前は黒い扉の前に立つ ── が、扉は開かなかった。', delay: 5200 },
         { text: '懐の中で、九つの書類が淡く光り出す。', delay: 5400 },
-        { text: '「鍵は ── 書類だ」', delay: 4400 },
+        { text: '「鍵は ── 書類だ」', delay: 4400, voice: '鍵は、書類だ。' },
         { text: '── 春木晴美の声。', delay: 4600 },
         { text: '九四四班の罪を、お前は読み解いた。', delay: 5600 },
         { text: '壁紙が剥がれ落ちる。', delay: 4400 },
         { text: '黄色の向こうに、本当の朝日が見える。', delay: 5400 },
-        { text: '兄妹は微笑み、お前と共に壁を抜ける。', delay: 5800 },
+        { text: '兄妹は微笑み、お前と共に壁を抜ける。', delay: 5800, voice: 'ありがとう。' },
         { text: 'バックルームは、閉じた。', delay: 5000 },
         { text: '─ THE TRUE END ─', delay: 5000 }
       ];
@@ -9451,9 +9457,18 @@
       }
       var line = lines[idx];
       lineEl.classList.remove('show');
-      void lineEl.offsetWidth;
-      lineEl.textContent = line.text;
-      requestAnimationFrame(function () { lineEl.classList.add('show'); });
+      // Fade out → setTimeout → swap → fade in, matching the intro / boss
+      // cutscene flows. line.voice (if set) is spoken via uncanny TTS so
+      // the user gets ガッツリ voice on key beats.
+      setTimeout(function () {
+        if (cancelled) return;
+        lineEl.textContent = line.text;
+        requestAnimationFrame(function () {
+          if (cancelled) return;
+          lineEl.classList.add('show');
+        });
+        if (line.voice) { try { _uncannySpeak(line.voice); } catch (e) {} }
+      }, 600);
       idx++;
       setTimeout(next, line.delay);
     }
