@@ -11033,15 +11033,15 @@
     _fpsCounterTickAcc += dt;
     if (_fpsCounterTickAcc < 0.25) return;
     _fpsCounterTickAcc = 0;
-    try {
-      if (localStorage.getItem('bk_fps') !== '1') {
-        var fcOff = el('fpsCounter');
-        if (fcOff && fcOff.style.display !== 'none') fcOff.style.display = 'none';
-        return;
-      }
-    } catch (e) { return; }
     var fc = el('fpsCounter');
     if (!fc) return;
+    var enabled = false;
+    try { enabled = localStorage.getItem('bk_fps') === '1'; } catch (e) {}
+    var visible = enabled && state === ST.PLAYING && !_inCinematic;
+    if (!visible) {
+      if (fc.style.display !== 'none') fc.style.display = 'none';
+      return;
+    }
     if (fc.style.display === 'none') fc.style.display = '';
     var f = Math.round(GameEngine._fpsEma || 0);
     fc.textContent = 'FPS ' + f;
