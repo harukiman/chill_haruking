@@ -1552,7 +1552,7 @@
   };
   ITEMS.katana = {
     id: 'katana', name: '刀', icon: '🗡',
-    desc: '近接・即斬。耐久度1ずつ消費。Boss にも有効。',
+    desc: '近接・即斬。命中で1消費、空振りは消費しない。Boss にも有効。',
     category: 'weapon',
     effect: function (p) {
       _muzzleFlash('#c0d8ff'); // cool blue slash gleam
@@ -1565,6 +1565,7 @@
       if (hit) _hitParticles(hit, 10, 'spark');
       if (navigator.vibrate) navigator.vibrate(20);
       toast(hit ? '斬撃: ' + getEntityLabel(hit.type) : '空振り');
+      return hit ? true : false; // miss = no consume
     }
   };
   ITEMS.revolver = {
@@ -1610,7 +1611,7 @@
   };
   ITEMS.architect_blade = {
     id: 'architect_blade', name: '建築家の刃 (ユニーク武器)', icon: '⚔',
-    desc: 'ユニーク武器。前方扇形に巨大なダメージ。ボスにも有効、耐久度3。',
+    desc: 'ユニーク武器。前方扇形に巨大なダメージ。命中で1消費、空振りは消費しない。',
     category: 'weapon',
     effect: function (p) {
       var hit = _attackForward(p, { dmg: 150, rangeTiles: 5, coneDeg: 100 });
@@ -1618,6 +1619,7 @@
       GameEngine.shakeScreen(12, 0.5);
       GameEngine.redFlash();
       toast(hit ? '★ 神撃: ' + getEntityLabel(hit.type) : '空振り');
+      return hit ? true : false;
     }
   };
   ITEMS.siren_whistle = {
@@ -1645,7 +1647,7 @@
   };
   ITEMS.revenant_blade = {
     id: 'revenant_blade', name: '亡者の刃 (ユニーク武器)', icon: '🩸',
-    desc: 'ユニーク武器。命中時 HP +12 回復。中距離扇形。',
+    desc: 'ユニーク武器。命中時 HP +12 回復。中距離扇形。空振りは消費しない。',
     category: 'weapon',
     effect: function (p) {
       var hit = _attackForward(p, { dmg: 80, rangeTiles: 3, coneDeg: 70 });
@@ -1657,6 +1659,7 @@
       }
       if (audioInitialized) GameEngine.playSound('hit');
       GameEngine.shakeScreen(5, 0.2);
+      return hit ? true : false;
     }
   };
   ITEMS.void_grenade = {
@@ -6415,6 +6418,12 @@
     var itemId = _pendingItemId;
     var it = ITEMS[itemId];
     if (!it) { closeItemUseModal(); return; }
+    // 0-ammo weapons can't be fired. Modal stays open so the player can pick
+    // a different action (or close manually).
+    if (it.category === 'weapon' && (player.inventory[itemId] || 0) <= 0) {
+      toast(it.name + ': 弾切れ (×0)');
+      return;
+    }
     // Guard against wasting items where they have no effect
     if (itemId === 'almond_water' && player.san >= player.sanMax) {
       toast('SAN は既に満タン — 使用しない');
@@ -6451,13 +6460,28 @@
         return;
       }
     }
-    it.effect(player);
+    // effect() may return `false` to signal "no consume" (e.g. melee weapons
+    // on a clean miss). undefined / true => consume as usual.
+    var consumed = it.effect(player);
+    if (consumed === false) {
+      closeItemUseModal();
+      refreshPhoneUI();
+      return;
+    }
     // Weapons always consume on use even in cheat mode — "weapons are scarce"
     // is a core mechanic; non-weapon items stay infinite when cheat is on.
     var isWeapon = it.category === 'weapon';
     if (!it.persistent && (!cheatActive || isWeapon)) {
       player.inventory[itemId]--;
-      if (player.inventory[itemId] <= 0) delete player.inventory[itemId];
+      // Per user: weapons stay in inventory at ×0 (unusable state visible).
+      // Non-weapons drop out entirely when fully consumed.
+      if (player.inventory[itemId] <= 0) {
+        if (isWeapon) {
+          player.inventory[itemId] = 0;
+        } else {
+          delete player.inventory[itemId];
+        }
+      }
       player._itemsUsedThisLevel = (player._itemsUsedThisLevel || 0) + 1;
       if (!player._itemsUsedAllRun) player._itemsUsedAllRun = {};
       player._itemsUsedAllRun[itemId] = true;
