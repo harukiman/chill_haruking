@@ -1300,19 +1300,27 @@
       hideOverlay('promptOverlay');
       try { yes.removeEventListener('click', onYes); } catch (e) {}
       try { no.removeEventListener('click', onNo); } catch (e) {}
+      try { promptEl.removeEventListener('click', onBackdrop); } catch (e) {}
     }
-    function onYes() {
+    function onYes(e) {
+      if (e) e.stopPropagation();
       if (done) return; done = true;
       close();
       spawnHiddenBossNearAltar(altarIdx);
     }
-    function onNo() {
+    function onNo(e) {
+      if (e) e.stopPropagation();
       if (done) return; done = true;
       close();
       toast('祭壇は静かなままだった。');
     }
+    function onBackdrop(e) {
+      if (e.target !== promptEl) return; // ignore clicks on the card
+      onNo();
+    }
     yes.addEventListener('click', onYes);
     no.addEventListener('click', onNo);
+    promptEl.addEventListener('click', onBackdrop);
   }
 
   function spawnHiddenBossNearAltar(altarIdx) {
@@ -4573,6 +4581,8 @@
     if (sho_ && sho_.style.display !== 'none') return true;
     var ta_ = el('titleArchiveOverlay');
     if (ta_ && ta_.style.display !== 'none') return true;
+    var pr_ = el('promptOverlay');
+    if (pr_ && pr_.style.display !== 'none') return true;
     return false;
   }
 
