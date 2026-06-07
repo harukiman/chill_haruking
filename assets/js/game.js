@@ -6682,13 +6682,53 @@
           }
         }
       } else if (e.type === 'boss' || e.type === 'haruki_boss') {
-        // Boss: multi-phase, boss HP tracked separately
+        // Boss: 4-phase, boss HP tracked separately
         e.bossHp = e.bossHp !== undefined ? e.bossHp : 200;
-        // Phase determined by HP
+        // Phase determined by HP. Phase 4 (berserk) only for haruki_boss.
         var phase = 1;
-        if (e.bossHp < 130) phase = 2;
-        if (e.bossHp < 60)  phase = 3;
-        var bossSpd = (50 + phase * 25) * sMul;
+        if (e.bossHp < 150) phase = 2;
+        if (e.bossHp < 90)  phase = 3;
+        if (e.bossHp < 35 && e.type === 'haruki_boss') phase = 4;
+        // Phase transition VFX + audio + situational TTS. One-shot per phase
+        // so transitions stay impactful. e._lastPhase tracks the previous fire.
+        if (e._lastPhase !== phase) {
+          var prevPh = e._lastPhase || 1;
+          e._lastPhase = phase;
+          // Skip the very first init firing (phase=1 → phase=1) to avoid a
+          // VFX flash at boss spawn.
+          if (phase > 1 || prevPh !== undefined) {
+            if (phase === 2) {
+              toast('ハルキ — 第2形態 加速');
+              GameEngine.shakeScreen(14, 0.7);
+              if (audioInitialized) GameEngine.playSound('stinger');
+              if (e.type === 'haruki_boss') speakSituational('boss_approach', { cooldownMs: 8000 });
+            } else if (phase === 3) {
+              toast('ハルキ — 第3形態 影分身');
+              GameEngine.shakeScreen(22, 1.1);
+              if (audioInitialized) { GameEngine.playSound('stinger'); GameEngine.playSound('whisper'); }
+              if (e.type === 'haruki_boss') speakSituational('boss_approach', { cooldownMs: 8000 });
+            } else if (phase === 4) {
+              toast('★ ハルキ — 残光形態 ★');
+              GameEngine.shakeScreen(30, 1.4);
+              if (audioInitialized) { GameEngine.playSound('jumpscare'); GameEngine.playSound('whisper'); }
+              speakSituational('boss_approach', { cooldownMs: 6000 });
+              // Berserk red tint
+              try {
+                var hl = el('hallucinationLayer');
+                if (hl) {
+                  hl.style.display = 'block';
+                  hl.style.background = 'radial-gradient(circle at center, rgba(200,40,40,0.15) 0%, rgba(80,0,0,0.4) 100%)';
+                  setTimeout(function () {
+                    if (hl) hl.style.background = '';
+                  }, 2400);
+                }
+              } catch (er) {}
+            }
+          }
+        }
+        // Phase-modulated speed. Berserk (phase 4) is ~2x phase 3.
+        var phaseSpdMul = phase === 4 ? 2.1 : (1 + (phase - 1) * 0.5);
+        var bossSpd = 50 * sMul * phaseSpdMul;
         // Haruki charm warding also blocks haruki_boss approach (the boss
         // becomes a slow wanderer and cannot close to attack range).
         var bossWarded = (e.type === 'haruki_boss'
@@ -6696,12 +6736,26 @@
                          && performance.now() < player._harukiWardUntil);
         if (bossWarded) bossSpd *= 0.25;
         wanderEntity(e, dt, bossSpd);
-        // Move toward player if in range
-        if (!bossWarded && distP < 10 * TS) {
+        // Move toward player if in range. Phase 4 has an extended chase range.
+        var chaseRange = (phase === 4 ? 14 : 10) * TS;
+        if (!bossWarded && distP < chaseRange) {
           var bsx = (dx / distP) * bossSpd * dt;
           var bsy = (dy / distP) * bossSpd * dt;
           if (isWalkable(e.x + bsx, e.y)) e.x += bsx;
           if (isWalkable(e.x, e.y + bsy)) e.y += bsy;
+        }
+        // Phase 2+ telegraphed dash: every ~4s, if player in mid-range, lunge.
+        if (!bossWarded && phase >= 2 && distP > 2 * TS && distP < 8 * TS) {
+          e._dashCdT = (e._dashCdT || 0) - dt;
+          if (e._dashCdT <= 0) {
+            e._dashCdT = phase >= 4 ? 1.8 : (phase === 3 ? 2.6 : 4.0);
+            var dashSpd = bossSpd * (phase === 4 ? 3.2 : 2.4);
+            var ddx = (dx / distP) * dashSpd * dt * 8;
+            var ddy = (dy / distP) * dashSpd * dt * 8;
+            if (isWalkable(e.x + ddx, e.y)) e.x += ddx;
+            if (isWalkable(e.x, e.y + ddy)) e.y += ddy;
+            if (audioInitialized && phase >= 3) GameEngine.playSound('hit');
+          }
         }
         if (distP < 1.6 * TS) {
           attackPlayer((8 + phase * 4) * dt);
@@ -6720,6 +6774,32 @@
           }
           toast('影が分離した!');
           if (audioInitialized) GameEngine.playSound('stinger');
+        }
+        // Phase 4: occasional hallucination flash + 1 extra shadow on entry
+        if (phase === 4 && !e._spawnedBerserkShadow) {
+          e._spawnedBerserkShadow = true;
+          entities.push({
+            type: 'crawler',
+            x: e.x + (Math.random() - 0.5) * 5 * TS,
+            y: e.y + (Math.random() - 0.5) * 5 * TS,
+            angle: 0, state: 'wait', stateTimer: 0,
+            alive: true, hp: 60, color: '#2a0a0a', bodyColor: '#100'
+          });
+        }
+        if (phase === 4) {
+          e._berserkPulseT = (e._berserkPulseT || 0) - dt;
+          if (e._berserkPulseT <= 0) {
+            e._berserkPulseT = 1.2;
+            // Brief screen pulse — sells the residual-glow theme.
+            try {
+              var hl2 = el('hallucinationLayer');
+              if (hl2) {
+                hl2.style.display = 'block';
+                hl2.style.opacity = '0.55';
+                setTimeout(function () { if (hl2) hl2.style.opacity = ''; }, 180);
+              }
+            } catch (er) {}
+          }
         }
       }
 
