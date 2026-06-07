@@ -5712,6 +5712,40 @@
         player._hudCache.charm = charmNow;
       }
     }
+    // Active-effect chips — flashlight (with battery %) / radio / compass.
+    // Only touch the DOM when the state flips so this is essentially
+    // free on the per-frame path.
+    var effF = el('effFlashlight');
+    if (effF) {
+      var fOn = !!player.flashlightOn;
+      var fBat = Math.round(player.flashlightBattery || 0);
+      if (player._hudCache.flashOn !== fOn || player._hudCache.flashBat !== fBat) {
+        effF.style.display = fOn ? 'inline-flex' : 'none';
+        if (fOn) {
+          var batEl = el('effFlashBat');
+          if (batEl) batEl.textContent = fBat;
+          effF.classList.toggle('low', fBat < 25);
+        }
+        player._hudCache.flashOn = fOn;
+        player._hudCache.flashBat = fBat;
+      }
+    }
+    var effR = el('effRadio');
+    if (effR) {
+      var rOn = !!player.radioOn;
+      if (player._hudCache.radioOn !== rOn) {
+        effR.style.display = rOn ? 'inline-flex' : 'none';
+        player._hudCache.radioOn = rOn;
+      }
+    }
+    var effC = el('effCompass');
+    if (effC) {
+      var cOn = !!player.compassOn;
+      if (player._hudCache.compassOn !== cOn) {
+        effC.style.display = cOn ? 'inline-flex' : 'none';
+        player._hudCache.compassOn = cOn;
+      }
+    }
 
     // HP/SAN screen state effects
     var hpFx = el('hpScreenEffect');

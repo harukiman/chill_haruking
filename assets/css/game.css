@@ -595,6 +595,34 @@ body {
   pointer-events: none;
 }
 .vital-charm-icon { font-size: 14px; }
+/* Active-effect row — shows flashlight/radio/compass at-a-glance state.
+   pointer-events: none cascades from #vitalBars * already. */
+.vital-effects-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  width: max-content;
+}
+.vital-effect {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px;
+  background: rgba(40, 60, 24, 0.65);
+  border: 1px solid #88c050;
+  border-radius: 10px;
+  color: #d8f0a0;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-shadow: 0 0 6px rgba(120, 200, 80, 0.45);
+}
+.vital-effect.low {
+  background: rgba(60, 30, 0, 0.65);
+  border-color: #d08018;
+  color: #f0d090;
+}
 
 /* ============================================================
  *  OVERLAY (shared)

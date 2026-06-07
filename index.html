@@ -20,7 +20,7 @@
   <meta name="twitter:title" content="THE BACKROOMS — featuring HARUKI">
   <meta name="twitter:description" content="一人称モバイル探索ホラー。Level 0 から no-clip で階層を降下。壁の向こうにカレが待つ。">
   <title>THE BACKROOMS</title>
-  <link rel="stylesheet" href="assets/css/game.css?v=243">
+  <link rel="stylesheet" href="assets/css/game.css?v=244">
 </head>
 <body oncontextmenu="return false;">
 
@@ -100,6 +100,11 @@
     </div>
     <div class="vital-coin-row" id="vitalCoinRow"><span class="vital-coin-icon">🪙</span><span id="vitalCoinNum">0</span></div>
     <div class="vital-charm-row" id="vitalCharmRow" style="display:none;"><span class="vital-charm-icon">♾</span><span>永遠の護符</span></div>
+    <div class="vital-effects-row" id="vitalEffectsRow">
+      <span class="vital-effect" id="effFlashlight" title="懐中電灯" style="display:none;">🔦<span id="effFlashBat">100</span>%</span>
+      <span class="vital-effect" id="effRadio" title="ラジオ" style="display:none;">📻</span>
+      <span class="vital-effect" id="effCompass" title="コンパス" style="display:none;">🧭</span>
+    </div>
   </div>
 
   <!-- Reticle / crosshair — fixed center of viewport, points where the
@@ -1054,8 +1059,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="assets/js/engine.js?v=243"></script>
-  <script src="assets/js/game.js?v=243"></script>
+  <script src="assets/js/engine.js?v=244"></script>
+  <script src="assets/js/game.js?v=244"></script>
 
   <!-- POST-LOAD VERIFICATION + DIRECT BINDING FALLBACK
        After game.js IIFE runs, this script confirms __titleAction is the real one.
