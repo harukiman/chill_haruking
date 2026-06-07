@@ -1337,6 +1337,13 @@ button {
 }
 .ta-level-head:active { background: rgba(95, 70, 22, 0.85); }
 .ta-level-head-name  { flex: 1; }
+.ta-level-head-sub {
+  font-size: 9px;
+  font-weight: 400;
+  color: #b09040;
+  letter-spacing: 0.12em;
+  margin-left: 6px;
+}
 .ta-level-head-count { font-size: 11px; color: #c8a850; min-width: 48px; text-align: right; }
 .ta-level-head-caret {
   display: inline-block;

@@ -13368,8 +13368,14 @@
           grp.className = 'ta-level-group';
           var head = document.createElement('div');
           head.className = 'ta-level-head';
+          // Include the level's subtitle (THE LOBBY / HABITABLE ZONE / etc.)
+          // so the player has thematic context, not just a number.
+          var lvlDef = LEVELS[lvl];
+          var lvlSubtitle = lvlDef ? (lvlDef.subtitle || '') : '';
           head.innerHTML =
-            '<span class="ta-level-head-name">LEVEL ' + lvl + '</span>' +
+            '<span class="ta-level-head-name">LEVEL ' + lvl +
+            (lvlSubtitle ? ' <small class="ta-level-head-sub">' + lvlSubtitle + '</small>' : '') +
+            '</span>' +
             '<span class="ta-level-head-count">' + arr.length +
             ' / ' + (totalByLevel[lvl] || arr.length) + '</span>' +
             '<span class="ta-level-head-caret">▶</span>';
