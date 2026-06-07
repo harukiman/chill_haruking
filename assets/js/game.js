@@ -4029,7 +4029,7 @@
     'ベストタイムは Free Roam モードでも更新される',
     'CHAOS 難易度は SAN drain 2.5倍 + 敵速度 1.8倍',
     'ENDLESS モードは階毎に難易度上昇',
-    'ロア全収集 + 全アチーブで TRUE+ END 解放'
+    'ロア全収集 + 全実績で TRUE+ END 解放'
   ];
 
   function showLoadingScreen(def) {
@@ -8693,6 +8693,7 @@
     // overlay stacking. Once we're in DEAD/ENDED, do not re-run death sequence.
     if (state === ST.DEAD || state === ST.ENDED) return;
     state = ST.DEAD;
+    updateChaosLayer();
     stats.totalDeaths++;
     saveStats();
     el('vitalBars').classList.remove('show');
@@ -8849,7 +8850,7 @@
         '生存: ' + formatTime(playTime) + '<br>' +
         '本ラン ノート: ' + discoveredNotes.length + '<br>' +
         '通算 ユニーク ノート: ' + lifetimeCount + ' / ' + totalNotes + '<br>' +
-        'アチーブ: ' + Object.keys(unlockedAchievements).length + ' / ' + totalAch + '<br>' +
+        '実績: ' + Object.keys(unlockedAchievements).length + ' / ' + totalAch + '<br>' +
         '難易度: ' + (DIFFICULTIES[currentDifficulty] ? DIFFICULTIES[currentDifficulty].name : 'NORMAL') +
         '</div>';
       if (hasAllNotes && hasAllAch) {
