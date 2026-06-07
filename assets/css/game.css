@@ -541,52 +541,49 @@ button {
 /* ============================================================
  *  TITLE SETTINGS OVERLAY
  * ============================================================ */
-/* Title settings overlay — completely overrides .overlay flex centering.
-   Flex centering + tall content was clipping the bottom rows: the card got
-   centered vertically, so its top edge went off-screen above the scroll
-   container with no way to scroll up. Using block layout instead lets the
-   card sit at the top and the overlay scroll naturally. */
+/* Title settings overlay — the card itself owns the scroll. Previous
+   attempts had the overlay scroll, but iOS Safari's mix of flex-center
+   on the parent + tall children caused the card to be unscrollably
+   clipped. Now the overlay is just a backdrop, the card is bounded to
+   the viewport height, and the card scrolls its OWN content. */
 .title-settings-overlay {
   z-index: 55;
   background: rgba(0, 0, 0, 0.85);
-  display: none;  /* shown via inline style by showOverlay() */
-  align-items: unset !important;
-  justify-content: unset !important;
-  overflow-y: auto !important;
-  -webkit-overflow-scrolling: touch !important;
-  overscroll-behavior: contain;
-  touch-action: pan-y !important;
-  /* layered units for iOS Safari toolbar handling */
-  height: 100vh;
-  height: 100svh;
-  height: 100dvh;
-  padding: calc(env(safe-area-inset-top, 0px) + 8px) 0
-           calc(env(safe-area-inset-bottom, 0px) + 140px);
+  /* Keep flex centering from .overlay for the card itself */
+  align-items: center;
+  justify-content: center;
+  padding: calc(env(safe-area-inset-top, 0px) + 8px) 12px
+           calc(env(safe-area-inset-bottom, 0px) + 8px);
   box-sizing: border-box;
 }
-/* When shown, behave as block so .ts-card flows from the top and the parent
-   can scroll. Both the spaced and unspaced display: flex variants are covered. */
-.title-settings-overlay[style*="display: flex"],
-.title-settings-overlay[style*="display:flex"] {
-  display: block !important;
-}
 .ts-card {
-  width: min(92vw, 420px);
-  margin: 12px auto 80px;
+  width: min(92vw, 400px);
+  /* Card never exceeds the viewport. The remaining margin keeps it off
+     the very edges so the rounded border is visible. */
+  max-height: calc(100vh - 24px);
+  max-height: calc(100svh - 24px);
+  max-height: calc(100dvh - 24px);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
   background: linear-gradient(180deg, rgba(35, 26, 6, 0.95) 0%, rgba(15, 12, 4, 0.95) 100%);
   border: 1px solid rgba(212, 179, 64, 0.55);
-  border-radius: 16px;
-  padding: 22px 22px 28px;
+  border-radius: 14px;
+  padding: 14px 16px 18px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(240, 220, 138, 0.1);
 }
 .ts-title {
   font-family: 'Times New Roman', serif;
-  font-size: 26px;
-  letter-spacing: 0.4em;
+  font-size: 20px;
+  letter-spacing: 0.35em;
   text-align: center;
   color: #e8d57a;
-  margin: 0 0 14px;
+  margin: 0 0 8px;
   text-shadow: 0 0 12px rgba(212, 179, 64, 0.4);
+  flex-shrink: 0;
 }
 .ts-close-x {
   position: sticky;
@@ -616,14 +613,14 @@ button {
 }
 .ts-section {
   border-top: 1px solid rgba(120, 96, 32, 0.3);
-  padding: 12px 0 4px;
-  margin-bottom: 4px;
+  padding: 8px 0 2px;
+  margin-bottom: 2px;
 }
 .ts-row {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin-bottom: 14px;
+  gap: 4px;
+  margin-bottom: 8px;
 }
 .ts-row label {
   font-size: 12px;
