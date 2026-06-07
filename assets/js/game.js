@@ -4675,12 +4675,31 @@
       }
     }
   }
+  // Weapons that emit a muzzle flash (guns / explosives).
+  var WEAPON_FLASH_SET = { pistol: 1, shotgun: 1, revolver: 1, void_grenade: 1, flare: 1 };
+  // Weapons with heavier kick (shotgun / grenade / unique blades).
+  var WEAPON_HEAVY_RECOIL = { shotgun: 1, void_grenade: 1, architect_blade: 1 };
   // Trigger a brief tilt animation on the FPS hand view when the weapon fires.
-  function _animateWeaponHandFire() {
+  function _animateWeaponHandFire(weaponId) {
     var hand = el('weaponHand');
     if (!hand || !hand.classList.contains('show')) return;
+    var heavy = WEAPON_HEAVY_RECOIL[weaponId];
     hand.classList.add('fire');
-    setTimeout(function () { if (hand) hand.classList.remove('fire'); }, 110);
+    if (heavy) hand.classList.add('heavy');
+    var dur = heavy ? 180 : 110;
+    setTimeout(function () {
+      if (hand) { hand.classList.remove('fire'); hand.classList.remove('heavy'); }
+    }, dur);
+    // Muzzle flash for guns / explosives
+    if (WEAPON_FLASH_SET[weaponId]) {
+      var fl = el('weaponHandFlash');
+      if (fl) {
+        fl.classList.remove('flash');
+        // force reflow so the animation can replay on rapid re-fire
+        void fl.offsetWidth;
+        fl.classList.add('flash');
+      }
+    }
   }
   // Fire the equipped weapon — used by weaponAttackBtn / R1 gamepad.
   function fireEquippedWeapon() {
@@ -4691,7 +4710,7 @@
     if (!id) { toast('武器未装備'); return; }
     if (!ITEMS[id] || ITEMS[id].category !== 'weapon') return;
     _pendingItemId = id;
-    _animateWeaponHandFire();
+    _animateWeaponHandFire(id);
     confirmItemUse();
     updateWeaponAttackBtn();
   }

@@ -167,11 +167,47 @@ body {
 }
 .weapon-hand.show { display: block; }
 .weapon-hand.fire {
-  transform: translateX(-50%) translateY(15%) rotate(-8deg);
+  transform: translateX(-50%) translateY(8%) rotate(-12deg);
+  transition: transform 0.05s ease-out;
+}
+.weapon-hand.fire.heavy {
+  transform: translateX(-50%) translateY(0%) rotate(-18deg);
 }
 .weapon-hand-grip {
   display: inline-block;
   transform: rotate(-18deg); /* tilted like a held weapon */
+  position: relative;
+}
+.weapon-hand-flash {
+  position: absolute;
+  left: 50%;
+  top: -20px;
+  width: 90px;
+  height: 90px;
+  margin-left: -45px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(255, 240, 180, 0.95) 0%,
+    rgba(255, 180, 60, 0.85) 25%,
+    rgba(255, 80, 20, 0.55) 55%,
+    rgba(255, 20, 0, 0) 80%
+  );
+  opacity: 0;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  filter: blur(2px);
+  transform: scale(0.4);
+  transition: none;
+}
+.weapon-hand-flash.flash {
+  animation: weapon-flash 0.16s ease-out;
+}
+@keyframes weapon-flash {
+  0%   { opacity: 0;    transform: scale(0.4); }
+  20%  { opacity: 1;    transform: scale(1.1); }
+  60%  { opacity: 0.55; transform: scale(0.9); }
+  100% { opacity: 0;    transform: scale(0.6); }
 }
 #vitalBars.show { display: flex; }
 
