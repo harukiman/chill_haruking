@@ -738,24 +738,28 @@
       grain: 0.4,
       chromatic: 0.2
     },
-    11: { // End of the Line — pitch black with rare flashes
+    11: { // Office district — light, open city after the train tunnel.
+          // Shops, civilians, a brief reprieve before deeper levels.
       wall: {
-        upper: { 'default': [40, 35, 32], 1: [40, 35, 32] },
-        flat: true,
-        pattern: 'concrete'
+        upper: { 'default': [200, 195, 180], 1: [200, 195, 180], 2: [170, 160, 140] },
+        lower: { 'default': [120, 110, 95], 1: [120, 110, 95] },
+        pattern: 'brick',
+        splitRatio: 0.6,
+        railColor: [80, 70, 55]
       },
       bg: {
-        ceiling: ['#000', '#040404', '#080808'],
-        floor:   ['#000', '#080808', '#101010']
+        // Open sky overhead + dusty street underfoot — feels outdoors
+        ceiling: ['#7a8aa0', '#8c9cb0', '#a0afc0'],
+        floor:   ['#2e2820', '#403828', '#544838']
       },
-      floorDefault: [25, 22, 20],
-      ceilingDefault: [12, 10, 10],
-      fogDist: 6,
+      floorDefault: [80, 72, 56],
+      ceilingDefault: [150, 158, 175],
+      fogDist: 14,
       ambientLoop: 'wind',
-      sanDrain: 1.0,
-      vignette: 0.6,
-      grain: 0.5,
-      chromatic: 0.25
+      sanDrain: 0.2,   // safe district — SAN drain minimal
+      vignette: 0.25,
+      grain: 0.2,
+      chromatic: 0.05
     },
     12: { // Fun =) — bright pink hellscape
       wall: {
