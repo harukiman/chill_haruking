@@ -1391,12 +1391,27 @@
   // the Lv11 shop without making weapons feel pointless to use.
   var COIN_DROPS = {
     crawler: 2, hound: 3, smiler: 4, skinstealer: 6, wretch: 5,
-    haruki: 8, echo: 3, faceling: 4, boss: 30, haruki_boss: 100
+    haruki: 8, echo: 3, faceling: 4, boss: 30, haruki_boss: 100,
+    // Civilians are neutral — killing them gives a token coin (1) but a heavy
+    // SAN hit (handled in _grantCoinsForKill) so it's never the easy path.
+    civilian: 1
   };
   function _grantCoinsForKill(type) {
     var amt = COIN_DROPS[type] || 1;
     player.coins = (player.coins || 0) + amt;
     if (amt >= 10) toast('+ ' + amt + ' コイン');
+    // Killing a civilian is morally costly: SAN -25, no coin toast (silent
+    // shame), screen red-flashes. The Lv11 district is supposed to be the
+    // game's one breath of safety — taking it from the civilians is a choice.
+    if (type === 'civilian') {
+      player.san = Math.max(0, player.san - 25);
+      if (audioInitialized) {
+        try { GameEngine.playSound('scream'); } catch (e) {}
+        try { GameEngine.playSound('hit'); } catch (e) {}
+      }
+      try { GameEngine.redFlash(); GameEngine.shakeScreen(10, 0.5); } catch (e) {}
+      toast('— 何かを失った。');
+    }
   }
 
   function _attackForward(p, opts) {
