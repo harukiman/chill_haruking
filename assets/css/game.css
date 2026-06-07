@@ -4187,6 +4187,16 @@ button {
   font-size: 12px;
   letter-spacing: 0.2em;
   cursor: pointer;
+  transition: all 0.15s;
+}
+.tutorial-close:hover {
+  background: rgba(40, 30, 8, 0.95);
+  border-color: #d4b340;
+  color: #f0dc8a;
+}
+.tutorial-close:focus-visible {
+  outline: 2px solid #f0dc8a;
+  outline-offset: 2px;
 }
 
 /* ============================================================
