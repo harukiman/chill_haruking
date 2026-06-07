@@ -3501,7 +3501,16 @@
           _skippedSpots.push({ key: key, gx: spot.gx, gy: spot.gy });
           continue;
         }
-        itemId = pool[Math.floor(Math.random() * pool.length)];
+        // User request 2026-06-07: 「武器の出現確率をもっと上げて」.
+        // ~45% of un-dedicated item spots now roll from biasedWeapons
+        // (the level's level-appropriate weapon list). Falls back to the
+        // generic pool roll otherwise — keeps the existing weapon-budget
+        // cap working since over-cap weapons are downgraded below.
+        if (biasedWeapons.length > 0 && Math.random() < 0.45) {
+          itemId = biasedWeapons[Math.floor(Math.random() * biasedWeapons.length)];
+        } else {
+          itemId = pool[Math.floor(Math.random() * pool.length)];
+        }
       }
       pickupSpots[key] = itemId;
       pickupRenderList.push({ key: key, wx: spot.gx * TS + TS / 2, wy: spot.gy * TS + TS / 2, itemId: itemId });
@@ -3575,9 +3584,12 @@
     // Enforce weapon budget — even using every weapon found cannot clear the
     // floor of enemies. Lv9 is the only exception (boss arena, generous cap).
     // Any over-cap weapons are downgraded to a non-weapon roll from the pool.
+    // Caps bumped 2026-06-07 in tandem with the 45% weapon bias on
+    // un-dedicated item spots (user: 「武器の出現確率をもっと上げて」).
+    // Roughly +50% across the board; Lv9 boss arena unchanged at 10.
     var WEAPON_BUDGET_BY_LEVEL = {
-      3: 2, 4: 2, 5: 3, 6: 3, 7: 4, 8: 3, 11: 2, 12: 3, 13: 3,
-      14: 2, 15: 3,
+      3: 3, 4: 3, 5: 5, 6: 4, 7: 6, 8: 5, 11: 3, 12: 5, 13: 5,
+      14: 3, 15: 5,
       9: 10  // final boss arena: user requested 武器を大量配置
     };
     var weaponCap = (WEAPON_BUDGET_BY_LEVEL[levelId] != null) ? WEAPON_BUDGET_BY_LEVEL[levelId] : 2;
