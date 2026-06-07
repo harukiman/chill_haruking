@@ -6857,12 +6857,30 @@
         }
         if (mgState.stopped >= 3) {
           mgState.phase = 'done';
-          // Award items
+          // Award items. User request 2026-06-07: 「レベル一のリールはでた
+          // アイテムがそのままもらえる」 — weapon rolls give a stacked count
+          // matching their real pickup range instead of +1 per reel:
+          //   pistol   → 7-11 per reel
+          //   shotgun  → 2-4
+          //   revolver → 1-3
+          //   katana   → 4-7 (matches WEAPON_AMMO_PICKUP)
+          //   other consumables stay +1
+          var VENDING_RANGES = {
+            pistol:   [7, 11],
+            shotgun:  [2, 4],
+            revolver: [1, 3],
+            katana:   [4, 7]
+          };
           var wonItems = [];
           for (var j = 0; j < 3; j++) {
             var itemId = MINI_GAMES.vending.itemPool[mgState.reels[j]];
-            player.inventory[itemId] = (player.inventory[itemId] || 0) + 1;
-            wonItems.push(ITEMS[itemId].name);
+            var rng = VENDING_RANGES[itemId];
+            var addAmt = rng
+              ? Math.floor(rng[0] + Math.random() * (rng[1] - rng[0] + 1))
+              : 1;
+            player.inventory[itemId] = (player.inventory[itemId] || 0) + addAmt;
+            wonItems.push(ITEMS[itemId].name + (addAmt > 1 ? ' ×' + addAmt : ''));
+            try { recordItemSeen(itemId); } catch (e) {}
           }
           setMGStatus('入手: ' + wonItems.join(', '));
           setMGAction('終了', 'green');
