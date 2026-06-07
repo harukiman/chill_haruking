@@ -5522,12 +5522,28 @@
         playWallClipFall();
       }
 
-      // Footstep audio every ~24 px traveled
+      // Footstep audio every ~24 px traveled. On water tiles, also emit
+      // a small splash particle and play 'pipe_drip' as a wet-step variant
+      // so the player hears + sees that they're in water.
       if (!player._footAccum) player._footAccum = 0;
       player._footAccum += len * speed * dt * 0.04;
       if (player._footAccum > 24) {
         player._footAccum = 0;
-        if (audioInitialized) GameEngine.playSound('footstep');
+        if (audioInitialized) {
+          if (player.inWater) {
+            try { GameEngine.playSound('pipe_drip'); } catch (e) {}
+          } else {
+            GameEngine.playSound('footstep');
+          }
+        }
+        // Water splash particles — only on water tiles, only every step
+        if (player.inWater && GameEngine.addParticle) {
+          for (var spi = 0; spi < 3; spi++) {
+            var sx = (Math.random() - 0.5) * 30;
+            var sy = (Math.random() - 0.5) * 30;
+            GameEngine.addParticle('spark', player.x + sx, player.y + sy);
+          }
+        }
       }
       // Walk-bob class on the FPS hand. Stays for 0.3s after the last
       // movement frame so brief stops don't snap the bob off.
