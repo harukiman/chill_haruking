@@ -390,6 +390,34 @@ body {
   .wcf-text { font-size: 20px; }
 }
 
+/* Chase banner — top-center alert when an entity flips to chase state */
+.chase-banner {
+  position: fixed;
+  left: 50%;
+  top: 14%;
+  transform: translateX(-50%);
+  padding: 8px 22px;
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 0.32em;
+  font-family: 'Hiragino Sans', 'Yu Gothic', sans-serif;
+  color: #ffcccc;
+  background: rgba(60, 0, 0, 0.85);
+  border: 2px solid #ff4040;
+  border-radius: 6px;
+  text-shadow: 0 0 14px rgba(255, 60, 60, 0.95), 1px 1px 0 #000;
+  box-shadow: 0 0 22px rgba(220, 0, 0, 0.5);
+  pointer-events: none;
+  z-index: 19;
+  animation: chase-pop 2.1s ease-out forwards;
+}
+@keyframes chase-pop {
+  0%   { opacity: 0; transform: translateX(-50%) translateY(-30px) scale(0.7); }
+  18%  { opacity: 1; transform: translateX(-50%) translateY(4px) scale(1.08); }
+  35%  { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.0); }
+  78%  { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.0); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-12px) scale(0.95); }
+}
 /* Save indicator — small chip that slides in/out when the game auto-saves */
 .save-indicator {
   position: fixed;

@@ -6257,6 +6257,9 @@
         if (currentBgm) GameEngine.stopLoop(currentBgm);
         GameEngine.startLoop('chase');
         if (navigator.vibrate) navigator.vibrate(40);
+        // Brief "追跡中" banner so the player gets a visual cue paired
+        // with the BGM swap.
+        try { _flashChaseBanner(); } catch (e) {}
       } else {
         GameEngine.stopLoop('chase');
         if (currentBgm) GameEngine.startLoop(currentBgm);
@@ -11788,6 +11791,19 @@
     } catch (e) { console.warn('Save failed', e); }
   }
   var _lastSaveFlashAt = 0;
+  function _flashChaseBanner() {
+    if (typeof document === 'undefined' || !document.body) return;
+    var existing = document.getElementById('_chaseBanner');
+    if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
+    var node = document.createElement('div');
+    node.id = '_chaseBanner';
+    node.className = 'chase-banner';
+    node.textContent = '— 追跡されている —';
+    document.body.appendChild(node);
+    setTimeout(function () {
+      if (node && node.parentNode) node.parentNode.removeChild(node);
+    }, 2200);
+  }
   function _flashSaveIndicator() {
     var now = performance.now();
     if (now - _lastSaveFlashAt < 4000) return;
