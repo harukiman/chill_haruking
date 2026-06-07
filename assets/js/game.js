@@ -3300,6 +3300,13 @@
     el('encounterName').textContent = intro.name;
     el('encounterDesc').textContent = intro.desc + '\n\n[ 画面をタップして閉じる ]';
     showOverlay('encounterCinematic');
+    // Speak the entity's signature voice line ~1.2s after the card opens
+    // so it lands AFTER the jumpscare audio. Uses the raspy creep TTS
+    // settings established this session (pitch 0.1, rate 0.45, layered
+    // whisper+breath). Silent if no voice line is defined.
+    if (intro.voice) {
+      setTimeout(function () { try { _uncannySpeak(intro.voice); } catch (e) {} }, 1200);
+    }
     if (navigator.vibrate) navigator.vibrate([80, 40, 80, 40, 80]);
     // Tap-to-close (no auto-dismiss). Safety net: auto-close after 30s.
     var encOverlay = el('encounterCinematic');
@@ -5822,6 +5829,26 @@
     // the previous beat so they stay surprising. Skipped during cutscenes,
     // chase, safe-area, or while the phone/settings overlay is open.
     if (typeof _isGamePaused !== 'function' || !_isGamePaused()) {
+      // ── Per-level signature ambient particles ──
+      // Each level emits a signature particle near the player every
+      // ~0.6s (level-dependent rate). Adds visual life to the static
+      // walls. User feedback: 「オブジェクトも少なく単調」.
+      player._ambParticleT = (player._ambParticleT || 0) - dt;
+      if (player._ambParticleT <= 0 && GameEngine.addParticle) {
+        var pSpec = LEVEL_AMBIENT_PARTICLES[currentLevel];
+        if (pSpec) {
+          player._ambParticleT = pSpec.interval || 0.6;
+          // Emit slightly off-camera so particles drift INTO view.
+          var px = player.x + (Math.random() - 0.5) * TS * 6;
+          var py = player.y + (Math.random() - 0.5) * TS * 6;
+          for (var ppi = 0; ppi < (pSpec.count || 1); ppi++) {
+            GameEngine.addParticle(pSpec.type, px + (Math.random() - 0.5) * TS,
+                                   py + (Math.random() - 0.5) * TS);
+          }
+        } else {
+          player._ambParticleT = 2.0;
+        }
+      }
       if (!_inCinematic && !player.inSafeZone && !player._beingChased) {
         _ambientEventRollT = (_ambientEventRollT || 0) - dt;
         if (_ambientEventRollT <= 0) {
@@ -8308,6 +8335,27 @@
   // ── LEVEL-SPECIFIC AMBIENT EVENTS ─────────────────────────
   // Each level rolls its own atmospheric beat every ~15s. Functions are
   // intentionally lightweight — small SE + brief hallu-text or shake.
+  // Per-level signature ambient particles — emit a level-specific
+  // particle near the player periodically. Adds visual life to the
+  // static raycaster walls. User feedback: 「オブジェクトも少なく単調」.
+  // Types map to engine particle types (spark / dust / fog).
+  var LEVEL_AMBIENT_PARTICLES = {
+    0:  { type: 'dust',  interval: 1.8, count: 1 },  // lobby motes
+    1:  { type: 'dust',  interval: 2.0, count: 1 },  // concrete dust
+    2:  { type: 'spark', interval: 0.9, count: 1 },  // water drips (re-tinted in render?)
+    3:  { type: 'spark', interval: 0.5, count: 2 },  // electrical sparks
+    4:  { type: 'dust',  interval: 2.2, count: 1 },  // office paper bits
+    5:  { type: 'dust',  interval: 2.5, count: 1 },  // hotel hush
+    6:  { type: 'fog',   interval: 1.6, count: 1 },  // dark fog
+    7:  { type: 'dust',  interval: 1.5, count: 2 },  // corridor wind
+    8:  { type: 'spark', interval: 1.2, count: 1 },  // hive glow
+    9:  { type: 'fog',   interval: 1.0, count: 2 },  // suburb storm
+    11: { type: 'dust',  interval: 1.4, count: 1 },  // street dust
+    12: { type: 'spark', interval: 0.4, count: 3 },  // party confetti
+    13: { type: 'dust',  interval: 2.0, count: 1 },  // library paper dust
+    14: { type: 'spark', interval: 0.8, count: 2 },  // bubbles in water
+    15: { type: 'dust',  interval: 1.6, count: 1 }   // garden pollen
+  };
   // Per-level visual tint flash. Brief hallucinationLayer overlay so even
   // audio-only ambient events get a matching visual cue. Each level uses
   // a signature color so the player builds intuition about where they are.
