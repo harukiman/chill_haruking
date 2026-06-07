@@ -5104,7 +5104,7 @@
     san_zero_survive: { name: 'SAN 10% で生還', icon: '☉' },
     collect_10_notes: { name: 'ロア 10 件収集', icon: '≡' },
     inventory_full:   { name: 'インベントリ満載', icon: '▣' },
-    true_end:         { name: 'TRUE END 到達', icon: '∞' },
+    true_end:         { name: 'ハルキを倒し、扉に到達', icon: '🚪' },
     defeat_boss:      { name: 'BOSS 撃破', icon: '☠' },
     endless_5_floors: { name: 'ENDLESS 5階突破', icon: '∇' },
     endless_score_500:{ name: 'ENDLESS スコア 500', icon: '⚆' },
