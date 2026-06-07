@@ -6365,35 +6365,64 @@
   //  ACHIEVEMENTS
   // ============================================================
   var ACHIEVEMENTS = {
-    first_no_clip:    { name: 'はじめての no-clip', icon: '↓' },
-    five_clears:      { name: '5 階層クリア', icon: '◆' },
-    all_clears:       { name: '全階層踏破', icon: '★' },
-    no_damage_lv:     { name: '無傷で1階層クリア', icon: '◇' },
-    found_safe_zone:  { name: 'セーフエリア発見', icon: '◉' },
-    won_minigame:     { name: 'ミニゲーム勝利', icon: '🎯' },
-    san_zero_survive: { name: 'SAN 10% で生還', icon: '☉' },
-    collect_10_notes: { name: 'ロア 10 件収集', icon: '≡' },
-    inventory_full:   { name: 'インベントリ満載', icon: '▣' },
-    true_end:         { name: 'ハルキを倒し、扉に到達', icon: '🚪' },
-    defeat_boss:      { name: 'BOSS 撃破', icon: '☠' },
-    endless_5_floors: { name: 'ENDLESS 5階突破', icon: '∇' },
-    endless_score_500:{ name: 'ENDLESS スコア 500', icon: '⚆' },
-    play_chaos:       { name: 'CHAOS 難易度プレイ', icon: '⚠' },
-    use_all_weapons:  { name: '全武器使用', icon: '⚔' },
-    speed_demon:      { name: 'Level 7 を 60s 以内', icon: '⚡' },
-    collect_all_items:{ name: '全 10 種類入手', icon: '◈' },
-    silent_run:       { name: '無音 (アイテム未使用) 1階クリア', icon: '◐' },
-    survive_haruki:   { name: 'HARUKI を振り切る', icon: '🩸' },
-    encounter_haruki: { name: 'HARUKI と遭遇', icon: '👁' },
-    first_purchase:   { name: '初めての買い物', icon: '🪙' },
-    first_sale:       { name: '初めての売却', icon: '💰' },
-    bought_unique:    { name: 'ユニーク品を購入', icon: '★' },
-    civilian_killed:  { name: '何かを失った', icon: '🩸' },
-    found_secret_doc: { name: '最初の秘匿書類', icon: '✉' },
-    all_secret_docs:  { name: '九四四班 — 全資料', icon: '✦' },
-    true_secret_end:  { name: '真の脱出 — TRUE END', icon: '∞' },
-    altar_pray:       { name: '祭壇に祈りを捧げた', icon: '🕯', hidden: true },
-    hidden_boss_kill: { name: '隠しボス撃破 — 永遠の護符', icon: '♾', hidden: true }
+    first_no_clip:    { name: 'はじめての no-clip', icon: '↓',
+                        desc: '初めて壁を抜けて階層を降りた。' },
+    five_clears:      { name: '5 階層クリア', icon: '◆',
+                        desc: '5 つの階層を踏破した。' },
+    all_clears:       { name: '全階層踏破', icon: '★',
+                        desc: '12 階層すべてを通過した。' },
+    no_damage_lv:     { name: '無傷で1階層クリア', icon: '◇',
+                        desc: 'HP 95% 以上を保ったまま1階層を抜けた。' },
+    found_safe_zone:  { name: 'セーフエリア発見', icon: '◉',
+                        desc: '黄色いセーフタイルを発見した。HP/SAN が回復する。' },
+    won_minigame:     { name: 'ミニゲーム勝利', icon: '🎯',
+                        desc: 'いずれかのミニゲームで勝利した。' },
+    san_zero_survive: { name: 'SAN 10% で生還', icon: '☉',
+                        desc: '正気を失う一歩手前で階層を抜けた。' },
+    collect_10_notes: { name: 'ロア 10 件収集', icon: '≡',
+                        desc: '通常の書類を 10 件以上収集した。' },
+    inventory_full:   { name: 'インベントリ満載', icon: '▣',
+                        desc: '6 種類以上のアイテムを同時所持した。' },
+    true_end:         { name: 'ハルキを倒し、扉に到達', icon: '🚪',
+                        desc: '最終ボスを倒して脱出扉に到達した。' },
+    defeat_boss:      { name: 'BOSS 撃破', icon: '☠',
+                        desc: 'いずれかのボスを撃破した。' },
+    endless_5_floors: { name: 'ENDLESS 5階突破', icon: '∇',
+                        desc: 'ENDLESS モードで 5 フロアを生存した。' },
+    endless_score_500:{ name: 'ENDLESS スコア 500', icon: '⚆',
+                        desc: 'ENDLESS モードでスコア 500 に到達した。' },
+    play_chaos:       { name: 'CHAOS 難易度プレイ', icon: '⚠',
+                        desc: 'CHAOS 難易度で 1 階層クリアした。' },
+    use_all_weapons:  { name: '全武器使用', icon: '⚔',
+                        desc: '全ての武器カテゴリを少なくとも1回使用した。' },
+    speed_demon:      { name: 'Level 7 を 60s 以内', icon: '⚡',
+                        desc: '追跡廊下を 60 秒以内に抜けた。' },
+    collect_all_items:{ name: '全アイテム入手', icon: '◈',
+                        desc: '全種類のアイテムを少なくとも1回拾った。' },
+    silent_run:       { name: '無音 1階クリア', icon: '◐',
+                        desc: 'アイテムを一度も使わず1階層クリア。' },
+    survive_haruki:   { name: 'HARUKI を振り切る', icon: '🩸',
+                        desc: 'Level 5 のホテルからハルキを振り切った。' },
+    encounter_haruki: { name: 'HARUKI と遭遇', icon: '👁',
+                        desc: '最初にハルキと視線が交わった。' },
+    first_purchase:   { name: '初めての買い物', icon: '🪙',
+                        desc: 'Lv11 のショップで何かを購入した。' },
+    first_sale:       { name: '初めての売却', icon: '💰',
+                        desc: '手持ちの品をショップで売却した。' },
+    bought_unique:    { name: 'ユニーク品を購入', icon: '★',
+                        desc: '★ ユニーク武器を買い取った。' },
+    civilian_killed:  { name: '何かを失った', icon: '🩸',
+                        desc: 'Lv11 の市民を手にかけた。SAN -25。' },
+    found_secret_doc: { name: '最初の秘匿書類', icon: '✉',
+                        desc: '九四四班に関する文書を最初に見つけた。' },
+    all_secret_docs:  { name: '九四四班 — 全資料', icon: '✦',
+                        desc: '14 件の秘匿書類すべてを収集した。' },
+    true_secret_end:  { name: '真の脱出 — TRUE END', icon: '∞',
+                        desc: '全秘匿書類を集めてハルキを倒し、真の出口へ。' },
+    altar_pray:       { name: '祭壇に祈りを捧げた', icon: '🕯', hidden: true,
+                        desc: 'Lv12+ の祭壇に祈り、隠し相手を呼び出した。' },
+    hidden_boss_kill: { name: '隠しボス撃破 — 永遠の護符', icon: '♾', hidden: true,
+                        desc: '祭壇から呼び出された存在を倒し、∞ 護符を得た。' }
   };
 
   function unlockAchievement(id) {
@@ -13636,9 +13665,14 @@
         // Hidden achievements show ??? until unlocked
         var iconStr = unlocked ? ach.icon : (hidden ? '?' : '?');
         var nameStr = unlocked ? ach.name : (hidden ? '— ??? —' : '— 未達成 —');
+        var descStr = unlocked && ach.desc ? ach.desc
+                    : (hidden ? '— 隠し条件 —' : '');
         row.innerHTML =
           '<span class="ta-ach-icon">' + iconStr + '</span>' +
-          '<span class="ta-ach-name">' + nameStr + '</span>';
+          '<div class="ta-ach-info">' +
+            '<div class="ta-ach-name">' + nameStr + '</div>' +
+            (descStr ? '<div class="ta-ach-desc">' + descStr + '</div>' : '') +
+          '</div>';
         achsList.appendChild(row);
       });
     }

@@ -1370,11 +1370,14 @@ button {
   border: 1px solid #483910;
   border-radius: 6px;
 }
-.ta-ach-row.locked { opacity: 0.35; }
+.ta-ach-row.locked { opacity: 0.42; }
 .ta-ach-icon { font-size: 22px; min-width: 26px; text-align: center; color: #d4b340; }
 .ta-ach-row.locked .ta-ach-icon { color: #483910; }
-.ta-ach-name { font-size: 12px; color: #f0dc8a; }
+.ta-ach-info { flex: 1; min-width: 0; }
+.ta-ach-name { font-size: 12px; color: #f0dc8a; font-weight: 700; }
 .ta-ach-row.locked .ta-ach-name { color: #786020; }
+.ta-ach-desc { font-size: 10px; color: #b09040; margin-top: 2px; line-height: 1.4; }
+.ta-ach-row.locked .ta-ach-desc { color: #483910; }
 .ta-empty { text-align: center; font-size: 11px; color: #483910; padding: 24px 12px; }
 .ta-sub-h {
   font-size: 11px;
