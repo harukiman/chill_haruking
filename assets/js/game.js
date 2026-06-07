@@ -5513,6 +5513,21 @@
         player._footAccum = 0;
         if (audioInitialized) GameEngine.playSound('footstep');
       }
+      // Walk-bob class on the FPS hand. Stays for 0.3s after the last
+      // movement frame so brief stops don't snap the bob off.
+      if (!player._moving) {
+        player._moving = true;
+        var hb = el('weaponHand');
+        if (hb) hb.classList.add('bobbing');
+      }
+      player._walkBobTimer = 0.3;
+    } else if (player._moving) {
+      player._walkBobTimer -= dt;
+      if (player._walkBobTimer <= 0) {
+        player._moving = false;
+        var hb2 = el('weaponHand');
+        if (hb2) hb2.classList.remove('bobbing');
+      }
     }
 
     GameEngine.setPlayerView(player.x, player.y, player.angle);
