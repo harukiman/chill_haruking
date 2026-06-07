@@ -20,7 +20,7 @@
   <meta name="twitter:title" content="THE BACKROOMS — featuring HARUKI">
   <meta name="twitter:description" content="一人称モバイル探索ホラー。Level 0 から no-clip で階層を降下。壁の向こうにカレが待つ。">
   <title>THE BACKROOMS</title>
-  <link rel="stylesheet" href="assets/css/game.css?v=121">
+  <link rel="stylesheet" href="assets/css/game.css?v=122">
 </head>
 <body oncontextmenu="return false;">
 
@@ -556,9 +556,14 @@
 
           <!-- INVENTORY TAB -->
           <div class="phone-tab" id="phoneTabInventory" style="display:none;">
-            <h2 class="phone-h2">アイテム</h2>
-            <div class="inv-grid" id="invGrid">
+            <h2 class="phone-h2">所持品</h2>
+            <h3 class="phone-h3 inv-section-h">アイテム <span class="inv-count-tag" id="invCountItems">0</span></h3>
+            <div class="inv-grid" id="invGridItems">
               <p class="inv-empty">所持アイテムなし</p>
+            </div>
+            <h3 class="phone-h3 inv-section-h">武器 <span class="inv-count-tag" id="invCountWeapons">0</span></h3>
+            <div class="inv-grid" id="invGridWeapons">
+              <p class="inv-empty">所持武器なし</p>
             </div>
             <p class="inv-hint">タップで詳細・使用</p>
           </div>
@@ -909,8 +914,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="assets/js/engine.js?v=121"></script>
-  <script src="assets/js/game.js?v=121"></script>
+  <script src="assets/js/engine.js?v=122"></script>
+  <script src="assets/js/game.js?v=122"></script>
 
   <!-- POST-LOAD VERIFICATION + DIRECT BINDING FALLBACK
        After game.js IIFE runs, this script confirms __titleAction is the real one.

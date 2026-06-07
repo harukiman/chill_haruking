@@ -2219,6 +2219,23 @@ button {
   margin-top: 12px;
   letter-spacing: 0.1em;
 }
+.inv-section-h {
+  margin: 14px 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.inv-section-h:first-of-type { margin-top: 4px; }
+.inv-count-tag {
+  font-size: 10px;
+  background: rgba(80, 64, 16, 0.6);
+  border: 1px solid #786020;
+  color: #d4b340;
+  padding: 1px 7px;
+  border-radius: 8px;
+  letter-spacing: 0.1em;
+  font-weight: normal;
+}
 
 /* MAP TAB */
 .map-level-name {

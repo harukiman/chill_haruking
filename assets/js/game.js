@@ -8514,41 +8514,51 @@
       el('statProgText').innerHTML = 'クリア: ' + clears + ' / 12 階層<br>難易度: ' + diffName + '<br>本階層ベスト: ' + bestStr + lifeStr;
     }
 
-    // INVENTORY
+    // INVENTORY — split into items + weapons sections per user request
     if (activeTab === 'Inventory') {
-      var grid = el('invGrid');
-      grid.innerHTML = '';
+      var gridItems = el('invGridItems');
+      var gridWeapons = el('invGridWeapons');
+      gridItems.innerHTML = '';
+      gridWeapons.innerHTML = '';
       var keys = Object.keys(player.inventory);
-      if (keys.length === 0) {
-        grid.innerHTML = '<p class="inv-empty">所持アイテムなし</p>';
-      } else {
-        for (var ii = 0; ii < keys.length; ii++) {
-          var id = keys[ii];
-          var item = ITEMS[id];
-          var cnt = player.inventory[id];
-          if (!item) continue;
-          var slot = document.createElement('div');
-          slot.className = 'inv-slot';
-          // Mark persistent items + show ON/OFF state for toggle items
-          var stateMark = '';
-          if (item.id === 'flashlight') {
-            var battPct = Math.round(player.flashlightBattery || 0);
-            stateMark = '<span class="inv-state ' + (player.flashlightOn ? 'on' : 'off') + '">' +
-                        (player.flashlightOn ? 'ON' : 'OFF') + ' ' + battPct + '%</span>';
-          }
-          if (item.id === 'radio') stateMark = '<span class="inv-state ' + (player.radioOn ? 'on' : 'off') + '">' + (player.radioOn ? 'ON' : 'OFF') + '</span>';
-          slot.innerHTML = '<span style="font-size:28px;">' + item.icon + '</span>' +
-            (item.persistent ? '<span class="inv-perm">∞</span>' : (cnt > 1 ? '<span class="inv-count">' + cnt + '</span>' : '')) +
-            stateMark +
-            '<span class="inv-name">' + item.name.slice(0, 6) + '</span>';
-          (function (itemId) {
-            slot.addEventListener('click', function () {
-              openItemUseModal(itemId);
-            });
-          })(id);
-          grid.appendChild(slot);
+      var itemCount = 0, weaponCount = 0;
+      function makeSlot(id, item, cnt) {
+        var slot = document.createElement('div');
+        slot.className = 'inv-slot';
+        var stateMark = '';
+        if (item.id === 'flashlight') {
+          var battPct = Math.round(player.flashlightBattery || 0);
+          stateMark = '<span class="inv-state ' + (player.flashlightOn ? 'on' : 'off') + '">' +
+                      (player.flashlightOn ? 'ON' : 'OFF') + ' ' + battPct + '%</span>';
+        }
+        if (item.id === 'radio') stateMark = '<span class="inv-state ' + (player.radioOn ? 'on' : 'off') + '">' + (player.radioOn ? 'ON' : 'OFF') + '</span>';
+        slot.innerHTML = '<span style="font-size:28px;">' + item.icon + '</span>' +
+          (item.persistent ? '<span class="inv-perm">∞</span>' : (cnt > 1 ? '<span class="inv-count">' + cnt + '</span>' : '')) +
+          stateMark +
+          '<span class="inv-name">' + item.name.slice(0, 6) + '</span>';
+        (function (itemId) {
+          slot.addEventListener('click', function () { openItemUseModal(itemId); });
+        })(id);
+        return slot;
+      }
+      for (var ii = 0; ii < keys.length; ii++) {
+        var id = keys[ii];
+        var item = ITEMS[id];
+        var cnt = player.inventory[id];
+        if (!item) continue;
+        var slot = makeSlot(id, item, cnt);
+        if (item.category === 'weapon') {
+          gridWeapons.appendChild(slot);
+          weaponCount++;
+        } else {
+          gridItems.appendChild(slot);
+          itemCount++;
         }
       }
+      if (itemCount === 0)   gridItems.innerHTML   = '<p class="inv-empty">所持アイテムなし</p>';
+      if (weaponCount === 0) gridWeapons.innerHTML = '<p class="inv-empty">所持武器なし</p>';
+      var icE = el('invCountItems');   if (icE) icE.textContent = itemCount;
+      var wcE = el('invCountWeapons'); if (wcE) wcE.textContent = weaponCount;
     }
 
     // MAP
