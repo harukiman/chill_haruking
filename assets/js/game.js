@@ -12009,7 +12009,15 @@
       player.flashlightBattery = data.player.flashlightBattery || 0;
       player.radioOn = data.player.radioOn || false;
       player.compassOn = data.player.compassOn || false;
-      player.equippedWeapon = data.player.equippedWeapon || null;
+      // Guard against an equippedWeapon that's no longer in inventory
+      // (e.g. legacy save schema or corrupted inventory) — otherwise
+      // the attack button would point at nothing.
+      var savedEquip = data.player.equippedWeapon || null;
+      if (savedEquip && ITEMS[savedEquip] && (player.inventory[savedEquip] !== undefined)) {
+        player.equippedWeapon = savedEquip;
+      } else {
+        player.equippedWeapon = null;
+      }
       visitedLevels = data.visitedLevels || {};
       clearedLevels = data.clearedLevels || {};
       discoveredNotes = data.discoveredNotes || [];
