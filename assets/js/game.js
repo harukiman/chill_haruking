@@ -10758,6 +10758,8 @@
       var acTotal = Object.keys(ACHIEVEMENTS).length;
       var extras = [];
       extras.push('🏆 ' + acCount + ' / ' + acTotal);
+      // 永遠の護符 を一度でも入手済なら永続表示
+      try { if (hasEternalCharm()) extras.push('♾ 永遠の護符'); } catch (e) {}
       if (endlessBestScore > 0) extras.push('∞ ' + endlessBestScore);
       if (stats.totalRuns > 0) extras.push('▶ ' + stats.totalRuns);
       ac.innerHTML = extras.join('<br>');
