@@ -20,7 +20,7 @@
   <meta name="twitter:title" content="THE BACKROOMS — featuring HARUKI">
   <meta name="twitter:description" content="一人称モバイル探索ホラー。Level 0 から no-clip で階層を降下。壁の向こうにカレが待つ。">
   <title>THE BACKROOMS</title>
-  <link rel="stylesheet" href="assets/css/game.css?v=108">
+  <link rel="stylesheet" href="assets/css/game.css?v=109">
 </head>
 <body oncontextmenu="return false;">
 
@@ -635,10 +635,31 @@
             </div>
 
             <div class="settings-section">
+              <div class="settings-section-title">ゲームパッド割当</div>
+              <div class="settings-card">
+                <p class="settings-help">接続: <span id="phoneGpStatus">未接続</span></p>
+                <div class="phone-gp-rows">
+                  <div class="settings-row"><span class="settings-label">アクション</span><button type="button" class="ts-gp-assign settings-value-pill" data-fn="action">未割当</button></div>
+                  <div class="settings-divider"></div>
+                  <div class="settings-row"><span class="settings-label">スマホ</span><button type="button" class="ts-gp-assign settings-value-pill" data-fn="phone">未割当</button></div>
+                  <div class="settings-divider"></div>
+                  <div class="settings-row"><span class="settings-label">フレア</span><button type="button" class="ts-gp-assign settings-value-pill" data-fn="flare">未割当</button></div>
+                  <div class="settings-divider"></div>
+                  <div class="settings-row"><span class="settings-label">スプリント</span><button type="button" class="ts-gp-assign settings-value-pill" data-fn="sprint">未割当</button></div>
+                  <div class="settings-divider"></div>
+                  <div class="settings-row"><span class="settings-label">マップ</span><button type="button" class="ts-gp-assign settings-value-pill" data-fn="map">未割当</button></div>
+                  <div class="settings-divider"></div>
+                  <div class="settings-row"><span class="settings-label">ポーズ</span><button type="button" class="ts-gp-assign settings-value-pill" data-fn="pause">未割当</button></div>
+                </div>
+                <p class="settings-help">割当ボタンをタップ → ゲームパッドのボタンを押すと登録される</p>
+              </div>
+            </div>
+
+            <div class="settings-section">
               <div class="settings-section-title">詳細</div>
               <div class="settings-card">
                 <button id="optTitleSettingsBtn" type="button" class="settings-row settings-action" onclick="window.__titleAction&&window.__titleAction('settingsFromPhone')">
-                  <span class="settings-label">詳細設定 (ゲームパッド/振動 etc.)</span>
+                  <span class="settings-label">詳細設定 (振動 / グラフィック)</span>
                   <span class="settings-arrow">›</span>
                 </button>
               </div>
@@ -820,8 +841,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="assets/js/engine.js?v=108"></script>
-  <script src="assets/js/game.js?v=108"></script>
+  <script src="assets/js/engine.js?v=109"></script>
+  <script src="assets/js/game.js?v=109"></script>
 
   <!-- POST-LOAD VERIFICATION + DIRECT BINDING FALLBACK
        After game.js IIFE runs, this script confirms __titleAction is the real one.

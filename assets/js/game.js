@@ -1034,11 +1034,28 @@
     },
     flashlight: {
       id: 'flashlight', name: '懐中電灯',
-      icon: '🔦', desc: '暗いレベルで視界を広げる。トグル式。',
+      icon: '🔦', desc: '暗所で視界を広げる。1個=約100秒。バッテリー切れで自動消灯、所持があれば自動交換。',
       persistent: true,
       effect: function (p) {
-        if (p.flashlightOn) { p.flashlightOn = false; toast('懐中電灯 OFF'); }
-        else { p.flashlightOn = true; toast('懐中電灯 ON'); }
+        if (p.flashlightOn) {
+          p.flashlightOn = false;
+          toast('懐中電灯 OFF (残量 ' + Math.round(p.flashlightBattery || 0) + '%)');
+        } else {
+          // Battery empty? consume one item (use logic doesn't auto-deduct
+          // because flashlight is persistent; we manually decrement here).
+          if ((p.flashlightBattery || 0) <= 0) {
+            if ((p.inventory.flashlight || 0) > 1) {
+              p.inventory.flashlight--;
+              p.flashlightBattery = 100;
+              toast('予備バッテリー装填 100%');
+            } else {
+              toast('バッテリー切れ — 予備なし');
+              return;
+            }
+          }
+          p.flashlightOn = true;
+          toast('懐中電灯 ON (残量 ' + Math.round(p.flashlightBattery) + '%)');
+        }
       }
     },
     keycard: {
@@ -1736,6 +1753,7 @@
     sprintCooldown: 0,
     inventory: {},          // {itemId: count}
     flashlightOn: false,
+    flashlightBattery: 0,    // 0-100 %; consumed at 1%/s while ON
     radioOn: false,
     inSafeZone: false,
     inHazard: false,
@@ -1882,7 +1900,10 @@
     look: 'rightstick',      // axes 2, 3
     action: 0,                // button 0 = X (PS) / A (Xbox)
     phone: 3,                 // button 3 = △ (PS) / Y (Xbox)
-    flare: 2,                 // button 2 = □ (PS) / X (Xbox)
+    // Default: □ (button 2) = toggle item-shortcut HUD on/off.
+    // Flare moves to ◯ (button 1) so □ can be the HUD toggle by default.
+    hudToggle: 2,
+    flare: 1,
     sprint: 6,                // L2 (PS) / LT (Xbox)
     map: 7,                   // R2 (PS) / RT (Xbox)
     pause: 9                  // Options (PS) / Start (Xbox)
@@ -1908,9 +1929,12 @@
     for (var i = 0; i < pads.length; i++) {
       if (pads[i]) { gp = pads[i]; break; }
     }
-    // Update gamepad status UI in title settings
+    // Update gamepad status UI (both title settings AND phone options card).
     var statusEl = el('tsGamepadStatus');
-    if (statusEl) statusEl.textContent = gp ? (gp.id.split('(')[0].trim() + ' 接続中') : '未接続';
+    var phoneStatusEl = el('phoneGpStatus');
+    var statusText = gp ? (gp.id.split('(')[0].trim() + ' 接続中') : '未接続';
+    if (statusEl) statusEl.textContent = statusText;
+    if (phoneStatusEl) phoneStatusEl.textContent = statusText;
     if (!gp) {
       if (gamepadConnected) {
         gamepadConnected = false;
@@ -2263,7 +2287,9 @@
     var phoneBtn = gp.buttons[gamepadMap.phone];
     if (phoneBtn && phoneBtn.pressed && !gp._phonePressed) {
       gp._phonePressed = true;
-      openPhone();
+      // Toggle: same button closes the phone if it's already open.
+      if (phoneOpen) { closePhone(); }
+      else            { openPhone(); }
     } else if (!(phoneBtn && phoneBtn.pressed)) {
       gp._phonePressed = false;
     }
@@ -2288,6 +2314,22 @@
       }
     } else if (!(flareBtn && flareBtn.pressed)) {
       gp._flarePressed = false;
+    }
+    // Item-shortcut HUD toggle (default □) — show/hide the D-pad assignment
+    // overlay so the player can hide it when not needed.
+    if (typeof gamepadMap.hudToggle === 'number') {
+      var hudBtn = gp.buttons[gamepadMap.hudToggle];
+      if (hudBtn && hudBtn.pressed && !gp._hudTogglePressed) {
+        gp._hudTogglePressed = true;
+        var dh = el('dpadHud');
+        if (dh) {
+          var isHidden = dh.style.display === 'none';
+          dh.style.display = isHidden ? 'block' : 'none';
+          toast('ショートカット HUD ' + (isHidden ? '表示' : '非表示'));
+        }
+      } else if (!(hudBtn && hudBtn.pressed)) {
+        gp._hudTogglePressed = false;
+      }
     }
     // R1: toggle D-pad mode (weapon ⇄ item)
     var r1Btn = gp.buttons[5];
@@ -3183,8 +3225,11 @@
     // Inline style:display:none from HTML overrides CSS class. Explicitly clear it.
     el('floatingMapBtn').classList.add('show');
     el('floatingMapBtn').style.display = '';
-    el('quickItemBtn').classList.add('show');
-    el('quickItemBtn').style.display = '';
+    // BB: quickItemBtn (right-side ⭐ item shortcut button) is intentionally
+    // suppressed — D-pad shortcuts cover the same flow, the on-screen button
+    // crowded the right edge. Kept in the DOM for compatibility / save-load.
+    var _qib = el('quickItemBtn');
+    if (_qib) { _qib.classList.remove('show'); _qib.style.display = 'none'; }
     updateDpadHud();
     if (gameMode === 'endless') {
       el('floorText').textContent = 'ENDLESS F' + endlessFloor + ' / LV' + currentLevel + ' / ' + endlessScore;
@@ -3450,6 +3495,22 @@
     // Endless: scale per floor (slower)
     if (gameMode === 'endless') sanDrain *= (1 + endlessFloor * 0.05);
     player.san = Math.max(0, player.san - sanDrain * dt);
+
+    // Flashlight battery drain: 1%/s while ON. When depleted, auto-swap to
+    // the next spare flashlight if any. Otherwise turn it off.
+    if (player.flashlightOn) {
+      player.flashlightBattery = Math.max(0, (player.flashlightBattery || 0) - dt * 1);
+      if (player.flashlightBattery <= 0) {
+        if ((player.inventory.flashlight || 0) > 1) {
+          player.inventory.flashlight--;
+          player.flashlightBattery = 100;
+          toast('予備バッテリーに交換 100%');
+        } else {
+          player.flashlightOn = false;
+          toast('懐中電灯 — バッテリー切れ');
+        }
+      }
+    }
 
     // Stamina regen
     if (sprint) player._sprintingDuration = (player._sprintingDuration || 0) + dt;
@@ -3840,6 +3901,12 @@
         if ((nearestThreat.type === 'haruki_boss' || nearestThreat.type === 'haruki' || nearestThreat.type === 'boss')
             && audioInitialized) {
           GameEngine.playSound('whisper');
+        }
+        // Uncanny TTS — low pitch, slow rate. Only for ハルキ系 / boss to
+        // preserve their menace; other entities stay subtitle-only.
+        if (nearestThreat.type === 'haruki_boss' || nearestThreat.type === 'haruki'
+            || nearestThreat.type === 'boss' || nearestThreat.type === 'wretch') {
+          _uncannySpeak(line);
         }
       }
     }
@@ -5543,8 +5610,47 @@
     } catch (e) {}
   }
 
+  // Web Speech API helper for an uncanny low-pitch whisper voice. Used by the
+  // enemy-line system for ハルキ系 / boss / wretch so the player physically
+  // hears what they're saying. Throttled so it never queues up faster than
+  // ~one utterance every 3 seconds, and falls back silently when the device
+  // doesn't ship a TTS engine (notably some iOS Safari modes).
+  var _lastUncannySpeakAt = 0;
+  function _uncannySpeak(text) {
+    try {
+      if (!('speechSynthesis' in window) || !window.SpeechSynthesisUtterance) return;
+      var now = performance.now();
+      if (now - _lastUncannySpeakAt < 3000) return;
+      _lastUncannySpeakAt = now;
+      // Respect SE volume setting roughly (0.5 baseline)
+      var seVol = parseInt(localStorage.getItem('bk_se_vol') || '100', 10) / 100;
+      if (seVol <= 0) return;
+      var u = new SpeechSynthesisUtterance(text);
+      u.lang = 'ja-JP';
+      u.rate = 0.7;     // slow
+      u.pitch = 0.4;    // low / monstrous
+      u.volume = Math.max(0.15, Math.min(0.8, seVol * 0.6));
+      // Pick a Japanese voice if available (some platforms expose one)
+      try {
+        var voices = window.speechSynthesis.getVoices();
+        for (var vi = 0; vi < voices.length; vi++) {
+          var v = voices[vi];
+          if (v && v.lang && v.lang.toLowerCase().indexOf('ja') === 0) { u.voice = v; break; }
+        }
+      } catch (e) {}
+      window.speechSynthesis.speak(u);
+    } catch (e) {}
+  }
+
   function pickUpItem(itemId, gx, gy) {
     var item = ITEMS[itemId];
+    // First flashlight pickup grants a fresh battery (the player has no light
+    // until they consume the first one). Subsequent flashlight pickups just
+    // bank as spares — they refill battery on auto-swap when current dies.
+    if (itemId === 'flashlight' && (!player.inventory.flashlight)
+        && (player.flashlightBattery || 0) <= 0) {
+      player.flashlightBattery = 100;
+    }
     if (!item) return;
     player.inventory[itemId] = (player.inventory[itemId] || 0) + 1;
     if (!pickedUpItems[currentLevel]) pickedUpItems[currentLevel] = {};
@@ -7599,7 +7705,11 @@
           slot.className = 'inv-slot';
           // Mark persistent items + show ON/OFF state for toggle items
           var stateMark = '';
-          if (item.id === 'flashlight') stateMark = '<span class="inv-state ' + (player.flashlightOn ? 'on' : 'off') + '">' + (player.flashlightOn ? 'ON' : 'OFF') + '</span>';
+          if (item.id === 'flashlight') {
+            var battPct = Math.round(player.flashlightBattery || 0);
+            stateMark = '<span class="inv-state ' + (player.flashlightOn ? 'on' : 'off') + '">' +
+                        (player.flashlightOn ? 'ON' : 'OFF') + ' ' + battPct + '%</span>';
+          }
           if (item.id === 'radio') stateMark = '<span class="inv-state ' + (player.radioOn ? 'on' : 'off') + '">' + (player.radioOn ? 'ON' : 'OFF') + '</span>';
           slot.innerHTML = '<span style="font-size:28px;">' + item.icon + '</span>' +
             (item.persistent ? '<span class="inv-perm">∞</span>' : (cnt > 1 ? '<span class="inv-count">' + cnt + '</span>' : '')) +
@@ -7979,6 +8089,7 @@
           stam: player.stam, stamMax: player.stamMax,
           inventory: player.inventory,
           flashlightOn: player.flashlightOn,
+          flashlightBattery: player.flashlightBattery || 0,
           radioOn: player.radioOn
         },
         visitedLevels: visitedLevels,
@@ -8009,6 +8120,7 @@
       player.stamMax = data.player.stamMax;
       player.inventory = data.player.inventory || {};
       player.flashlightOn = data.player.flashlightOn || false;
+      player.flashlightBattery = data.player.flashlightBattery || 0;
       player.radioOn = data.player.radioOn || false;
       visitedLevels = data.visitedLevels || {};
       clearedLevels = data.clearedLevels || {};
