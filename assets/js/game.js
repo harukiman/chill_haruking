@@ -4240,6 +4240,70 @@
     return cancel;
   }
 
+  // ── Wall-clip falling cinematic (post-final-boss return trip) ──
+  // Played the first time the player bumps a wall after killing the
+  // final boss on Lv9. Designed per user request: 「最終ボスのムービー
+  // のように動くムービーで帰り道に壁にぶつかった際にすり抜け地面に
+  // 落ちていくような演出」.
+  // CSS animations drive the visual; this fn just shows the overlay,
+  // sequences the text beats, and then chains into triggerEnding().
+  function playWallClipFall() {
+    var overlay = el('wallClipFall');
+    if (!overlay) {
+      // Fallback — just go straight to the ending.
+      var t = hasAllSecretDocs() ? 'true_secret' : 'truend_bad';
+      triggerEnding(t);
+      return;
+    }
+    _inCinematic = true;
+    var txt = el('wcfText');
+    var cancelled = false;
+    var timers = [];
+    function later(ms, fn) {
+      timers.push(setTimeout(function () { if (!cancelled) fn(); }, ms));
+    }
+    function setText(s, dim) {
+      if (!txt) return;
+      txt.classList.remove('show');
+      setTimeout(function () {
+        if (cancelled) return;
+        txt.textContent = s;
+        if (dim) txt.classList.add('dim'); else txt.classList.remove('dim');
+        requestAnimationFrame(function () {
+          if (cancelled) return;
+          txt.classList.add('show');
+        });
+      }, 250);
+    }
+    overlay.classList.add('show');
+    overlay.setAttribute('aria-hidden', 'false');
+    // Audio cues
+    if (audioInitialized) {
+      try { GameEngine.playSound('static'); } catch (e) {}
+      try { GameEngine.playSound('thunder'); } catch (e) {}
+      try { GameEngine.shakeScreen(28, 1.2); } catch (e) {}
+    }
+    if (navigator.vibrate) navigator.vibrate([100, 60, 200, 100, 400]);
+    // Sequence:
+    //   0.30s — text "壁が、抜けた。" (wall passes through scale animation)
+    //   1.40s — text "ここは、終わりじゃない。" (streaks begin)
+    //   3.00s — text "もう一度、落ちていく。" (void at full)
+    //   4.50s — text "— TRUE FALL —" (final)
+    //   6.50s — chain to triggerEnding
+    later(300,  function () { setText('壁が、抜けた。'); });
+    later(1400, function () { setText('ここは、終わりじゃない。'); });
+    later(3000, function () { setText('もう一度、落ちていく。', true); });
+    later(4500, function () { setText('— TRUE FALL —'); });
+    later(6500, function () {
+      cancelled = true;
+      for (var ti = 0; ti < timers.length; ti++) clearTimeout(timers[ti]);
+      overlay.classList.remove('show');
+      overlay.setAttribute('aria-hidden', 'true');
+      _inCinematic = false;
+      var endType = hasAllSecretDocs() ? 'true_secret' : 'truend_bad';
+      triggerEnding(endType);
+    });
+  }
   // ── Ending Sequence (after final boss defeat) ──
   // Plays when the player passes the X tile on Lv9 after killing the boss.
   function playEndingSequence(onDone) {
@@ -8053,22 +8117,47 @@
       var now = performance.now();
       if (now - _lastUncannySpeakAt < 3000) return;
       _lastUncannySpeakAt = now;
-      // Respect SE volume setting roughly (0.5 baseline)
       var seVol = parseInt(localStorage.getItem('bk_se_vol') || '100', 10) / 100;
       if (seVol <= 0) return;
+      // User feedback 2026-06-07: 「音声があまりにもロボットすぎる。
+      // しゃがれた気持ちの悪い怖い声にしたい」
+      // Web Speech API doesn't let us post-process the synth audio, but
+      // we can push the prosody params to the extreme low end AND layer
+      // procedural texture (whisper + breath_drone + static) underneath
+      // so the synthesized voice reads as a ghost inside a haunted room
+      // rather than a clean robot TTS readout.
       var u = new SpeechSynthesisUtterance(text);
       u.lang = 'ja-JP';
-      u.rate = 0.7;     // slow
-      u.pitch = 0.4;    // low / monstrous
-      u.volume = Math.max(0.15, Math.min(0.8, seVol * 0.6));
-      // Pick a Japanese voice if available (some platforms expose one)
+      u.rate = 0.45;    // very slow (was 0.7) — gives a labored, breathy feel
+      u.pitch = 0.1;    // near-floor (was 0.4) — deepest the API allows
+      u.volume = Math.max(0.15, Math.min(0.85, seVol * 0.7));
+      // Prefer a male Japanese voice if one is exposed — some platforms
+      // ship multiple Japanese voices ("Otoya" male / "Kyoko" female).
+      // Male voices sound deeper and more monstrous at low pitch.
       try {
         var voices = window.speechSynthesis.getVoices();
+        var jpVoice = null, jpMaleVoice = null;
+        var MALE_HINTS = ['otoya', 'ichiro', 'male', 'hiroshi', 'takeshi', 'kenji'];
         for (var vi = 0; vi < voices.length; vi++) {
           var v = voices[vi];
-          if (v && v.lang && v.lang.toLowerCase().indexOf('ja') === 0) { u.voice = v; break; }
+          if (!v || !v.lang || v.lang.toLowerCase().indexOf('ja') !== 0) continue;
+          if (!jpVoice) jpVoice = v;
+          var lname = (v.name || '').toLowerCase();
+          for (var mhi = 0; mhi < MALE_HINTS.length; mhi++) {
+            if (lname.indexOf(MALE_HINTS[mhi]) >= 0) { jpMaleVoice = v; break; }
+          }
+          if (jpMaleVoice) break;
         }
+        u.voice = jpMaleVoice || jpVoice;
       } catch (e) {}
+      // Layer texture: whisper + breath underneath so the voice feels
+      // raspy/embedded. Quiet enough not to drown the speech itself.
+      if (audioInitialized) {
+        try { GameEngine.playSound('whisper'); } catch (e) {}
+        try { GameEngine.playSound('breath_drone'); } catch (e) {}
+        // tinnitus only on longer lines so short ones aren't piercing
+        if (text && text.length > 5) try { GameEngine.playSound('tinnitus'); } catch (e) {}
+      }
       window.speechSynthesis.speak(u);
     } catch (e) {}
   }

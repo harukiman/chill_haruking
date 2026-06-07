@@ -249,6 +249,120 @@ body {
 .weapon-hand-flash.flash {
   animation: weapon-flash 0.16s ease-out;
 }
+/* ============================================================
+ *  WALL-CLIP FALLING CINEMATIC (post-final-boss return trip)
+ * ============================================================
+ * Played the first time the player bumps a wall after killing the
+ * final boss on Lv9. Sequence:
+ *   1. wcf-wall  — concrete texture slams in from front, simulates
+ *      pushing through the wall (scales down + opacity fade)
+ *   2. wcf-streaks — vertical light streaks for "falling" sensation
+ *   3. wcf-void  — black void that takes over the screen
+ *   4. wcf-text  — three text beats (clip / void / fall) before the
+ *      ending screen chains in
+ */
+.wall-clip-fall {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: none;
+  pointer-events: none;
+  overflow: hidden;
+  background: #000;
+}
+.wall-clip-fall.show { display: block; }
+.wcf-wall {
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      rgba(0,0,0,0.35) 0px,
+      rgba(0,0,0,0.35) 1px,
+      transparent 1px,
+      transparent 8px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(0,0,0,0.35) 0px,
+      rgba(0,0,0,0.35) 1px,
+      transparent 1px,
+      transparent 8px
+    ),
+    radial-gradient(circle at 50% 50%, #555 0%, #2a2a2a 60%, #0a0a0a 100%);
+  transform: scale(2.4);
+  opacity: 0;
+}
+.wall-clip-fall.show .wcf-wall {
+  animation: wcf-wall 1.1s ease-in forwards;
+}
+@keyframes wcf-wall {
+  0%   { transform: scale(2.4); opacity: 0; filter: blur(8px); }
+  18%  { transform: scale(1.4); opacity: 1; filter: blur(2px); }
+  60%  { transform: scale(0.3); opacity: 0.95; filter: blur(6px); }
+  100% { transform: scale(0.02); opacity: 0;  filter: blur(20px); }
+}
+.wcf-streaks {
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(
+      180deg,
+      rgba(255,255,255,0) 0px,
+      rgba(255,255,255,0) 30px,
+      rgba(255,255,255,0.10) 30px,
+      rgba(255,255,255,0.10) 31px,
+      rgba(255,255,255,0) 31px,
+      rgba(255,255,255,0) 50px
+    );
+  mix-blend-mode: screen;
+  opacity: 0;
+}
+.wall-clip-fall.show .wcf-streaks {
+  animation: wcf-streaks 3.0s ease-out 0.9s forwards;
+}
+@keyframes wcf-streaks {
+  0%   { opacity: 0;    background-position-y: 0;     filter: blur(0); }
+  10%  { opacity: 0.85; background-position-y: -400px; filter: blur(0.5px); }
+  100% { opacity: 0.0;  background-position-y: -2400px; filter: blur(2px); }
+}
+.wcf-void {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 100%, #1a000a 0%, #000 60%);
+  opacity: 0;
+}
+.wall-clip-fall.show .wcf-void {
+  animation: wcf-void 4.0s ease-in 1.1s forwards;
+}
+@keyframes wcf-void {
+  0%   { opacity: 0;   transform: scale(1); }
+  30%  { opacity: 0.8; transform: scale(1.05); }
+  100% { opacity: 1;   transform: scale(1.4); }
+}
+.wcf-text {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 26px;
+  letter-spacing: 0.16em;
+  font-weight: 700;
+  font-family: 'Hiragino Sans', 'Yu Gothic', sans-serif;
+  color: #f0e2c0;
+  text-align: center;
+  text-shadow: 0 0 16px rgba(0,0,0,1), 1px 1px 0 #000;
+  opacity: 0;
+  transition: opacity 0.45s ease-in;
+  white-space: pre;
+  pointer-events: none;
+}
+.wcf-text.show { opacity: 1; }
+.wcf-text.dim  { color: #c08080; }
+@media (max-width: 600px) {
+  .wcf-text { font-size: 20px; }
+}
+
 /* Low-HP vignette — pulses red around screen edges as HP drops */
 .low-hp-vignette {
   position: fixed;
