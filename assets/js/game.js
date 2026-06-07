@@ -9639,13 +9639,18 @@
           }
         }
       } else if (e.type === 'boss' || e.type === 'haruki_boss') {
-        // Boss: 4-phase, boss HP tracked separately
+        // Boss: 4-phase, boss HP tracked separately.
         e.bossHp = e.bossHp !== undefined ? e.bossHp : 200;
-        // Phase determined by HP. Phase 4 (berserk) only for haruki_boss.
+        // 2026-06-07 boss HP bump: percent thresholds against bossHpMax so
+        // phases still trigger at the correct ratios (75% / 45% / 17.5%)
+        // instead of the old hardcoded 150/90/35 values which only fired
+        // in the last quarter of the new 600/900 HP pool.
+        var bMax = e.bossHpMax || e.bossHp || 200;
+        var ratio = bMax > 0 ? e.bossHp / bMax : 0;
         var phase = 1;
-        if (e.bossHp < 150) phase = 2;
-        if (e.bossHp < 90)  phase = 3;
-        if (e.bossHp < 35 && e.type === 'haruki_boss') phase = 4;
+        if (ratio < 0.75) phase = 2;
+        if (ratio < 0.45) phase = 3;
+        if (ratio < 0.175 && e.type === 'haruki_boss') phase = 4;
         // Phase transition VFX + audio + situational TTS. One-shot per phase
         // so transitions stay impactful. e._lastPhase tracks the previous fire.
         if (e._lastPhase !== phase) {
