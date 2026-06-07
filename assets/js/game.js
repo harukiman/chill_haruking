@@ -2047,7 +2047,20 @@
       acquisition: { type: 'pickup', levelId: 15 },
       title: '秘匿書類 — 補遺丙 / 庭園の記録',
       text:
-        '春木晴美の手記 (最終ページ)\n\n「ここは、私が母と来た庭園に似ている。\n手入れされ続けるけれど、\n誰も訪れない庭。\n\n私はここで兄を待つ。\nそして、兄はここで私を待つ。\n\n貴方が全ての書類を集めたなら、\n私たちを、一緒に解放してください。」' }
+        '春木晴美の手記 (最終ページ)\n\n「ここは、私が母と来た庭園に似ている。\n手入れされ続けるけれど、\n誰も訪れない庭。\n\n私はここで兄を待つ。\nそして、兄はここで私を待つ。\n\n貴方が全ての書類を集めたなら、\n私たちを、一緒に解放してください。」' },
+    // ── 条件付き入手 (低 SAN / 読書数) ──
+    { id: 'sd_13', levelId: 0,
+      acquisition: { type: 'low_san', levelId: -1,  // -1 = どのレベルでも
+                     label: 'SAN ≤ 25% で時間経過' },
+      title: '秘匿書類 — 補遺丁 / 狂気の縁',
+      text:
+        '誰かの手記 (字がにじんでいる)\n\n「気が狂いそうな時にだけ、\n壁紙の柄の奥に文字が浮かび上がる。\n\n『我々は彼らに見られている』\n\n正気では絶対に読めない。\n SAN を消費せよ。代償として、知識を得る。」' },
+    { id: 'sd_14', levelId: 0,
+      acquisition: { type: 'discover_count', levelId: -1,
+                     count: 15, label: '通常書類を 15 件以上収集' },
+      title: '秘匿書類 — 補遺戊 / 読書狂への報奨',
+      text:
+        '匿名の司書からの私信\n\n「お前は、よく読んだ。\nお前は、よく集めた。\n\nこの世界の図書を 15 冊以上、\n壁の向こうから持ち帰った者は、\n初めてだ。\n\n— 報奨として、これを贈る。\n九四四班の最後の研究員は、\n図書館の地下に消えた。\n名は、まだ、刻まれていない。」' }
   ];
 
   // Collected secret docs — set keyed by doc id. Loaded from localStorage on
@@ -5094,6 +5107,30 @@
         if (_levelEventRollT <= 0) {
           _levelEventRollT = 8;
           if (Math.random() < 0.5) maybeFireLevelAmbientEvent();
+        }
+      }
+    }
+
+    // Conditional secret docs — low_san / discover_count types check every
+    // frame here. Once a condition is satisfied for a stretch of time
+    // (low_san needs ≥5 sec of held low SAN), the doc unlocks. discover_count
+    // is one-shot.
+    if (!_inCinematic && state === ST.PLAYING) {
+      for (var sci = 0; sci < SECRET_DOCS.length; sci++) {
+        var sdoc2 = SECRET_DOCS[sci];
+        if (collectedSecretDocs[sdoc2.id]) continue;
+        var acq2 = sdoc2.acquisition || {};
+        if (acq2.type === 'low_san') {
+          var sanPct2 = (player.san / player.sanMax) * 100;
+          if (sanPct2 <= 25) {
+            player._lowSanSecretT = (player._lowSanSecretT || 0) + dt;
+            if (player._lowSanSecretT >= 5) discoverSecretDoc(sdoc2.id);
+          } else {
+            player._lowSanSecretT = 0;
+          }
+        } else if (acq2.type === 'discover_count') {
+          var lifetimeCnt = Object.keys(lifetimeNoteTitles || {}).length;
+          if (lifetimeCnt >= (acq2.count || 15)) discoverSecretDoc(sdoc2.id);
         }
       }
     }
@@ -12061,11 +12098,15 @@
             '<div class="ta-note-body">' + doc.text + '</div>';
           row.addEventListener('click', function () { row.classList.toggle('open'); });
         } else {
-          // Acquisition hint — pickup vs kill conditions read differently
+          // Acquisition hint — pickup vs kill vs condition read differently
           var acqDesc;
           var acqHere = doc.acquisition || { type: 'pickup', levelId: doc.levelId };
           if (acqHere.type === 'kill') {
             acqDesc = 'LEVEL ' + acqHere.levelId + ' で ' + acqHere.label;
+          } else if (acqHere.type === 'low_san') {
+            acqDesc = acqHere.label || '低 SAN で時間経過';
+          } else if (acqHere.type === 'discover_count') {
+            acqDesc = acqHere.label || '通常書類 N 件以上で解禁';
           } else {
             acqDesc = 'LEVEL ' + acqHere.levelId + ' で取得可能';
           }
