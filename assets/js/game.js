@@ -12499,7 +12499,11 @@
     player.inventory = {};
     if (hasEternalCharm()) player.inventory.eternal_charm = 1;
     player.flashlightOn = false;
+    player.flashlightBattery = 0;
     player.radioOn = false;
+    player.compassOn = false;
+    player.equippedWeapon = null;
+    player._wallClipPending = false;
     playTime = 0;
     discoveredNotes = [];
     pickedUpItems = {};
