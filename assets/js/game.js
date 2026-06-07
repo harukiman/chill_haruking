@@ -1145,6 +1145,7 @@
     flare: {
       id: 'flare', name: 'フレア',
       icon: '🔥', desc: '点火。周囲6マスのエンティティを4秒スタン + Boss に 50 ダメージ。HP+10。',
+      useSound: 'static', // hiss + ignite
       category: 'weapon',
       effect: function (p) {
         var stunRange = 6 * TS;
@@ -1878,6 +1879,7 @@
     id: 'soul_lantern', name: '灯霊 (ユニーク)', icon: '🏮',
     desc: 'ユニーク。10秒間、近くの全エンティティ位置を脳裏に映す。',
     category: 'consumable',
+    useSound: 'stinger',
     effect: function (p) {
       // Stash a timestamp so the renderer can reveal nearby entities.
       p._soulLanternUntil = performance.now() + 10000;
@@ -1889,6 +1891,7 @@
     id: 'haruki_charm', name: 'ハルキの護符 (ユニーク)', icon: '🪬',
     desc: 'ユニーク。30秒間、ハルキ系エンティティが接近不能になる。',
     category: 'consumable',
+    useSound: 'whisper',
     effect: function (p) {
       p._harukiWardUntil = performance.now() + 30000;
       toast('★ ハルキの護符 — 30秒間 ハルキを退ける');
@@ -1925,6 +1928,7 @@
     id: 'mirror_shard', name: '鏡片 (ユニーク)', icon: '💎',
     desc: 'ユニーク。15秒間、被ダメージを跳ね返す。',
     category: 'consumable',
+    useSound: 'glass_rattle',
     effect: function (p) {
       p._mirrorShardUntil = performance.now() + 15000;
       if (audioInitialized) GameEngine.playSound('item_get');
