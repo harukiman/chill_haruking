@@ -1038,14 +1038,16 @@
           timeLimit: null },
     9: { id: 9, name: 'LEVEL 9', subtitle: 'THE SUBURBS',
          rows: LV9_ROWS, theme: 9,
-         hint: 'ハルキを倒さなければ THE END の扉は開かない。武器をかき集めろ。',
-         intro: '空に月はない。月のような何かがある。— ハルキが、待っている。',
+         hint: 'ハルキを倒さなければ THE END の扉は開かない。武器をかき集めろ。\n影 (SHADOW) はハルキの随伴 — 光源で抑えろ。',
+         intro: '空に月はない。月のような何かがある。— ハルキが、待っている。\nその周りで、影が、揺れている。',
          entities: [
            { type: 'haruki_boss', gx: 12, gy: 9 },
            { type: 'crawler', gx: 5, gy: 16 },
            { type: 'hound', gx: 18, gy: 7 },
            { type: 'hound', gx: 4, gy: 8 },
-           { type: 'skinstealer', gx: 19, gy: 17 }
+           { type: 'skinstealer', gx: 19, gy: 17 },
+           { type: 'shadow', gx: 9, gy: 11 },
+           { type: 'shadow', gx: 15, gy: 11 }
          ],
          bossRequired: true, // exit door locked until boss is dead
          timeLimit: null },
@@ -1556,7 +1558,8 @@
     // SAN hit (handled in _grantCoinsForKill) so it's never the easy path.
     civilian: 1,
     witness: 4,
-    lurker: 5
+    lurker: 5,
+    shadow: 6
   };
   function _grantCoinsForKill(type, entity) {
     var amt = COIN_DROPS[type] || 1;
@@ -1658,6 +1661,12 @@
       pistol: 0.9,  shotgun: 1.2,  revolver: 1.0, katana: 1.6,
       flare: 1.4,   mirror: 1.6,  architect_blade: 1.5,
       void_grenade: 1.4, siren_whistle: 1.8
+    },
+    shadow: {
+      pistol: 0.5,  shotgun: 0.6,  revolver: 0.5, katana: 0.8,
+      flare: 2.2,   mirror: 1.4,  mirror_shard: 1.6,
+      architect_blade: 1.2, soul_lantern: 2.4,
+      siren_whistle: 1.4
     },
     mrhotel: {
       pistol: 0.4,  shotgun: 0.5,  katana: 1.4, flare: 0.6,
@@ -2441,7 +2450,8 @@
     echo: { name: 'ECHO', desc: 'バックルーム未分類。\nお前の動きを 0.6 秒遅れで完全模倣する亡霊。\n直視すると鏡を見ているような感覚に襲われ、SAN が削れる。\n振り切るには思考しない急な動きが有効。' },
     faceling: { name: 'FACELING', desc: 'バックルーム公式分類 Class 1 (擬態型)。\nM.E.G. メンバーや過去の no-clipper の姿に化ける。\n顔は常に「ぼやけて」見える。\n敵対的ではないが、稀に視線を合わせると SAN を引き抜く。' },
     witness: { name: 'WITNESS', desc: 'バックルーム公式分類 Class 1 (静止型)。\nLevel 6 暗闇の中で、ただ立ち、お前を見続ける。\n視線が交わる時、SAN だけが静かに削れていく。\n目を逸らせば実害は無いが、振り返ると ── まだ、そこにいる。' },
-    lurker: { name: 'LURKER', desc: 'バックルーム公式分類 Class 2 (追跡型)。\n薄暗い角に潜み、お前から目を逸らした瞬間に一歩近付く。\n振り向く時には既に距離が縮まっている。\n直視している間は動かない。捕まれば SAN を大量に奪われる。' }
+    lurker: { name: 'LURKER', desc: 'バックルーム公式分類 Class 2 (追跡型)。\n薄暗い角に潜み、お前から目を逸らした瞬間に一歩近付く。\n振り向く時には既に距離が縮まっている。\n直視している間は動かない。捕まれば SAN を大量に奪われる。' },
+    shadow: { name: 'SHADOW', desc: 'バックルーム公式分類 Class 3 (幻惑型)。\nLevel 9 でハルキの周辺に現れる影。\n4-6 マスの距離を保ち、視線が交わるとプレイヤーの SAN を絶え間なく削り続ける。\n光源 (フレア / 懐中電灯) で一時的に消滅する。' }
   };
   // NOTE: ENTITY_SOUND_MAP.echo / .faceling are added inline in ENTITY_SOUND_MAP literal
   // below (line ~3957). Don't reference ENTITY_SOUND_MAP here — it's declared later via var
@@ -4335,6 +4345,7 @@
       case 'civilian': return '#cd9b6c'; // warm beige — clearly human, non-threatening
       case 'witness':  return '#0e0e12'; // near-black, just barely a silhouette
       case 'lurker':   return '#1a141e'; // deep purple-black
+      case 'shadow':   return '#080010'; // pure ink-black
       default: return '#444';
     }
   }
@@ -8123,6 +8134,21 @@
         wanderEntity(e, dt, 40 * sMul);
         if (distP < 1.5 * TS) {
           attackPlayer(15 * dt);
+        }
+      } else if (e.type === 'shadow') {
+        // Hovers at mid range (4-6 tiles), drains SAN while in player FOV.
+        // Repelled by player's flashlight ON (treat as light source).
+        var shTargetDist = 5 * TS;
+        var shErr = distP - shTargetDist;
+        var shSpd = 25 * sMul;
+        if (Math.abs(shErr) > TS) {
+          var shx = (dx / distP) * Math.sign(shErr) * shSpd * dt;
+          var shy = (dy / distP) * Math.sign(shErr) * shSpd * dt;
+          if (isWalkable(e.x + shx, e.y)) e.x += shx;
+          if (isWalkable(e.x, e.y + shy)) e.y += shy;
+        }
+        if (distP < 10 * TS && isFacingPlayer(e) && !player.flashlightOn) {
+          player.san = Math.max(0, player.san - 2.5 * dt);
         }
       } else if (e.type === 'lurker') {
         // Weeping Angel rule: stops dead when in the player's view cone,
@@ -12062,6 +12088,7 @@
       civilian:    { icon: '🧍', name: 'CIVILIAN' },
       witness:     { icon: '👁‍🗨', name: 'WITNESS' },
       lurker:      { icon: '🕵', name: 'LURKER' },
+      shadow:      { icon: '🌑', name: 'SHADOW' },
       mrhotel:     { icon: '🎩', name: 'MR.HOTEL' },
       boss:        { icon: '👹', name: 'BOSS' },
       haruki_boss: { icon: '🩸', name: 'HARUKI 真' }

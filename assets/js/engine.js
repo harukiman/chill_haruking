@@ -1084,6 +1084,10 @@
         // Single dim eye — barely there, the hunter only shows when not seen.
         ctx.fillStyle = 'rgba(180, 100, 100, ' + (fogFactor * 0.7).toFixed(2) + ')';
         ctx.fillRect(spriteScreenX - pairW * 0.5, faceY, pairW, pairW * 0.4);
+      } else if (entity.type === 'shadow') {
+        // Pure void silhouette — vertically elongated, single faint glow point.
+        ctx.fillStyle = 'rgba(120, 60, 200, ' + (fogFactor * 0.5).toFixed(2) + ')';
+        ctx.fillRect(spriteScreenX - pairW * 0.3, faceY, pairW * 0.6, pairW * 0.6);
       } else if (entity.type === 'civilian') {
         // Two warm-toned eyes (more human) + a flesh-tone "mouth" line.
         ctx.fillStyle = 'rgba(40, 30, 20, ' + fogFactor.toFixed(2) + ')';
