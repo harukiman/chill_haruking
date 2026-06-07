@@ -5498,14 +5498,22 @@
     if (_isGamePaused()) return;
 
     var inp = GameEngine.input;
-    var sens = 2.5 * (parseInt(localStorage.getItem('bk_sens') || '100', 10) / 100);
-    // View smoothing: 0 = instant (default), 100 = heavy easing.
-    // Track a smoothed `look` rate (not an accumulator) so the rotation
-    // STOPS when the player stops swiping. The previous implementation
-    // integrated decayed delta into a residual buffer and kept rotating
-    // the camera for ~1s after input ceased — read as 「勝手に移動」 bug.
-    var smoothPct = parseInt(localStorage.getItem('bk_view_smooth') || '0', 10);
-    var smoothFactor = Math.max(0, Math.min(0.85, smoothPct / 100 * 0.85));
+    // localStorage access is sync — at 60 fps two reads per frame =
+    // ~0.5-2 ms steady cost on Safari mobile. Cache values and only
+    // re-read every 60 frames (~1s). Settings changes propagate
+    // within a second, which is fine for sliders.
+    if (!player._setCache) player._setCache = { tick: 0, sens: 2.5, smF: 0 };
+    player._setCache.tick = (player._setCache.tick + 1) | 0;
+    if (player._setCache.tick > 60) {
+      player._setCache.tick = 0;
+      try {
+        player._setCache.sens = 2.5 * (parseInt(localStorage.getItem('bk_sens') || '100', 10) / 100);
+        var smP = parseInt(localStorage.getItem('bk_view_smooth') || '0', 10);
+        player._setCache.smF = Math.max(0, Math.min(0.85, smP / 100 * 0.85));
+      } catch (e) {}
+    }
+    var sens = player._setCache.sens;
+    var smoothFactor = player._setCache.smF;
     var look = inp.lookDx || 0;
     if (smoothFactor > 0) {
       // EMA: smoothed look approaches target (raw look) at rate (1 - smoothFactor)
@@ -6091,12 +6099,15 @@
         }
       }
     }
-    // User grain pref scales the SAN-modulated grain. 0 = SAN drives
-    // freely, slider value 0-100 scales the BASE so 0% kills the grain
-    // and 100% restores the original strength. Without this scale, the
-    // phone-slider value got obliterated every frame.
-    var userGrainPct = 1.0;
-    try { userGrainPct = parseInt(localStorage.getItem('bk_grain') || '100', 10) / 100; } catch (e) {}
+    // User grain pref scales the SAN-modulated grain. Cached to avoid
+    // a per-frame localStorage read (~0.2ms on mobile Safari).
+    if (!player._grainCache) player._grainCache = { tick: 0, val: 1.0 };
+    player._grainCache.tick = (player._grainCache.tick + 1) | 0;
+    if (player._grainCache.tick > 60) {
+      player._grainCache.tick = 0;
+      try { player._grainCache.val = parseInt(localStorage.getItem('bk_grain') || '100', 10) / 100; } catch (e) {}
+    }
+    var userGrainPct = player._grainCache.val;
     if (gfxQuality === 'low') {
       GameEngine.vignetteIntensity = 0.15 + (1 - sanRatio) * 0.15;
       GameEngine.chromaticLevel = 0;
