@@ -111,6 +111,7 @@
     var weaponSpots = [];  // dedicated weapon-only pickup tiles ('w')
     var shopSpots = [];    // shopkeeper interaction tiles ('M') — open shop on action
     var secretSpots = [];  // secret doc tiles ('S') — pick up lore document on action
+    var altarSpots = [];   // hidden-boss altar tiles ('A') — 祈り dialog → 隠しボス出現
 
     for (var y = 0; y < h; y++) {
       var row = [];
@@ -134,6 +135,7 @@
           case 'w': t = 5; itemSpots.push({ gx: x, gy: y }); weaponSpots.push({ gx: x, gy: y }); break;
           case 'M': t = 0; shopSpots.push({ gx: x, gy: y }); break;
           case 'S': t = 0; secretSpots.push({ gx: x, gy: y }); break;
+          case 'A': t = 0; altarSpots.push({ gx: x, gy: y }); break;
           case 'P': t = 0; spawn = { gx: x, gy: y }; break;
           default:  t = 0; break;
         }
@@ -155,7 +157,8 @@
       stairsDown: stairsDown,
       weaponSpots: weaponSpots,
       shopSpots: shopSpots,
-      secretSpots: secretSpots
+      secretSpots: secretSpots,
+      altarSpots: altarSpots
     };
   }
 
@@ -559,7 +562,7 @@
     '#.F.F..F...F..F...F..F...F.#',
     '#.FFF..FFFFF..FFFFF..FFFFF.#',
     '#..........................#',
-    '#..........X...............#',
+    '#.....A....X...............#',
     '############################'
   ];
 
@@ -1279,6 +1282,86 @@
         target.x + spread, target.y + spread);
     }
   }
+  // ── ALTAR / HIDDEN BOSS ──
+  // Opens a yes/no prompt 「祈りを捧げますか？」. Picking はい spawns the
+  // hidden boss next to the altar. Picking いいえ closes the prompt.
+  // Players can still no-clip to the next level without killing the boss,
+  // but they forfeit the eternal_charm reward this run.
+  function openAltarPrompt(altarIdx) {
+    var promptEl = el('promptOverlay');
+    if (!promptEl) return;
+    var textEl = el('promptText');
+    if (textEl) textEl.textContent = '— この祭壇に、祈りを捧げますか？';
+    showOverlay('promptOverlay');
+    var yes = el('promptYesBtn');
+    var no  = el('promptNoBtn');
+    var done = false;
+    function close() {
+      hideOverlay('promptOverlay');
+      try { yes.removeEventListener('click', onYes); } catch (e) {}
+      try { no.removeEventListener('click', onNo); } catch (e) {}
+    }
+    function onYes() {
+      if (done) return; done = true;
+      close();
+      spawnHiddenBossNearAltar(altarIdx);
+    }
+    function onNo() {
+      if (done) return; done = true;
+      close();
+      toast('祭壇は静かなままだった。');
+    }
+    yes.addEventListener('click', onYes);
+    no.addEventListener('click', onNo);
+  }
+
+  function spawnHiddenBossNearAltar(altarIdx) {
+    if (!currentMap || !currentMap.altarSpots) return;
+    var alt = currentMap.altarSpots[altarIdx];
+    if (!alt) return;
+    // Remove altar tile so re-prayer isn't possible until next visit.
+    currentMap.altarSpots.splice(altarIdx, 1);
+    // Spawn the hidden boss as a haruki_boss with elevated HP and an inflated
+    // bossHp so it lives through several full magazines.
+    entities.push({
+      type: 'haruki_boss',
+      x: (alt.gx + 1) * TS + TS / 2,
+      y: (alt.gy + 1) * TS + TS / 2,
+      angle: 0,
+      state: 'wait',
+      stateTimer: 0,
+      alive: true,
+      hp: 999,
+      bossHp: 500, // ~ 2.5x normal boss → 相応に強い
+      color: getEntityColor('haruki_boss'),
+      bodyColor: '#180004',
+      _isHidden: true
+    });
+    toast('★ 祭壇の影から、何かが立ち上がった。');
+    if (audioInitialized) {
+      try { GameEngine.playSound('jumpscare'); } catch (e) {}
+      try { GameEngine.playSound('whisper'); } catch (e) {}
+    }
+    GameEngine.shakeScreen(28, 1.4);
+    unlockAchievement('altar_pray');
+  }
+
+  // Called from _grantCoinsForKill when a haruki_boss dies. If it was the
+  // altar-spawned hidden one, drop the eternal_charm reward + persistent flag.
+  var HIDDEN_BOSS_FLAG_KEY = 'thebackrooms_hidden_boss_kill_v1';
+  function grantEternalCharmIfHidden(entity) {
+    if (!entity || !entity._isHidden) return;
+    try { localStorage.setItem(HIDDEN_BOSS_FLAG_KEY, '1'); } catch (e) {}
+    player.inventory.eternal_charm = 1;
+    unlockAchievement('hidden_boss_kill');
+    toast('★ 永遠の護符を手に入れた。');
+    if (audioInitialized) try { GameEngine.playSound('level_clear'); } catch (e) {}
+  }
+  function hasEternalCharm() {
+    try { return localStorage.getItem(HIDDEN_BOSS_FLAG_KEY) === '1'; } catch (e) { return false; }
+  }
+  window.hasEternalCharm = hasEternalCharm;
+
   // ── SHOP (Lv11 office-district vendor) ──
   // Items the shop can stock. Prices in coins. Each visit picks a random
   // subset of SHOP_GENERAL plus exactly one SHOP_UNIQUE pick (★ flagged).
@@ -1429,10 +1512,14 @@
     // SAN hit (handled in _grantCoinsForKill) so it's never the easy path.
     civilian: 1
   };
-  function _grantCoinsForKill(type) {
+  function _grantCoinsForKill(type, entity) {
     var amt = COIN_DROPS[type] || 1;
     player.coins = (player.coins || 0) + amt;
     if (amt >= 10) toast('+ ' + amt + ' コイン');
+    // Hidden boss kill grants the eternal_charm + persistent flag.
+    if (entity && entity._isHidden) {
+      try { grantEternalCharmIfHidden(entity); } catch (e) {}
+    }
     // Killing a civilian is morally costly: SAN -25, no coin toast (silent
     // shame), screen red-flashes. The Lv11 district is supposed to be the
     // game's one breath of safety — taking it from the civilians is a choice.
@@ -1565,7 +1652,7 @@
         bestE.alive = false;
         unlockAchievement('defeat_boss');
         toast(bestE.type === 'haruki_boss' ? '★ ハルキ 撃破! ★' : '★ BOSS 撃破!');
-        _grantCoinsForKill(bestE.type);
+        _grantCoinsForKill(bestE.type, bestE);
       }
     } else {
       bestE.hp = (bestE.hp !== undefined ? bestE.hp : 100) - dmg;
@@ -1573,7 +1660,7 @@
         bestE.alive = false;
         bestE.deathAt = performance.now();
         toast(getEntityLabel(bestE.type) + ' 撃破');
-        _grantCoinsForKill(bestE.type);
+        _grantCoinsForKill(bestE.type, bestE);
       }
     }
     // Blood/spark feedback at the hit location
@@ -1646,6 +1733,20 @@
       return hit ? true : false; // miss = no consume
     }
   };
+  // ── eternal_charm: persistent across runs once the hidden boss is killed.
+  // While held (always, since 'persistent: true' + lifetime localStorage flag),
+  // it lifts the item-use consume rule entirely so every item count reads ∞.
+  ITEMS.eternal_charm = {
+    id: 'eternal_charm', name: '永遠の護符 (隠しボス報酬)', icon: '♾',
+    desc: '隠しボスを倒した者だけが受け取れる護符。\n所持中、全アイテム/武器の所持数と使用上限が無限になる。\nリセットしない限り、新規ゲームでも引き継がれる。',
+    persistent: true,
+    effect: function (p) {
+      // No-op when "used" — its effect is passive.
+      toast('永遠の護符 — 既に全アイテムが無限。');
+      return false; // never consume
+    }
+  };
+
   ITEMS.revolver = {
     id: 'revolver', name: 'リボルバー', icon: '🎯',
     desc: '長距離・高貫通。6発まで装填、命中力高い。',
@@ -5198,7 +5299,9 @@
     civilian_killed:  { name: '何かを失った', icon: '🩸' },
     found_secret_doc: { name: '最初の秘匿書類', icon: '✉' },
     all_secret_docs:  { name: '九四四班 — 全資料', icon: '✦' },
-    true_secret_end:  { name: '真の脱出 — TRUE END', icon: '∞' }
+    true_secret_end:  { name: '真の脱出 — TRUE END', icon: '∞' },
+    altar_pray:       { name: '祭壇に祈りを捧げた', icon: '🕯', hidden: true },
+    hidden_boss_kill: { name: '隠しボス撃破 — 永遠の護符', icon: '♾', hidden: true }
   };
 
   function unlockAchievement(id) {
@@ -5326,6 +5429,7 @@
     player.stam = player.stamMax = 100;
     applyHalfRespawnIfDied();
     player.inventory = {};
+    if (hasEternalCharm()) player.inventory.eternal_charm = 1;
     player.flashlightOn = false;
     player.radioOn = false;
     playTime = 0;
@@ -6634,7 +6738,8 @@
     // Weapons always consume on use even in cheat mode — "weapons are scarce"
     // is a core mechanic; non-weapon items stay infinite when cheat is on.
     var isWeapon = it.category === 'weapon';
-    if (!it.persistent && (!cheatActive || isWeapon)) {
+    var infiniteFromCharm = hasEternalCharm();
+    if (!it.persistent && !infiniteFromCharm && (!cheatActive || isWeapon)) {
       player.inventory[itemId]--;
       // Per user: weapons stay in inventory at ×0 (unusable state visible).
       // Non-weapons drop out entirely when fully consumed.
@@ -6738,6 +6843,18 @@
         var sp = currentMap.shopSpots[si];
         if (Math.abs(sp.gx - gx) <= 1 && Math.abs(sp.gy - gy) <= 1) {
           openShop();
+          return;
+        }
+      }
+    }
+
+    // Altar tile — open 「祈りを捧げますか？」 prompt. Only available on
+    // levels 12+ per design. Each altar can only be used once per session.
+    if (currentMap.altarSpots && currentMap.altarSpots.length && currentLevel >= 12) {
+      for (var ali = 0; ali < currentMap.altarSpots.length; ali++) {
+        var alt = currentMap.altarSpots[ali];
+        if (Math.abs(alt.gx - gx) <= 1 && Math.abs(alt.gy - gy) <= 1) {
+          openAltarPrompt(ali);
           return;
         }
       }
@@ -9509,9 +9626,11 @@
         }
         if (item.id === 'radio') stateMark = '<span class="inv-state ' + (player.radioOn ? 'on' : 'off') + '">' + (player.radioOn ? 'ON' : 'OFF') + '</span>';
         // Weapons always show a count (it's their ammo). Other stackables
-        // only show when > 1 to avoid noise. ∞ stays for persistent items.
+        // only show when > 1 to avoid noise. ∞ stays for persistent items
+        // — and once the player owns the eternal_charm, ALL items render ∞.
         var isWeapon = item.category === 'weapon';
-        var countBadge = item.persistent
+        var charmActive = hasEternalCharm();
+        var countBadge = (item.persistent || charmActive)
           ? '<span class="inv-perm">∞</span>'
           : (isWeapon ? '<span class="inv-count ammo">×' + cnt + '</span>'
                       : (cnt > 1 ? '<span class="inv-count">' + cnt + '</span>' : ''));
@@ -10315,6 +10434,7 @@
     player.hp = player.hpMax;
     applyHalfRespawnIfDied();
     player.inventory = {};
+    if (hasEternalCharm()) player.inventory.eternal_charm = 1;
     player.coins = 0;
     player.flashlightOn = false;
     player.flashlightBattery = 0;
@@ -10469,6 +10589,7 @@
     player.san = player.sanMax = 100;
     player.stam = player.stamMax = 100;
     player.inventory = {};
+    if (hasEternalCharm()) player.inventory.eternal_charm = 1;
     player.flashlightOn = false;
     player.radioOn = false;
     playTime = 0;

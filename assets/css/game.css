@@ -3800,6 +3800,68 @@ button {
 }
 
 /* ============================================================
+ *  PROMPT OVERLAY (祭壇 yes/no etc.)
+ * ============================================================ */
+.prompt-overlay {
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 72;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.prompt-card {
+  width: min(86vw, 360px);
+  background: linear-gradient(180deg, #2a2010 0%, #15100a 100%);
+  border: 1px solid rgba(212, 179, 64, 0.6);
+  border-radius: 14px;
+  padding: 28px 22px 22px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.7), inset 0 1px 0 rgba(240,220,138,0.12);
+}
+.prompt-text {
+  font-size: 17px;
+  color: #f0dc8a;
+  text-align: center;
+  letter-spacing: 0.12em;
+  line-height: 1.6;
+  margin: 0 0 22px;
+  font-family: 'Times New Roman', serif;
+  font-weight: 600;
+  text-shadow: 0 0 8px rgba(212, 179, 64, 0.3);
+}
+.prompt-buttons {
+  display: flex;
+  gap: 10px;
+}
+.prompt-btn {
+  flex: 1;
+  padding: 14px 8px;
+  font-size: 15px;
+  letter-spacing: 0.2em;
+  font-weight: 700;
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: inherit;
+  border: none;
+}
+.prompt-btn.confirm {
+  background: linear-gradient(180deg, #d4b340 0%, #a08030 100%);
+  color: #0d0a04;
+}
+.prompt-btn.confirm:active {
+  background: linear-gradient(180deg, #b89a30 0%, #806020 100%);
+  transform: scale(0.985);
+}
+.prompt-btn.cancel {
+  background: rgba(60, 50, 30, 0.6);
+  color: #c8b078;
+  border: 1px solid rgba(120, 96, 32, 0.5);
+}
+.prompt-btn.cancel:active {
+  background: rgba(40, 30, 8, 0.8);
+  transform: scale(0.985);
+}
+
+/* ============================================================
  *  SHOP OVERLAY (Lv11 office-district vendor)
  * ============================================================ */
 .shop-overlay {

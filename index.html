@@ -20,7 +20,7 @@
   <meta name="twitter:title" content="THE BACKROOMS — featuring HARUKI">
   <meta name="twitter:description" content="一人称モバイル探索ホラー。Level 0 から no-clip で階層を降下。壁の向こうにカレが待つ。">
   <title>THE BACKROOMS</title>
-  <link rel="stylesheet" href="assets/css/game.css?v=168">
+  <link rel="stylesheet" href="assets/css/game.css?v=169">
 </head>
 <body oncontextmenu="return false;">
 
@@ -379,6 +379,17 @@
     </div>
     <div class="es-vignette"></div>
     <div class="es-text" id="esText"></div>
+  </div>
+
+  <!-- Generic Yes/No prompt overlay (祭壇/altar 等) -->
+  <div id="promptOverlay" class="overlay prompt-overlay" style="display:none;">
+    <div class="prompt-card">
+      <p id="promptText" class="prompt-text">— 祈りを捧げますか？</p>
+      <div class="prompt-buttons">
+        <button id="promptNoBtn" type="button" class="prompt-btn cancel">いいえ</button>
+        <button id="promptYesBtn" type="button" class="prompt-btn confirm">はい</button>
+      </div>
+    </div>
   </div>
 
   <!-- Shop overlay (Lv11 office-district vendor) -->
@@ -970,8 +981,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="assets/js/engine.js?v=168"></script>
-  <script src="assets/js/game.js?v=168"></script>
+  <script src="assets/js/engine.js?v=169"></script>
+  <script src="assets/js/game.js?v=169"></script>
 
   <!-- POST-LOAD VERIFICATION + DIRECT BINDING FALLBACK
        After game.js IIFE runs, this script confirms __titleAction is the real one.
