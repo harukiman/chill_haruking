@@ -6366,10 +6366,10 @@
     // ── SNAKE ──
     snake: {
       title: 'スネーク',
-      subtitle: 'ドットを5個食べると勝利 — タップして方向転換',
+      subtitle: 'スタートを押すと開始。ドットを5個食べると勝利 — タップで方向転換',
       init: function () {
         mgState = {
-          phase: 'play',
+          phase: 'ready',
           grid: 12,
           snake: [{x: 6, y: 8}, {x: 5, y: 8}, {x: 4, y: 8}],
           dir: {x: 1, y: 0},
@@ -6380,10 +6380,19 @@
           eaten: 0,
           goal: 5
         };
-        setMGAction('閉じる', 'gray');
-        setMGStatus('0 / 5');
+        setMGAction('スタート', 'green');
+        setMGStatus('スタートを押して開始');
       },
-      action: function () { closeMiniGame(); },
+      action: function () {
+        if (mgState.phase === 'ready') {
+          mgState.phase = 'play';
+          setMGAction('閉じる', 'gray');
+          setMGStatus('0 / 5');
+          if (audioInitialized) try { GameEngine.playSound('ui_tap'); } catch (e) {}
+          return;
+        }
+        closeMiniGame();
+      },
       onTap: function (cx, cy, w, h) {
         if (mgState.phase !== 'play') return;
         // Determine direction from tap relative to canvas center
@@ -6657,9 +6666,20 @@
         var diff = mgState.touch - mgState.playerY;
         mgState.playerY += Math.sign(diff) * Math.min(Math.abs(diff), 1.5 * dt);
         mgState.playerY = clamp(mgState.playerY, mgState.paddleH / 2, 1 - mgState.paddleH / 2);
-        // AI movement (slight lag)
-        var aiDiff = mgState.ballY - mgState.aiY;
-        mgState.aiY += Math.sign(aiDiff) * Math.min(Math.abs(aiDiff), 0.75 * dt);
+        // AI movement — weakened per user request:
+        //  * Only actively tracks when the ball is on the AI's half
+        //    AND moving toward it (otherwise drifts toward center)
+        //  * Tracking speed reduced 0.75 → 0.40
+        //  * Small persistent positional error so it sometimes misjudges
+        if (mgState._aiErr === undefined) mgState._aiErr = 0;
+        // Slowly drift the error so the AI looks like a flawed opponent
+        mgState._aiErr += (Math.random() - 0.5) * dt * 0.6;
+        mgState._aiErr = clamp(mgState._aiErr, -0.10, 0.10);
+        var aiActive = (mgState.ballX > 0.45 && mgState.ballVX > 0);
+        var aiTarget = aiActive ? (mgState.ballY + mgState._aiErr) : 0.5;
+        var aiDiff = aiTarget - mgState.aiY;
+        var aiSpeed = aiActive ? 0.40 : 0.20;
+        mgState.aiY += Math.sign(aiDiff) * Math.min(Math.abs(aiDiff), aiSpeed * dt);
         mgState.aiY = clamp(mgState.aiY, mgState.paddleH / 2, 1 - mgState.paddleH / 2);
 
         // Ball movement
