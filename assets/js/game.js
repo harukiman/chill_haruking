@@ -970,7 +970,7 @@
          intro: '光が消えた。何も見えない。\n── だが、向こうは、お前が見える。',
          entities: [
            { type: 'hound', gx: 8, gy: 8 },
-           { type: 'witness', gx: 6, gy: 12 },
+           { type: 'witness', gx: 3, gy: 10 },
            { type: 'witness', gx: 13, gy: 3 }
          ],
          timeLimit: null },
