@@ -8970,7 +8970,7 @@
   // weapon auto-deletes from inventory but the D-pad binding stays bound at
   // ×0 so the player can re-bind on re-pickup.
   var WEAPON_AMMO_PICKUP = {
-    pistol:          [4, 8],   // 4–8 shots (user request 2026-06-07)
+    pistol:          [7, 11],  // 7–11 shots (user request 2026-06-07)
     shotgun:         [2, 4],   // shells
     revolver:        [3, 6],
     katana:          [4, 7],
