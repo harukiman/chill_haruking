@@ -7653,20 +7653,32 @@
     // and moves to the next. Player must reach a hidden target sequence.
     dial: {
       title: 'ダイヤルロック',
-      subtitle: '3桁の暗号を当てろ。HEAT が上がるほど近い。',
+      subtitle: '3桁の暗号を当てろ。HIT は位置一致、NEAR は数字一致。',
       init: function () {
+        var target = [Math.floor(Math.random() * 10),
+                      Math.floor(Math.random() * 10),
+                      Math.floor(Math.random() * 10)];
+        // Difficulty bumped down per user feedback 2026-06-07
+        // 「ダイヤルロックは難しすぎないか？」
+        //   - Max tries 6 → 10
+        //   - Feedback now splits HIT (correct digit & position) and
+        //     NEAR (correct digit, wrong position) — Mastermind style
+        //     so deductive play actually narrows the answer.
+        //   - First-guess freebie: one random digit pre-revealed in
+        //     the status line so the player can anchor a strategy.
+        var hintPos = Math.floor(Math.random() * 3);
         mgState = {
           phase: 'play',
-          target: [Math.floor(Math.random() * 10),
-                   Math.floor(Math.random() * 10),
-                   Math.floor(Math.random() * 10)],
+          target: target,
           dials: [0, 0, 0],
           active: 0,
           tries: 0,
-          maxTries: 6
+          maxTries: 10,
+          hintPos: hintPos,
+          hintDigit: target[hintPos]
         };
         setMGAction('決定', 'green');
-        setMGStatus('1桁目を選択 → 決定');
+        setMGStatus('ヒント: ' + (hintPos + 1) + '桁目は ' + target[hintPos] + '  /  1桁目を選択 → 決定');
       },
       action: function () {
         if (mgState.phase !== 'play') return;
@@ -7676,11 +7688,27 @@
           if (audioInitialized) GameEngine.playSound('clock_tick');
           return;
         }
-        // Final dial — evaluate
+        // Final dial — evaluate (Mastermind-style HIT + NEAR)
         mgState.tries++;
-        var matches = 0;
-        for (var d = 0; d < 3; d++) if (mgState.dials[d] === mgState.target[d]) matches++;
-        if (matches === 3) {
+        var hits = 0, near = 0;
+        var usedT = [false, false, false];
+        var usedG = [false, false, false];
+        for (var d = 0; d < 3; d++) {
+          if (mgState.dials[d] === mgState.target[d]) {
+            hits++;
+            usedT[d] = true; usedG[d] = true;
+          }
+        }
+        for (var dg = 0; dg < 3; dg++) {
+          if (usedG[dg]) continue;
+          for (var dt = 0; dt < 3; dt++) {
+            if (usedT[dt]) continue;
+            if (mgState.dials[dg] === mgState.target[dt]) {
+              near++; usedT[dt] = true; break;
+            }
+          }
+        }
+        if (hits === 3) {
           mgState.phase = 'win';
           setMGStatus('解錠! ユニーク報酬');
           setMGAction('終了', 'green');
@@ -7694,12 +7722,12 @@
           if (typeof showUniqueRewardFlash === 'function') showUniqueRewardFlash(rwdD);
         } else if (mgState.tries >= mgState.maxTries) {
           mgState.phase = 'lose';
-          setMGStatus('失敗 (試行回数オーバー)');
+          setMGStatus('失敗 (正解: ' + mgState.target.join('') + ')');
           setMGAction('終了', 'red');
         } else {
-          // Reset to dial 0, hint at hit count
+          // Reset to dial 0, show HIT + NEAR breakdown
           mgState.active = 0;
-          setMGStatus('HEAT ' + matches + '/3   残り ' + (mgState.maxTries - mgState.tries));
+          setMGStatus('HIT ' + hits + ' / NEAR ' + near + '   残り ' + (mgState.maxTries - mgState.tries));
           if (audioInitialized) GameEngine.playSound('door');
         }
       },
