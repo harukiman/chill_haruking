@@ -20,7 +20,7 @@
   <meta name="twitter:title" content="THE BACKROOMS — featuring HARUKI">
   <meta name="twitter:description" content="一人称モバイル探索ホラー。Level 0 から no-clip で階層を降下。壁の向こうにカレが待つ。">
   <title>THE BACKROOMS</title>
-  <link rel="stylesheet" href="assets/css/game.css?v=253">
+  <link rel="stylesheet" href="assets/css/game.css?v=254">
 </head>
 <body oncontextmenu="return false;">
 
@@ -123,7 +123,13 @@
 
   <!-- Weapon Attack Button (lower-right, separate from the red action button).
        Fires the currently equipped weapon. -->
-  <button id="weaponAttackBtn" class="weapon-attack-btn" type="button" aria-label="武器使用" style="display:none;">
+  <!-- Inline style:display:none REMOVED 2026-06-07.
+       The button's base CSS class already starts hidden (display:none)
+       and the .show class toggles display:flex. The inline rule was
+       winning the cascade and the button never appeared, which the user
+       reported as 「コントローラ接続していないときの銃などを打つ
+       攻撃ボタンが実装されていない」. -->
+  <button id="weaponAttackBtn" class="weapon-attack-btn" type="button" aria-label="武器使用">
     <span class="wab-icon" id="wabIcon">⚔</span>
     <span class="wab-count" id="wabCount">—</span>
   </button>
@@ -1074,8 +1080,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="assets/js/engine.js?v=253"></script>
-  <script src="assets/js/game.js?v=253"></script>
+  <script src="assets/js/engine.js?v=254"></script>
+  <script src="assets/js/game.js?v=254"></script>
 
   <!-- POST-LOAD VERIFICATION + DIRECT BINDING FALLBACK
        After game.js IIFE runs, this script confirms __titleAction is the real one.
