@@ -9288,6 +9288,20 @@
       // Triumphant chord stinger so clearing feels earned
       GameEngine.playSound('level_clear');
     }
+    // Brief "→ LV<next>" label in the center of the flash so the
+    // player knows where they're being sent.
+    var nextDef = LEVELS[nextLevel];
+    if (nextDef) {
+      try {
+        var lbl = document.createElement('div');
+        lbl.className = 'noclip-next-label';
+        lbl.innerHTML = '→ ' + nextDef.name + '<br><span class="ncl-sub">' + nextDef.subtitle + '</span>';
+        document.body.appendChild(lbl);
+        setTimeout(function () {
+          if (lbl && lbl.parentNode) lbl.parentNode.removeChild(lbl);
+        }, 950);
+      } catch (e) {}
+    }
     // No-clip flash — extended a beat so the celebration audio lands
     var flash = el('noclipFlash');
     flash.style.display = 'block';
