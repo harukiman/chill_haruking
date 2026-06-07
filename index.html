@@ -20,7 +20,11 @@
   <meta name="twitter:title" content="THE BACKROOMS — featuring HARUKI">
   <meta name="twitter:description" content="一人称モバイル探索ホラー。Level 0 から no-clip で階層を降下。壁の向こうにカレが待つ。">
   <title>THE BACKROOMS</title>
-  <link rel="stylesheet" href="assets/css/game.css?v=305">
+  <!-- Inline SVG favicon — mustard wallpaper gradient with a single
+       black dot. Symbolizes Lv0 lobby. Avoids the network request
+       for /favicon.ico in GitHub Pages root. -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' fill='%23d4b340'/><rect x='0' y='32' width='64' height='32' fill='%23b08628'/><circle cx='32' cy='32' r='4' fill='%23000'/></svg>">
+  <link rel="stylesheet" href="assets/css/game.css?v=306">
 </head>
 <body oncontextmenu="return false;">
 
@@ -1096,8 +1100,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="assets/js/engine.js?v=305"></script>
-  <script src="assets/js/game.js?v=305"></script>
+  <script src="assets/js/engine.js?v=306"></script>
+  <script src="assets/js/game.js?v=306"></script>
 
   <!-- POST-LOAD VERIFICATION + DIRECT BINDING FALLBACK
        After game.js IIFE runs, this script confirms __titleAction is the real one.
