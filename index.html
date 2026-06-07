@@ -27,7 +27,7 @@
   <!-- Apple touch icon — used when added to home screen on iOS. Same
        SVG as the favicon, sized 180×180 so iOS rasterizes cleanly. -->
   <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' fill='%23d4b340'/><rect x='0' y='90' width='180' height='90' fill='%23b08628'/><circle cx='90' cy='90' r='10' fill='%23000'/><text x='90' y='150' text-anchor='middle' fill='%23382a08' font-family='Times New Roman' font-weight='bold' font-size='22' letter-spacing='2'>THE</text></svg>">
-  <link rel="stylesheet" href="assets/css/game.css?v=315">
+  <link rel="stylesheet" href="assets/css/game.css?v=316">
 </head>
 <body oncontextmenu="return false;">
 
@@ -184,7 +184,7 @@
   <div id="titleScreen" class="overlay">
     <div class="title-bg-wallpaper"></div>
     <div class="title-haruki-silhouette">
-      <img src="assets/img/haruki.png" alt="HARUKI" onerror="this.style.display='none'">
+      <img src="assets/img/haruki.png" alt="HARUKI" class="haruki-mosaic" onerror="this.style.display='none'">
     </div>
     <div class="title-content">
       <p class="title-pre">no-clip → </p>
@@ -204,7 +204,20 @@
         <button id="titleSettingsBtn" class="menu-btn" type="button" onclick="window.__titleAction&&window.__titleAction('settings')">設定</button>
       </div>
     </div>
-    <button id="titleResetBtn" class="title-reset-btn" type="button" onclick="window.__titleAction&&window.__titleAction('reset')">⚠ 全データ削除</button>
+    <!-- SVG mosaic filter — defined once, referenced by .haruki-mosaic
+       images. Discrete feComponentTransfer steps give the blocky look
+       beyond what pure CSS blur can achieve. Hidden via aria + size 0. -->
+  <svg width="0" height="0" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
+    <filter id="haruki-mosaic-filter" x="0" y="0" width="100%" height="100%">
+      <feGaussianBlur stdDeviation="5" />
+      <feComponentTransfer>
+        <feFuncR type="discrete" tableValues="0 0.18 0.36 0.54 0.72 0.9" />
+        <feFuncG type="discrete" tableValues="0 0.18 0.36 0.54 0.72 0.9" />
+        <feFuncB type="discrete" tableValues="0 0.18 0.36 0.54 0.72 0.9" />
+      </feComponentTransfer>
+    </filter>
+  </svg>
+  <button id="titleResetBtn" class="title-reset-btn" type="button" onclick="window.__titleAction&&window.__titleAction('reset')">⚠ 全データ削除</button>
     <button id="titleReloadBtn" class="title-reload-btn" type="button" onclick="window.__hardReload&&window.__hardReload()">↻ 再読込</button>
     <div id="tapToStartHint" class="tap-to-start-hint hidden"></div>
     <p class="copyright">THE BACKROOMS — featuring HARUKI &copy; 2026</p>
@@ -447,10 +460,10 @@
     <div class="hbc-rain"></div>
     <div class="hbc-ground"></div>
     <div class="hbc-silhouette">
-      <img src="assets/img/haruki.png" alt="" id="hbcSilImg" onerror="this.style.display='none'">
+      <img src="assets/img/haruki.png" alt="" id="hbcSilImg" class="haruki-mosaic" onerror="this.style.display='none'">
     </div>
     <div class="hbc-zoom-portrait" id="hbcPortrait">
-      <img src="assets/img/haruki_scary.png" alt="" onerror="this.style.display='none'">
+      <img src="assets/img/haruki_scary.png" alt="" class="haruki-mosaic" onerror="this.style.display='none'">
     </div>
     <div class="hbc-vignette"></div>
     <div class="hbc-text" id="hbcText"></div>
@@ -547,7 +560,7 @@
   <!-- Loading Screen Overlay (level transition) -->
   <div id="loadingScreen" class="overlay" style="display:none;">
     <div class="loading-haruki" id="loadingHaruki" style="display:none;">
-      <img src="assets/img/haruki.png" alt="" onerror="this.style.display='none'">
+      <img src="assets/img/haruki.png" alt="" class="haruki-mosaic" onerror="this.style.display='none'">
     </div>
     <div class="loading-content">
       <p class="loading-level" id="loadingLevel">LEVEL 0</p>
@@ -571,7 +584,7 @@
   <!-- Game Over Screen Overlay -->
   <div id="gameOverScreen" class="overlay" style="display:none;">
     <div class="gameover-haruki-bg">
-      <img src="assets/img/haruki_scary.png" alt="" onerror="this.style.display='none'">
+      <img src="assets/img/haruki_scary.png" alt="" class="haruki-mosaic" onerror="this.style.display='none'">
     </div>
     <div class="gameover-content">
       <h1 class="gameover-text">YOU DIED</h1>
@@ -1106,8 +1119,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="assets/js/engine.js?v=315"></script>
-  <script src="assets/js/game.js?v=315"></script>
+  <script src="assets/js/engine.js?v=316"></script>
+  <script src="assets/js/game.js?v=316"></script>
 
   <!-- POST-LOAD VERIFICATION + DIRECT BINDING FALLBACK
        After game.js IIFE runs, this script confirms __titleAction is the real one.

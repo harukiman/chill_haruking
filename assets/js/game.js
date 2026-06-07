@@ -10358,11 +10358,15 @@
         var headY = hkSpriteY;
         var startCol = Math.max(0, Math.floor(headX));
         var endCol = Math.min(w, Math.ceil(headX + headW));
+        // Mosaic Haruki's face — render the head from a pre-mosaicked
+        // offscreen canvas instead of the raw image. Falls back to the
+        // raw draw if the offscreen helper isn't available.
+        var harukiHeadSrc = _getMosaickedHaruki(useImg);
         // Draw image columns with z-buffer occlusion (no full-rect overlays to avoid wall tinting)
         for (var col = startCol; col < endCol; col++) {
           if (zBuf[col] > depthTiles) {
-            var srcX = ((col - headX) / headW) * useImg.width;
-            ctx.drawImage(useImg, srcX, 0, 1, useImg.height, col, headY, 1, headH);
+            var srcX = ((col - headX) / headW) * harukiHeadSrc.width;
+            ctx.drawImage(harukiHeadSrc, srcX, 0, 1, harukiHeadSrc.height, col, headY, 1, headH);
             // Per-column red tint via direct alpha-multiplied fill
             ctx.save();
             ctx.globalAlpha = (depthTiles < 3 ? 0.35 : 0.18) * fogFactor;
@@ -10465,7 +10469,8 @@
         isHk ? '#2a0808' : '#1c0028',
         isHk ? '#100202' : '#0a0010');
       if (isHk) {
-        // Haruki head: replace the crown with the haruki_scary.png portrait floating above body.
+        // Haruki head: replace the crown with the haruki_scary.png portrait
+        // floating above body. Pre-mosaicked via _getMosaickedHaruki.
         var hkBImg = GameEngine.images['assets/img/haruki_scary.png'] || GameEngine.images['assets/img/haruki.png'];
         if (hkBImg && hkBImg.complete && hkBImg.naturalWidth) {
           var hkBHeadH = bsH * 0.48;
@@ -10475,7 +10480,7 @@
           if (zBuf[Math.round(screenX)] > depthTiles) {
             ctx.save();
             ctx.globalAlpha = Math.min(1, fogFactor * 1.2);
-            ctx.drawImage(hkBImg, hkBHeadX, hkBHeadY, hkBHeadW, hkBHeadH);
+            ctx.drawImage(_getMosaickedHaruki(hkBImg), hkBHeadX, hkBHeadY, hkBHeadW, hkBHeadH);
             ctx.restore();
           }
         }
@@ -10572,6 +10577,36 @@
       _pickupOffCanvas.height = size;
     }
     return _pickupOffCanvas;
+  }
+  // ── Mosaicked Haruki cache ──
+  // Per user request 2026-06-07: ハルキの顔にモザイクをかける.
+  // Pre-render each Haruki source image to a tiny offscreen canvas
+  // (~16px wide) then upscale to original size with imageSmoothingEnabled
+  // = false — gives a real blocky mosaic that survives the per-column
+  // draw loop in the entity-sprite path. Cached per source image.
+  var _harukiMosaicCache = new Map();
+  function _getMosaickedHaruki(srcImg) {
+    if (!srcImg || !srcImg.complete || !srcImg.naturalWidth) return srcImg;
+    var cached = _harukiMosaicCache.get(srcImg);
+    if (cached) return cached;
+    var w = srcImg.naturalWidth;
+    var h = srcImg.naturalHeight;
+    // Mosaic block size in source-pixel units. ~16 wide blocks.
+    var blockCount = 16;
+    var smallW = Math.max(4, Math.round(blockCount));
+    var smallH = Math.max(4, Math.round(blockCount * (h / w)));
+    var off1 = document.createElement('canvas');
+    off1.width = smallW; off1.height = smallH;
+    var c1 = off1.getContext('2d');
+    c1.imageSmoothingEnabled = true; // smooth downscale
+    c1.drawImage(srcImg, 0, 0, smallW, smallH);
+    var off2 = document.createElement('canvas');
+    off2.width = w; off2.height = h;
+    var c2 = off2.getContext('2d');
+    c2.imageSmoothingEnabled = false; // crisp upscale = mosaic
+    c2.drawImage(off1, 0, 0, w, h);
+    _harukiMosaicCache.set(srcImg, off2);
+    return off2;
   }
 
   // World-space pickup renderer with proper z-buffer occlusion per column

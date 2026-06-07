@@ -932,6 +932,27 @@ button {
   95%           { opacity: 0.7; filter: blur(0.8px); }
 }
 
+/* Haruki face mosaic — user request 2026-06-07. Combines SVG filter
+   (discrete color quantization → blocky look) with CSS blur/contrast
+   fallback for browsers without SVG filter support. Applied to every
+   <img> that shows haruki.png / haruki_scary.png. */
+.haruki-mosaic {
+  filter:
+    url(#haruki-mosaic-filter)
+    blur(2px)
+    contrast(1.15);
+  /* Fallback chain for engines that ignore the SVG filter reference:
+     a strong blur + saturate keeps the silhouette but obscures features. */
+  -webkit-filter: blur(7px) contrast(1.2);
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+}
+@supports (filter: url(#x)) {
+  .haruki-mosaic {
+    -webkit-filter: url(#haruki-mosaic-filter) blur(2px) contrast(1.15);
+  }
+}
+
 .title-haruki-silhouette {
   position: absolute;
   bottom: 20%;
