@@ -8848,6 +8848,13 @@
       addAmount = _rollWeaponPickupCount(itemId);
     }
     player.inventory[itemId] = (player.inventory[itemId] || 0) + addAmount;
+    // Auto-equip if the player has no weapon currently equipped — the
+    // attack button stays hidden until something is bound, so without
+    // this the first weapon pickup felt invisible until the player
+    // figured out the phone/equip flow.
+    if (item.category === 'weapon' && !player.equippedWeapon) {
+      try { equipWeapon(itemId); } catch (e) {}
+    }
     if (!pickedUpItems[currentLevel]) pickedUpItems[currentLevel] = {};
     pickedUpItems[currentLevel][gridKey(gx, gy)] = true;
     delete pickupSpots[gridKey(gx, gy)];
