@@ -966,9 +966,13 @@
          timeLimit: null },
     6: { id: 6, name: 'LEVEL 6', subtitle: 'LIGHTS OUT',
          rows: LV6_ROWS, theme: 6,
-         hint: '完全な暗闇。視界は極端に短い。',
-         intro: '光が消えた。何も見えない。',
-         entities: [ { type: 'hound', gx: 8, gy: 8 } ],
+         hint: '完全な暗闇。視界は極端に短い。\n暗闇の中で、何かが立って、お前を見ている。',
+         intro: '光が消えた。何も見えない。\n── だが、向こうは、お前が見える。',
+         entities: [
+           { type: 'hound', gx: 8, gy: 8 },
+           { type: 'witness', gx: 6, gy: 12 },
+           { type: 'witness', gx: 13, gy: 3 }
+         ],
          timeLimit: null },
     7: { id: 7, name: 'LEVEL 7', subtitle: 'RUN FOR YOUR LIFE',
          rows: LV7_ROWS, theme: 7,
@@ -1545,7 +1549,8 @@
     haruki: 8, echo: 3, faceling: 4, boss: 30, haruki_boss: 100,
     // Civilians are neutral — killing them gives a token coin (1) but a heavy
     // SAN hit (handled in _grantCoinsForKill) so it's never the easy path.
-    civilian: 1
+    civilian: 1,
+    witness: 4
   };
   function _grantCoinsForKill(type, entity) {
     var amt = COIN_DROPS[type] || 1;
@@ -1638,6 +1643,11 @@
     },
     civilian: { /* attacks on civilians stay at 1.0 — the moral cost is the
                    real penalty, no need to also nerf damage */ },
+    witness: {
+      pistol: 1.0,  shotgun: 1.2,  revolver: 1.0, katana: 1.4,
+      flare: 2.0,   mirror: 1.4,  mirror_shard: 1.6,
+      architect_blade: 1.4
+    },
     mrhotel: {
       pistol: 0.4,  shotgun: 0.5,  katana: 1.4, flare: 0.6,
       architect_blade: 1.8, mirror: 2.0, revenant_blade: 1.2,
@@ -2418,7 +2428,8 @@
     haruki: { name: 'HARUKI', desc: '非公式。前ホテルからの no-clipper。\nお前を追って壁の向こうまで来た存在。\n姿は不定形だが、お前の最も恐ろしい記憶として現れる。\n電話のベルが近接の兆候。' },
     haruki_boss: { name: 'HARUKI 真', desc: '— 全ての階層の終着点に、彼女は立っていた。\n3 段階の追跡形態。第3段階で影分身が出現する。\nハルキの護符 (ユニーク) があれば一時的に退避可能。' },
     echo: { name: 'ECHO', desc: 'バックルーム未分類。\nお前の動きを 0.6 秒遅れで完全模倣する亡霊。\n直視すると鏡を見ているような感覚に襲われ、SAN が削れる。\n振り切るには思考しない急な動きが有効。' },
-    faceling: { name: 'FACELING', desc: 'バックルーム公式分類 Class 1 (擬態型)。\nM.E.G. メンバーや過去の no-clipper の姿に化ける。\n顔は常に「ぼやけて」見える。\n敵対的ではないが、稀に視線を合わせると SAN を引き抜く。' }
+    faceling: { name: 'FACELING', desc: 'バックルーム公式分類 Class 1 (擬態型)。\nM.E.G. メンバーや過去の no-clipper の姿に化ける。\n顔は常に「ぼやけて」見える。\n敵対的ではないが、稀に視線を合わせると SAN を引き抜く。' },
+    witness: { name: 'WITNESS', desc: 'バックルーム公式分類 Class 1 (静止型)。\nLevel 6 暗闇の中で、ただ立ち、お前を見続ける。\n視線が交わる時、SAN だけが静かに削れていく。\n目を逸らせば実害は無いが、振り返ると ── まだ、そこにいる。' }
   };
   // NOTE: ENTITY_SOUND_MAP.echo / .faceling are added inline in ENTITY_SOUND_MAP literal
   // below (line ~3957). Don't reference ENTITY_SOUND_MAP here — it's declared later via var
@@ -4310,6 +4321,7 @@
       case 'skinstealer': return '#a08070';
       case 'partygoer': return '#502828';
       case 'civilian': return '#cd9b6c'; // warm beige — clearly human, non-threatening
+      case 'witness':  return '#0e0e12'; // near-black, just barely a silhouette
       default: return '#444';
     }
   }
@@ -8089,6 +8101,16 @@
         wanderEntity(e, dt, 40 * sMul);
         if (distP < 1.5 * TS) {
           attackPlayer(15 * dt);
+        }
+      } else if (e.type === 'witness') {
+        // Stationary observer: never moves, just stands. SAN drains slowly
+        // when the player has it in FOV (similar to wretch but milder, and
+        // unaffected by water tiles). Player can ignore it by averting eyes.
+        e.x = e.x; e.y = e.y; // hold position
+        if (distP < 10 * TS) {
+          if (isFacingPlayer(e)) {
+            player.san = Math.max(0, player.san - 1.0 * dt);
+          }
         }
       } else if (e.type === 'civilian') {
         // Neutral NPC — wanders peacefully, never attacks. If player walks
@@ -12001,6 +12023,7 @@
       echo:        { icon: '🔁', name: 'ECHO' },
       faceling:    { icon: '🫥', name: 'FACELING' },
       civilian:    { icon: '🧍', name: 'CIVILIAN' },
+      witness:     { icon: '👁‍🗨', name: 'WITNESS' },
       mrhotel:     { icon: '🎩', name: 'MR.HOTEL' },
       boss:        { icon: '👹', name: 'BOSS' },
       haruki_boss: { icon: '🩸', name: 'HARUKI 真' }
