@@ -3644,6 +3644,25 @@ button {
   height: 100%;
   display: block;
 }
+.hud-dpad-slot.equipped {
+  background: rgba(50, 80, 120, 0.45);
+  border-color: #5080c0;
+  box-shadow:
+    inset 0 0 8px rgba(80, 128, 192, 0.55),
+    0 0 6px rgba(80, 128, 192, 0.7);
+}
+.hud-dpad-slot.equipped::after {
+  content: '装';
+  position: absolute;
+  top: 0;
+  left: 1px;
+  font-size: 9px;
+  font-weight: 800;
+  color: #c0e0ff;
+  letter-spacing: 0;
+  text-shadow: 0 0 4px rgba(80, 128, 192, 0.95), 1px 1px 0 #000;
+  pointer-events: none;
+}
 .hud-dpad-slot .dpad-slot-count {
   position: absolute;
   right: 1px;

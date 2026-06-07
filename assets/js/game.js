@@ -7710,10 +7710,17 @@
                            '<span class="dpad-slot-count' + (count === 0 && !hasEternalCharm() ? ' out' : '') + '">'
                            + displayCount + '</span>';
         slotEl.classList.remove('empty');
-        slotEl.title = ITEMS[id].name + (count > 0 ? ' ×' + count : ' (未所持)');
+        // Highlight the slot that's currently equipped so the player can
+        // see at-a-glance which weapon will fire when they tap the blue
+        // attack button.
+        slotEl.classList.toggle('equipped', player.equippedWeapon === id);
+        slotEl.title = ITEMS[id].name +
+                       (count > 0 ? ' ×' + count : ' (未所持)') +
+                       (player.equippedWeapon === id ? ' [装備中]' : '');
       } else {
         slotEl.innerHTML = '';
         slotEl.classList.add('empty');
+        slotEl.classList.remove('equipped');
         slotEl.title = '未割当';
       }
     }
