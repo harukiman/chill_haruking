@@ -11224,7 +11224,11 @@
     var secretCount = el('taSecretCount');
     var sdHave = Object.keys(collectedSecretDocs).length;
     var sdTotal = SECRET_DOCS.length;
-    if (secretCount) secretCount.textContent = sdHave + ' / ' + sdTotal + ' 秘匿書類';
+    if (secretCount) {
+      var prefix = (sdHave >= sdTotal) ? '★ 全資料収集 ★ ' : '';
+      secretCount.textContent = prefix + sdHave + ' / ' + sdTotal + ' 秘匿書類';
+      secretCount.classList.toggle('all-collected', sdHave >= sdTotal);
+    }
     if (secretList) {
       secretList.innerHTML = '';
       SECRET_DOCS.forEach(function (doc, idx) {
