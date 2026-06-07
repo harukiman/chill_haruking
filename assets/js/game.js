@@ -1439,6 +1439,9 @@
     var sellGrid = el('shopSellGrid');
     sellGrid.innerHTML = '';
     var invKeys = Object.keys(player.inventory).filter(function (id) {
+      // Persistent items (flashlight, radio, eternal_charm) aren't sellable —
+      // they're either gameplay-critical equipment or the永遠の護符 reward.
+      if (ITEMS[id] && ITEMS[id].persistent) return false;
       return player.inventory[id] > 0 && ITEMS[id];
     });
     if (invKeys.length === 0) {
