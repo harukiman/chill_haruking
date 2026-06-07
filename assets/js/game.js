@@ -2839,6 +2839,164 @@
   // ── Haruki Boss Reveal Cutscene ──
   // ~8s animated CSS sequence: silhouette walks forward through rain,
   // lightning strikes twice, portrait zooms in, then transitions out.
+  // Draw a stylised walking human silhouette. Used by the 3rd-person cutscene
+  // canvases (boss approach, ending walk-away). Walking cycle driven by `t`
+  // so each canvas controls its own animation timing.
+  //   cx, cy:    centre of the figure (feet ground reference is cy + h*0.5)
+  //   h:         total head-to-toe height in pixels
+  //   t:         seconds elapsed (drives leg/arm swing)
+  //   opts:      { color, facing ('forward'|'away'|'side'), hair (bool) }
+  function drawWalkingFigure(ctx, cx, cy, h, t, opts) {
+    opts = opts || {};
+    var color = opts.color || '#000';
+    var facing = opts.facing || 'forward';
+    var hair = opts.hair !== false;
+    var phase = Math.sin(t * 8); // walking cycle
+    var headR = h * 0.13;
+    var bodyTopY = cy - h * 0.30 + headR;
+    var bodyH = h * 0.40;
+    var bodyW = h * 0.20;
+    var legY = bodyTopY + bodyH;
+    var legH = h * 0.32;
+    var armY = bodyTopY + h * 0.06;
+    var armLen = h * 0.30;
+    // Head
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(cx, cy - h * 0.30, headR, 0, Math.PI * 2);
+    ctx.fill();
+    // Hair tuft (haruki silhouette flair) — only when facing forward
+    if (hair && facing !== 'away') {
+      ctx.beginPath();
+      ctx.moveTo(cx - headR * 0.9, cy - h * 0.30 - headR * 0.3);
+      ctx.lineTo(cx - headR * 1.1, cy - h * 0.30 + headR * 0.6);
+      ctx.lineTo(cx - headR * 0.4, cy - h * 0.30 - headR * 0.2);
+      ctx.closePath();
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(cx + headR * 0.9, cy - h * 0.30 - headR * 0.3);
+      ctx.lineTo(cx + headR * 1.1, cy - h * 0.30 + headR * 0.6);
+      ctx.lineTo(cx + headR * 0.4, cy - h * 0.30 - headR * 0.2);
+      ctx.closePath();
+      ctx.fill();
+    }
+    // Body (slight sway with walking phase)
+    var swayX = phase * h * 0.012;
+    ctx.beginPath();
+    ctx.ellipse(cx + swayX, bodyTopY + bodyH * 0.5, bodyW * 0.5, bodyH * 0.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Arms — opposite-phase swing, with light thickness via stroke fallback
+    ctx.lineWidth = Math.max(3, h * 0.04);
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = color;
+    var armSwingL = -phase * 0.6;
+    var armSwingR =  phase * 0.6;
+    function drawArm(side, swing) {
+      var shoulderX = cx + side * bodyW * 0.5 + swayX;
+      var shoulderY = armY;
+      var handX = shoulderX + Math.sin(swing) * armLen * 0.6;
+      var handY = shoulderY + Math.cos(swing) * armLen;
+      ctx.beginPath();
+      ctx.moveTo(shoulderX, shoulderY);
+      ctx.lineTo(handX, handY);
+      ctx.stroke();
+    }
+    drawArm(-1, armSwingL);
+    drawArm( 1, armSwingR);
+    // Legs — opposite-phase to arms
+    ctx.lineWidth = Math.max(4, h * 0.05);
+    var legSwingL =  phase * 0.5;
+    var legSwingR = -phase * 0.5;
+    function drawLeg(side, swing) {
+      var hipX = cx + side * bodyW * 0.28 + swayX;
+      var hipY = legY;
+      var footX = hipX + Math.sin(swing) * legH * 0.5;
+      var footY = hipY + Math.cos(swing) * legH;
+      ctx.beginPath();
+      ctx.moveTo(hipX, hipY);
+      ctx.lineTo(footX, footY);
+      ctx.stroke();
+    }
+    drawLeg(-1, legSwingL);
+    drawLeg( 1, legSwingR);
+  }
+
+  // 3rd-person HARUKI approach — walks toward the camera (growing larger) on
+  // the red suburb background. Runs after the FPS approach hands off, so
+  // the player sees themselves enter the area, then sees HARUKI walking
+  // toward them before the lightning + portrait reveal.
+  function runHbcCharApproach(startDelayMs, durationMs) {
+    var cvs = el('hbcCharCanvas');
+    if (!cvs) return function () {};
+    var ctx = cvs.getContext('2d');
+    var dpr = Math.min(window.devicePixelRatio || 1, 1.25);
+    function resize() {
+      var cw = cvs.clientWidth || window.innerWidth;
+      var ch = cvs.clientHeight || window.innerHeight;
+      cvs.width = Math.max(280, Math.floor(cw * dpr));
+      cvs.height = Math.max(200, Math.floor(ch * dpr));
+    }
+    resize();
+    window.addEventListener('resize', resize);
+    var cancelled = false;
+    var rafId = 0;
+    var fadeT = null;
+    var startTime = null;
+    var showT = setTimeout(function () {
+      if (cancelled) return;
+      cvs.classList.add('show');
+      startTime = performance.now();
+      rafId = requestAnimationFrame(step);
+    }, startDelayMs);
+    function cancel() {
+      cancelled = true;
+      if (rafId) cancelAnimationFrame(rafId);
+      if (fadeT) clearTimeout(fadeT);
+      if (showT) clearTimeout(showT);
+      try { cvs.classList.remove('show'); } catch (e) {}
+      try { window.removeEventListener('resize', resize); } catch (e) {}
+    }
+    fadeT = setTimeout(function () {
+      try { cvs.classList.remove('show'); } catch (e) {}
+      setTimeout(cancel, 800);
+    }, startDelayMs + durationMs);
+    function step(now) {
+      if (cancelled) return;
+      var t = (now - startTime) / 1000;
+      var t01 = Math.min(1, (now - startTime) / durationMs);
+      var w = cvs.width, h = cvs.height;
+      ctx.clearRect(0, 0, w, h);
+      // Ground vignette so the figure feels rooted in the world without
+      // hiding the underlying CSS sky.
+      var grdGround = ctx.createLinearGradient(0, h * 0.5, 0, h);
+      grdGround.addColorStop(0, 'rgba(0,0,0,0)');
+      grdGround.addColorStop(1, 'rgba(0,0,0,0.6)');
+      ctx.fillStyle = grdGround;
+      ctx.fillRect(0, h * 0.5, w, h * 0.5);
+      // HARUKI walks from far → close. Scale grows over time.
+      var scale = 0.25 + t01 * 1.4;
+      var figHeight = Math.min(w, h) * scale;
+      var cx = w / 2 + Math.sin(t * 1.3) * w * 0.04;
+      var cy = h * (0.62 - 0.05 * (1 - t01));
+      drawWalkingFigure(ctx, cx, cy, figHeight, t, {
+        color: 'rgba(8,4,4,0.92)',
+        facing: 'forward',
+        hair: true
+      });
+      // Red rim halo as she gets closer
+      if (t01 > 0.5) {
+        var glow = ctx.createRadialGradient(cx, cy, figHeight * 0.4,
+                                             cx, cy, figHeight * 1.1);
+        glow.addColorStop(0, 'rgba(180,30,30,0)');
+        glow.addColorStop(1, 'rgba(180,30,30,' + ((t01 - 0.5) * 0.5).toFixed(2) + ')');
+        ctx.fillStyle = glow;
+        ctx.fillRect(0, 0, w, h);
+      }
+      rafId = requestAnimationFrame(step);
+    }
+    return cancel;
+  }
+
   // Mini FPS raycaster for the boss-reveal cutscene. Plays at the start of the
   // cutscene to show the player walking down a dark suburban corridor toward
   // HARUKI before the lightning/silhouette reveal. Fades out via CSS after
@@ -2986,6 +3144,11 @@
     // Runs alongside the first text beats (LEVEL 9 → 月のような何か), then
     // fades out before the lightning + portrait reveal at ~4.2s.
     var hbcFpsCancel = runHbcFpsApproach(3800);
+    // 3rd-person character approach: HARUKI walks toward the camera. Starts
+    // at 3.0s (right as the FPS canvas begins to fade) and runs for 3s.
+    // Visible behind the silhouette/lightning reveal so the player can clearly
+    // see HER physically walking toward them.
+    var hbcCharCancel = runHbcCharApproach(3000, 3000);
     if (audioInitialized) {
       GameEngine.startLoop('wind');
       GameEngine.playSound('breath_drone');
@@ -3015,6 +3178,7 @@
       cancelled = true;
       for (var ti = 0; ti < timers.length; ti++) clearTimeout(timers[ti]);
       try { if (hbcFpsCancel) hbcFpsCancel(); } catch (e) {}
+      try { if (hbcCharCancel) hbcCharCancel(); } catch (e) {}
       hideOverlay('harukiBossCutscene');
       if (audioInitialized) GameEngine.stopLoop('wind');
       _inCinematic = false;
@@ -3161,6 +3325,80 @@
     return cancel;
   }
 
+  // 3rd-person walk-away — player silhouette walks away from camera into a
+  // bright sunrise. Mirror of the boss approach (shrinking instead of growing).
+  function runEsCharWalkaway(startDelayMs, durationMs) {
+    var cvs = el('esCharCanvas');
+    if (!cvs) return function () {};
+    var ctx = cvs.getContext('2d');
+    var dpr = Math.min(window.devicePixelRatio || 1, 1.25);
+    function resize() {
+      var cw = cvs.clientWidth || window.innerWidth;
+      var ch = cvs.clientHeight || window.innerHeight;
+      cvs.width = Math.max(280, Math.floor(cw * dpr));
+      cvs.height = Math.max(200, Math.floor(ch * dpr));
+    }
+    resize();
+    window.addEventListener('resize', resize);
+    var cancelled = false;
+    var rafId = 0;
+    var fadeT = null;
+    var startTime = null;
+    var showT = setTimeout(function () {
+      if (cancelled) return;
+      cvs.classList.add('show');
+      startTime = performance.now();
+      rafId = requestAnimationFrame(step);
+    }, startDelayMs);
+    function cancel() {
+      cancelled = true;
+      if (rafId) cancelAnimationFrame(rafId);
+      if (fadeT) clearTimeout(fadeT);
+      if (showT) clearTimeout(showT);
+      try { cvs.classList.remove('show'); } catch (e) {}
+      try { window.removeEventListener('resize', resize); } catch (e) {}
+    }
+    fadeT = setTimeout(function () {
+      try { cvs.classList.remove('show'); } catch (e) {}
+      setTimeout(cancel, 900);
+    }, startDelayMs + durationMs);
+    function step(now) {
+      if (cancelled) return;
+      var t = (now - startTime) / 1000;
+      var t01 = Math.min(1, (now - startTime) / durationMs);
+      var w = cvs.width, h = cvs.height;
+      ctx.clearRect(0, 0, w, h);
+      // Warm ground horizon
+      var grdGround = ctx.createLinearGradient(0, h * 0.5, 0, h);
+      grdGround.addColorStop(0, 'rgba(120, 80, 40, 0)');
+      grdGround.addColorStop(1, 'rgba(40, 24, 8, 0.55)');
+      ctx.fillStyle = grdGround;
+      ctx.fillRect(0, h * 0.5, w, h * 0.5);
+      // Player walks AWAY: scale shrinks over time
+      var scale = 0.95 - t01 * 0.65;
+      var figHeight = Math.min(w, h) * scale;
+      var cx = w / 2 + Math.sin(t * 0.9) * w * 0.02;
+      var cy = h * (0.7 - t01 * 0.18);
+      drawWalkingFigure(ctx, cx, cy, figHeight, t, {
+        color: 'rgba(12,8,4,0.88)',
+        facing: 'away',
+        hair: false
+      });
+      // Sunrise bloom around the figure as they walk further
+      if (t01 > 0.3) {
+        var bloomR = Math.min(w, h) * (0.25 + t01 * 0.6);
+        var bloom = ctx.createRadialGradient(cx, cy, figHeight * 0.4,
+                                              cx, cy, bloomR);
+        bloom.addColorStop(0, 'rgba(255,240,200,0)');
+        bloom.addColorStop(1, 'rgba(255,240,200,' + ((t01 - 0.3) * 0.5).toFixed(2) + ')');
+        ctx.fillStyle = bloom;
+        ctx.fillRect(0, 0, w, h);
+      }
+      rafId = requestAnimationFrame(step);
+    }
+    return cancel;
+  }
+
   // ── Ending Sequence (after final boss defeat) ──
   // Plays when the player passes the X tile on Lv9 after killing the boss.
   function playEndingSequence(onDone) {
@@ -3173,6 +3411,9 @@
     // FPS walk-out — player exits the corridor into sunrise during the first
     // ~3.5s, matching the "朝が来た" beat. Fades out before "歩き続ける".
     var esFpsCancel = runEsFpsWalkout(3500);
+    // 3rd-person walk-away character animation: starts at 3.0s as the FPS
+    // canvas begins fading, plays for ~5s through the "歩き続ける" beat.
+    var esCharCancel = runEsCharWalkaway(3000, 5000);
     if (audioInitialized) {
       GameEngine.playSound('level_clear');
       GameEngine.playSound('stinger');
@@ -3194,6 +3435,7 @@
       cancelled = true;
       for (var ti = 0; ti < timers.length; ti++) clearTimeout(timers[ti]);
       try { if (esFpsCancel) esFpsCancel(); } catch (e) {}
+      try { if (esCharCancel) esCharCancel(); } catch (e) {}
       hideOverlay('endingSequence');
       _inCinematic = false;
       try { overlay.removeEventListener('click', finish); } catch (e) {}

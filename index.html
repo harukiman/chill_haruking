@@ -20,7 +20,7 @@
   <meta name="twitter:title" content="THE BACKROOMS — featuring HARUKI">
   <meta name="twitter:description" content="一人称モバイル探索ホラー。Level 0 から no-clip で階層を降下。壁の向こうにカレが待つ。">
   <title>THE BACKROOMS</title>
-  <link rel="stylesheet" href="assets/css/game.css?v=120">
+  <link rel="stylesheet" href="assets/css/game.css?v=121">
 </head>
 <body oncontextmenu="return false;">
 
@@ -319,6 +319,8 @@
   <div id="harukiBossCutscene" class="overlay haruki-boss-cutscene" style="display:none;">
     <!-- FPS approach: opens with player walking through dark suburb corridor -->
     <canvas id="hbcFpsCanvas" class="hbc-fps-canvas"></canvas>
+    <!-- Character animation: HARUKI silhouette walking toward camera in 3rd person -->
+    <canvas id="hbcCharCanvas" class="hbc-char-canvas"></canvas>
     <div class="hbc-sky"></div>
     <div class="hbc-lightning" id="hbcLightning"></div>
     <div class="hbc-rain"></div>
@@ -338,6 +340,8 @@
   <div id="endingSequence" class="overlay ending-sequence" style="display:none;">
     <!-- FPS walk-out: opens with player stepping out of the corridor toward sunrise -->
     <canvas id="esFpsCanvas" class="es-fps-canvas"></canvas>
+    <!-- Character animation: player silhouette walks away from camera into sunrise -->
+    <canvas id="esCharCanvas" class="es-char-canvas"></canvas>
     <div class="es-sky"></div>
     <div class="es-sun"></div>
     <div class="es-ground"></div>
@@ -905,8 +909,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="assets/js/engine.js?v=120"></script>
-  <script src="assets/js/game.js?v=120"></script>
+  <script src="assets/js/engine.js?v=121"></script>
+  <script src="assets/js/game.js?v=121"></script>
 
   <!-- POST-LOAD VERIFICATION + DIRECT BINDING FALLBACK
        After game.js IIFE runs, this script confirms __titleAction is the real one.
