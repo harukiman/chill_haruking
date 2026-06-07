@@ -1165,16 +1165,23 @@
     // game.js sets entity._lastHitAt = performance.now() on damage.
     // We tint the sprite bounding box red for ~150 ms so the player
     // gets unmistakeable visual feedback that the shot connected.
+    // Crit hits (wMul >= 1.4) flash orange-yellow at higher alpha so
+    // the player learns which weapons hit the weak point.
     if (entity._lastHitAt) {
       var sinceHit = performance.now() - entity._lastHitAt;
-      if (sinceHit < 150) {
-        var flashA = (1 - sinceHit / 150) * 0.55;
-        ctx.globalAlpha = flashA;
-        ctx.globalCompositeOperation = 'lighter';
-        ctx.fillStyle = '#ff4040';
-        ctx.fillRect(drawStartX, drawStartY, spriteWidth, spriteHeight);
-        ctx.globalCompositeOperation = 'source-over';
-        ctx.globalAlpha = 1.0;
+      if (sinceHit < 200) {
+        var isCritHit = entity._hitWasCrit;
+        var flashDur = isCritHit ? 200 : 150;
+        var maxA = isCritHit ? 0.80 : 0.55;
+        var flashA = (1 - sinceHit / flashDur) * maxA;
+        if (flashA > 0) {
+          ctx.globalAlpha = flashA;
+          ctx.globalCompositeOperation = 'lighter';
+          ctx.fillStyle = isCritHit ? '#ffb040' : '#ff4040';
+          ctx.fillRect(drawStartX, drawStartY, spriteWidth, spriteHeight);
+          ctx.globalCompositeOperation = 'source-over';
+          ctx.globalAlpha = 1.0;
+        }
       }
     }
 

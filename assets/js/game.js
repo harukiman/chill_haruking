@@ -1840,6 +1840,10 @@
     // Mark the entity as just hit — renderSprite reads _lastHitAt
     // and tints it red briefly, sells the hit-confirmation feel.
     bestE._lastHitAt = performance.now();
+    // Stronger hit-flash for weak-point hits (wMul >= 1.5) so the
+    // player gets visual confirmation that this weapon works on this
+    // enemy. renderSprite reads _hitWasCrit alongside _lastHitAt.
+    bestE._hitWasCrit = wMul >= 1.4;
     // Crit if the weapon multiplier is > 1.2 against this enemy.
     var isCrit = wMul >= 1.4;
     // Damage popup always shown for the hit. On kill we ALSO spawn a
