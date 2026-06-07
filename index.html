@@ -20,7 +20,7 @@
   <meta name="twitter:title" content="THE BACKROOMS — featuring HARUKI">
   <meta name="twitter:description" content="一人称モバイル探索ホラー。Level 0 から no-clip で階層を降下。壁の向こうにカレが待つ。">
   <title>THE BACKROOMS</title>
-  <link rel="stylesheet" href="assets/css/game.css?v=136">
+  <link rel="stylesheet" href="assets/css/game.css?v=137">
 </head>
 <body oncontextmenu="return false;">
 
@@ -924,8 +924,19 @@
       <div class="item-use-icon" id="itemUseIcon">📦</div>
       <h2 class="item-use-name" id="itemUseName">アイテム名</h2>
       <p class="item-use-desc" id="itemUseDesc">説明文</p>
+      <div class="iu-assign-section">
+        <p class="iu-assign-label">D-pad / 十字キーに割当</p>
+        <div class="iu-assign-grid">
+          <button class="iu-assign-btn iu-up"    type="button" data-iu-dir="up">↑</button>
+          <button class="iu-assign-btn iu-left"  type="button" data-iu-dir="left">←</button>
+          <button class="iu-assign-btn iu-clear" type="button" data-iu-dir="clear">解除</button>
+          <button class="iu-assign-btn iu-right" type="button" data-iu-dir="right">→</button>
+          <button class="iu-assign-btn iu-down"  type="button" data-iu-dir="down">↓</button>
+        </div>
+        <p class="iu-assign-hint" id="iuAssignHint">— 未割当</p>
+      </div>
       <div class="item-use-buttons">
-        <button id="itemUseCancelBtn" class="iu-btn cancel" type="button">キャンセル</button>
+        <button id="itemUseCancelBtn" class="iu-btn cancel" type="button">閉じる</button>
         <button id="itemUseConfirmBtn" class="iu-btn confirm" type="button">使用する</button>
       </div>
     </div>
@@ -941,8 +952,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="assets/js/engine.js?v=136"></script>
-  <script src="assets/js/game.js?v=136"></script>
+  <script src="assets/js/engine.js?v=137"></script>
+  <script src="assets/js/game.js?v=137"></script>
 
   <!-- POST-LOAD VERIFICATION + DIRECT BINDING FALLBACK
        After game.js IIFE runs, this script confirms __titleAction is the real one.

@@ -3304,6 +3304,58 @@ button {
   width: 100%;
   margin-top: 4px;
 }
+/* D-pad assignment grid inside the item-use modal — tap a direction to bind
+   the current item to that slot in the dpad quick-bar. */
+.iu-assign-section {
+  margin: 14px 0 6px;
+  padding: 12px 8px 10px;
+  background: rgba(20, 14, 4, 0.55);
+  border: 1px solid rgba(120, 96, 32, 0.3);
+  border-radius: 12px;
+}
+.iu-assign-label {
+  text-align: center;
+  font-size: 11px;
+  color: #b09040;
+  letter-spacing: 0.2em;
+  margin: 0 0 8px;
+}
+.iu-assign-grid {
+  display: grid;
+  grid-template-columns: 48px 48px 48px;
+  grid-template-rows: 40px 40px 40px;
+  gap: 6px;
+  justify-content: center;
+  align-items: center;
+}
+.iu-assign-btn {
+  background: rgba(60, 50, 30, 0.6);
+  color: #d4b340;
+  border: 1px solid rgba(120, 96, 32, 0.5);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 16px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.iu-assign-btn:active {
+  background: rgba(120, 90, 24, 0.8);
+  color: #fff2a0;
+  transform: scale(0.94);
+}
+.iu-assign-btn.iu-up    { grid-column: 2; grid-row: 1; }
+.iu-assign-btn.iu-left  { grid-column: 1; grid-row: 2; }
+.iu-assign-btn.iu-clear { grid-column: 2; grid-row: 2; font-size: 10px; letter-spacing: 0.1em; }
+.iu-assign-btn.iu-right { grid-column: 3; grid-row: 2; }
+.iu-assign-btn.iu-down  { grid-column: 2; grid-row: 3; }
+.iu-assign-btn.bound { background: rgba(160, 130, 40, 0.85); color: #0d0a04; border-color: #f0c850; }
+.iu-assign-hint {
+  text-align: center;
+  font-size: 10px;
+  color: #786020;
+  letter-spacing: 0.1em;
+  margin: 6px 0 0;
+}
 .iu-btn {
   width: 100%;
   min-height: 52px;

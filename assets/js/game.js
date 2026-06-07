@@ -6187,8 +6187,62 @@
     el('itemUseIcon').textContent = it.icon;
     el('itemUseName').textContent = it.name;
     el('itemUseDesc').textContent = it.desc;
+    refreshIuAssignUI();
     showOverlay('itemUseModal');
   }
+
+  // Update the assign-grid in the item-use modal to reflect which directions
+  // (if any) the current item is bound to in the active dpad mode.
+  function refreshIuAssignUI() {
+    var hint = el('iuAssignHint');
+    var dirs = ['up', 'down', 'left', 'right'];
+    var mode = (_pendingItemId && ITEMS[_pendingItemId] && ITEMS[_pendingItemId].category === 'weapon')
+      ? 'weapon' : 'item';
+    var bound = [];
+    var slots = dpadAssignments[mode] || {};
+    dirs.forEach(function (d) {
+      var btn = document.querySelector('.iu-assign-btn.iu-' + d);
+      if (!btn) return;
+      var isBound = slots[d] === _pendingItemId;
+      btn.classList.toggle('bound', isBound);
+      if (isBound) bound.push({ up: '↑', down: '↓', left: '←', right: '→' }[d]);
+    });
+    if (hint) {
+      var modeLabel = mode === 'weapon' ? '武器モード' : 'アイテムモード';
+      hint.textContent = bound.length
+        ? '— ' + modeLabel + ': ' + bound.join(' / ')
+        : '— ' + modeLabel + ': 未割当';
+    }
+  }
+
+  // Bind the current modal item to a dpad direction (or clear all). Persists
+  // immediately so the change is picked up by updateDpadHud next frame.
+  function bindIuAssign(dir) {
+    if (!_pendingItemId) return;
+    var it = ITEMS[_pendingItemId];
+    if (!it) return;
+    var mode = (it.category === 'weapon') ? 'weapon' : 'item';
+    if (!dpadAssignments[mode]) dpadAssignments[mode] = { up: '', down: '', left: '', right: '' };
+    if (dir === 'clear') {
+      // Remove this item from all 4 dpad slots in its mode
+      ['up','down','left','right'].forEach(function (d) {
+        if (dpadAssignments[mode][d] === _pendingItemId) dpadAssignments[mode][d] = '';
+      });
+      toast('割当を解除');
+    } else {
+      // Replace whatever was there with this item
+      dpadAssignments[mode][dir] = _pendingItemId;
+      var arrow = { up: '↑', down: '↓', left: '←', right: '→' }[dir];
+      toast(it.name + ' を ' + arrow + ' に割当');
+    }
+    try {
+      localStorage.setItem('bk_dpad_assignments_v1', JSON.stringify(dpadAssignments));
+    } catch (e) {}
+    if (audioInitialized) try { GameEngine.playSound('ui_tap'); } catch (e) {}
+    refreshIuAssignUI();
+    updateDpadHud();
+  }
+  window.bindIuAssign = bindIuAssign;
   function closeItemUseModal() {
     _pendingItemId = null;
     hideOverlay('itemUseModal');
@@ -9908,6 +9962,17 @@
   //  EVENT BINDINGS
   // ============================================================
   function bindEvents() {
+    // Item-use modal: D-pad assignment buttons
+    var iuAssignBtns = document.querySelectorAll('.iu-assign-btn');
+    for (var ai = 0; ai < iuAssignBtns.length; ai++) {
+      (function (btn) {
+        btn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          bindIuAssign(btn.getAttribute('data-iu-dir'));
+        });
+      })(iuAssignBtns[ai]);
+    }
+
     // Shop overlay close + tab switching
     var scBtn = el('shopCloseBtn');
     if (scBtn) scBtn.addEventListener('click', closeShop);
