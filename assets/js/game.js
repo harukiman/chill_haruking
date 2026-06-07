@@ -13605,6 +13605,15 @@
             dbtn.textContent = '難易度: ' + DIFFICULTIES[nx].name;
             dbtn.classList.toggle('chaos-on', nx === 'chaos');
           }
+          // Per-difficulty hint toast so the player understands what they
+          // signed up for — especially chaos (sparse items per user spec).
+          var DIFF_HINTS = {
+            easy:   'EASY — HP 1.5倍 / 敵速度 0.7倍 / SAN drain 0.5倍',
+            normal: 'NORMAL — 基準値',
+            hard:   'HARD — HP 0.7倍 / 敵速度 1.3倍 / アイテム 85%',
+            chaos:  'CHAOS — HP 0.5倍 / 敵速度 1.8倍 / アイテム 50% / SAN drain 2.5倍'
+          };
+          if (DIFF_HINTS[nx]) toast(DIFF_HINTS[nx]);
           break;
         case 'cheat':
           stage = 'cheat';
