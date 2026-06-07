@@ -1330,12 +1330,33 @@
     if (!alt) return;
     // Remove altar tile so re-prayer isn't possible until next visit.
     currentMap.altarSpots.splice(altarIdx, 1);
+    // Find a walkable tile in the 8-neighborhood of the altar — wrap around
+    // the altar so the boss can never spawn inside a wall.
+    var candidates = [
+      [alt.gx,     alt.gy - 1], // above
+      [alt.gx + 1, alt.gy],     // right
+      [alt.gx - 1, alt.gy],     // left
+      [alt.gx,     alt.gy + 1], // below
+      [alt.gx + 1, alt.gy - 1],
+      [alt.gx - 1, alt.gy - 1],
+      [alt.gx + 1, alt.gy + 1],
+      [alt.gx - 1, alt.gy + 1],
+      [alt.gx,     alt.gy]      // altar tile itself
+    ];
+    var spawnGx = alt.gx, spawnGy = alt.gy;
+    for (var ci = 0; ci < candidates.length; ci++) {
+      var cx = candidates[ci][0], cy = candidates[ci][1];
+      if (cy < 0 || cx < 0 || cy >= currentMap.height || cx >= currentMap.width) continue;
+      var tt = currentMap.tiles[cy] && currentMap.tiles[cy][cx];
+      // tile 0 = open floor (walkable). Anything non-wall accepted.
+      if (tt === 0) { spawnGx = cx; spawnGy = cy; break; }
+    }
     // Spawn the hidden boss as a haruki_boss with elevated HP and an inflated
     // bossHp so it lives through several full magazines.
     entities.push({
       type: 'haruki_boss',
-      x: (alt.gx + 1) * TS + TS / 2,
-      y: (alt.gy + 1) * TS + TS / 2,
+      x: spawnGx * TS + TS / 2,
+      y: spawnGy * TS + TS / 2,
       angle: 0,
       state: 'wait',
       stateTimer: 0,
