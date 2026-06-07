@@ -58,6 +58,12 @@ body {
   z-index: 25;
   pointer-events: none;
 }
+/* CRITICAL: every descendant must also be non-interactive. The vitalBars
+   container sits over #touchZoneLeft (upper-left 50% joystick zone) — any
+   child without explicit pointer-events: none falls back to 'auto' and
+   eats the touch before the joystick handler sees it ─ symptom: 「左上に
+   常に入力が入る / 勝手に移動」. */
+#vitalBars * { pointer-events: none; }
 #vitalBars.show { display: flex; }
 
 .vital-row {
