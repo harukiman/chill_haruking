@@ -173,9 +173,17 @@ body {
   transform: scale(0.94);
 }
 .weapon-attack-btn.empty {
-  background: radial-gradient(circle, #303030 0%, #181818 65%, #080808 100%);
-  border-color: #555;
+  background: radial-gradient(circle, #2a1a1a 0%, #1a0808 65%, #080000 100%);
+  border-color: #a02828;
   opacity: 0.7;
+  box-shadow: 0 0 12px rgba(160, 30, 30, 0.5);
+}
+.weapon-attack-btn.empty .wab-count {
+  color: #ff8080;
+  font-weight: 900;
+}
+.weapon-attack-btn.empty .wab-icon {
+  filter: grayscale(1) brightness(0.6);
 }
 .wab-icon {
   font-size: 30px;
