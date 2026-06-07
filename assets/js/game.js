@@ -3223,6 +3223,138 @@
     }, 1500);
   }
 
+  // Mini FPS raycaster for level-reach cinematic: brief tumble / descent
+  // shot themed to the level being entered. Tinted per-level so each
+  // transition feels distinct.
+  function runLrFpsDescent(levelDef, durationMs) {
+    var cvs = el('lrFpsCanvas');
+    if (!cvs) return function () {};
+    var ctx = cvs.getContext('2d');
+    var dpr = Math.min(window.devicePixelRatio || 1, 1.25);
+    function resize() {
+      var cw = cvs.clientWidth || window.innerWidth;
+      var ch = cvs.clientHeight || window.innerHeight;
+      cvs.width = Math.max(280, Math.floor(cw * dpr));
+      cvs.height = Math.max(200, Math.floor(ch * dpr));
+    }
+    resize();
+    cvs.classList.add('show');
+    window.addEventListener('resize', resize);
+    // Per-level palette: try to pick a representative wall tone from levelDef
+    // colors, else fall back to backrooms yellow.
+    var wallR = 212, wallG = 170, wallB = 58;
+    if (levelDef) {
+      if (levelDef.id === 4) { wallR = 220; wallG = 230; wallB = 240; }   // hospital
+      else if (levelDef.id === 5) { wallR = 100; wallG = 80; wallB = 60; } // mansion
+      else if (levelDef.id === 6) { wallR = 80;  wallG = 120; wallB = 80; } // hospital green
+      else if (levelDef.id === 7) { wallR = 70;  wallG = 60;  wallB = 50; } // suburb dim
+      else if (levelDef.id === 8) { wallR = 130; wallG = 70;  wallB = 90; } // gallery
+      else if (levelDef.id === 9) { wallR = 80;  wallG = 30;  wallB = 30; } // suburbs / boss
+      else if (levelDef.id === 11) { wallR = 30;  wallG = 90;  wallB = 130; } // ocean
+      else if (levelDef.id === 12) { wallR = 200; wallG = 200; wallB = 200; } // library
+      else if (levelDef.id === 14) { wallR = 40;  wallG = 80;  wallB = 100; } // trench
+      else if (levelDef.id === 15) { wallR = 80;  wallG = 130; wallB = 70; }  // garden
+    }
+    var MAP_W = 5, MAP_H = 40;
+    var map = new Uint8Array(MAP_W * MAP_H);
+    for (var my = 0; my < MAP_H; my++) {
+      for (var mx = 0; mx < MAP_W; mx++) {
+        map[my * MAP_W + mx] = (mx === 0 || mx === MAP_W - 1) ? 1 : 0;
+      }
+    }
+    var startT = performance.now();
+    var lastNow = startT;
+    var totalProgress = 0;
+    var cancelled = false;
+    var rafId = 0;
+    var fadeT = null;
+    function cancel() {
+      cancelled = true;
+      if (rafId) cancelAnimationFrame(rafId);
+      if (fadeT) clearTimeout(fadeT);
+      try { cvs.classList.remove('show'); } catch (e) {}
+      try { window.removeEventListener('resize', resize); } catch (e) {}
+    }
+    fadeT = setTimeout(function () {
+      try { cvs.classList.remove('show'); } catch (e) {}
+      setTimeout(cancel, 600);
+    }, durationMs);
+    function step(now) {
+      if (cancelled) return;
+      var dt = Math.min(0.05, (now - lastNow) / 1000);
+      lastNow = now;
+      var t01 = (now - startT) / durationMs;
+      // Tumble: fast walk with camera roll oscillation — feels like falling
+      // through the no-clip into the new level.
+      var speed = 3.5;
+      totalProgress += speed * dt;
+      var py = 1 + (MAP_H - 4) * Math.min(0.97, totalProgress / 12);
+      var px = MAP_W / 2 + Math.sin(now * 0.012) * 0.15;
+      var w = cvs.width, h = cvs.height;
+      var rollAngle = Math.sin(now * 0.007) * 0.45 * (1 - t01 * 0.6);
+      // Sky/floor — dark with subtle warmth
+      ctx.fillStyle = '#040405';
+      ctx.fillRect(0, 0, w, h);
+      var bobY = Math.sin(now * 0.018) * 0.08;
+      ctx.save();
+      ctx.translate(w / 2, h / 2);
+      ctx.rotate(rollAngle);
+      ctx.translate(-w / 2, -h / 2);
+      var FOV = Math.PI / 2.5;
+      var stripW = 4;
+      var rays = Math.ceil(w / stripW);
+      var camAngle = Math.PI / 2;
+      for (var i = 0; i < rays; i++) {
+        var sx = i * stripW;
+        var rayAng = camAngle - FOV / 2 + (i / rays) * FOV;
+        var rcos = Math.cos(rayAng), rsin = Math.sin(rayAng);
+        var mapX = Math.floor(px), mapY = Math.floor(py);
+        var ddx = Math.abs(1 / rcos) || 1e9;
+        var ddy = Math.abs(1 / rsin) || 1e9;
+        var stepX, stepY, sdX, sdY;
+        if (rcos < 0) { stepX = -1; sdX = (px - mapX) * ddx; }
+        else          { stepX = 1;  sdX = (mapX + 1 - px) * ddx; }
+        if (rsin < 0) { stepY = -1; sdY = (py - mapY) * ddy; }
+        else          { stepY = 1;  sdY = (mapY + 1 - py) * ddy; }
+        var hit = 0, side = 0, safety = 60;
+        while (!hit && safety-- > 0) {
+          if (sdX < sdY) { sdX += ddx; mapX += stepX; side = 0; }
+          else           { sdY += ddy; mapY += stepY; side = 1; }
+          if (mapX < 0 || mapY < 0 || mapX >= MAP_W || mapY >= MAP_H) { hit = 1; break; }
+          if (map[mapY * MAP_W + mapX] === 1) hit = 1;
+        }
+        var dist = side === 0
+          ? (mapX - px + (1 - stepX) / 2) / rcos
+          : (mapY - py + (1 - stepY) / 2) / rsin;
+        dist = Math.max(0.1, dist);
+        var wallH = Math.min(h * 4, h / dist);
+        var drawStart = (h - wallH) / 2 + bobY * h;
+        var fog = Math.max(0.1, 1 - dist / 12);
+        var base = side === 1 ? 0.7 : 1.0;
+        ctx.fillStyle = 'rgb(' + Math.floor(wallR * fog * base) + ',' +
+                                  Math.floor(wallG * fog * base) + ',' +
+                                  Math.floor(wallB * fog * base) + ')';
+        ctx.fillRect(sx, drawStart, stripW + 1, wallH);
+      }
+      ctx.restore();
+      // Flash flicker on entry
+      if (Math.random() < 0.12) {
+        ctx.fillStyle = 'rgba(255,255,255,0.06)';
+        ctx.fillRect(0, 0, w, h);
+      }
+      // Vignette pull
+      var grd = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.2,
+                                          w / 2, h / 2, Math.max(w, h) * 0.7);
+      grd.addColorStop(0, 'rgba(0,0,0,0)');
+      grd.addColorStop(1, 'rgba(0,0,0,0.85)');
+      ctx.fillStyle = grd;
+      ctx.fillRect(0, 0, w, h);
+      rafId = requestAnimationFrame(step);
+    }
+    rafId = requestAnimationFrame(step);
+    return cancel;
+  }
+
   function playLevelReachCinematic(def, onDone) {
     el('lrLevelNum').textContent = def.name;
     el('lrSubtitle').textContent = def.subtitle;
@@ -3230,6 +3362,9 @@
     showOverlay('levelReachCinematic');
     if (audioInitialized) GameEngine.playSound('stinger');
     var lrOverlay = el('levelReachCinematic');
+    // FPS descent shot for the first 1.6s — fades behind title card text.
+    // Cancelled on advance() so skipping doesn't leave a RAF running.
+    var lrFpsCancel = runLrFpsDescent(def, 1600);
     // Clean up previous listeners (each setLevel re-uses this overlay)
     if (lrOverlay._cleanup) { try { lrOverlay._cleanup(); } catch (e) {} }
     var done = false;
@@ -3238,6 +3373,7 @@
     var advance = function () {
       if (done || !canAdvance) return;
       done = true;
+      try { if (lrFpsCancel) lrFpsCancel(); } catch (e) {}
       lrOverlay.removeEventListener('click', advance);
       lrOverlay.removeEventListener('touchstart', advance);
       lrOverlay.style.pointerEvents = 'none';

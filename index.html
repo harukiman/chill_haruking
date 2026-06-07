@@ -20,7 +20,7 @@
   <meta name="twitter:title" content="THE BACKROOMS — featuring HARUKI">
   <meta name="twitter:description" content="一人称モバイル探索ホラー。Level 0 から no-clip で階層を降下。壁の向こうにカレが待つ。">
   <title>THE BACKROOMS</title>
-  <link rel="stylesheet" href="assets/css/game.css?v=116">
+  <link rel="stylesheet" href="assets/css/game.css?v=117">
 </head>
 <body oncontextmenu="return false;">
 
@@ -358,6 +358,9 @@
 
   <!-- Level Reach Cinematic (brief title card) -->
   <div id="levelReachCinematic" class="overlay level-reach-overlay" style="display:none;">
+    <!-- FPS descent: brief raycaster shot of the player falling/tumbling into
+         the new level. Sits behind the title card text. -->
+    <canvas id="lrFpsCanvas" class="lr-fps-canvas"></canvas>
     <div class="lr-bar top"></div>
     <div class="lr-bar bottom"></div>
     <div class="lr-content">
@@ -898,8 +901,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="assets/js/engine.js?v=116"></script>
-  <script src="assets/js/game.js?v=116"></script>
+  <script src="assets/js/engine.js?v=117"></script>
+  <script src="assets/js/game.js?v=117"></script>
 
   <!-- POST-LOAD VERIFICATION + DIRECT BINDING FALLBACK
        After game.js IIFE runs, this script confirms __titleAction is the real one.

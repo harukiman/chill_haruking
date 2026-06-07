@@ -1065,6 +1065,23 @@ button {
   z-index: 86;
   pointer-events: none;
 }
+/* FPS descent canvas — brief raycaster shot of falling/tumbling into the
+   new level. Sits behind .lr-content, fades in then out as the title card
+   appears. */
+.lr-fps-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  image-rendering: pixelated;
+  z-index: 0;
+  opacity: 0;
+  transition: opacity 500ms ease-out;
+  pointer-events: none;
+  background: transparent;
+}
+.lr-fps-canvas.show { opacity: 0.85; }
 .lr-bar {
   position: absolute;
   left: 0; right: 0;
