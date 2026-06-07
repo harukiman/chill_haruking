@@ -4932,6 +4932,15 @@
       coinNumEl.textContent = player.coins || 0;
       player._hudCache.coins = player.coins;
     }
+    // ∞ 永遠の護符 indicator — once per state change, not per-frame DOM hit.
+    var charmRow = el('vitalCharmRow');
+    if (charmRow) {
+      var charmNow = hasEternalCharm();
+      if (player._hudCache.charm !== charmNow) {
+        charmRow.style.display = charmNow ? 'flex' : 'none';
+        player._hudCache.charm = charmNow;
+      }
+    }
 
     // HP/SAN screen state effects
     var hpFx = el('hpScreenEffect');
