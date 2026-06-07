@@ -2290,7 +2290,9 @@ button {
   box-shadow:
     inset 0 1px 0 rgba(240, 220, 138, 0.15),
     0 2px 8px rgba(0, 0, 0, 0.45);
-  overflow: hidden;
+  /* No overflow:hidden — the count badge intentionally sits in the corner
+     and used to get clipped. Slot still keeps its rounded shape via the
+     ::before highlight + the border-radius below. */
   padding-bottom: 14px;
 }
 .inv-slot::before {
@@ -2323,8 +2325,10 @@ button {
 }
 .inv-slot .inv-count {
   position: absolute;
-  top: -4px;
-  right: -4px;
+  /* Inside the slot, top-right — was -4/-4 which got clipped by the
+     parent's overflow:hidden. */
+  top: 4px;
+  right: 4px;
   font-size: 11px;
   color: #fff;
   font-weight: bold;
@@ -2335,15 +2339,25 @@ button {
   text-align: center;
   box-shadow: 0 1px 4px rgba(180, 0, 0, 0.5);
   border: 1.5px solid #0d0a04;
+  z-index: 2;
+}
+/* Ammo badge for weapons — same shape but yellow/black to distinguish from
+   the red consumable count badge, and big enough to fit "×N" comfortably. */
+.inv-slot .inv-count.ammo {
+  background: linear-gradient(180deg, #ffd070 0%, #c89a30 100%);
+  color: #0d0a04;
+  border-color: #5a4408;
+  box-shadow: 0 1px 4px rgba(212, 179, 64, 0.55);
 }
 .inv-slot .inv-perm {
   position: absolute;
-  top: -2px;
-  right: -2px;
+  top: 2px;
+  right: 4px;
   font-size: 18px;
   font-weight: bold;
   color: #f0dc8a;
   text-shadow: 0 1px 4px rgba(212, 179, 64, 0.6);
+  z-index: 2;
 }
 .inv-slot .inv-state {
   position: absolute;
