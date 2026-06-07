@@ -882,8 +882,11 @@
         // Safe zone tile (11): warm golden glow distinct from regular floor
         var floorTile = tiles[fgy][fgx];
         if (floorTile === 11) {
-          fR = 180; fG = 150; bg = 80;
-          fB = 80;
+          // Typo cleanup: 「bg = 80」 was leaking a global; combined with
+          // the following 「fB = 80」 it accidentally set fB correctly so
+          // visuals were fine, but a stray global variable lingered every
+          // frame. Now a single clean fR/fG/fB triple.
+          fR = 180; fG = 150; fB = 80;
           // Pulsing intensity
           var safePulse = 0.85 + Math.sin(nowTime * 1.5 + (fgx + fgy) * 0.5) * 0.15;
           fR = (fR * safePulse) | 0;
