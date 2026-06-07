@@ -3339,11 +3339,15 @@
       GameEngine.playSound('jumpscare');
       GameEngine.shakeScreen(15, 0.6);
     }
-    // Entity-specific icons
+    // Entity-specific icons. Added entries for the new 2026-06 cast
+    // (witness/lurker/shadow/drowned/vinewalker/civilian) so the
+    // encounter card doesn't default to '⚠' for them.
     var entityIcons = {
       hound: '🐺', smiler: '😬', skinstealer: '🧥', partygoer: '🎉',
       crawler: '🕷', wretch: '👁', boss: '👑', mrhotel: '🎩',
-      haruki: '👤', haruki_boss: '🩸', faceling: '🫥', echo: '🌀'
+      haruki: '👤', haruki_boss: '🩸', faceling: '🫥', echo: '🌀',
+      witness: '👁‍🗨', lurker: '🕵', shadow: '🌑',
+      drowned: '🫧', vinewalker: '🌿', civilian: '🧍'
     };
     el('encounterShape').textContent = entityIcons[entityType] || '⚠';
     el('encounterName').textContent = intro.name;
