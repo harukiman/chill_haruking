@@ -11892,7 +11892,9 @@
           coins: player.coins || 0,
           flashlightOn: player.flashlightOn,
           flashlightBattery: player.flashlightBattery || 0,
-          radioOn: player.radioOn
+          radioOn: player.radioOn,
+          compassOn: player.compassOn || false,
+          equippedWeapon: player.equippedWeapon || null
         },
         visitedLevels: visitedLevels,
         clearedLevels: clearedLevels,
@@ -11954,6 +11956,8 @@
       player.flashlightOn = data.player.flashlightOn || false;
       player.flashlightBattery = data.player.flashlightBattery || 0;
       player.radioOn = data.player.radioOn || false;
+      player.compassOn = data.player.compassOn || false;
+      player.equippedWeapon = data.player.equippedWeapon || null;
       visitedLevels = data.visitedLevels || {};
       clearedLevels = data.clearedLevels || {};
       discoveredNotes = data.discoveredNotes || [];
