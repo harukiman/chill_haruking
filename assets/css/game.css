@@ -387,6 +387,73 @@ body {
   .wcf-text { font-size: 20px; }
 }
 
+/* Boss HP banner — top-of-screen golden HP bar shown while a boss is
+   alive on this level. Hidden by default; toggled by per-frame HUD code. */
+.boss-hp-banner {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(78vw, 480px);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 14px 10px;
+  background: linear-gradient(180deg, rgba(40, 6, 6, 0.92) 0%, rgba(20, 4, 4, 0.92) 100%);
+  border: 1px solid rgba(220, 180, 60, 0.6);
+  border-radius: 8px;
+  box-shadow:
+    0 0 18px rgba(220, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 220, 100, 0.15);
+  pointer-events: none;
+  z-index: 19;
+  font-family: 'Hiragino Sans', 'Yu Gothic', sans-serif;
+}
+.boss-hp-banner.show { display: flex; }
+.boss-hp-name {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  color: #f0c850;
+  text-shadow: 0 0 8px rgba(240, 150, 0, 0.7), 1px 1px 0 #000;
+}
+.boss-hp-bar {
+  position: relative;
+  width: 100%;
+  height: 14px;
+  background: rgba(60, 8, 8, 0.95);
+  border: 1px solid #6a3010;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.boss-hp-bar-fill {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  background: linear-gradient(90deg, #ff8030 0%, #ff3030 50%, #c00010 100%);
+  transition: width 0.18s ease-out;
+  box-shadow: 0 0 6px rgba(255, 80, 40, 0.65);
+}
+.boss-hp-bar-shadow {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0) 100%);
+  pointer-events: none;
+}
+.boss-hp-num {
+  font-size: 11px;
+  font-weight: 700;
+  color: #f0c850;
+  letter-spacing: 0.05em;
+}
+.boss-hp-banner.low .boss-hp-bar-fill {
+  background: linear-gradient(90deg, #ff4030 0%, #c00010 100%);
+  animation: boss-hp-pulse 0.6s ease-in-out infinite;
+}
+@keyframes boss-hp-pulse {
+  0%, 100% { box-shadow: 0 0 6px rgba(255, 80, 40, 0.7); }
+  50%      { box-shadow: 0 0 14px rgba(255, 120, 40, 1.0); }
+}
 /* Low-HP vignette — pulses red around screen edges as HP drops */
 .low-hp-vignette {
   position: fixed;

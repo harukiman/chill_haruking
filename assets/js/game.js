@@ -5770,6 +5770,46 @@
         player._hudCache.compassOn = cOn;
       }
     }
+    // ── Boss HP banner ──
+    // Show a top-of-screen HP bar whenever a boss/haruki_boss is alive.
+    // Picks the closest alive boss in case of multiples.
+    var bossEnt = null, bossBestD = Infinity;
+    for (var bi = 0; bi < entities.length; bi++) {
+      var be = entities[bi];
+      if (!be.alive) continue;
+      if (be.type !== 'boss' && be.type !== 'haruki_boss') continue;
+      var bdx = be.x - player.x, bdy = be.y - player.y;
+      var bd = bdx * bdx + bdy * bdy;
+      if (bd < bossBestD) { bossBestD = bd; bossEnt = be; }
+    }
+    var bbn = el('bossHpBanner');
+    if (bbn) {
+      if (bossEnt) {
+        var bMax = bossEnt.bossHpMax || bossEnt.bossHp || 200;
+        var bCur = Math.max(0, bossEnt.bossHp || 0);
+        var bPct = bMax > 0 ? bCur / bMax : 0;
+        if (player._hudCache.bossPct !== bPct || player._hudCache.bossType !== bossEnt.type) {
+          var fillEl = el('bossHpBarFill');
+          var nameEl = el('bossHpName');
+          var numEl = el('bossHpNum');
+          if (fillEl) fillEl.style.width = (bPct * 100).toFixed(1) + '%';
+          if (nameEl) nameEl.textContent =
+            bossEnt._isHidden ? '★ HIDDEN — 祭壇の影' :
+            bossEnt.type === 'haruki_boss' ? 'HARUKI 真' :
+            'THE ARCHITECT';
+          if (numEl) numEl.textContent = Math.ceil(bCur) + ' / ' + bMax;
+          bbn.classList.toggle('low', bPct < 0.30);
+          if (!bbn.classList.contains('show')) bbn.classList.add('show');
+          player._hudCache.bossPct = bPct;
+          player._hudCache.bossType = bossEnt.type;
+        }
+      } else if (player._hudCache.bossPct !== -1) {
+        bbn.classList.remove('show');
+        bbn.classList.remove('low');
+        player._hudCache.bossPct = -1;
+        player._hudCache.bossType = null;
+      }
+    }
 
     // HP/SAN screen state effects
     var hpFx = el('hpScreenEffect');
