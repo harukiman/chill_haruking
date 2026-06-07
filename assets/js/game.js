@@ -7884,7 +7884,23 @@
     // tell the player the weapon is empty (not missing) so the binding feels
     // intentional, not broken. Eternal charm bypasses both checks.
     if (!charmOn && it.category === 'weapon' && count <= 0) {
-      toast(it.name + ': 弾切れ (×0)');
+      // Play the matching empty SE (gun click / blade snap / glass crack)
+      // so the player gets audio confirmation even on the quick-use path.
+      if (audioInitialized) {
+        var QUICK_GUNS = { pistol:1, shotgun:1, revolver:1, void_grenade:1, flare:1 };
+        var QUICK_BLADES = { katana:1, architect_blade:1, revenant_blade:1 };
+        var QUICK_MIRRORS = { mirror:1, mirror_shard:1 };
+        try {
+          if (QUICK_GUNS[itemId])         GameEngine.playSound('empty_click');
+          else if (QUICK_BLADES[itemId])  GameEngine.playSound('weapon_snap');
+          else if (QUICK_MIRRORS[itemId]) GameEngine.playSound('glass_rattle');
+          else                            GameEngine.playSound('empty_click');
+        } catch (e) {}
+      }
+      var quickLabel = ({pistol:1,shotgun:1,revolver:1,void_grenade:1,flare:1})[itemId] ? '弾切れ'
+                     : ({katana:1,architect_blade:1,revenant_blade:1})[itemId] ? '折れた'
+                     : ({mirror:1,mirror_shard:1})[itemId] ? '砕けた' : '使用不可';
+      toast(it.name + ': ' + quickLabel + ' (×0)');
       return;
     }
     if (!charmOn && count <= 0) {
