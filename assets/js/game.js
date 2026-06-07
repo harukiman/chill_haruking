@@ -9093,14 +9093,15 @@
         toast('★ CHEAT MODE 解禁! タイトル画面で切替可能');
       }
     } catch (e) {}
-    // For the TRUE END, play the new animated sunrise/walk-away sequence
-    // before the standard ending cinematic.
+    // For the real TRUE END, play the sunrise/walk-away cinematic sequence
+    // first. truend_bad / frontrooms / loop skip it — the BAD ending should
+    // feel anti-climactic.
     var afterEnding = function () {
       playEndingCinematic(type, function () {
         _showEndingScreen(type);
       });
     };
-    if (type === 'truend' && typeof playEndingSequence === 'function') {
+    if (type === 'true_secret' && typeof playEndingSequence === 'function') {
       playEndingSequence(afterEnding);
     } else {
       afterEnding();
