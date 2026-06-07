@@ -264,6 +264,29 @@
           b = (b * 0.5) | 0;
         }
       }
+      // V8 2026-06-07: Per-tile color jitter so adjacent tiles don't
+      // read as identical 90° blocks. Small ±5% RGB swing keyed on
+      // tile coords gives organic surface variation. User feedback:
+      // 「マップが全体的に四角四角」.
+      var jitterSeed = seededRandom(mapX * 11, mapY * 13, 41);
+      var jitter = (jitterSeed - 0.5) * 0.10; // -0.05 .. 0.05
+      r = Math.max(0, Math.min(255, (r * (1 + jitter)) | 0));
+      g = Math.max(0, Math.min(255, (g * (1 + jitter * 0.85)) | 0));
+      b = Math.max(0, Math.min(255, (b * (1 + jitter * 0.7)) | 0));
+      // V8 2026-06-07: Corner ambient occlusion. Darken the wallX
+      // near the tile edges (0.0 and 1.0) so the seam between two
+      // adjacent tiles reads as a soft shadowed crease rather than a
+      // hard line. The taper is gentle (cosine) so it doesn't look
+      // like a sharp band.
+      if (wallX !== undefined) {
+        var edgeDist = Math.min(wallX, 1 - wallX); // 0 at edges, 0.5 at center
+        if (edgeDist < 0.18) {
+          var aoFactor = 0.78 + 0.22 * (edgeDist / 0.18); // 0.78..1.0
+          r = (r * aoFactor) | 0;
+          g = (g * aoFactor) | 0;
+          b = (b * aoFactor) | 0;
+        }
+      }
     }
 
     // V1: Blood stains
@@ -793,6 +816,20 @@
           ctx.fillStyle = colorLower;
           ctx.fillRect(screenX, splitY + railH, stripWidth, drawEnd - splitY - railH);
         }
+        // V8 2026-06-07: Soft top + bottom edge shading on wall stripes
+        // so the wall doesn't read as a flat solid slab. The top band
+        // simulates ceiling shadow / dado collection of dust; the
+        // bottom band simulates baseboard scuff / floor shadow. Cheap
+        // — two semi-transparent fillRect calls per visible column.
+        // User feedback: 「マップが全体的に四角四角」.
+        if (wallH > 8) {
+          var topBandH = Math.min(8, wallH * 0.12);
+          var botBandH = Math.min(6, wallH * 0.10);
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
+          ctx.fillRect(screenX, drawStart, stripWidth, topBandH);
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.22)';
+          ctx.fillRect(screenX, drawEnd - botBandH, stripWidth, botBandH);
+        }
       }
     }
 
@@ -833,6 +870,15 @@
         // Default: theme-driven (else burgundy carpet)
         var defFloor = (engine.theme && engine.theme.floorDefault) || [60, 25, 22];
         var fR = defFloor[0], fG = defFloor[1], fB = defFloor[2];
+        // V8 2026-06-07: Per-tile floor color jitter so the floor
+        // doesn't read as a single solid color across the whole level.
+        // User feedback: 「マップが全体的に四角四角」 — small ±6% per
+        // tile breaks the uniform-grid look. Same seed approach as
+        // walls so adjacent floor tiles are subtly distinct.
+        var fJit = (seededRandom(fgx * 19, fgy * 23, 53) - 0.5) * 0.12;
+        fR = Math.max(0, Math.min(255, (fR * (1 + fJit)) | 0));
+        fG = Math.max(0, Math.min(255, (fG * (1 + fJit * 0.85)) | 0));
+        fB = Math.max(0, Math.min(255, (fB * (1 + fJit * 0.7)) | 0));
         // Safe zone tile (11): warm golden glow distinct from regular floor
         var floorTile = tiles[fgy][fgx];
         if (floorTile === 11) {
