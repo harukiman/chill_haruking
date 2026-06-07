@@ -11498,7 +11498,21 @@
         'ノート閲覧: ' + stats.totalNotesRead + ' 件<br>' +
         'ENDLESS Best: ' + endlessBestScore +
         '</div>';
-      el('statProgText').innerHTML = 'クリア: ' + clears + ' / 12 階層<br>難易度: ' + diffName + '<br>本階層ベスト: ' + bestStr + lifeStr;
+      // Equipped weapon line — shows the weapon name + ammo so the player
+      // can see what will fire when they tap the attack button.
+      var equipLine = '';
+      if (player.equippedWeapon && ITEMS[player.equippedWeapon]) {
+        var ew = ITEMS[player.equippedWeapon];
+        var ewCnt = player.inventory[player.equippedWeapon] || 0;
+        var ewCntStr = hasEternalCharm() ? '∞' : ('×' + ewCnt);
+        equipLine = '<br>装備中: ' + ew.name + ' ' + ewCntStr;
+      } else {
+        equipLine = '<br>装備中: なし';
+      }
+      el('statProgText').innerHTML =
+        'クリア: ' + clears + ' / 15 階層<br>' +
+        '難易度: ' + diffName + equipLine +
+        '<br>本階層ベスト: ' + bestStr + lifeStr;
     }
 
     // INVENTORY — split into items + weapons sections per user request
