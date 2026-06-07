@@ -1047,11 +1047,12 @@
           timeLimit: null },
     15: { id: 15, name: 'LEVEL 15', subtitle: 'THE GARDEN',
           rows: LV15_ROWS, theme: 15,
-          hint: '永遠に手入れされ続ける温室の生垣迷路。中心に何かを隠している。',
-          intro: '緑の匂い — 朽ちていない、しかし生きてもいない。',
+          hint: '永遠に手入れされ続ける温室の生垣迷路。中心に何かを隠している。\nハルキの気配を感じる。',
+          intro: '緑の匂い — 朽ちていない、しかし生きてもいない。\n生垣の奥で、ハルキが微笑んでいる。',
           entities: [
             { type: 'faceling', gx: 12, gy: 8 },
-            { type: 'hound', gx: 18, gy: 14 }
+            { type: 'hound', gx: 18, gy: 14 },
+            { type: 'haruki', gx: 15, gy: 17 }
           ],
           timeLimit: null }
   };
