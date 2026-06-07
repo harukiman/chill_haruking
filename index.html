@@ -20,7 +20,7 @@
   <meta name="twitter:title" content="THE BACKROOMS — featuring HARUKI">
   <meta name="twitter:description" content="一人称モバイル探索ホラー。Level 0 から no-clip で階層を降下。壁の向こうにカレが待つ。">
   <title>THE BACKROOMS</title>
-  <link rel="stylesheet" href="assets/css/game.css?v=140">
+  <link rel="stylesheet" href="assets/css/game.css?v=141">
 </head>
 <body oncontextmenu="return false;">
 
@@ -397,6 +397,14 @@
         <div class="shop-grid" id="shopSellGrid"></div>
       </div>
     </div>
+  </div>
+
+  <!-- CHAOS difficulty visual layer — pulsing red overlay only when on chaos -->
+  <div id="chaosLayer" class="chaos-layer" style="display:none;">
+    <div class="chaos-tint"></div>
+    <div class="chaos-vignette"></div>
+    <div class="chaos-glitch"></div>
+    <div class="chaos-badge">CHAOS</div>
   </div>
 
   <!-- Muzzle Flash (weapon fire effect) -->
@@ -973,8 +981,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="assets/js/engine.js?v=140"></script>
-  <script src="assets/js/game.js?v=140"></script>
+  <script src="assets/js/engine.js?v=141"></script>
+  <script src="assets/js/game.js?v=141"></script>
 
   <!-- POST-LOAD VERIFICATION + DIRECT BINDING FALLBACK
        After game.js IIFE runs, this script confirms __titleAction is the real one.

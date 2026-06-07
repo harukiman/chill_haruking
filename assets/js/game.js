@@ -4040,6 +4040,7 @@
 
   function startPlaying() {
     state = ST.PLAYING;
+    updateChaosLayer();
     // Give the player a brief invulnerability window to read the surroundings.
     var graceMs = getSpawnGraceMs(currentLevel);
     spawnGraceUntil = performance.now() + graceMs;
@@ -5058,7 +5059,20 @@
     currentDifficulty = id;
     localStorage.setItem(DIFF_KEY, id);
     toast('難易度: ' + DIFFICULTIES[id].name);
+    updateChaosLayer();
   }
+
+  // CHAOS difficulty owns its own red full-screen overlay (chaosLayer):
+  // visible only while the player is in active gameplay AND the difficulty is
+  // 'chaos'. Hidden on title / settings / endings.
+  function updateChaosLayer() {
+    var layer = el('chaosLayer');
+    if (!layer) return;
+    var inPlay = (state === ST.PLAYING);
+    var on = inPlay && currentDifficulty === 'chaos';
+    layer.style.display = on ? 'block' : 'none';
+  }
+  window.updateChaosLayer = updateChaosLayer;
 
   function applyGfxQuality() {
     if (gfxQuality === 'low') {
@@ -9878,6 +9892,7 @@
 
   function returnToTitle() {
     state = ST.TITLE;
+    updateChaosLayer();
     gameMode = 'normal';
     GameEngine.stopAll();
     GameEngine.fadeFromBlack(500);

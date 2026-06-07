@@ -3698,6 +3698,65 @@ button {
 }
 
 /* ============================================================
+ *  CHAOS DIFFICULTY VISUAL LAYER (only while difficulty === 'chaos')
+ * ============================================================ */
+.chaos-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 24;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+.chaos-tint {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, rgba(180, 0, 0, 0.12) 0%, rgba(60, 0, 0, 0.35) 100%);
+  animation: chaosPulse 2.6s ease-in-out infinite;
+}
+.chaos-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 35%, rgba(160, 0, 0, 0.55) 100%);
+  mix-blend-mode: multiply;
+}
+.chaos-glitch {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(0deg,
+    rgba(255, 30, 30, 0) 0,
+    rgba(255, 30, 30, 0) 3px,
+    rgba(220, 30, 30, 0.08) 3px,
+    rgba(220, 30, 30, 0.08) 4px);
+  animation: chaosScanlines 0.18s steps(2) infinite;
+}
+.chaos-badge {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 8px) + 30px);
+  left: 50%;
+  transform: translateX(-50%);
+  color: #ff4040;
+  font-family: 'Times New Roman', serif;
+  font-size: 11px;
+  letter-spacing: 0.45em;
+  font-weight: 700;
+  text-shadow: 0 0 10px rgba(255, 40, 40, 0.85), 0 0 18px rgba(255, 0, 0, 0.55);
+  animation: chaosBadgePulse 1.4s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes chaosPulse {
+  0%, 100% { opacity: 0.85; transform: scale(1); }
+  50%      { opacity: 1.0;  transform: scale(1.012); }
+}
+@keyframes chaosScanlines {
+  0%   { transform: translateY(0); }
+  100% { transform: translateY(-2px); }
+}
+@keyframes chaosBadgePulse {
+  0%, 100% { opacity: 0.7; }
+  50%      { opacity: 1.0; }
+}
+
+/* ============================================================
  *  SHOP OVERLAY (Lv11 office-district vendor)
  * ============================================================ */
 .shop-overlay {
