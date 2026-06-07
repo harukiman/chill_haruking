@@ -6408,8 +6408,22 @@
   function quickUseAssignedItem(itemId) {
     if (!itemId || !ITEMS[itemId]) return;
     if (state !== ST.PLAYING || phoneOpen || miniGameOpen) return;
-    if (!player.inventory[itemId]) {
-      toast(ITEMS[itemId].name + ': 未所持');
+    var it = ITEMS[itemId];
+    var hasKey = Object.prototype.hasOwnProperty.call(player.inventory, itemId);
+    var count = player.inventory[itemId] || 0;
+    if (!hasKey) {
+      toast(it.name + ': 未所持');
+      return;
+    }
+    // Wave YY: weapons stay in inventory at ×0 after depletion. quickUse should
+    // tell the player the weapon is empty (not missing) so the binding feels
+    // intentional, not broken.
+    if (it.category === 'weapon' && count <= 0) {
+      toast(it.name + ': 弾切れ (×0)');
+      return;
+    }
+    if (count <= 0) {
+      toast(it.name + ': 残数なし');
       return;
     }
     _pendingItemId = itemId;
