@@ -453,27 +453,47 @@ button {
   86%     { opacity: 0.5; transform: translate(0, 40px) scale(1); }
   88%     { opacity: 0; transform: translate(0, 80px) scale(1.4); }
 }
+/* Hallucination / enemy-line text — kept eerie but bumped up for readability:
+   larger font, brighter core colour, thick black halo, dark semi-translucent
+   backplate so it stays legible over busy raycaster output. */
 .halluc-text {
   position: absolute;
-  top: 50%;
+  top: 48%;
   left: 50%;
   transform: translate(-50%, -50%);
   font-family: 'Times New Roman', serif;
-  font-size: 28px;
-  letter-spacing: 0.3em;
-  color: rgba(220, 30, 30, 0.55);
-  text-shadow: 0 0 12px rgba(220, 30, 30, 0.4);
+  font-size: 36px;
+  letter-spacing: 0.25em;
+  color: rgba(255, 80, 80, 0.95);
+  /* Multi-layer shadow: dark halo for contrast + red glow for mood */
+  text-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.95),
+    0 0 6px rgba(0, 0, 0, 0.95),
+    0 0 14px rgba(0, 0, 0, 0.85),
+    0 0 22px rgba(220, 30, 30, 0.55);
   opacity: 0;
   pointer-events: none;
   white-space: nowrap;
+  padding: 8px 22px;
+  border-radius: 6px;
+  /* Backplate to lift the text off busy backgrounds */
+  background: linear-gradient(180deg,
+    rgba(20, 0, 0, 0.45) 0%,
+    rgba(20, 0, 0, 0.7) 50%,
+    rgba(20, 0, 0, 0.45) 100%);
+  box-shadow: 0 0 18px rgba(0, 0, 0, 0.4) inset;
 }
 .halluc-text.show {
-  animation: hallucTextFlash 1.2s ease-out forwards;
+  animation: hallucTextFlash 1.8s ease-out forwards;
 }
 @keyframes hallucTextFlash {
   0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.95); }
-  20%  { opacity: 0.7; transform: translate(-50%, -50%) scale(1); }
-  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.02); filter: blur(4px); }
+  15%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  80%  { opacity: 1; transform: translate(-50%, -50%) scale(1.02); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.04); filter: blur(2px); }
+}
+@media (max-width: 520px) {
+  .halluc-text { font-size: 26px; letter-spacing: 0.2em; padding: 6px 16px; }
 }
 
 /* ============================================================

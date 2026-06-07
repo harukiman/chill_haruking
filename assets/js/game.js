@@ -4450,6 +4450,7 @@
               ? uniques[Math.floor(Math.random() * uniques.length)]
               : commons[Math.floor(Math.random() * commons.length)];
             player.inventory[rwd] = (player.inventory[rwd] || 0) + 1;
+            recordItemSeen(rwd);
             toast('★ ' + ITEMS[rwd].name + ' を入手');
             unlockAchievement('won_minigame');
             if (audioInitialized) {
@@ -4782,9 +4783,11 @@
           var poolR = ['siren_whistle', 'mirror_shard', 'revenant_blade'];
           var rwdR = poolR[Math.floor(Math.random() * poolR.length)];
           player.inventory[rwdR] = (player.inventory[rwdR] || 0) + 1;
+          recordItemSeen(rwdR);
           toast('★ ' + ITEMS[rwdR].name + ' 入手');
           unlockAchievement('won_minigame');
           if (audioInitialized) { GameEngine.playSound('level_clear'); GameEngine.playSound('stinger'); }
+          if (typeof showUniqueRewardFlash === 'function') showUniqueRewardFlash(rwdR);
         } else {
           setMGStatus(mgState.hits + ' / ' + mgState.goal);
         }
@@ -4860,9 +4863,11 @@
           var poolD = ['void_grenade', 'architect_blade', 'soul_lantern', 'haruki_charm'];
           var rwdD = poolD[Math.floor(Math.random() * poolD.length)];
           player.inventory[rwdD] = (player.inventory[rwdD] || 0) + 1;
+          recordItemSeen(rwdD);
           toast('★ ' + ITEMS[rwdD].name + ' 入手');
           unlockAchievement('won_minigame');
           if (audioInitialized) { GameEngine.playSound('key_unlock'); GameEngine.playSound('stinger'); }
+          if (typeof showUniqueRewardFlash === 'function') showUniqueRewardFlash(rwdD);
         } else if (mgState.tries >= mgState.maxTries) {
           mgState.phase = 'lose';
           setMGStatus('失敗 (試行回数オーバー)');
@@ -4941,9 +4946,11 @@
                            'mirror_shard', 'void_grenade'];
               var rwdW = poolW[Math.floor(Math.random() * poolW.length)];
               player.inventory[rwdW] = (player.inventory[rwdW] || 0) + 1;
+              recordItemSeen(rwdW);
               toast('★ ' + ITEMS[rwdW].name + ' 入手');
               unlockAchievement('won_minigame');
               if (audioInitialized) { GameEngine.playSound('level_clear'); GameEngine.playSound('stinger'); }
+              if (typeof showUniqueRewardFlash === 'function') showUniqueRewardFlash(rwdW);
             } else {
               setMGStatus(mgState.hits + ' / ' + mgState.goal);
             }
@@ -5403,6 +5410,21 @@
       GameEngine.redFlash();
       GameEngine.shakeScreen(10, 0.5);
     }
+  }
+
+  // Helper: record an item id in the lifetime-collected ledger so the D-pad
+  // assignment UI (and any future "all items found" achievement) can detect
+  // that the player has seen it at least once. Pickups and mini-game rewards
+  // should both call this; new acquisition paths must remember to as well.
+  function recordItemSeen(itemId) {
+    try {
+      var allKey2 = 'thebackrooms_items_collected_v1';
+      var allColl2 = JSON.parse(localStorage.getItem(allKey2) || '{}');
+      if (!allColl2[itemId]) {
+        allColl2[itemId] = true;
+        localStorage.setItem(allKey2, JSON.stringify(allColl2));
+      }
+    } catch (e) {}
   }
 
   function pickUpItem(itemId, gx, gy) {
@@ -7305,6 +7327,14 @@
   function refreshDpadConfigUI() {
     // Build option list once per render: all known items grouped by category
     var ownedKeys = Object.keys(player.inventory);
+    // Spoiler guard: only show items the player has ever collected in any
+    // run (lifetime collection ledger). Currently held items always show
+    // even if the ledger missed them. The "currentId" (already assigned)
+    // also stays visible so existing assignments aren't accidentally cleared.
+    var lifetimeOwned = {};
+    try {
+      lifetimeOwned = JSON.parse(localStorage.getItem('thebackrooms_items_collected_v1') || '{}');
+    } catch (e) { lifetimeOwned = {}; }
     function buildOptions(currentId) {
       var html = '<option value="">未割当</option>';
       var weaponHtml = '', itemHtml = '';
@@ -7313,14 +7343,18 @@
         var iid = iterIds[i];
         var it = ITEMS[iid];
         var owned = ownedKeys.indexOf(iid) >= 0;
+        var everSeen = !!lifetimeOwned[iid];
+        // Hide items the player has never encountered (spoiler prevention).
+        // Always keep the currently-assigned id visible to avoid silent clearing.
+        if (!everSeen && !owned && iid !== currentId) continue;
         var label = it.icon + ' ' + it.name + (owned ? ' (×' + player.inventory[iid] + ')' : '');
         var sel = (iid === currentId) ? ' selected' : '';
         var opt = '<option value="' + iid + '"' + sel + '>' + label + '</option>';
         if (it.category === 'weapon') weaponHtml += opt;
         else itemHtml += opt;
       }
-      html += '<optgroup label="武器">' + weaponHtml + '</optgroup>';
-      html += '<optgroup label="アイテム">' + itemHtml + '</optgroup>';
+      if (weaponHtml) html += '<optgroup label="武器">' + weaponHtml + '</optgroup>';
+      if (itemHtml)   html += '<optgroup label="アイテム">' + itemHtml + '</optgroup>';
       return html;
     }
     var selects = document.querySelectorAll('.dpad-slot-select');
@@ -7891,21 +7925,19 @@
     var ctx = cvs.getContext('2d');
     var dpr = Math.min(window.devicePixelRatio || 1, 1.5);
     function resize() {
-      // Fall back to viewport dims if clientWidth is 0 (parent layout not done yet)
       var cw = cvs.clientWidth || window.innerWidth;
       var ch = cvs.clientHeight || window.innerHeight;
       cvs.width = Math.max(320, Math.floor(cw * dpr));
       cvs.height = Math.max(240, Math.floor(ch * dpr));
     }
     resize();
-    // Re-resize a frame later in case parent layout was racing
     requestAnimationFrame(resize);
     window.addEventListener('resize', resize);
     var startT = performance.now();
     var cancelled = false;
     var rafId = 0;
-    // Corridor map: 1 = wall, 0 = floor. Player walks along Y+ down a 3-wide corridor.
-    var MAP_W = 5, MAP_H = 80;
+    // Corridor map: 1 = wall, 0 = floor. Long enough to walk for the entire intro.
+    var MAP_W = 5, MAP_H = 120;
     var map = new Uint8Array(MAP_W * MAP_H);
     for (var my = 0; my < MAP_H; my++) {
       for (var mx = 0; mx < MAP_W; mx++) {
@@ -7918,35 +7950,88 @@
       }
     }
     var FOV = Math.PI / 3;
+    // Phase config — wall RGB, ceiling, floor, walk speed, flicker, bob amplitude,
+    // tilt (camera roll). The intro narrative beats are encoded entirely as
+    // raycaster parameters so the player ALWAYS sees a moving FPS view.
+    //   street (0–3s)   dark blue back-alley
+    //   wall   (3–4.5s) wall pressing close, very narrow FOV/slow walk
+    //   fall   (4.5–6s) camera roll spins, fast walk, red flash
+    //   yellow (6s–end) the canonical Backrooms yellow corridor
+    function phaseAt(t01) {
+      var sec = t01 * (duration / 1000);
+      if (sec < 3.0) return 'street';
+      if (sec < 4.5) return 'wall';
+      if (sec < 6.0) return 'fall';
+      return 'yellow';
+    }
+    var PHASES = {
+      street: { wallR: 50,  wallG: 60,  wallB: 90,
+                ceilTop: '#02030a', ceilBot: '#0b0e1c',
+                floorTop: '#0a0a14', floorBot: '#15151c',
+                speed: 1.0,  bobAmp: 0.05, tilt: 0,    fov: Math.PI/3,    flicker: 0.04 },
+      wall:   { wallR: 30,  wallG: 28,  wallB: 18,
+                ceilTop: '#0a0905', ceilBot: '#1a160c',
+                floorTop: '#100c06', floorBot: '#1a1610',
+                speed: 0.25, bobAmp: 0.02, tilt: 0,    fov: Math.PI/4.5,  flicker: 0.06 },
+      fall:   { wallR: 140, wallG: 30,  wallB: 30,
+                ceilTop: '#000', ceilBot: '#100',
+                floorTop: '#000', floorBot: '#100',
+                speed: 3.0,  bobAmp: 0.12, tiltSpin: true, fov: Math.PI/2.5, flicker: 0.18 },
+      yellow: { wallR: 212, wallG: 170, wallB: 58,
+                ceilTop: '#3d3008', ceilBot: '#5c4810',
+                floorTop: '#1a1408', floorBot: '#2c2412',
+                speed: 1.2,  bobAmp: 0.04, tilt: 0,    fov: Math.PI/3,    flicker: 0.05 }
+    };
+    var totalProgress = 0;
+    var lastNow = performance.now();
     function step(now) {
       if (cancelled) return;
-      var t = (now - startT) / duration; // 0..1
-      if (t >= 1) {
+      var dt = Math.min(0.05, (now - lastNow) / 1000);
+      lastNow = now;
+      var t01 = (now - startT) / duration;
+      if (t01 >= 1) {
         if (onDone) onDone();
         return;
       }
+      var phaseName = phaseAt(t01);
+      var P = PHASES[phaseName];
+      // Advance player Y at phase-specific speed.
+      totalProgress += P.speed * dt;
+      var py = 1 + (MAP_H - 4) * Math.min(0.98, totalProgress / 14);
       var w = cvs.width, h = cvs.height;
-      // Camera position: center of corridor in X, advancing in Y
       var px = (MAP_W / 2);
-      var py = 1 + (MAP_H - 4) * t;
-      // Subtle head bob
-      var bobY = Math.sin(now * 0.012) * 0.04;
-      var bobX = Math.sin(now * 0.006) * 0.02;
+      var bobY = Math.sin(now * 0.012) * P.bobAmp;
+      var bobX = Math.sin(now * 0.006) * (P.bobAmp * 0.5);
       px += bobX;
       var camAngle = Math.PI / 2; // facing +Y
-      // Ceiling + floor gradient (yellow Backrooms vibe)
-      ctx.fillStyle = '#3d3008';
+      // Falling phase: camera rotates wildly to feel like tumbling.
+      var rollAngle = P.tiltSpin ? Math.sin(now * 0.008) * 0.6 : (P.tilt || 0);
+      var fov = P.fov;
+      // Ceiling/floor (per-phase gradient)
+      var grad1 = ctx.createLinearGradient(0, 0, 0, h / 2);
+      grad1.addColorStop(0, P.ceilTop);
+      grad1.addColorStop(1, P.ceilBot);
+      ctx.fillStyle = grad1;
       ctx.fillRect(0, 0, w, h / 2);
-      ctx.fillStyle = '#1a1408';
+      var grad2 = ctx.createLinearGradient(0, h / 2, 0, h);
+      grad2.addColorStop(0, P.floorTop);
+      grad2.addColorStop(1, P.floorBot);
+      ctx.fillStyle = grad2;
       ctx.fillRect(0, h / 2, w, h / 2);
-      // Cast rays
+      // Roll the canvas if needed (cheap simulation of head tilt)
+      var rolled = rollAngle !== 0;
+      if (rolled) {
+        ctx.save();
+        ctx.translate(w / 2, h / 2);
+        ctx.rotate(rollAngle);
+        ctx.translate(-w / 2, -h / 2);
+      }
       var stripW = 4;
       var rays = Math.ceil(w / stripW);
       for (var i = 0; i < rays; i++) {
         var sx = i * stripW;
-        var rayAng = camAngle - FOV / 2 + (i / rays) * FOV;
+        var rayAng = camAngle - fov / 2 + (i / rays) * fov;
         var rcos = Math.cos(rayAng), rsin = Math.sin(rayAng);
-        // DDA
         var mapX = Math.floor(px), mapY = Math.floor(py);
         var ddx = Math.abs(1 / rcos) || 1e9;
         var ddy = Math.abs(1 / rsin) || 1e9;
@@ -7955,7 +8040,7 @@
         else          { stepX = 1;  sdX = (mapX + 1 - px) * ddx; }
         if (rsin < 0) { stepY = -1; sdY = (py - mapY) * ddy; }
         else          { stepY = 1;  sdY = (mapY + 1 - py) * ddy; }
-        var hit = 0, side = 0, safety = 64;
+        var hit = 0, side = 0, safety = 80;
         while (!hit && safety-- > 0) {
           if (sdX < sdY) { sdX += ddx; mapX += stepX; side = 0; }
           else           { sdY += ddy; mapY += stepY; side = 1; }
@@ -7968,22 +8053,32 @@
         dist = Math.max(0.1, dist);
         var wallH = Math.min(h * 4, h / dist);
         var drawStart = (h - wallH) / 2 + bobY * h;
-        // Wallpaper color: Backrooms yellow, dimmer on far walls, slight side shading
         var fog = Math.max(0.18, 1 - dist / 30);
         var base = side === 1 ? 0.78 : 1.0;
-        var r = Math.floor(212 * fog * base);
-        var g = Math.floor(170 * fog * base);
-        var b = Math.floor(58 * fog * base);
+        var r = Math.floor(P.wallR * fog * base);
+        var g = Math.floor(P.wallG * fog * base);
+        var b = Math.floor(P.wallB * fog * base);
         ctx.fillStyle = 'rgb(' + r + ',' + g + ',' + b + ')';
         ctx.fillRect(sx, drawStart, stripW + 1, wallH);
-        // Horizontal seam every ~8 tiles for floor pattern hint
+        // Subtle horizontal seam
         var seamY = h / 2 + (h / dist) * 0.42 + bobY * h;
-        ctx.fillStyle = 'rgba(80,55,18,' + (0.4 * fog).toFixed(3) + ')';
+        ctx.fillStyle = 'rgba(0,0,0,' + (0.4 * fog).toFixed(3) + ')';
         ctx.fillRect(sx, seamY, stripW + 1, 1);
       }
-      // Flicker overlay
-      var flicker = (Math.random() < 0.04) ? 0.25 : 0.05;
-      ctx.fillStyle = 'rgba(255,240,170,' + flicker + ')';
+      if (rolled) ctx.restore();
+      // Per-phase tint / flicker overlay
+      if (phaseName === 'fall') {
+        // Red flash during the fall
+        ctx.fillStyle = 'rgba(180, 30, 30, ' + (0.18 + 0.12 * Math.sin(now * 0.03)) + ')';
+        ctx.fillRect(0, 0, w, h);
+      }
+      var flicker = (Math.random() < P.flicker) ? 0.25 : 0.05;
+      // Yellow flicker only for the yellow phase; otherwise neutral white flicker.
+      if (phaseName === 'yellow') {
+        ctx.fillStyle = 'rgba(255,240,170,' + flicker + ')';
+      } else {
+        ctx.fillStyle = 'rgba(255,255,255,' + (flicker * 0.6) + ')';
+      }
       ctx.fillRect(0, 0, w, h);
       // Vignette
       var grd = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.25,
@@ -8056,64 +8151,53 @@
     el('introSkipBtn').addEventListener('click', skipHandler);
     el('introOverlay').addEventListener('click', skipHandler);
 
-    // Cinematic now orchestrates four moving scenes in sequence with a final
-    // cliff-hanger frame waiting for the player to tap "開始".
-    //  ~0.0s  scene 1  night street POV with walking shoes
-    //  ~3.0s  scene 2  wall closeup, vertigo
-    //  ~5.0s  scene 3  falling-blur transition
-    //  ~6.5s  scene 0  raycaster yellow corridor (the actual world)
-    //  ~11.0s eyes partial + tap-to-start prompt
-    function gotoScene(target) {
-      [s0, s1, s2, s3].forEach(function (s) { if (s) s.classList.remove('active'); });
-      if (target) target.classList.add('active');
-    }
+    // Opening is now entirely an FPS raycaster scene running for ~13s. The
+    // narrative beats (street / wall / fall / yellow corridor) are encoded
+    // as raycaster phase parameters in runIntroFpsScene, so the player sees
+    // a continuously moving first-person view from the very first frame.
+    // CSS layers (s1/s2/s3) are not used — only text overlay + scene 0 canvas.
+    if (s0) s0.classList.add('active');
+    if (s1) s1.classList.remove('active');
+    if (s2) s2.classList.remove('active');
+    if (s3) s3.classList.remove('active');
+    var INTRO_LEN = 13500;
     setTimeout(function () {
       if (cancelled) return;
-      gotoScene(s1);
       startFootsteps();
       setLine('...深夜、会社からの帰り道。');
-    }, 200);
-    setTimeout(function () {
-      if (cancelled) return;
-      setLine('いつもの裏路地 — の、はずだった。');
-    }, 2600);
-    setTimeout(function () {
-      if (cancelled) return;
-      gotoScene(s2);
-      stopFootsteps();
-      setLine('— 壁が、近づく。');
-      if (audioInitialized) GameEngine.playSound('static');
-    }, 4200);
-    setTimeout(function () {
-      if (cancelled) return;
-      gotoScene(s3);
-      setLine('— 足元の感触が、消えた。');
-      if (audioInitialized) GameEngine.playSound('thunder');
-      GameEngine.shakeScreen(20, 1.2);
-    }, 5600);
-    setTimeout(function () {
-      if (cancelled) return;
-      gotoScene(s0);
-      setLine('黄色い、無限の、壁紙の世界へ。');
-      // Resume footsteps once standing in the corridor
-      startFootsteps();
-      // Long-running FPS walk through the corridor
-      fpsCancel = runIntroFpsScene(8500, function () {
+      fpsCancel = runIntroFpsScene(INTRO_LEN, function () {
         if (cancelled) return;
         stopFootsteps();
         eyes.classList.add('partial');
         setLine('[ 画面をタップして開始 ]');
       });
-    }, 6700);
+    }, 200);
+    // Narrative text beats — synced with raycaster phases (street/wall/fall/yellow)
+    setTimeout(function () { if (!cancelled) setLine('いつもの裏路地 — の、はずだった。'); }, 2400);
+    setTimeout(function () {
+      if (cancelled) return;
+      setLine('— 壁が、近づく。');
+      if (audioInitialized) GameEngine.playSound('static');
+    }, 3100);
+    setTimeout(function () {
+      if (cancelled) return;
+      setLine('— 足元の感触が、消えた。');
+      if (audioInitialized) GameEngine.playSound('thunder');
+      GameEngine.shakeScreen(22, 1.4);
+    }, 4600);
+    setTimeout(function () {
+      if (cancelled) return;
+      setLine('黄色い、無限の、壁紙の世界へ。');
+    }, 6300);
     setTimeout(function () {
       if (cancelled) return;
       setLine('— 立ち上がる。果てしなく続く、黄色い廊下。');
-    }, 9000);
+    }, 8800);
     setTimeout(function () {
       if (cancelled) return;
       setLine('— 遠くで、誰かが、笑った。');
       if (audioInitialized) GameEngine.playSound('whisper');
-    }, 11500);
+    }, 11400);
     // No auto-finish — user taps overlay or skip button to advance
     // Safety net: auto-finish after 30s if no tap
     setTimeout(finish, 30000);
