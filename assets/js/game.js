@@ -9129,6 +9129,70 @@
         if (fpsInd) fpsInd.style.display = fpsOn ? 'block' : 'none';
       });
     }
+    // Title-screen Performance toggles (mirror of in-game Phone Options).
+    // Same storage keys + engine flags so both UIs are in sync. Phone-options
+    // already binds with setupPerfToggle on init; here we re-read storage so
+    // toggling from either side reflects on the next overlay open.
+    function setupTsPerfToggle(btnId, flagKey, engineProp, defaultOn) {
+      var btn = el(btnId);
+      if (!btn) return;
+      function read() {
+        var raw = localStorage.getItem(flagKey);
+        return (raw === null) ? !!defaultOn : (raw === '1');
+      }
+      function paint(on) {
+        btn.textContent = on ? 'ON' : 'OFF';
+        btn.classList.toggle('off', !on);
+      }
+      paint(read());
+      btn.addEventListener('click', function () {
+        var on = !read();
+        try { localStorage.setItem(flagKey, on ? '1' : '0'); } catch (e) {}
+        GameEngine[engineProp] = on;
+        paint(on);
+        // Sync the matching phone-options pill if it's been initialised.
+        var phonePill = el(btnId.replace(/^tsPerf/, 'perf').replace(/Btn$/, 'Value'));
+        if (phonePill) phonePill.textContent = on ? 'ON' : 'OFF';
+      });
+      // Expose a refresh hook so openTitleSettings can re-sync state when
+      // the user toggled the same flag from the in-game phone first.
+      btn._refresh = function () { paint(read()); };
+    }
+    setupTsPerfToggle('tsPerfParticlesBtn', 'bk_perf_particles', 'particlesEnabled', true);
+    setupTsPerfToggle('tsPerfPostFxBtn',    'bk_perf_postfx',    'postFxEnabled',    true);
+    setupTsPerfToggle('tsPerfShakeBtn',     'bk_perf_shake',     'shakeEnabled',     true);
+    setupTsPerfToggle('tsPerfBgmBtn',       'bk_perf_bgm',       'bgmEnabled',       true);
+    setupTsPerfToggle('tsPerfLowResBtn',    'bk_perf_lowres',    'lowResMode',       false);
+    // Called whenever titleSettingsOverlay is shown so the perf toggles re-read
+    // storage in case the user toggled the same flag from the phone settings.
+    window.refreshTitleSettingsState = function () {
+      ['tsPerfParticlesBtn', 'tsPerfPostFxBtn', 'tsPerfShakeBtn',
+       'tsPerfBgmBtn', 'tsPerfLowResBtn'].forEach(function (id) {
+        var b = el(id);
+        if (b && typeof b._refresh === 'function') b._refresh();
+      });
+      // Re-sync sliders/toggles that already have their own state — values
+      // already auto-load from storage on bind, but vibrate/fps/gfx can be
+      // changed elsewhere too.
+      var tsGfx = el('tsGfxToggle');
+      if (tsGfx) {
+        var gq = localStorage.getItem('thebackrooms_gfx_v1') === 'low' ? 'low' : 'high';
+        tsGfx.textContent = gq === 'high' ? 'HIGH' : 'LOW';
+        tsGfx.classList.toggle('off', gq === 'low');
+      }
+      var tsVib = el('tsVibrateToggle');
+      if (tsVib) {
+        var vibOn = localStorage.getItem('bk_vibrate') !== '0';
+        tsVib.textContent = vibOn ? 'ON' : 'OFF';
+        tsVib.classList.toggle('off', !vibOn);
+      }
+      var tsFps2 = el('tsFpsToggle');
+      if (tsFps2) {
+        var fpsOn2 = localStorage.getItem('bk_fps') === '1';
+        tsFps2.textContent = fpsOn2 ? 'ON' : 'OFF';
+        tsFps2.classList.toggle('off', !fpsOn2);
+      }
+    };
     // Gamepad mapping UI — visual diagram + "press a button to assign" flow
     // PS4/PS5 standard mapping. Most controllers (Xbox, Switch Pro via Bluetooth)
     // expose the same button indices, just with different physical labels.
@@ -9388,11 +9452,16 @@
           toast(cheatActive ? '★ 無双モード ON — 全アイテム無限・3倍ダメージ' : '無双モード OFF');
           break;
         case 'controls': stage = 'controls'; showOverlay('tutorialOverlay'); break;
-        case 'settings': stage = 'settings'; showOverlay('titleSettingsOverlay'); break;
+        case 'settings':
+          stage = 'settings';
+          if (typeof window.refreshTitleSettingsState === 'function') window.refreshTitleSettingsState();
+          showOverlay('titleSettingsOverlay');
+          break;
         case 'settingsFromPhone':
           stage = 'settingsFromPhone';
           // Close phone first so titleSettingsOverlay (z=55) isn't hidden by phone (z=60)
           try { if (typeof closePhone === 'function') closePhone(); } catch (e) {}
+          if (typeof window.refreshTitleSettingsState === 'function') window.refreshTitleSettingsState();
           showOverlay('titleSettingsOverlay');
           // The phone options entry point is labelled "詳細設定 (ゲームパッド/振動 etc.)"
           // so the user expects to land at the gamepad section. Scroll the

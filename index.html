@@ -20,7 +20,7 @@
   <meta name="twitter:title" content="THE BACKROOMS — featuring HARUKI">
   <meta name="twitter:description" content="一人称モバイル探索ホラー。Level 0 から no-clip で階層を降下。壁の向こうにカレが待つ。">
   <title>THE BACKROOMS</title>
-  <link rel="stylesheet" href="assets/css/game.css?v=113">
+  <link rel="stylesheet" href="assets/css/game.css?v=114">
 </head>
 <body oncontextmenu="return false;">
 
@@ -171,6 +171,29 @@
         <div class="ts-row ts-toggle-row">
           <span>FPS 表示</span>
           <button id="tsFpsToggle" type="button" class="ts-toggle off">OFF</button>
+        </div>
+      </div>
+      <div class="ts-section">
+        <h3 class="ts-subhead">パフォーマンス</h3>
+        <div class="ts-row ts-toggle-row">
+          <span>パーティクル</span>
+          <button id="tsPerfParticlesBtn" type="button" class="ts-toggle">ON</button>
+        </div>
+        <div class="ts-row ts-toggle-row">
+          <span>ポストエフェクト</span>
+          <button id="tsPerfPostFxBtn" type="button" class="ts-toggle">ON</button>
+        </div>
+        <div class="ts-row ts-toggle-row">
+          <span>画面シェイク</span>
+          <button id="tsPerfShakeBtn" type="button" class="ts-toggle">ON</button>
+        </div>
+        <div class="ts-row ts-toggle-row">
+          <span>BGM (procedural)</span>
+          <button id="tsPerfBgmBtn" type="button" class="ts-toggle">ON</button>
+        </div>
+        <div class="ts-row ts-toggle-row">
+          <span>低解像度モード</span>
+          <button id="tsPerfLowResBtn" type="button" class="ts-toggle off">OFF</button>
         </div>
       </div>
       <div class="ts-section">
@@ -871,8 +894,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="assets/js/engine.js?v=113"></script>
-  <script src="assets/js/game.js?v=113"></script>
+  <script src="assets/js/engine.js?v=114"></script>
+  <script src="assets/js/game.js?v=114"></script>
 
   <!-- POST-LOAD VERIFICATION + DIRECT BINDING FALLBACK
        After game.js IIFE runs, this script confirms __titleAction is the real one.
