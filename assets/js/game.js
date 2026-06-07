@@ -11097,10 +11097,17 @@
     // overlay stacking. Once we're in DEAD/ENDED, do not re-run death sequence.
     if (state === ST.DEAD || state === ST.ENDED) return;
     state = ST.DEAD;
+    // Reset cinematic flag — if the player died mid-cinematic somehow
+    // (rare edge case), continueGame would otherwise leave _inCinematic
+    // stuck = true and _isGamePaused would never release.
+    _inCinematic = false;
     updateChaosLayer();
     var rtD = el('reticle'); if (rtD) rtD.classList.remove('show');
     var wabD = el('weaponAttackBtn'); if (wabD) wabD.classList.remove('show');
     var whD = el('weaponHand'); if (whD) whD.classList.remove('show');
+    // Stop any chase-related class on the hand sprite so the dead pose
+    // doesn't keep bobbing during the fade-to-black.
+    if (whD) { whD.classList.remove('bobbing'); whD.classList.remove('out-of-ammo'); }
     stats.totalDeaths++;
     saveStats();
     el('vitalBars').classList.remove('show');
