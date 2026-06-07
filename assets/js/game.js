@@ -9269,7 +9269,7 @@
           // SAN drain on direct view
           if (isFacingPlayer(e)) player.san = Math.max(0, player.san - 3 * dt);
         } else if (distP <= 1.5 * TS) {
-          attackPlayer(8 * dt);
+          attackPlayer(8 * dt, e);
         }
       } else if (e.type === 'skinstealer') {
         // Pretends to be dead until close
@@ -9288,13 +9288,13 @@
           var stepY3 = (dy / distP) * spd3 * dt;
           if (isWalkable(e.x + stepX3, e.y)) e.x += stepX3;
           if (isWalkable(e.x, e.y + stepY3)) e.y += stepY3;
-          if (distP < 1 * TS) attackPlayer(20 * dt);
+          if (distP < 1 * TS) attackPlayer(20 * dt, e);
         }
       } else if (e.type === 'partygoer') {
         // Wanders, attacks if too close
         wanderEntity(e, dt, 40 * sMul);
         if (distP < 1.5 * TS) {
-          attackPlayer(15 * dt);
+          attackPlayer(15 * dt, e);
         }
       } else if (e.type === 'vinewalker') {
         // Stationary plant predator: never chases. Extends a 2.5-tile "tendril
@@ -9328,7 +9328,7 @@
           if (isWalkable(e.x, e.y + dry)) e.y += dry;
         }
         if (distP < 1.4 * TS) {
-          attackPlayer(14 * dt);
+          attackPlayer(14 * dt, e);
           // Slow the player while grappled
           player._drownedGrabUntil = performance.now() + 200;
         }
@@ -9360,7 +9360,7 @@
         }
         if (distP < 1.5 * TS) {
           player.san = Math.max(0, player.san - 6 * dt);
-          attackPlayer(8 * dt);
+          attackPlayer(8 * dt, e);
         }
       } else if (e.type === 'witness') {
         // Stationary observer: never moves, just stands. SAN drains slowly
@@ -9400,7 +9400,7 @@
             if (isWalkable(e.x + stepX_c, e.y)) e.x += stepX_c;
             if (isWalkable(e.x, e.y + stepY_c)) e.y += stepY_c;
             if (distP < 1.0 * TS) {
-              attackPlayer(22 * dt);
+              attackPlayer(22 * dt, e);
               e.state = 'retreat';
               e.stateTimer = 0;
             }
@@ -9437,7 +9437,7 @@
           player.san = Math.max(0, player.san - 0.5 * dt);
         }
         // Direct contact damages
-        if (distP < 0.8 * TS) attackPlayer(8 * dt);
+        if (distP < 0.8 * TS) attackPlayer(8 * dt, e);
       } else if (e.type === 'echo') {
         // ECHO: mimics player's exact movement, delayed by 0.6 seconds
         // Records player position history; replays as own movement
@@ -9473,7 +9473,7 @@
           player.san = Math.max(0, player.san - 1.2 * dt);
           if (Math.random() < 0.02 && audioInitialized) GameEngine.playPositionalSound('whisper', e.x, e.y);
         }
-        if (distP < 0.8 * TS) attackPlayer(6 * dt);
+        if (distP < 0.8 * TS) attackPlayer(6 * dt, e);
       } else if (e.type === 'mrhotel') {
         // Stationary at first, slowly approaches when player nearby
         if (distP < 12 * TS) {
@@ -9485,7 +9485,7 @@
           if (isWalkable(e.x, e.y + mhy)) e.y += mhy;
         }
         if (distP < 1.0 * TS) {
-          attackPlayer(8 * dt);
+          attackPlayer(8 * dt, e);
           if (Math.random() < 0.002 && audioInitialized) {
             GameEngine.playPositionalSound('whisper', e.x, e.y);
           }
@@ -9546,7 +9546,7 @@
           }
         }
         if (distP < 1.0 * TS) {
-          attackPlayer(18 * dt);
+          attackPlayer(18 * dt, e);
           // Brief jumpscare
           if (Math.random() < 0.05) {
             var simg = GameEngine.images['assets/img/haruki_scary.png'];
@@ -9631,7 +9631,7 @@
           }
         }
         if (distP < 1.6 * TS) {
-          attackPlayer((8 + phase * 4) * dt);
+          attackPlayer((8 + phase * 4) * dt, e);
         }
         // Phase 3: spawn shadow copies (one-time)
         if (phase === 3 && !e._spawnedShadows) {
@@ -9678,7 +9678,7 @@
 
       // Common: collision with player triggers damage
       if (distP < 0.8 * TS && e.type !== 'skinstealer' && e.state !== 'corpse') {
-        attackPlayer(10 * dt);
+        attackPlayer(10 * dt, e);
       }
     }
     // Safe-area: restore snapshots so ambient entity drains are reverted.
@@ -9695,12 +9695,36 @@
     return Math.abs(rel) < Math.PI / 3.5; // within FOV cone
   }
 
-  function attackPlayer(dmg) {
+  // Directional damage flash — brief red glow on the screen edge facing
+  // the source of damage. Helps the player react when attacked from
+  // behind or the side where the threat-compass arc is small.
+  function _flashDamageDirection(srcEntity) {
+    var pad = el('damageDirOverlay');
+    if (!pad || !srcEntity) return;
+    var dx = srcEntity.x - player.x;
+    var dy = srcEntity.y - player.y;
+    var worldAng = Math.atan2(dy, dx);
+    var relAng = worldAng - player.angle;
+    while (relAng > Math.PI) relAng -= Math.PI * 2;
+    while (relAng < -Math.PI) relAng += Math.PI * 2;
+    // Classify: forward / right / back / left band.
+    var band = 'damage-back';
+    if (relAng > -Math.PI / 4 && relAng < Math.PI / 4) band = 'damage-fwd';
+    else if (relAng >= Math.PI / 4 && relAng < 3 * Math.PI / 4) band = 'damage-right';
+    else if (relAng <= -Math.PI / 4 && relAng > -3 * Math.PI / 4) band = 'damage-left';
+    pad.className = 'damage-dir-overlay ' + band;
+    pad.classList.add('flash');
+    setTimeout(function () { if (pad) pad.classList.remove('flash'); }, 320);
+  }
+  function attackPlayer(dmg, srcEntity) {
     // Spawn grace: for the first ~2.8s after entering a level, the player is
     // i-frame so that ambush-style entity placement (e.g. Lv7 hounds packed
     // around spawn) can't instakill before the player has even oriented.
     if (typeof spawnGraceUntil === 'number' && performance.now() < spawnGraceUntil) {
       return;
+    }
+    if (srcEntity) {
+      try { _flashDamageDirection(srcEntity); } catch (e) {}
     }
     // No damage during encounter / scripted cinematics — player should never
     // be punished for events they can't react to.

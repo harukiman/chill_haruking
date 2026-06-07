@@ -491,6 +491,35 @@ body {
   0%, 100% { box-shadow: 0 0 6px rgba(255, 80, 40, 0.7); }
   50%      { box-shadow: 0 0 14px rgba(255, 120, 40, 1.0); }
 }
+/* Directional damage flash — red glow on the edge facing the attacker.
+   .damage-fwd | .damage-back | .damage-left | .damage-right pick the
+   gradient direction; .flash kicks the brief opacity animation. */
+.damage-dir-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 21;
+  opacity: 0;
+  mix-blend-mode: screen;
+}
+.damage-dir-overlay.flash { animation: damage-dir-flash 0.32s ease-out; }
+.damage-dir-overlay.damage-fwd {
+  background: linear-gradient(180deg, rgba(255, 0, 0, 0.85) 0%, transparent 38%);
+}
+.damage-dir-overlay.damage-back {
+  background: linear-gradient(0deg, rgba(255, 0, 0, 0.85) 0%, transparent 38%);
+}
+.damage-dir-overlay.damage-left {
+  background: linear-gradient(90deg, rgba(255, 0, 0, 0.85) 0%, transparent 38%);
+}
+.damage-dir-overlay.damage-right {
+  background: linear-gradient(270deg, rgba(255, 0, 0, 0.85) 0%, transparent 38%);
+}
+@keyframes damage-dir-flash {
+  0%   { opacity: 0;   }
+  18%  { opacity: 1.0; }
+  100% { opacity: 0;   }
+}
 /* Low-HP vignette — pulses red around screen edges as HP drops */
 .low-hp-vignette {
   position: fixed;
