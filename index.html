@@ -20,7 +20,7 @@
   <meta name="twitter:title" content="THE BACKROOMS — featuring HARUKI">
   <meta name="twitter:description" content="一人称モバイル探索ホラー。Level 0 から no-clip で階層を降下。壁の向こうにカレが待つ。">
   <title>THE BACKROOMS</title>
-  <link rel="stylesheet" href="assets/css/game.css?v=128">
+  <link rel="stylesheet" href="assets/css/game.css?v=129">
 </head>
 <body oncontextmenu="return false;">
 
@@ -352,6 +352,30 @@
     </div>
     <div class="es-vignette"></div>
     <div class="es-text" id="esText"></div>
+  </div>
+
+  <!-- Shop overlay (Lv11 office-district vendor) -->
+  <div id="shopOverlay" class="overlay shop-overlay" style="display:none;">
+    <div class="shop-card">
+      <button class="shop-close-x" type="button" aria-label="閉じる" id="shopCloseBtn">×</button>
+      <div class="shop-header">
+        <h2 class="shop-title">露店</h2>
+        <p class="shop-coins"><span class="status-coin-icon">🪙</span> 所持: <span id="shopCoinsDisplay">0</span></p>
+      </div>
+      <div class="shop-tabs">
+        <button type="button" class="shop-tab active" data-shop-tab="buy">買う</button>
+        <button type="button" class="shop-tab" data-shop-tab="sell">売る</button>
+      </div>
+      <div class="shop-panel" id="shopPanelBuy">
+        <h3 class="shop-section-h">本日の品揃え</h3>
+        <div class="shop-grid" id="shopBuyGrid"></div>
+        <p class="shop-hint">★ ユニーク品は1日1点のみ並びます</p>
+      </div>
+      <div class="shop-panel" id="shopPanelSell" style="display:none;">
+        <h3 class="shop-section-h">買い取り — 半額で引き取り</h3>
+        <div class="shop-grid" id="shopSellGrid"></div>
+      </div>
+    </div>
   </div>
 
   <!-- Muzzle Flash (weapon fire effect) -->
@@ -917,8 +941,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="assets/js/engine.js?v=128"></script>
-  <script src="assets/js/game.js?v=128"></script>
+  <script src="assets/js/engine.js?v=129"></script>
+  <script src="assets/js/game.js?v=129"></script>
 
   <!-- POST-LOAD VERIFICATION + DIRECT BINDING FALLBACK
        After game.js IIFE runs, this script confirms __titleAction is the real one.

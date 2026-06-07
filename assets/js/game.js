@@ -109,6 +109,7 @@
     var stairsUp = [];
     var stairsDown = [];
     var weaponSpots = [];  // dedicated weapon-only pickup tiles ('w')
+    var shopSpots = [];    // shopkeeper interaction tiles ('M') — open shop on action
 
     for (var y = 0; y < h; y++) {
       var row = [];
@@ -130,6 +131,7 @@
           case 'U': t = 0; stairsUp.push({ gx: x, gy: y }); break;
           case 'd': t = 0; stairsDown.push({ gx: x, gy: y }); break;
           case 'w': t = 5; itemSpots.push({ gx: x, gy: y }); weaponSpots.push({ gx: x, gy: y }); break;
+          case 'M': t = 0; shopSpots.push({ gx: x, gy: y }); break;
           case 'P': t = 0; spawn = { gx: x, gy: y }; break;
           default:  t = 0; break;
         }
@@ -149,7 +151,8 @@
       safes: safes,
       stairsUp: stairsUp,
       stairsDown: stairsDown,
-      weaponSpots: weaponSpots
+      weaponSpots: weaponSpots,
+      shopSpots: shopSpots
     };
   }
 
@@ -392,7 +395,7 @@
     '#P.........#',
     '#.FFFFFFFF.#',
     '#..........#',
-    '#..........#',
+    '#......M...#',
     '#.FFFFFFFF.#',
     '#..........#',
     '#..n.......#',
@@ -1236,6 +1239,139 @@
         target.x + spread, target.y + spread);
     }
   }
+  // ── SHOP (Lv11 office-district vendor) ──
+  // Items the shop can stock. Prices in coins. Each visit picks a random
+  // subset of SHOP_GENERAL plus exactly one SHOP_UNIQUE pick (★ flagged).
+  var SHOP_GENERAL = [
+    { id: 'bandage',      price: 25 },
+    { id: 'almond_water', price: 30 },
+    { id: 'energy_bar',   price: 28 },
+    { id: 'flashlight',   price: 60 },
+    { id: 'flare',        price: 70 },
+    { id: 'pistol',       price: 120 },
+    { id: 'katana',       price: 150 },
+    { id: 'shotgun',      price: 200 }
+  ];
+  var SHOP_UNIQUE = [
+    { id: 'soul_lantern',    price: 350 },
+    { id: 'haruki_charm',    price: 400 },
+    { id: 'architect_blade', price: 500 },
+    { id: 'siren_whistle',   price: 320 },
+    { id: 'mirror_shard',    price: 380 },
+    { id: 'revenant_blade',  price: 450 },
+    { id: 'void_grenade',    price: 340 }
+  ];
+  var shopState = { stock: null, panel: 'buy' };
+  function generateShopStock() {
+    // 4 random general items + 1 unique. Re-seeded each time the shop opens
+    // for the first time on a level (persisted in shopState until level change).
+    var pool = SHOP_GENERAL.slice();
+    for (var i = pool.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = pool[i]; pool[i] = pool[j]; pool[j] = t;
+    }
+    var general = pool.slice(0, 4);
+    var unique = SHOP_UNIQUE[Math.floor(Math.random() * SHOP_UNIQUE.length)];
+    return { general: general, unique: unique };
+  }
+  function openShop() {
+    if (!shopState.stock) shopState.stock = generateShopStock();
+    shopState.panel = 'buy';
+    renderShop();
+    showOverlay('shopOverlay');
+    if (audioInitialized) GameEngine.playSound('phone_open');
+  }
+  function closeShop() {
+    hideOverlay('shopOverlay');
+    if (audioInitialized) GameEngine.playSound('phone_close');
+  }
+  function renderShop() {
+    var coinsEl = el('shopCoinsDisplay');
+    if (coinsEl) coinsEl.textContent = player.coins || 0;
+    // Tab visibility
+    el('shopPanelBuy').style.display  = shopState.panel === 'buy'  ? 'block' : 'none';
+    el('shopPanelSell').style.display = shopState.panel === 'sell' ? 'block' : 'none';
+    var tabs = document.querySelectorAll('.shop-tab');
+    for (var ti = 0; ti < tabs.length; ti++) {
+      tabs[ti].classList.toggle('active', tabs[ti].getAttribute('data-shop-tab') === shopState.panel);
+    }
+    // Buy grid
+    var buyGrid = el('shopBuyGrid');
+    buyGrid.innerHTML = '';
+    var stk = shopState.stock || { general: [], unique: null };
+    stk.general.forEach(function (entry) {
+      buyGrid.appendChild(makeShopRow(entry.id, entry.price, false));
+    });
+    if (stk.unique) buyGrid.appendChild(makeShopRow(stk.unique.id, stk.unique.price, true));
+    // Sell grid
+    var sellGrid = el('shopSellGrid');
+    sellGrid.innerHTML = '';
+    var invKeys = Object.keys(player.inventory).filter(function (id) {
+      return player.inventory[id] > 0 && ITEMS[id];
+    });
+    if (invKeys.length === 0) {
+      sellGrid.innerHTML = '<p class="shop-empty">売れる物がない</p>';
+    } else {
+      invKeys.forEach(function (id) {
+        // Sell price = half the buy price if we have one, else 15 coin floor.
+        var ref = SHOP_GENERAL.concat(SHOP_UNIQUE).find(function (p) { return p.id === id; });
+        var sellPrice = ref ? Math.floor(ref.price * 0.5) : 15;
+        sellGrid.appendChild(makeSellRow(id, sellPrice));
+      });
+    }
+  }
+  function makeShopRow(itemId, price, isUnique) {
+    var item = ITEMS[itemId];
+    var row = document.createElement('div');
+    row.className = 'shop-row' + (isUnique ? ' unique' : '');
+    var afford = (player.coins || 0) >= price;
+    if (!afford) row.classList.add('disabled');
+    row.innerHTML =
+      '<span class="shop-row-icon">' + (item ? item.icon : '?') + '</span>' +
+      '<div class="shop-row-info">' +
+        '<div class="shop-row-name">' + (item ? item.name : itemId) + '</div>' +
+        '<div class="shop-row-desc">' + (item && item.desc ? item.desc.slice(0, 32) : '') + '</div>' +
+      '</div>' +
+      '<div class="shop-row-price">🪙 ' + price + '</div>';
+    row.addEventListener('click', function () {
+      if (!afford) {
+        toast('コイン不足: あと ' + (price - (player.coins || 0)));
+        return;
+      }
+      player.coins -= price;
+      player.inventory[itemId] = (player.inventory[itemId] || 0) + 1;
+      toast('購入: ' + (item ? item.name : itemId));
+      if (audioInitialized) GameEngine.playSound('item_get');
+      renderShop();
+    });
+    return row;
+  }
+  function makeSellRow(itemId, price) {
+    var item = ITEMS[itemId];
+    var row = document.createElement('div');
+    row.className = 'shop-row';
+    var cnt = player.inventory[itemId] || 0;
+    row.innerHTML =
+      '<span class="shop-row-icon">' + (item ? item.icon : '?') + '</span>' +
+      '<div class="shop-row-info">' +
+        '<div class="shop-row-name">' + (item ? item.name : itemId) + ' ×' + cnt + '</div>' +
+        '<div class="shop-row-desc">' + (item && item.desc ? item.desc.slice(0, 32) : '') + '</div>' +
+      '</div>' +
+      '<div class="shop-row-price">+ 🪙 ' + price + '</div>';
+    row.addEventListener('click', function () {
+      if ((player.inventory[itemId] || 0) <= 0) return;
+      player.inventory[itemId]--;
+      if (player.inventory[itemId] <= 0) delete player.inventory[itemId];
+      player.coins = (player.coins || 0) + price;
+      toast('売却: ' + (item ? item.name : itemId) + ' +🪙' + price);
+      if (audioInitialized) GameEngine.playSound('ui_tap');
+      renderShop();
+    });
+    return row;
+  }
+  // Expose for inline triggers (action on shopkeeper tile)
+  window.openShop = openShop;
+
   // Drop coins on enemy kill. Tuned so a careful run accumulates enough for
   // the Lv11 shop without making weapons feel pointless to use.
   var COIN_DROPS = {
@@ -2677,6 +2813,8 @@
     currentLevelDef = def;
     visitedLevels[levelId] = true;
     inLevelTime = 0;
+    // Refresh shop stock per level so each visit gets new wares
+    shopState.stock = null;
 
     // Build map
     currentMap = buildLevelMap(levelId);
@@ -6138,6 +6276,17 @@
     var row = currentMap.tiles[gy];
     if (!row) return;
     var t = row[gx];
+
+    // Shop tile or adjacent shop tile: open Lv11 vendor overlay
+    if (currentMap.shopSpots && currentMap.shopSpots.length) {
+      for (var si = 0; si < currentMap.shopSpots.length; si++) {
+        var sp = currentMap.shopSpots[si];
+        if (Math.abs(sp.gx - gx) <= 1 && Math.abs(sp.gy - gy) <= 1) {
+          openShop();
+          return;
+        }
+      }
+    }
 
     // No-clip exit
     if (t === 3) {
@@ -9655,6 +9804,26 @@
   //  EVENT BINDINGS
   // ============================================================
   function bindEvents() {
+    // Shop overlay close + tab switching
+    var scBtn = el('shopCloseBtn');
+    if (scBtn) scBtn.addEventListener('click', closeShop);
+    var shopOv = el('shopOverlay');
+    if (shopOv) {
+      shopOv.addEventListener('click', function (e) {
+        // backdrop tap → close. Inside .shop-card stays open.
+        if (e.target === shopOv) closeShop();
+      });
+    }
+    var shopTabs = document.querySelectorAll('.shop-tab');
+    for (var sti = 0; sti < shopTabs.length; sti++) {
+      (function (btn) {
+        btn.addEventListener('click', function () {
+          shopState.panel = btn.getAttribute('data-shop-tab');
+          renderShop();
+        });
+      })(shopTabs[sti]);
+    }
+
     el('startBtn').addEventListener('click', startNewGame);
     el('continueBtn').addEventListener('click', continueGame);
     el('endlessBtn').addEventListener('click', startEndlessMode);
