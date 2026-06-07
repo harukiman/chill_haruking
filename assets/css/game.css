@@ -322,6 +322,30 @@ body {
     1px -1px 0 #000,
     -1px 1px 0 #000;
 }
+/* KILL banner — separate popup near the top of screen so it never
+   overlaps the damage number that fires at the same moment. */
+.damage-popup.kill-banner {
+  top: 22%;
+  color: #ff4040;
+  font-size: 36px;
+  letter-spacing: 0.16em;
+  font-weight: 900;
+  --dx: 0px;
+  text-shadow:
+    0 0 14px rgba(255, 30, 30, 1),
+    0 0 4px rgba(255, 80, 0, 0.9),
+    1px 1px 0 #000,
+    -1px -1px 0 #000,
+    1px -1px 0 #000,
+    -1px 1px 0 #000;
+  animation: kill-pop 0.95s ease-out forwards;
+}
+@keyframes kill-pop {
+  0%   { opacity: 0;   transform: translate(-50%, -50%) scale(0.4); }
+  18%  { opacity: 1;   transform: translate(-50%, -50%) scale(1.35); }
+  35%  { opacity: 1;   transform: translate(-50%, -50%) scale(1.0); }
+  100% { opacity: 0;   transform: translate(-50%, calc(-50% - 36px)) scale(0.95); }
+}
 @keyframes dmg-float {
   0%   { opacity: 0;    transform: translate(calc(-50% + var(--dx, 0px)), -50%) scale(0.6); }
   15%  { opacity: 1;    transform: translate(calc(-50% + var(--dx, 0px)), calc(-50% - 8px)) scale(1.15); }

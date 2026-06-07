@@ -1129,26 +1129,35 @@
     var isBoss = (entity.type === 'boss' || entity.type === 'haruki_boss');
     var showBar = isBoss || (curHp < maxHp - 0.01);
     if (showBar && curHp > 0) {
-      ctx.globalAlpha = fogFactor;
-      var barW = isBoss ? spriteWidth * 1.1 : spriteWidth * 0.7;
-      var barH = isBoss ? Math.max(4, spriteHeight * 0.04) : Math.max(2, spriteHeight * 0.025);
+      // Visibility pass (user report: "hpバーも見えない"):
+      //  * Min bar height bumped 2 → 6 (regular) / 4 → 9 (boss)
+      //  * Bar offset above sprite increased so the head doesn't overlap
+      //  * Black drop-shadow underlay so the bar stays readable on bright
+      //    or busy floors / mid-tone walls
+      //  * Yellow outline now on ALL bars, not just bosses
+      //  * Alpha forced to 1.0 (was tied to fogFactor — distant entities
+      //    had a near-transparent bar)
+      ctx.globalAlpha = 1.0;
+      var barW = isBoss ? spriteWidth * 1.1 : spriteWidth * 0.85;
+      var barH = isBoss ? Math.max(9, spriteHeight * 0.045) : Math.max(6, spriteHeight * 0.032);
       var barX = spriteScreenX - barW / 2;
-      var barY = drawStartY - barH - 4;
+      var barY = drawStartY - barH - 10;
       var centerCol = Math.round(spriteScreenX);
-      // Same z-buffer occlusion as the sprite body — if a wall is in front,
-      // the HP bar wouldn't make sense either.
       if (centerCol >= 0 && centerCol < w && zBuf[centerCol] > depthInTiles) {
-        ctx.fillStyle = 'rgba(0,0,0,0.7)';
+        // Drop shadow underlay
+        ctx.fillStyle = 'rgba(0,0,0,0.85)';
+        ctx.fillRect(barX - 1, barY + 1, barW + 2, barH + 1);
+        // Bar background
+        ctx.fillStyle = 'rgba(20,10,5,0.95)';
         ctx.fillRect(barX, barY, barW, barH);
         var pct = Math.max(0, Math.min(1, curHp / maxHp));
-        var rgb = pct > 0.55 ? '40,200,80' : pct > 0.3 ? '230,190,40' : '230,40,40';
+        var rgb = pct > 0.55 ? '60,220,90' : pct > 0.3 ? '240,200,50' : '240,50,50';
         ctx.fillStyle = 'rgb(' + rgb + ')';
         ctx.fillRect(barX + 1, barY + 1, (barW - 2) * pct, barH - 2);
-        if (isBoss) {
-          ctx.strokeStyle = 'rgba(220,180,60,0.85)';
-          ctx.lineWidth = 1;
-          ctx.strokeRect(barX, barY, barW, barH);
-        }
+        // Outline — gold for boss, light yellow for regular
+        ctx.strokeStyle = isBoss ? 'rgba(240,200,60,0.95)' : 'rgba(220,200,140,0.85)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(barX, barY, barW, barH);
       }
     }
 

@@ -1626,6 +1626,15 @@
     if (entity && entity._isHidden) {
       try { grantEternalCharmIfHidden(entity); } catch (e) {}
     }
+    // Final-boss kill on Lv9 arms the "wall-clip falling" cinematic — the
+    // next time the player bumps a wall on the return trip, the screen
+    // tilts, FPS view slides through the wall, and they fall into the void
+    // before the regular ending screen. Designed per user request:
+    // 「最終ボスのムービーのように動くムービーで帰り道に壁にぶつかった
+    //   際にすり抜け地面に落ちていくような演出」
+    if ((type === 'haruki_boss' || type === 'boss') && currentLevel === 9) {
+      player._wallClipPending = true;
+    }
     // Killing a civilian is morally costly: SAN -25, no coin toast (silent
     // shame), screen red-flashes. The Lv11 district is supposed to be the
     // game's one breath of safety — taking it from the civilians is a choice.
@@ -1800,11 +1809,31 @@
     }
     // Crit if the weapon multiplier is > 1.2 against this enemy.
     var isCrit = wMul >= 1.4;
-    _spawnDamagePopup(dmg, { crit: isCrit, kill: killed });
+    // Damage popup always shown for the hit. On kill we ALSO spawn a
+    // separate KILL banner at a different vertical position so the two
+    // don't visually overlap (user report: 「ダメージとkillが重なって
+    // しまう」). The KILL banner is delayed slightly so the player can
+    // see the damage value first.
+    _spawnDamagePopup(dmg, { crit: isCrit, kill: false });
+    if (killed) {
+      setTimeout(function () { _spawnKillBanner(); }, 120);
+    }
     _flashHitMarker(killed);
     // Blood/spark feedback at the hit location
     _hitParticles(bestE, 6, 'spark');
     return bestE;
+  }
+  // Separate KILL banner popup — top of screen, large red, no overlap
+  // with damage numbers in the screen-center band.
+  function _spawnKillBanner() {
+    if (typeof document === 'undefined' || !document.body) return;
+    var node = document.createElement('div');
+    node.className = 'damage-popup kill-banner';
+    node.textContent = '★ KILL ★';
+    document.body.appendChild(node);
+    setTimeout(function () {
+      if (node && node.parentNode) node.parentNode.removeChild(node);
+    }, 950);
   }
   // ── Hit marker ──
   // Flash 4 diagonal ticks around the reticle. Red+rotate on kill hits.
@@ -4990,10 +5019,20 @@
       moveY = (moveY / len) * speed * dt;
       // Try X
       var nx = player.x + moveX;
-      if (isWalkable(nx, player.y)) player.x = nx;
+      var blockedX = !isWalkable(nx, player.y);
+      if (!blockedX) player.x = nx;
       // Try Y
       var ny = player.y + moveY;
-      if (isWalkable(player.x, ny)) player.y = ny;
+      var blockedY = !isWalkable(player.x, ny);
+      if (!blockedY) player.y = ny;
+      // Post-final-boss wall-clip falling cinematic — armed by
+      // _grantCoinsForKill when the player kills the haruki_boss on Lv9.
+      // Triggers the first time they push into a wall on the return trip.
+      if (player._wallClipPending && (blockedX || blockedY) &&
+          typeof playWallClipFall === 'function' && !_inCinematic) {
+        player._wallClipPending = false;
+        playWallClipFall();
+      }
 
       // Footstep audio every ~24 px traveled
       if (!player._footAccum) player._footAccum = 0;
