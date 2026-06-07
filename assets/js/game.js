@@ -6850,6 +6850,8 @@
     if (navigator.vibrate) navigator.vibrate(30);
     closeItemUseModal();
     refreshPhoneUI();
+    // 「武器を使用したらクイックの表示もすぐに減少反映されるようにする」
+    try { updateDpadHud(); } catch (e) {}
   }
 
   function openMiniGame(id) {
@@ -9728,7 +9730,7 @@
           ? '<span class="inv-perm">∞</span>'
           : (isWeapon ? '<span class="inv-count ammo">×' + cnt + '</span>'
                       : (cnt > 1 ? '<span class="inv-count">' + cnt + '</span>' : ''));
-        slot.innerHTML = '<span style="font-size:28px;">' + item.icon + '</span>' +
+        slot.innerHTML = '<span style="font-size:22px;">' + item.icon + '</span>' +
           countBadge +
           stateMark +
           '<span class="inv-name">' + item.name.slice(0, 6) + '</span>';

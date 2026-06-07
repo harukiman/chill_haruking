@@ -2307,10 +2307,16 @@ button {
 /* INVENTORY TAB — iOS Home Screen 風 */
 .inv-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
-  min-height: 200px;
-  padding: 6px 4px;
+  /* 4 columns on mobile so each slot is smaller and the icon + count don't
+     dominate the screen. 3 cols was bumping into the iOS top bar on small
+     phones. */
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  min-height: 120px;
+  padding: 4px 2px;
+}
+@media (min-width: 520px) {
+  .inv-grid { grid-template-columns: repeat(5, 1fr); gap: 10px; }
 }
 .inv-slot {
   position: relative;
@@ -2801,18 +2807,21 @@ button {
   transform: scale(0.97);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
 }
+/* Phone close × button — toned down so it stops overlapping the
+   in-game phone battery indicator visually. Background goes nearly
+   transparent; only the × glyph + thin border remain. */
 .phone-close-top-btn {
   position: absolute;
   top: calc(env(safe-area-inset-top, 6px) + 10px);
   right: 14px;
-  width: 36px;
-  height: 36px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
-  background: rgba(180, 30, 30, 0.85);
-  color: #fff;
-  border: 1px solid rgba(220, 60, 60, 0.9);
+  background: rgba(0, 0, 0, 0.25);
+  color: rgba(255, 200, 200, 0.55);
+  border: 1px solid rgba(220, 60, 60, 0.35);
   font-family: inherit;
-  font-size: 18px;
+  font-size: 15px;
   font-weight: bold;
   line-height: 1;
   cursor: pointer;
@@ -2820,10 +2829,10 @@ button {
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation !important;
   pointer-events: auto !important;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
 }
 .phone-close-top-btn:active {
-  background: rgba(220, 60, 60, 1);
+  background: rgba(180, 30, 30, 0.65);
+  color: #fff;
   transform: scale(0.92);
 }
 
