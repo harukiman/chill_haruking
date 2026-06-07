@@ -5119,7 +5119,7 @@
     first_sale:       { name: '初めての売却', icon: '💰' },
     bought_unique:    { name: 'ユニーク品を購入', icon: '★' },
     civilian_killed:  { name: '何かを失った', icon: '🩸' },
-    found_secret_doc: { name: '秘匿書類 — 第一号', icon: '✉' },
+    found_secret_doc: { name: '最初の秘匿書類', icon: '✉' },
     all_secret_docs:  { name: '九四四班 — 全資料', icon: '✦' },
     true_secret_end:  { name: '真の脱出 — TRUE END', icon: '∞' }
   };
