@@ -4238,8 +4238,15 @@ button {
   filter: drop-shadow(0 0 14px rgba(212, 179, 64, 0.45));
   line-height: 1;
 }
+.iu-icon-svg {
+  display: inline-block;
+  width: 72px;
+  height: 72px;
+}
+.iu-icon-svg > svg { width: 100%; height: 100%; display: block; }
 @media (max-width: 520px) {
   .item-use-icon { font-size: 38px; }
+  .iu-icon-svg { width: 58px; height: 58px; }
 }
 .item-use-name {
   font-family: 'Times New Roman', serif;

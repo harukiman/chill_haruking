@@ -7791,7 +7791,17 @@
     var it = ITEMS[itemId];
     if (!it) return;
     _pendingItemId = itemId;
-    el('itemUseIcon').textContent = it.icon;
+    // Use SVG silhouette for weapons (the modal is large — emoji would
+    // look like a sticker against the dark backdrop), fall back to emoji
+    // for consumables.
+    var iuIcEl = el('itemUseIcon');
+    if (iuIcEl) {
+      if (WEAPON_SVG[itemId]) {
+        iuIcEl.innerHTML = '<span class="iu-icon-svg">' + WEAPON_SVG[itemId] + '</span>';
+      } else {
+        iuIcEl.textContent = it.icon;
+      }
+    }
     el('itemUseName').textContent = it.name;
     el('itemUseDesc').textContent = it.desc;
     // 装備する button only shown for weapons; also dims if already equipped.
