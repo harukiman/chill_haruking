@@ -1982,7 +1982,24 @@
       acquisition: { type: 'pickup', levelId: 9 },
       title: '秘匿書類 — 第九号 / 最終',
       text:
-        '「私は春木晴美。\n兄を捜してここに降りた。\n兄はもう、ハルキではない。\nここの全てが、ハルキだ。\n\nもし、これを読んでいる貴方が\n全ての書類を集めたなら ──\n\n出口は、扉ではない。\n書類こそが、鍵だ。」' }
+        '「私は春木晴美。\n兄を捜してここに降りた。\n兄はもう、ハルキではない。\nここの全てが、ハルキだ。\n\nもし、これを読んでいる貴方が\n全ての書類を集めたなら ──\n\n出口は、扉ではない。\n書類こそが、鍵だ。」' },
+    // ── 後追加された補遺 (post-script docs) — Lv11/13/15 ──
+    { id: 'sd_10', levelId: 11,
+      acquisition: { type: 'pickup', levelId: 11 },
+      title: '秘匿書類 — 補遺甲 / 戦後の証言',
+      text:
+        '元参謀本部 嘱託員の証言録 (1962)\n\n「九四四班は実在した。\n班長春木は満洲奥地から消えた。\n妹晴美が後を追ったのも事実だ。\n\nだが我々が罪に問われなかったのは、\n彼らが「存在しない」階層に\n降りてしまったからだ。\n\n誰もが、見て見ぬふりをした。」' },
+    { id: 'sd_11', levelId: 13,
+      acquisition: { type: 'kill', levelId: 13, enemyType: 'haruki_boss',
+                     label: '祭壇に祈り、隠しボスを撃破' },
+      title: '秘匿書類 — 補遺乙 / 祭壇の意味',
+      text:
+        '図書館深部より発掘された手稿\n\n「九四四班は、満洲の山中に\n祭壇を組み、被験者を捧げた。\nこの祭壇こそが、最初の no-clip 点だった。\n\nハルキは祭壇に祈る者を、\nもう一度試そうとする。\n\n勝てば ── 護符を手に入れる。」' },
+    { id: 'sd_12', levelId: 15,
+      acquisition: { type: 'pickup', levelId: 15 },
+      title: '秘匿書類 — 補遺丙 / 庭園の記録',
+      text:
+        '春木晴美の手記 (最終ページ)\n\n「ここは、私が母と来た庭園に似ている。\n手入れされ続けるけれど、\n誰も訪れない庭。\n\n私はここで兄を待つ。\nそして、兄はここで私を待つ。\n\n貴方が全ての書類を集めたなら、\n私たちを、一緒に解放してください。」' }
   ];
 
   // Collected secret docs — set keyed by doc id. Loaded from localStorage on
@@ -5546,11 +5563,28 @@
     return pick;
   }
   function setDifficulty(id) {
+    var prev = currentDifficulty;
     if (!DIFFICULTIES[id]) return;
     currentDifficulty = id;
     localStorage.setItem(DIFF_KEY, id);
     toast('難易度: ' + DIFFICULTIES[id].name);
     updateChaosLayer();
+    // CHAOS difficulty gets a Resident-Evil-style stinger when first selected:
+    // multi-track red flash + thunder + jumpscare + shake.
+    if (id === 'chaos' && prev !== 'chaos') {
+      try { GameEngine.redFlash(); } catch (e) {}
+      try { GameEngine.shakeScreen(30, 1.0); } catch (e) {}
+      if (audioInitialized) {
+        try { GameEngine.playSound('thunder'); } catch (e) {}
+        setTimeout(function () {
+          try { GameEngine.playSound('jumpscare'); } catch (e) {}
+        }, 120);
+        setTimeout(function () {
+          try { GameEngine.playSound('breath_drone'); } catch (e) {}
+        }, 380);
+      }
+      if (navigator.vibrate) try { navigator.vibrate([60, 30, 120]); } catch (e) {}
+    }
   }
 
   // CHAOS difficulty owns its own red full-screen overlay (chaosLayer):
@@ -9770,10 +9804,10 @@
     if (activeTab === 'Notes') {
       var list = el('notesList');
       list.innerHTML = '';
-      // Notes section
+      // ── 書類 section (regular notes) ──
       var notesHeader = document.createElement('h3');
       notesHeader.className = 'phone-h3';
-      notesHeader.textContent = 'ロアノート (' + discoveredNotes.length + ' 件)';
+      notesHeader.textContent = '書類 (' + discoveredNotes.length + ' 件)';
       notesHeader.style.margin = '0 0 8px';
       list.appendChild(notesHeader);
       if (discoveredNotes.length === 0) {
@@ -9798,6 +9832,36 @@
           })(note);
           list.appendChild(card);
         }
+      }
+      // ── 秘匿書類 section (lifetime collected secret docs) ──
+      var secretHeader = document.createElement('h3');
+      secretHeader.className = 'phone-h3';
+      var sdHaveNow = Object.keys(collectedSecretDocs).length;
+      var sdTotalNow = SECRET_DOCS.length;
+      secretHeader.textContent = '秘匿書類 (' + sdHaveNow + ' / ' + sdTotalNow + ')';
+      secretHeader.style.margin = '12px 0 8px';
+      list.appendChild(secretHeader);
+      if (sdHaveNow === 0) {
+        var sdEmp = document.createElement('p');
+        sdEmp.className = 'notes-empty';
+        sdEmp.style.padding = '14px 16px';
+        sdEmp.textContent = '秘匿された資料はまだ何も。';
+        list.appendChild(sdEmp);
+      } else {
+        SECRET_DOCS.forEach(function (sd) {
+          if (!collectedSecretDocs[sd.id]) return;
+          var sdCard = document.createElement('div');
+          sdCard.className = 'note-card';
+          sdCard.style.borderLeftColor = '#d4b340';
+          var sdPreview = sd.text.split('\n').join(' ').slice(0, 60) + '...';
+          sdCard.innerHTML =
+            '<div class="note-card-title">[LV' + sd.levelId + '] ' + sd.title + '</div>' +
+            '<div class="note-card-preview">' + sdPreview + '</div>';
+          sdCard.addEventListener('click', function () {
+            showNoteViewer(sd.title, sd.text);
+          });
+          list.appendChild(sdCard);
+        });
       }
       // Achievements section
       var achHeader = document.createElement('h3');
