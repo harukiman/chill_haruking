@@ -9613,7 +9613,7 @@
       if (b.getAttribute('data-tab') === name) b.classList.add('active');
       else b.classList.remove('active');
     });
-    if (name === 'Options') refreshDpadConfigUI();
+    if (name === 'Options' || name === 'Inventory') refreshDpadConfigUI();
     refreshPhoneUI();
   }
 

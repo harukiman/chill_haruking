@@ -3011,6 +3011,24 @@ button {
 
 /* D-pad config UI in phone OPTIONS tab */
 .dpad-config { padding: 8px 10px; }
+/* Compact version for the Inventory tab placement */
+.inv-dpad-config {
+  margin: 0 0 12px;
+  padding: 6px 8px;
+  border: 1px solid rgba(120, 96, 32, 0.4);
+  border-radius: 8px;
+  background: rgba(20, 14, 8, 0.55);
+}
+.inv-dpad-config .dpad-mode-tab { padding: 5px 6px; font-size: 10px; }
+.inv-dpad-config .dpad-hint { font-size: 9px; margin: 4px 0; }
+.inv-dpad-config .dpad-slot-row {
+  display: flex; align-items: center; gap: 6px; margin: 3px 0;
+}
+.inv-dpad-config .dpad-slot-label { font-size: 13px; min-width: 18px; }
+.inv-dpad-config .dpad-slot-select {
+  flex: 1; font-size: 11px; padding: 4px 6px;
+  background: #15100a; color: #d4b340; border: 1px solid #483910;
+}
 .dpad-mode-tabs {
   display: flex; gap: 4px; margin-bottom: 6px;
 }
