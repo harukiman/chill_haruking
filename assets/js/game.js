@@ -10712,25 +10712,32 @@
     function bindManualScroll(el_) {
       if (!el_ || el_._manualScrollBound) return;
       el_._manualScrollBound = true;
-      var startY = 0, startTop = 0, dragging = false;
+      var startY = 0, startTop = 0, dragging = false, isScrolling = false;
+      var DEAD_ZONE = 8; // px before a touch becomes a scroll, so taps still work
       el_.addEventListener('touchstart', function (e) {
         var t = e.changedTouches && e.changedTouches[0];
         if (!t) return;
         startY = t.clientY;
         startTop = el_.scrollTop;
         dragging = true;
+        isScrolling = false;
       }, { passive: true });
       el_.addEventListener('touchmove', function (e) {
         if (!dragging) return;
         var t = e.changedTouches && e.changedTouches[0];
         if (!t) return;
         var dy = t.clientY - startY;
+        if (!isScrolling && Math.abs(dy) < DEAD_ZONE) return; // still a tap
+        isScrolling = true;
         el_.scrollTop = Math.max(0, Math.min(el_.scrollHeight - el_.clientHeight, startTop - dy));
-        // Prevent body from absorbing the drag
         if (e.cancelable) e.preventDefault();
       }, { passive: false });
-      el_.addEventListener('touchend', function () { dragging = false; }, { passive: true });
-      el_.addEventListener('touchcancel', function () { dragging = false; }, { passive: true });
+      el_.addEventListener('touchend', function () {
+        dragging = false; isScrolling = false;
+      }, { passive: true });
+      el_.addEventListener('touchcancel', function () {
+        dragging = false; isScrolling = false;
+      }, { passive: true });
     }
     bindManualScroll(el('titleArchiveOverlay') && el('titleArchiveOverlay').querySelector('.ta-card'));
     bindManualScroll(el('titleSettingsOverlay') && el('titleSettingsOverlay').querySelector('.ts-card'));
