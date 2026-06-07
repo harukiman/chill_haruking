@@ -487,14 +487,20 @@ button {
   -webkit-overflow-scrolling: touch !important;
   overscroll-behavior: contain;
   touch-action: pan-y !important;
-  /* iOS Safari: explicit max-height fixes overlay being clipped under URL bar */
+  /* iOS Safari: svh = smallest viewport, prevents clipping under URL bar.
+     dvh adapts to dynamic toolbar but can still clip mid-scroll on older iOS,
+     so we layer svh as baseline and dvh as expansion. */
   height: 100vh;
+  height: 100svh;
   height: 100dvh;
   max-height: 100vh;
+  max-height: 100svh;
   max-height: 100dvh;
-  /* Account for safe area at top/bottom */
-  padding-top: env(safe-area-inset-top, 0px);
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 30px);
+  /* Account for safe area at top/bottom. Extra 120px buffer so the last
+     row never sits behind the iOS toolbar / Android nav bar / home indicator. */
+  padding-top: calc(env(safe-area-inset-top, 0px) + 8px);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 120px);
+  box-sizing: border-box;
 }
 /* Stack settings from top (override .overlay flex center) — only when actually shown */
 .title-settings-overlay[style*="display: flex"],
@@ -1493,10 +1499,10 @@ button {
  * ============================================================ */
 .quick-item-btn {
   position: fixed;
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 200px);
-  right: 12px;
-  width: 48px;
-  height: 48px;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 210px);
+  right: 14px;
+  width: 50px;
+  height: 50px;
   background: rgba(0, 0, 0, 0.7);
   border: 1px solid rgba(212, 179, 64, 0.55);
   color: #d4b340;
@@ -1590,7 +1596,7 @@ button {
  * ============================================================ */
 .floating-map-btn {
   position: fixed;
-  top: calc(env(safe-area-inset-top, 8px) + 56px);
+  top: calc(env(safe-area-inset-top, 8px) + 60px);
   right: 8px;
   width: 44px;
   height: 44px;
@@ -1614,10 +1620,12 @@ button {
 }
 .floating-map {
   position: fixed;
-  top: calc(env(safe-area-inset-top, 8px) + 56px);
+  top: calc(env(safe-area-inset-top, 8px) + 60px);
   right: 58px;
   width: 180px;
   height: 180px;
+  max-width: calc(100vw - 80px);
+  max-height: 38vh;
   z-index: 17;
   background: rgba(5, 4, 2, 0.55);
   border: 1px solid rgba(120, 96, 32, 0.4);
@@ -1796,11 +1804,18 @@ button {
 .phone-frame {
   width: 100%;
   max-width: 420px;
+  /* Use svh as baseline (smallest viewport, no URL bar) then dvh expands it
+     when toolbar collapses. Prevents bottom clipping. */
   max-height: 100vh;
+  max-height: 100svh;
+  max-height: 100dvh;
   height: 100vh;
+  height: 100svh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   padding: calc(env(safe-area-inset-top, 10px) + 10px) 12px calc(env(safe-area-inset-bottom, 10px) + 10px);
+  box-sizing: border-box;
 }
 
 .phone-screen {
@@ -1899,9 +1914,12 @@ button {
 
 .phone-content-area {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding: 14px 16px 16px;
+  overscroll-behavior: contain;
+  /* Bottom buffer prevents the last row clipping under iOS URL bar / home bar. */
+  padding: 14px 16px calc(env(safe-area-inset-bottom, 0px) + 96px);
   scrollbar-width: thin;
   scrollbar-color: #483910 transparent;
 }
@@ -3283,6 +3301,24 @@ button {
   .menu-btn { min-height: 42px; padding: 10px 22px; font-size: 13px; }
   .title-menu { gap: 7px; }
   .title-content { padding: 14px 16px; }
+  /* HUD: shrink overlap risk on small phones */
+  .floating-map { width: 150px; height: 150px; }
+  .quick-item-btn { width: 46px; height: 46px; bottom: calc(env(safe-area-inset-bottom, 0px) + 180px); }
+  .floating-map-btn { width: 40px; height: 40px; }
+}
+/* Very narrow portrait — stack map/item buttons cleanly along right edge */
+@media (max-width: 380px) {
+  .floating-map-btn { top: calc(env(safe-area-inset-top, 8px) + 56px); right: 6px; width: 38px; height: 38px; }
+  .quick-item-btn   { right: 6px; width: 44px; height: 44px;
+                      bottom: calc(env(safe-area-inset-bottom, 0px) + 200px); }
+  .floating-map     { width: 140px; height: 140px; right: 50px; }
+  .quick-item-panel { right: 56px; max-width: calc(100vw - 70px); }
+}
+/* Landscape phones — push map button left so it never clashes with quick-item */
+@media (orientation: landscape) and (max-height: 480px) {
+  .floating-map-btn { top: calc(env(safe-area-inset-top, 8px) + 4px); right: 60px; }
+  .floating-map    { top: calc(env(safe-area-inset-top, 8px) + 4px); right: 110px; width: 150px; height: 140px; }
+  .quick-item-btn  { bottom: calc(env(safe-area-inset-bottom, 0px) + 100px); width: 44px; height: 44px; }
 }
 @media (max-height: 580px) {
   .game-title { font-size: 32px; }

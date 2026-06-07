@@ -1353,6 +1353,12 @@
   // (e.g. Lv7 hound cluster) from killing the player before they orient.
   var spawnGraceUntil = 0;
   var SPAWN_GRACE_MS = 2800;
+  // Per-level overrides for ambush-prone floors. Lv7 packs hounds near spawn,
+  // so the default 2.8s is not enough to read the corridor layout before contact.
+  var SPAWN_GRACE_BY_LEVEL = { 7: 4500 };
+  function getSpawnGraceMs(lv) {
+    return SPAWN_GRACE_BY_LEVEL[lv] || SPAWN_GRACE_MS;
+  }
   var visitedLevels = {};    // {levelId: true}
   var clearedLevels = {};
   var discoveredNotes = [];  // [{levelId, title, text}]
@@ -1788,13 +1794,19 @@
         if (anyBtn) gp._menuClosePressed = true;
         return;
       }
+      if (!anyBtn) {
+        // Button released after grace — arm the global close gate so the next
+        // fresh press (or any keyup/touchend that already fired) can close.
+        gp._menuClosePressed = false;
+        if (typeof _armNoteCloseIfReady === 'function') _armNoteCloseIfReady();
+      }
       if (anyBtn && !gp._menuClosePressed) {
         gp._menuClosePressed = true;
+        if (typeof _armNoteCloseIfReady === 'function') _armNoteCloseIfReady();
         var closeNoteBtn = el('closeNoteBtn');
         if (closeNoteBtn) closeNoteBtn.click();
         gp._inputLockUntil = performance.now() + 400;
       }
-      if (!anyBtn) gp._menuClosePressed = false;
       return;
     }
     // Tutorial overlay → close
@@ -2142,6 +2154,44 @@
       var itemId = pool[Math.floor(Math.random() * pool.length)];
       pickupSpots[key] = itemId;
       pickupRenderList.push({ key: key, wx: spot.gx * TS + TS / 2, wy: spot.gy * TS + TS / 2, itemId: itemId });
+    }
+    // Enforce weapon budget — even using every weapon found cannot clear the
+    // floor of enemies. Lv9 is the only exception (boss arena, generous cap).
+    // Any over-cap weapons are downgraded to a non-weapon roll from the pool.
+    var WEAPON_BUDGET_BY_LEVEL = {
+      3: 2, 4: 2, 5: 3, 6: 3, 7: 4, 8: 3, 11: 2, 12: 3, 13: 3,
+      9: 6
+    };
+    var weaponCap = (WEAPON_BUDGET_BY_LEVEL[levelId] != null) ? WEAPON_BUDGET_BY_LEVEL[levelId] : 2;
+    var nonWeaponPool = pool.filter(function (id) {
+      return !(ITEMS[id] && ITEMS[id].category === 'weapon');
+    });
+    if (nonWeaponPool.length === 0) nonWeaponPool = ['almond_water'];
+    // Collect weapon spot keys, shuffle so the downgrade is fair.
+    var weaponKeys = [];
+    for (var wk in pickupSpots) {
+      if (Object.prototype.hasOwnProperty.call(pickupSpots, wk)) {
+        var wid = pickupSpots[wk];
+        if (ITEMS[wid] && ITEMS[wid].category === 'weapon') weaponKeys.push(wk);
+      }
+    }
+    for (var wsh = weaponKeys.length - 1; wsh > 0; wsh--) {
+      var wj = Math.floor(Math.random() * (wsh + 1));
+      var wt = weaponKeys[wsh]; weaponKeys[wsh] = weaponKeys[wj]; weaponKeys[wj] = wt;
+    }
+    if (weaponKeys.length > weaponCap) {
+      for (var wOver = weaponCap; wOver < weaponKeys.length; wOver++) {
+        var dk = weaponKeys[wOver];
+        var newId = nonWeaponPool[Math.floor(Math.random() * nonWeaponPool.length)];
+        pickupSpots[dk] = newId;
+        // Update render list entry too
+        for (var pri = 0; pri < pickupRenderList.length; pri++) {
+          if (pickupRenderList[pri].key === dk) {
+            pickupRenderList[pri].itemId = newId;
+            break;
+          }
+        }
+      }
     }
 
     // Assign notes randomly from pool (every run shows different notes)
@@ -2557,14 +2607,15 @@
   function startPlaying() {
     state = ST.PLAYING;
     // Give the player a brief invulnerability window to read the surroundings.
-    spawnGraceUntil = performance.now() + SPAWN_GRACE_MS;
+    var graceMs = getSpawnGraceMs(currentLevel);
+    spawnGraceUntil = performance.now() + graceMs;
     var sgEl = el('spawnGraceHud');
     if (sgEl) {
       sgEl.style.display = 'flex';
       setTimeout(function () {
         var e2 = el('spawnGraceHud');
         if (e2) e2.style.display = 'none';
-      }, SPAWN_GRACE_MS);
+      }, graceMs);
     }
     // Force canvas resize (fix: top-left only bug after overlays)
     if (GameEngine._resize) GameEngine._resize();
@@ -4587,12 +4638,47 @@
   // Open time of the note viewer — used to gate close input so the same
   // button press that opens (拾う) doesn't immediately close it on the next frame.
   var _noteViewerOpenedAt = 0;
-  var NOTE_INPUT_LOCK_MS = 700;
+  var NOTE_INPUT_LOCK_MS = 900;
+  // Close-arming state machine: a close attempt is honoured only after BOTH
+  //   (a) the open-grace (NOTE_INPUT_LOCK_MS) has elapsed AND
+  //   (b) at least one input release (keyup / touchend / mouseup / blur) has fired
+  // since the note opened. This prevents the same press that opened the note
+  // (or its auto-repeat, or its iOS-synthesized click) from closing it.
+  var _noteCloseArmed = false;
+  function _armNoteCloseIfReady() {
+    if (performance.now() - _noteViewerOpenedAt >= NOTE_INPUT_LOCK_MS) {
+      _noteCloseArmed = true;
+    } else {
+      // Release happened too early — re-check once the grace expires.
+      setTimeout(function () { _noteCloseArmed = true; },
+        Math.max(0, NOTE_INPUT_LOCK_MS - (performance.now() - _noteViewerOpenedAt)));
+    }
+  }
+  function _isNoteOpen() {
+    var nv = el('noteViewerOverlay');
+    return nv && nv.style.display !== 'none' && nv.style.display !== '';
+  }
+  // Global release listeners — armed once per session.
+  if (!window._noteReleaseListenersBound) {
+    window._noteReleaseListenersBound = true;
+    var onRelease = function () { if (_isNoteOpen()) _armNoteCloseIfReady(); };
+    window.addEventListener('keyup', onRelease, true);
+    window.addEventListener('touchend', onRelease, true);
+    window.addEventListener('touchcancel', onRelease, true);
+    window.addEventListener('mouseup', onRelease, true);
+    window.addEventListener('blur', onRelease, true);
+  }
+  function _canCloseNote() {
+    if (!_noteCloseArmed) return false;
+    if (performance.now() - _noteViewerOpenedAt < NOTE_INPUT_LOCK_MS) return false;
+    return true;
+  }
   function showNoteViewer(title, text) {
     el('noteTitle').textContent = title;
     el('noteText').textContent = text;
     showOverlay('noteViewerOverlay');
     _noteViewerOpenedAt = performance.now();
+    _noteCloseArmed = false;
     var closeBtn = el('closeNoteBtn');
     if (closeBtn) {
       closeBtn.disabled = true;
@@ -4601,6 +4687,26 @@
         closeBtn.disabled = false;
         closeBtn.style.opacity = '';
       }, NOTE_INPUT_LOCK_MS);
+    }
+    // Any-tap close: tapping anywhere on the overlay (after arm) closes the
+    // note, matching gamepad any-button and keyboard any-key behavior.
+    var nvOverlay = el('noteViewerOverlay');
+    if (nvOverlay && !nvOverlay._anyTapBound) {
+      nvOverlay._anyTapBound = true;
+      var anyTapClose = function (ev) {
+        if (!_canCloseNote()) return;
+        // Ignore taps on the close button itself — it has its own handler.
+        var t = ev.target;
+        while (t && t !== nvOverlay) {
+          if (t.id === 'closeNoteBtn') return;
+          t = t.parentNode;
+        }
+        ev.preventDefault();
+        var cb = el('closeNoteBtn');
+        if (cb) cb.click();
+      };
+      nvOverlay.addEventListener('click', anyTapClose);
+      nvOverlay.addEventListener('touchstart', anyTapClose, { passive: false });
     }
   }
 
@@ -7378,7 +7484,14 @@
       });
     });
 
-    el('closeNoteBtn').addEventListener('click', function () {
+    el('closeNoteBtn').addEventListener('click', function (e) {
+      // Final guard: ignore any synthetic clicks that slip past the disabled
+      // attribute window — only close when armed (released-then-pressed AND
+      // open-grace elapsed).
+      if (!_canCloseNote()) {
+        if (e && e.preventDefault) e.preventDefault();
+        return;
+      }
       hideOverlay('noteViewerOverlay');
       if (audioInitialized) GameEngine.playSound('paper_close');
     });
@@ -7539,12 +7652,22 @@
       // Don't hijack typing in inputs (e.g. settings sliders)
       var tgt = e.target;
       if (tgt && (tgt.tagName === 'INPUT' || tgt.tagName === 'SELECT' || tgt.tagName === 'TEXTAREA')) return;
+      // Note viewer: any key closes (after arm), matching gamepad any-button behavior.
+      // Auto-repeat keydown events are ignored so holding the pickup key doesn't close.
+      var nvAny = el('noteViewerOverlay');
+      if (nvAny && nvAny.style.display !== 'none' && nvAny.style.display !== '') {
+        if (!e.repeat && _canCloseNote()) {
+          el('closeNoteBtn').click();
+        }
+        e.preventDefault();
+        return;
+      }
       if (e.key === 'Escape') {
         // Close any open overlay in priority order
         var nv = el('noteViewerOverlay');
         if (nv && nv.style.display !== 'none' && nv.style.display !== '') {
-          // Respect the input-lock so the same Escape that opened it isn't bound
-          if (performance.now() - _noteViewerOpenedAt >= NOTE_INPUT_LOCK_MS) {
+          // Respect the arm-gate (release + grace) before honouring Esc.
+          if (_canCloseNote()) {
             el('closeNoteBtn').click();
           }
           return;
