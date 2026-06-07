@@ -1571,9 +1571,25 @@
     var amt = COIN_DROPS[type] || 1;
     player.coins = (player.coins || 0) + amt;
     if (amt >= 10) toast('+ ' + amt + ' コイン');
-    // Track lifetime defeats for the bestiary.
+    // Track lifetime defeats for the bestiary. Stores count + first-kill
+    // timestamp + last-kill level + (for bosses) the bossHp HP max so the
+    // panel can show 「初討伐 / 最終討伐 / HP 上限」.
     try {
-      defeatedEntities[type] = (defeatedEntities[type] || 0) + 1;
+      var entry = defeatedEntities[type];
+      if (typeof entry !== 'object') {
+        entry = { count: (entry || 0), firstAt: Date.now(), lastLevel: currentLevel };
+      }
+      entry.count = (entry.count || 0) + 1;
+      entry.lastAt = Date.now();
+      entry.lastLevel = currentLevel;
+      if (entity) {
+        if (entity.bossHp !== undefined && (!entry.hpMaxSeen || entity.bossHp > entry.hpMaxSeen)) {
+          entry.hpMaxSeen = entity.bossHp;
+        } else if (entity.hpMax !== undefined && (!entry.hpMaxSeen || entity.hpMax > entry.hpMaxSeen)) {
+          entry.hpMaxSeen = entity.hpMax;
+        }
+      }
+      defeatedEntities[type] = entry;
       localStorage.setItem(DEFEATED_KEY, JSON.stringify(defeatedEntities));
     } catch (e) {}
     // Hidden boss kill grants the eternal_charm + persistent flag.
@@ -12211,14 +12227,22 @@
       boss:        { icon: '👹', name: 'BOSS' },
       haruki_boss: { icon: '🩸', name: 'HARUKI 真' }
     };
+    // Helper — normalize legacy number format to object format on read
+    function _bestEntry(t) {
+      var v = defeatedEntities[t];
+      if (!v) return null;
+      if (typeof v === 'number') return { count: v };
+      return v;
+    }
     var allEntityIds = Object.keys(BESTIARY_DATA);
-    var defeatedIds = allEntityIds.filter(function (t) { return defeatedEntities[t] > 0; });
+    var defeatedIds = allEntityIds.filter(function (t) { return (_bestEntry(t) || {}).count > 0; });
     if (bestCount) bestCount.textContent = defeatedIds.length + ' / ' + allEntityIds.length + ' 生物';
     if (bestList) {
       bestList.innerHTML = '';
       allEntityIds.forEach(function (t) {
         var d = BESTIARY_DATA[t];
-        var killed = defeatedEntities[t] > 0;
+        var entry = _bestEntry(t) || {};
+        var killed = (entry.count || 0) > 0;
         var row = document.createElement('div');
         row.className = 'ta-note-row' + (killed ? '' : ' locked');
         if (killed) {
@@ -12240,15 +12264,25 @@
           var descHtml = intro
             ? '<div style="color:#d8d2bc;margin-top:6px;font-size:11px;line-height:1.6;white-space:pre-wrap;">' + intro.desc + '</div>'
             : '';
+          // Detail record: first kill date + last level + HP seen
+          var detailParts = [];
+          if (entry.firstAt) detailParts.push('初討伐: ' + new Date(entry.firstAt).toLocaleDateString());
+          if (entry.lastLevel !== undefined) detailParts.push('最終 LV' + entry.lastLevel);
+          if (entry.hpMaxSeen) detailParts.push('HP 上限: ' + entry.hpMaxSeen);
+          var detailHtml = detailParts.length
+            ? '<div style="color:#806020;margin-top:4px;font-size:10px;letter-spacing:0.1em;">' +
+              detailParts.join(' / ') + '</div>'
+            : '';
           row.innerHTML =
             '<div class="ta-item-head">' +
               '<span class="ta-item-icon">' + d.icon + '</span>' +
               '<span class="ta-item-name">' + d.name + '</span>' +
-              '<span class="ta-item-cat">×' + defeatedEntities[t] + '</span>' +
+              '<span class="ta-item-cat">×' + (entry.count || 0) + '</span>' +
             '</div>' +
             '<div class="ta-note-body" style="display:block;">' +
               '<div style="color:#88c050;">有効: ' + strongStr + '</div>' +
               '<div style="color:#c63a3a;">不得手: ' + weakStr + '</div>' +
+              detailHtml +
               descHtml +
             '</div>';
         } else {
