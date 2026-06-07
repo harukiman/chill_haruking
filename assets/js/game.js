@@ -9943,7 +9943,10 @@
     var cont = el('continueBtn');
     if (cont) cont.style.display = hasSave() ? '' : 'none';
     var diff = el('difficultyBtn');
-    if (diff) diff.textContent = '難易度: ' + (DIFFICULTIES[currentDifficulty] ? DIFFICULTIES[currentDifficulty].name : 'NORMAL');
+    if (diff) {
+      diff.textContent = '難易度: ' + (DIFFICULTIES[currentDifficulty] ? DIFFICULTIES[currentDifficulty].name : 'NORMAL');
+      diff.classList.toggle('chaos-on', currentDifficulty === 'chaos');
+    }
     var cb = el('cheatBtn');
     if (cb) {
       cb.style.display = cheatUnlocked ? '' : 'none';
@@ -10119,7 +10122,9 @@
       var idx = order.indexOf(currentDifficulty);
       var next = order[(idx + 1) % order.length];
       setDifficulty(next);
-      el('difficultyBtn').textContent = '難易度: ' + DIFFICULTIES[next].name;
+      var dEl = el('difficultyBtn');
+      dEl.textContent = '難易度: ' + DIFFICULTIES[next].name;
+      dEl.classList.toggle('chaos-on', next === 'chaos');
     });
     el('controlsBtn').addEventListener('click', function () {
       showOverlay('tutorialOverlay');
@@ -10925,7 +10930,10 @@
           var nx = order[(idx + 1) % order.length];
           setDifficulty(nx);
           var dbtn = el('difficultyBtn');
-          if (dbtn) dbtn.textContent = '難易度: ' + DIFFICULTIES[nx].name;
+          if (dbtn) {
+            dbtn.textContent = '難易度: ' + DIFFICULTIES[nx].name;
+            dbtn.classList.toggle('chaos-on', nx === 'chaos');
+          }
           break;
         case 'cheat':
           stage = 'cheat';
