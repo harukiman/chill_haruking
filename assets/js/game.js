@@ -8865,6 +8865,10 @@
   function _uncannySpeak(text) {
     try {
       if (!('speechSynthesis' in window) || !window.SpeechSynthesisUtterance) return;
+      // Respect the title-settings TTS toggle on the direct path too.
+      // speakSituational already gates on this, but encounter cinematics
+      // and a couple of scripted beats call _uncannySpeak directly.
+      try { if (localStorage.getItem('bk_tts_voices') === '0') return; } catch (e) {}
       var now = performance.now();
       if (now - _lastUncannySpeakAt < 3000) return;
       _lastUncannySpeakAt = now;
