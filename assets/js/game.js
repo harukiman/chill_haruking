@@ -527,6 +527,59 @@
     '############################'
   ];
 
+  // ── LEVEL 14 — THE TRENCH ──────────────────────────────
+  // Flooded corridors of an abandoned undersea station. Water tiles drain
+  // SAN; column rooms hold items between the channels.
+  var LV14_ROWS = [
+    '##########################',
+    '#P~~~~~~~~~~~~~~~~~~~~~~~#',
+    '#.....FF....FF.....FF....#',
+    '#.i..FFF....FFF...FFF..n.#',
+    '#.....FF....FF.....FF....#',
+    '#~~~~~~~~~~~~~~~~~~~~~~~~#',
+    '#FFFF......FFFF......FFFF#',
+    '#F..F..F...F..F..F...F..F#',
+    '#F..D..F.s.F..D..F...F..F#',
+    '#FFFF..F...FFFF..F...FFFF#',
+    '#~~~~~~~~~~~~~~~~~~~~~~~~#',
+    '#......FFFFFFFFFFF.......#',
+    '#..F...F.........F....n..#',
+    '#......F....i....F.......#',
+    '#......FFFFFFFFFFF...F...#',
+    '#~~~~~~~~~~~~~~~~~~~~~~~~#',
+    '#.....FFFF....FFFF.......#',
+    '#.n...F..D....D..F...i...#',
+    '#.....F..F....F..F.......#',
+    '#.....FFFF....FFFF.......#',
+    '#~~~~~~~~~~~~~~~~~~~X~~~~#',
+    '##########################'
+  ];
+
+  // ── LEVEL 15 — THE GARDEN ──────────────────────────────
+  // Eternal greenhouse: concentric hedge maze with item nodes inside.
+  var LV15_ROWS = [
+    '##########################',
+    '#P..F....F....F....F....F#',
+    '#FFFFFFFFFFFFFFFFFFFFFFFF#',
+    '#F......i...n...........F#',
+    '#F...F....F....F....F...F#',
+    '#F......................F#',
+    '#F...F....F....D....F...F#',
+    '#F..........s...........F#',
+    '#F...F....F....F....F...F#',
+    '#F......................F#',
+    '#F...D....F.i..F....F...F#',
+    '#F......................F#',
+    '#F...F..n.F....F....D...F#',
+    '#F......................F#',
+    '#F...F....F....F....F...F#',
+    '#F..........i...........F#',
+    '#FFFFFFFFFFFFFFFFFFFFFFFF#',
+    '#........................#',
+    '#.......................X#',
+    '##########################'
+  ];
+
   // ── LEVEL THEMES (palette per level) ────────────────────
   var THEMES = {
   // Override theme ambient loops with refined per-level BGM
@@ -773,6 +826,44 @@
       vignette: 0.45,
       grain: 0.3,
       chromatic: 0.2
+    },
+    14: { // THE TRENCH — deep teal, bioluminescent flecks
+      wall: {
+        upper: { 'default': [20, 60, 80], 1: [20, 60, 80] },
+        flat: true,
+        pattern: 'concrete'
+      },
+      bg: {
+        ceiling: ['#020608', '#04101c', '#08182c'],
+        floor:   ['#020608', '#06141e', '#0a1c2a']
+      },
+      floorDefault: [20, 50, 70],
+      ceilingDefault: [10, 30, 50],
+      fogDist: 9,
+      ambientLoop: 'pipe_drip',
+      sanDrain: 1.1,
+      vignette: 0.55,
+      grain: 0.35,
+      chromatic: 0.25
+    },
+    15: { // THE GARDEN — overgrown moss green
+      wall: {
+        upper: { 'default': [40, 80, 30], 1: [40, 80, 30] },
+        flat: true,
+        pattern: 'concrete'
+      },
+      bg: {
+        ceiling: ['#0a1808', '#152610', '#203620'],
+        floor:   ['#0a1408', '#162818', '#243020']
+      },
+      floorDefault: [30, 60, 28],
+      ceilingDefault: [20, 40, 18],
+      fogDist: 12,
+      ambientLoop: 'wind',
+      sanDrain: 0.7,
+      vignette: 0.4,
+      grain: 0.3,
+      chromatic: 0.15
     }
   };
 
@@ -896,7 +987,25 @@
            { type: 'skinstealer', gx: 19, gy: 17 }
          ],
          bossRequired: true, // exit door locked until boss is dead
-         timeLimit: null }
+         timeLimit: null },
+    14: { id: 14, name: 'LEVEL 14', subtitle: 'THE TRENCH',
+          rows: LV14_ROWS, theme: 14,
+          hint: '海底のごとき廃ステーション。床のほとんどが浸水しSANを削る。',
+          intro: '塩の匂い。足元は水。— 深くまで、降りて来てしまった。',
+          entities: [
+            { type: 'crawler', gx: 8, gy: 8 },
+            { type: 'skinstealer', gx: 18, gy: 13 }
+          ],
+          timeLimit: null },
+    15: { id: 15, name: 'LEVEL 15', subtitle: 'THE GARDEN',
+          rows: LV15_ROWS, theme: 15,
+          hint: '永遠に手入れされ続ける温室の生垣迷路。中心に何かを隠している。',
+          intro: '緑の匂い — 朽ちていない、しかし生きてもいない。',
+          entities: [
+            { type: 'faceling', gx: 12, gy: 8 },
+            { type: 'hound', gx: 18, gy: 14 }
+          ],
+          timeLimit: null }
   };
 
   // ── ITEM DEFINITIONS ────────────────────────────────────
@@ -1210,6 +1319,72 @@
       toast(hit ? '★ 神撃: ' + getEntityLabel(hit.type) : '空振り');
     }
   };
+  ITEMS.siren_whistle = {
+    id: 'siren_whistle', name: 'サイレンの笛 (ユニーク)', icon: '🔔',
+    desc: 'ユニーク。全エンティティを5秒間スタンさせ、視認不能にする。',
+    category: 'consumable',
+    effect: function (p) {
+      for (var sw = 0; sw < entities.length; sw++) {
+        if (entities[sw].alive) entities[sw].stunTimer = Math.max(entities[sw].stunTimer || 0, 5);
+      }
+      if (audioInitialized) { GameEngine.playSound('stinger'); GameEngine.playSound('whisper'); }
+      GameEngine.shakeScreen(8, 0.3);
+      toast('★ サイレン — 全敵スタン 5秒');
+    }
+  };
+  ITEMS.mirror_shard = {
+    id: 'mirror_shard', name: '鏡片 (ユニーク)', icon: '🪞',
+    desc: 'ユニーク。15秒間、被ダメージを跳ね返す。',
+    category: 'consumable',
+    effect: function (p) {
+      p._mirrorShardUntil = performance.now() + 15000;
+      if (audioInitialized) GameEngine.playSound('item_get');
+      toast('★ 鏡片 — 15秒間 反射防御');
+    }
+  };
+  ITEMS.revenant_blade = {
+    id: 'revenant_blade', name: '亡者の刃 (ユニーク武器)', icon: '🗡',
+    desc: 'ユニーク武器。命中時 HP +12 回復。中距離扇形。',
+    category: 'weapon',
+    effect: function (p) {
+      var hit = _attackForward(p, { dmg: 80, rangeTiles: 3, coneDeg: 70 });
+      if (hit) {
+        p.hp = Math.min(p.hpMax, p.hp + 12);
+        toast('★ 吸血: ' + getEntityLabel(hit.type) + ' HP +12');
+      } else {
+        toast('空振り');
+      }
+      if (audioInitialized) GameEngine.playSound('hit');
+      GameEngine.shakeScreen(5, 0.2);
+    }
+  };
+  ITEMS.void_grenade = {
+    id: 'void_grenade', name: '虚無の手榴弾 (ユニーク武器)', icon: '💣',
+    desc: 'ユニーク武器。プレイヤー周囲 3 タイル全方向に強ダメージ。',
+    category: 'weapon',
+    effect: function (p) {
+      var killed = 0;
+      for (var vg = 0; vg < entities.length; vg++) {
+        var ve = entities[vg];
+        if (!ve.alive) continue;
+        var vdx = ve.x - p.x, vdy = ve.y - p.y;
+        var vd = Math.sqrt(vdx * vdx + vdy * vdy);
+        if (vd < 3 * TS) {
+          if (ve.type === 'boss' || ve.type === 'haruki_boss') {
+            ve.bossHp = (ve.bossHp !== undefined ? ve.bossHp : 200) - 70;
+            if (ve.bossHp <= 0) { ve.alive = false; killed++; }
+          } else {
+            ve.hp = (ve.hp !== undefined ? ve.hp : 100) - 120;
+            if (ve.hp <= 0) { ve.alive = false; ve.deathAt = performance.now(); killed++; }
+          }
+        }
+      }
+      if (audioInitialized) { GameEngine.playSound('thunder'); GameEngine.playSound('hit'); }
+      GameEngine.shakeScreen(20, 0.7);
+      GameEngine.redFlash();
+      toast('★ 虚無爆発: ' + killed + ' 撃破');
+    }
+  };
 
   // ── ITEMS POOL BY LEVEL ─────────────────────────────────
   var LEVEL_ITEM_POOLS = {
@@ -1227,7 +1402,9 @@
     // Lv9: final-boss arena — extra firepower available.
     9: ['almond_water', 'voucher', 'bandage', 'energy_bar', 'almond_milk', 'lockpick',
         'pistol', 'shotgun', 'katana', 'revolver'],
-    13: ['almond_water', 'energy_bar', 'compass', 'flare', 'pistol', 'katana']
+    13: ['almond_water', 'energy_bar', 'compass', 'flare', 'pistol', 'katana'],
+    14: ['almond_water', 'bandage', 'flare', 'antacid', 'flashlight', 'pistol', 'katana'],
+    15: ['almond_water', 'bandage', 'energy_bar', 'compass', 'flare', 'pistol', 'shotgun']
   };
 
   // ── NOTES ───────────────────────────────────────────────
@@ -1594,6 +1771,7 @@
     boss: { name: 'THE ARCHITECT', desc: 'バックルーム公式分類 Class 5 (Apex)。\nLevel 9 The Suburbs を構築・管理する存在。\n王冠と赤い目。3 段階で攻撃パターンが変化する。\nフレア (50dmg) / 鏡 (100dmg) で抵抗可能。' },
     mrhotel: { name: 'MR. HOTEL', desc: 'バックルーム公式分類 Class 4。\nLevel 5 ホテルの「支配人」。シルクハットに顔の無いスーツ。\n名前を尋ねられても答えるな。盗まれる。\n4 マス以内で SAN を継続吸引。' },
     haruki: { name: 'HARUKI', desc: '非公式。前ホテルからの no-clipper。\nお前を追って壁の向こうまで来た存在。\n姿は不定形だが、お前の最も恐ろしい記憶として現れる。\n電話のベルが近接の兆候。' },
+    haruki_boss: { name: 'HARUKI 真', desc: '— 全ての階層の終着点に、彼女は立っていた。\n3 段階の追跡形態。第3段階で影分身が出現する。\nハルキの護符 (ユニーク) があれば一時的に退避可能。' },
     echo: { name: 'ECHO', desc: 'バックルーム未分類。\nお前の動きを 0.6 秒遅れで完全模倣する亡霊。\n直視すると鏡を見ているような感覚に襲われ、SAN が削れる。\n振り切るには思考しない急な動きが有効。' },
     faceling: { name: 'FACELING', desc: 'バックルーム公式分類 Class 1 (擬態型)。\nM.E.G. メンバーや過去の no-clipper の姿に化ける。\n顔は常に「ぼやけて」見える。\n敵対的ではないが、稀に視線を合わせると SAN を引き抜く。' }
   };
@@ -2165,7 +2343,8 @@
     // Entity-specific icons
     var entityIcons = {
       hound: '🐺', smiler: '😬', skinstealer: '🧥', partygoer: '🎉',
-      crawler: '🕷', wretch: '👁', boss: '👑', mrhotel: '🎩', haruki: '👤'
+      crawler: '🕷', wretch: '👁', boss: '👑', mrhotel: '🎩',
+      haruki: '👤', haruki_boss: '🩸', faceling: '🫥', echo: '🌀'
     };
     el('encounterShape').textContent = entityIcons[entityType] || '⚠';
     el('encounterName').textContent = intro.name;
@@ -2260,6 +2439,7 @@
     // Any over-cap weapons are downgraded to a non-weapon roll from the pool.
     var WEAPON_BUDGET_BY_LEVEL = {
       3: 2, 4: 2, 5: 3, 6: 3, 7: 4, 8: 3, 11: 2, 12: 3, 13: 3,
+      14: 2, 15: 3,
       9: 10  // final boss arena: user requested 武器を大量配置
     };
     var weaponCap = (WEAPON_BUDGET_BY_LEVEL[levelId] != null) ? WEAPON_BUDGET_BY_LEVEL[levelId] : 2;
@@ -2348,7 +2528,7 @@
     var SURFACE_BY_LEVEL = {
       0: 'carpet', 1: 'concrete', 2: 'water', 3: 'metal', 4: 'carpet',
       5: 'carpet', 6: 'concrete', 7: 'concrete', 8: 'wood', 9: 'gravel',
-      11: 'metal', 12: 'wood'
+      11: 'metal', 12: 'wood', 14: 'water', 15: 'gravel'
     };
     if (typeof GameEngine.setPlayerFootSurface === 'function') {
       GameEngine.setPlayerFootSurface(SURFACE_BY_LEVEL[levelId] || 'carpet');
@@ -2477,11 +2657,19 @@
       setTimeout(function () {
         hideOverlay('loadingScreen');
         forceCanvasResize();
-        // Show level reach cinematic
-        playLevelReachCinematic(def, function () {
+        // Lv9 plays the Haruki boss reveal cutscene before the standard
+        // level-reach card. Other levels just show the reach card.
+        var afterReach = function () {
           forceCanvasResize();
           startPlaying();
-        });
+        };
+        if (levelId === 9 && typeof playHarukiBossCutscene === 'function') {
+          playHarukiBossCutscene(function () {
+            playLevelReachCinematic(def, afterReach);
+          });
+        } else {
+          playLevelReachCinematic(def, afterReach);
+        }
       }, 900);
     } else {
       forceCanvasResize();
@@ -2493,6 +2681,134 @@
     if (GameEngine._resize) GameEngine._resize();
     // Also dispatch global resize event for any other listeners
     try { window.dispatchEvent(new Event('resize')); } catch (e) {}
+  }
+
+  // ── Haruki Boss Reveal Cutscene ──
+  // ~8s animated CSS sequence: silhouette walks forward through rain,
+  // lightning strikes twice, portrait zooms in, then transitions out.
+  function playHarukiBossCutscene(onDone) {
+    var overlay = el('harukiBossCutscene');
+    if (!overlay) { onDone(); return; }
+    _inCinematic = true;
+    showOverlay('harukiBossCutscene');
+    var lightning = el('hbcLightning');
+    var portrait = el('hbcPortrait');
+    var hbcText = el('hbcText');
+    var skipBtn = el('hbcSkipBtn');
+    if (portrait) portrait.classList.remove('zoom');
+    if (hbcText) { hbcText.classList.remove('show'); hbcText.textContent = ''; }
+    if (audioInitialized) {
+      GameEngine.startLoop('wind');
+      GameEngine.playSound('breath_drone');
+    }
+    var cancelled = false;
+    var timers = [];
+    function later(ms, fn) {
+      timers.push(setTimeout(function () { if (!cancelled) fn(); }, ms));
+    }
+    function setText(t) {
+      if (!hbcText) return;
+      hbcText.classList.remove('show');
+      void hbcText.offsetWidth;
+      hbcText.textContent = t;
+      requestAnimationFrame(function () { hbcText.classList.add('show'); });
+    }
+    function flashLightning() {
+      if (!lightning) return;
+      lightning.classList.remove('flash');
+      void lightning.offsetWidth;
+      lightning.classList.add('flash');
+      if (audioInitialized) GameEngine.playSound('thunder');
+      GameEngine.shakeScreen(18, 0.5);
+    }
+    function finish() {
+      if (cancelled) return;
+      cancelled = true;
+      for (var ti = 0; ti < timers.length; ti++) clearTimeout(timers[ti]);
+      hideOverlay('harukiBossCutscene');
+      if (audioInitialized) GameEngine.stopLoop('wind');
+      _inCinematic = false;
+      if (skipBtn) try { skipBtn.removeEventListener('click', finish); } catch (e) {}
+      try { overlay.removeEventListener('click', finish); } catch (e) {}
+      onDone();
+    }
+    if (skipBtn) skipBtn.addEventListener('click', finish);
+    overlay.addEventListener('click', finish);
+    // Scripted beats
+    later(400,  function () { setText('— LEVEL 9 — THE SUBURBS'); });
+    later(1700, flashLightning);
+    later(2200, function () { setText('空に月はない。\n月のような、何かがある。'); });
+    later(4200, flashLightning);
+    later(4600, function () { setText('— 待っていたのは、ハルキだった。'); });
+    later(6800, function () {
+      if (portrait) portrait.classList.add('zoom');
+      if (audioInitialized) {
+        GameEngine.playSound('jumpscare');
+        GameEngine.playSound('whisper');
+      }
+      GameEngine.shakeScreen(30, 1.2);
+    });
+    later(8200, function () { setText('— おかえり。'); });
+    later(10500, finish);
+  }
+
+  // ── Ending Sequence (after final boss defeat) ──
+  // Plays when the player passes the X tile on Lv9 after killing the boss.
+  function playEndingSequence(onDone) {
+    var overlay = el('endingSequence');
+    if (!overlay) { onDone(); return; }
+    _inCinematic = true;
+    showOverlay('endingSequence');
+    var esText = el('esText');
+    if (esText) { esText.classList.remove('show'); esText.textContent = ''; }
+    if (audioInitialized) {
+      GameEngine.playSound('level_clear');
+      GameEngine.playSound('stinger');
+    }
+    var cancelled = false;
+    var timers = [];
+    function later(ms, fn) {
+      timers.push(setTimeout(function () { if (!cancelled) fn(); }, ms));
+    }
+    function setText(t) {
+      if (!esText) return;
+      esText.classList.remove('show');
+      void esText.offsetWidth;
+      esText.textContent = t;
+      requestAnimationFrame(function () { esText.classList.add('show'); });
+    }
+    function finish() {
+      if (cancelled) return;
+      cancelled = true;
+      for (var ti = 0; ti < timers.length; ti++) clearTimeout(timers[ti]);
+      hideOverlay('endingSequence');
+      _inCinematic = false;
+      try { overlay.removeEventListener('click', finish); } catch (e) {}
+      onDone();
+    }
+    overlay.addEventListener('click', finish);
+    later(1200, function () { setText('— 朝が来た。'); });
+    later(4000, function () { setText('お前は、歩き続ける。'); });
+    later(7000, function () { setText('THE BACKROOMS — END'); });
+    later(11000, finish);
+  }
+
+  // ── Unique Reward Visual Flash ──
+  // Brief CSS-animated overlay shown when player wins a UNIQUE prize.
+  function showUniqueRewardFlash(itemId) {
+    var overlay = el('uniqueRewardFlash');
+    var item = ITEMS[itemId];
+    if (!overlay || !item) return;
+    var icon = el('urfIcon');
+    var name = el('urfName');
+    if (icon) icon.textContent = item.icon || '✦';
+    if (name) name.textContent = item.name || itemId;
+    overlay.style.display = 'flex';
+    overlay.classList.remove('hide');
+    // CSS animations restart automatically because we just inserted content.
+    setTimeout(function () {
+      overlay.style.display = 'none';
+    }, 1500);
   }
 
   function playLevelReachCinematic(def, onDone) {
@@ -3696,10 +4012,16 @@
   var LEVEL_MINIGAMES = {
     0: 'vending',
     1: 'lockpick',
+    2: 'reflex',
+    4: 'dial',
     5: 'memory',
+    7: 'whackamole',
     8: 'snake',
     9: 'cipher',
-    12: 'pong'
+    12: 'pong',
+    13: 'dial',
+    14: 'reflex',
+    15: 'whackamole'
   };
 
   // Mini-game definitions
@@ -4121,7 +4443,8 @@
             setMGAction('終了', 'green');
             // Tiered reward pool. ~12% chance of a UNIQUE prize, otherwise a
             // standard weapon / consumable. Uniques are rare and powerful.
-            var uniques = ['soul_lantern', 'haruki_charm', 'architect_blade'];
+            var uniques = ['soul_lantern', 'haruki_charm', 'architect_blade',
+                           'siren_whistle', 'mirror_shard', 'revenant_blade', 'void_grenade'];
             var commons = ['katana', 'pistol', 'flare', 'shotgun', 'revolver', 'almond_milk'];
             var rwd = (Math.random() < 0.12)
               ? uniques[Math.floor(Math.random() * uniques.length)]
@@ -4132,6 +4455,10 @@
             if (audioInitialized) {
               GameEngine.playSound('level_clear');
               if (uniques.indexOf(rwd) >= 0) GameEngine.playSound('stinger');
+            }
+            // Animated unique-reward flash overlay
+            if (uniques.indexOf(rwd) >= 0 && typeof showUniqueRewardFlash === 'function') {
+              showUniqueRewardFlash(rwd);
             }
           }
         } else {
@@ -4410,6 +4737,268 @@
         ctx.beginPath();
         ctx.arc(mgState.ballX * w, mgState.ballY * h, 6, 0, Math.PI * 2);
         ctx.fill();
+      }
+    },
+
+    // ── REFLEX (反射神経) ──
+    // A target oscillates across a band; player must tap when it overlaps
+    // the centre marker. 5 successful taps wins. Speed ramps up.
+    reflex: {
+      title: '反射神経',
+      subtitle: 'マーカーを真ん中で捉えろ × 5',
+      init: function () {
+        mgState = {
+          phase: 'play', pos: 0, dir: 1, speed: 0.45,
+          hits: 0, misses: 0, goal: 5, cooldown: 0
+        };
+        setMGAction('終了', 'red');
+        setMGStatus('0 / 5  ハート連打で挑戦');
+      },
+      action: function () { closeMiniGame(); },
+      onTap: function () {
+        if (mgState.phase !== 'play') return;
+        if (mgState.cooldown > 0) return;
+        // Centre tolerance window
+        if (Math.abs(mgState.pos - 0.5) < 0.06) {
+          mgState.hits++;
+          mgState.speed += 0.08;
+          if (audioInitialized) GameEngine.playSound('item_get');
+        } else {
+          mgState.misses++;
+          if (audioInitialized) GameEngine.playSound('door');
+          // Two whiffs = fail
+          if (mgState.misses >= 2) {
+            mgState.phase = 'lose';
+            setMGStatus('失敗');
+            setMGAction('終了', 'red');
+            return;
+          }
+        }
+        mgState.cooldown = 0.25;
+        if (mgState.hits >= mgState.goal) {
+          mgState.phase = 'win';
+          setMGStatus('クリア! ユニーク報酬抽選');
+          setMGAction('終了', 'green');
+          var poolR = ['siren_whistle', 'mirror_shard', 'revenant_blade'];
+          var rwdR = poolR[Math.floor(Math.random() * poolR.length)];
+          player.inventory[rwdR] = (player.inventory[rwdR] || 0) + 1;
+          toast('★ ' + ITEMS[rwdR].name + ' 入手');
+          unlockAchievement('won_minigame');
+          if (audioInitialized) { GameEngine.playSound('level_clear'); GameEngine.playSound('stinger'); }
+        } else {
+          setMGStatus(mgState.hits + ' / ' + mgState.goal);
+        }
+      },
+      update: function (dt) {
+        if (mgState.phase !== 'play') return;
+        mgState.cooldown = Math.max(0, mgState.cooldown - dt);
+        mgState.pos += mgState.dir * mgState.speed * dt;
+        if (mgState.pos > 1) { mgState.pos = 1; mgState.dir = -1; }
+        if (mgState.pos < 0) { mgState.pos = 0; mgState.dir = 1; }
+      },
+      draw: function (ctx, w, h) {
+        ctx.fillStyle = '#080604';
+        ctx.fillRect(0, 0, w, h);
+        // Band
+        ctx.fillStyle = '#382a08';
+        ctx.fillRect(0.05 * w, h / 2 - 6, 0.9 * w, 12);
+        // Centre marker
+        ctx.fillStyle = '#88b033';
+        ctx.fillRect(w * 0.5 - 0.05 * w, h / 2 - 14, 0.1 * w, 28);
+        // Target
+        var tx = (0.05 + 0.9 * mgState.pos) * w;
+        ctx.fillStyle = mgState.cooldown > 0 ? '#888' : '#d4b340';
+        ctx.beginPath();
+        ctx.arc(tx, h / 2, 14, 0, Math.PI * 2);
+        ctx.fill();
+        // Hit counter dots
+        for (var rd = 0; rd < mgState.goal; rd++) {
+          ctx.fillStyle = rd < mgState.hits ? '#88b033' : '#382a08';
+          ctx.beginPath();
+          ctx.arc(0.1 * w + rd * 0.14 * w, h - 30, 8, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    },
+
+    // ── DIAL LOCK (ダイヤルロック) ──
+    // Three dials; tap to advance the highlighted dial, "action" locks it
+    // and moves to the next. Player must reach a hidden target sequence.
+    dial: {
+      title: 'ダイヤルロック',
+      subtitle: '3桁の暗号を当てろ。HEAT が上がるほど近い。',
+      init: function () {
+        mgState = {
+          phase: 'play',
+          target: [Math.floor(Math.random() * 10),
+                   Math.floor(Math.random() * 10),
+                   Math.floor(Math.random() * 10)],
+          dials: [0, 0, 0],
+          active: 0,
+          tries: 0,
+          maxTries: 6
+        };
+        setMGAction('決定', 'green');
+        setMGStatus('1桁目を選択 → 決定');
+      },
+      action: function () {
+        if (mgState.phase !== 'play') return;
+        if (mgState.active < 2) {
+          mgState.active++;
+          setMGStatus((mgState.active + 1) + '桁目を選択 → 決定');
+          if (audioInitialized) GameEngine.playSound('clock_tick');
+          return;
+        }
+        // Final dial — evaluate
+        mgState.tries++;
+        var matches = 0;
+        for (var d = 0; d < 3; d++) if (mgState.dials[d] === mgState.target[d]) matches++;
+        if (matches === 3) {
+          mgState.phase = 'win';
+          setMGStatus('解錠! ユニーク報酬');
+          setMGAction('終了', 'green');
+          var poolD = ['void_grenade', 'architect_blade', 'soul_lantern', 'haruki_charm'];
+          var rwdD = poolD[Math.floor(Math.random() * poolD.length)];
+          player.inventory[rwdD] = (player.inventory[rwdD] || 0) + 1;
+          toast('★ ' + ITEMS[rwdD].name + ' 入手');
+          unlockAchievement('won_minigame');
+          if (audioInitialized) { GameEngine.playSound('key_unlock'); GameEngine.playSound('stinger'); }
+        } else if (mgState.tries >= mgState.maxTries) {
+          mgState.phase = 'lose';
+          setMGStatus('失敗 (試行回数オーバー)');
+          setMGAction('終了', 'red');
+        } else {
+          // Reset to dial 0, hint at hit count
+          mgState.active = 0;
+          setMGStatus('HEAT ' + matches + '/3   残り ' + (mgState.maxTries - mgState.tries));
+          if (audioInitialized) GameEngine.playSound('door');
+        }
+      },
+      onTap: function () {
+        if (mgState.phase !== 'play') return;
+        mgState.dials[mgState.active] = (mgState.dials[mgState.active] + 1) % 10;
+        if (audioInitialized) GameEngine.playSound('clock_tick');
+      },
+      draw: function (ctx, w, h) {
+        ctx.fillStyle = '#080604';
+        ctx.fillRect(0, 0, w, h);
+        var dialW = w * 0.22, dialH = h * 0.5;
+        var gap = (w - dialW * 3) / 4;
+        for (var di = 0; di < 3; di++) {
+          var x = gap + di * (dialW + gap);
+          var y = h * 0.18;
+          ctx.strokeStyle = di === mgState.active ? '#d4b340' : '#382a08';
+          ctx.lineWidth = di === mgState.active ? 4 : 2;
+          ctx.strokeRect(x, y, dialW, dialH);
+          ctx.fillStyle = di === mgState.active ? '#d4b340' : '#786020';
+          ctx.font = 'bold ' + Math.floor(dialH * 0.6) + 'px monospace';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(String(mgState.dials[di]), x + dialW / 2, y + dialH / 2);
+        }
+        ctx.fillStyle = '#786020';
+        ctx.font = '11px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('TAP: 数字を進める / 決定: 次の桁へ', w / 2, h - 14);
+      }
+    },
+
+    // ── WHACK-A-MOLE (もぐら叩き) ──
+    // Tap appearing entity icons before they disappear. Reach the goal count.
+    whackamole: {
+      title: 'もぐら叩き',
+      subtitle: '出現する敵を素早く叩け × 10',
+      init: function () {
+        mgState = {
+          phase: 'play',
+          targets: [],          // {x, y, life, max}
+          spawnTimer: 0,
+          spawnEvery: 0.7,
+          hits: 0,
+          misses: 0,
+          goal: 10,
+          maxMisses: 4,
+          elapsed: 0
+        };
+        setMGAction('終了', 'red');
+        setMGStatus('0 / 10');
+      },
+      action: function () { closeMiniGame(); },
+      onTap: function (cx, cy, w, h) {
+        if (mgState.phase !== 'play') return;
+        for (var ti = mgState.targets.length - 1; ti >= 0; ti--) {
+          var t = mgState.targets[ti];
+          var dx = cx - t.x * w, dy = cy - t.y * h;
+          if (Math.sqrt(dx * dx + dy * dy) < 28) {
+            mgState.targets.splice(ti, 1);
+            mgState.hits++;
+            if (audioInitialized) GameEngine.playSound('hit');
+            if (mgState.hits >= mgState.goal) {
+              mgState.phase = 'win';
+              setMGStatus('クリア! ユニーク報酬');
+              setMGAction('終了', 'green');
+              var poolW = ['siren_whistle', 'soul_lantern', 'revenant_blade',
+                           'mirror_shard', 'void_grenade'];
+              var rwdW = poolW[Math.floor(Math.random() * poolW.length)];
+              player.inventory[rwdW] = (player.inventory[rwdW] || 0) + 1;
+              toast('★ ' + ITEMS[rwdW].name + ' 入手');
+              unlockAchievement('won_minigame');
+              if (audioInitialized) { GameEngine.playSound('level_clear'); GameEngine.playSound('stinger'); }
+            } else {
+              setMGStatus(mgState.hits + ' / ' + mgState.goal);
+            }
+            return;
+          }
+        }
+      },
+      update: function (dt) {
+        if (mgState.phase !== 'play') return;
+        mgState.elapsed += dt;
+        mgState.spawnTimer -= dt;
+        if (mgState.spawnTimer <= 0) {
+          mgState.spawnTimer = Math.max(0.25, mgState.spawnEvery - mgState.elapsed * 0.03);
+          mgState.targets.push({
+            x: 0.1 + Math.random() * 0.8,
+            y: 0.2 + Math.random() * 0.6,
+            life: 1.4, max: 1.4
+          });
+        }
+        // Decay & cull
+        for (var ui = mgState.targets.length - 1; ui >= 0; ui--) {
+          mgState.targets[ui].life -= dt;
+          if (mgState.targets[ui].life <= 0) {
+            mgState.targets.splice(ui, 1);
+            mgState.misses++;
+            if (mgState.misses >= mgState.maxMisses) {
+              mgState.phase = 'lose';
+              setMGStatus('失敗 (見逃しすぎ)');
+              setMGAction('終了', 'red');
+              return;
+            }
+          }
+        }
+      },
+      draw: function (ctx, w, h) {
+        ctx.fillStyle = '#080604';
+        ctx.fillRect(0, 0, w, h);
+        for (var di = 0; di < mgState.targets.length; di++) {
+          var t = mgState.targets[di];
+          var a = Math.max(0.1, t.life / t.max);
+          ctx.fillStyle = 'rgba(220, 60, 60,' + a + ')';
+          ctx.beginPath();
+          ctx.arc(t.x * w, t.y * h, 22, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = 'rgba(255, 255, 200,' + a + ')';
+          ctx.font = 'bold 18px monospace';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('!', t.x * w, t.y * h);
+        }
+        ctx.fillStyle = '#786020';
+        ctx.font = '12px monospace';
+        ctx.textAlign = 'left';
+        ctx.fillText('HIT ' + mgState.hits + ' / ' + mgState.goal +
+                     '   MISS ' + mgState.misses + ' / ' + mgState.maxMisses, 10, 18);
       }
     }
   };
@@ -5042,8 +5631,9 @@
   }
 
   function getNextLevel(cur) {
-    // Normal progression: 0→1→2→3→4→5→6→7→8→!→Fun→9→END
-    var order = [0, 1, 2, 3, 4, 5, 6, 7, 8, 11, 12, 13, 9];
+    // Normal progression now: 0→1→2→3→4→5→6→7→8→!→Fun→13→14→15→9
+    // Lv9 remains the final boss arena.
+    var order = [0, 1, 2, 3, 4, 5, 6, 7, 8, 11, 12, 13, 14, 15, 9];
     var idx = order.indexOf(cur);
     if (idx < 0 || idx === order.length - 1) return null;
     return order[idx + 1];
@@ -5423,6 +6013,30 @@
     // No damage while overlays freeze gameplay (phone, settings, note viewer)
     if (typeof _isGamePaused === 'function' && _isGamePaused()) return;
     if (cheatActive) dmg *= 0.4;
+    // Mirror shard: reflect 80% of incoming damage onto the nearest entity
+    // and absorb the rest. While the shard is active, damage is greatly
+    // reduced and the attacker takes the deflected hit.
+    if (player._mirrorShardUntil && performance.now() < player._mirrorShardUntil) {
+      var reflectedDmg = dmg * 0.8;
+      dmg = dmg * 0.2;
+      var bestM = null, bestMD = Infinity;
+      for (var mri = 0; mri < entities.length; mri++) {
+        var me = entities[mri];
+        if (!me.alive) continue;
+        var mdx = me.x - player.x, mdy = me.y - player.y;
+        var mDist = Math.sqrt(mdx * mdx + mdy * mdy);
+        if (mDist < bestMD) { bestMD = mDist; bestM = me; }
+      }
+      if (bestM && bestMD < 4 * TS) {
+        if (bestM.type === 'boss' || bestM.type === 'haruki_boss') {
+          bestM.bossHp = (bestM.bossHp !== undefined ? bestM.bossHp : 200) - reflectedDmg * 2;
+          if (bestM.bossHp <= 0) { bestM.alive = false; }
+        } else {
+          bestM.hp = (bestM.hp !== undefined ? bestM.hp : 100) - reflectedDmg * 4;
+          if (bestM.hp <= 0) { bestM.alive = false; bestM.deathAt = performance.now(); }
+        }
+      }
+    }
     var prevHp = player.hp;
     player.hp = Math.max(0, player.hp - dmg);
     // Always provide damage feedback: red flash + shake + sound + vital pulse
@@ -6568,9 +7182,18 @@
         toast('★ CHEAT MODE 解禁! タイトル画面で切替可能');
       }
     } catch (e) {}
-    playEndingCinematic(type, function () {
-      _showEndingScreen(type);
-    });
+    // For the TRUE END, play the new animated sunrise/walk-away sequence
+    // before the standard ending cinematic.
+    var afterEnding = function () {
+      playEndingCinematic(type, function () {
+        _showEndingScreen(type);
+      });
+    };
+    if (type === 'truend' && typeof playEndingSequence === 'function') {
+      playEndingSequence(afterEnding);
+    } else {
+      afterEnding();
+    }
   }
 
   function _showEndingScreen(type) {

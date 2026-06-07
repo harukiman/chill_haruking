@@ -20,7 +20,7 @@
   <meta name="twitter:title" content="THE BACKROOMS — featuring HARUKI">
   <meta name="twitter:description" content="一人称モバイル探索ホラー。Level 0 から no-clip で階層を降下。壁の向こうにカレが待つ。">
   <title>THE BACKROOMS</title>
-  <link rel="stylesheet" href="assets/css/game.css?v=104">
+  <link rel="stylesheet" href="assets/css/game.css?v=105">
 </head>
 <body oncontextmenu="return false;">
 
@@ -286,6 +286,44 @@
       <p class="encounter-name" id="encounterName"></p>
       <p class="encounter-desc" id="encounterDesc"></p>
     </div>
+  </div>
+
+  <!-- Haruki Boss Reveal Cutscene (animated) -->
+  <div id="harukiBossCutscene" class="overlay haruki-boss-cutscene" style="display:none;">
+    <div class="hbc-sky"></div>
+    <div class="hbc-lightning" id="hbcLightning"></div>
+    <div class="hbc-rain"></div>
+    <div class="hbc-ground"></div>
+    <div class="hbc-silhouette">
+      <img src="assets/img/haruki.png" alt="" id="hbcSilImg" onerror="this.style.display='none'">
+    </div>
+    <div class="hbc-zoom-portrait" id="hbcPortrait">
+      <img src="assets/img/haruki_scary.png" alt="" onerror="this.style.display='none'">
+    </div>
+    <div class="hbc-vignette"></div>
+    <div class="hbc-text" id="hbcText"></div>
+    <button id="hbcSkipBtn" class="hbc-skip-btn" type="button">スキップ →</button>
+  </div>
+
+  <!-- Ending Sequence (after boss defeated) -->
+  <div id="endingSequence" class="overlay ending-sequence" style="display:none;">
+    <div class="es-sky"></div>
+    <div class="es-sun"></div>
+    <div class="es-ground"></div>
+    <div class="es-walk-away">
+      <div class="es-shoe es-left"></div>
+      <div class="es-shoe es-right"></div>
+    </div>
+    <div class="es-vignette"></div>
+    <div class="es-text" id="esText"></div>
+  </div>
+
+  <!-- Unique Reward Flash -->
+  <div id="uniqueRewardFlash" class="overlay unique-reward-flash" style="display:none;">
+    <div class="urf-burst"></div>
+    <div class="urf-icon" id="urfIcon">⚔</div>
+    <div class="urf-label">★ UNIQUE 入手</div>
+    <div class="urf-name" id="urfName"></div>
   </div>
 
   <!-- Level Reach Cinematic (brief title card) -->
@@ -779,8 +817,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="assets/js/engine.js?v=104"></script>
-  <script src="assets/js/game.js?v=104"></script>
+  <script src="assets/js/engine.js?v=105"></script>
+  <script src="assets/js/game.js?v=105"></script>
 
   <!-- POST-LOAD VERIFICATION + DIRECT BINDING FALLBACK
        After game.js IIFE runs, this script confirms __titleAction is the real one.
