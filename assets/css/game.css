@@ -51,7 +51,7 @@ body {
 #vitalBars {
   position: fixed;
   top: calc(env(safe-area-inset-top, 8px) + 4px);
-  left: 10px;
+  left: calc(env(safe-area-inset-left, 0px) + 10px);
   display: none;
   flex-direction: column;
   gap: 4px;
@@ -1558,7 +1558,7 @@ button {
 .quick-item-btn {
   position: fixed;
   bottom: calc(env(safe-area-inset-bottom, 0px) + 210px);
-  right: 14px;
+  right: calc(env(safe-area-inset-right, 0px) + 14px);
   width: 50px;
   height: 50px;
   background: rgba(0, 0, 0, 0.7);
@@ -1655,7 +1655,7 @@ button {
 .floating-map-btn {
   position: fixed;
   top: calc(env(safe-area-inset-top, 8px) + 60px);
-  right: 8px;
+  right: calc(env(safe-area-inset-right, 0px) + 8px);
   width: 44px;
   height: 44px;
   background: rgba(0, 0, 0, 0.6);
@@ -1679,10 +1679,10 @@ button {
 .floating-map {
   position: fixed;
   top: calc(env(safe-area-inset-top, 8px) + 60px);
-  right: 58px;
+  right: calc(env(safe-area-inset-right, 0px) + 58px);
   width: 180px;
   height: 180px;
-  max-width: calc(100vw - 80px);
+  max-width: calc(100vw - env(safe-area-inset-right, 0px) - env(safe-area-inset-left, 0px) - 80px);
   max-height: 38vh;
   z-index: 17;
   background: rgba(5, 4, 2, 0.55);
@@ -1812,7 +1812,7 @@ button {
 .phone-btn {
   position: fixed;
   top: calc(env(safe-area-inset-top, 8px) + 6px);
-  right: 8px;
+  right: calc(env(safe-area-inset-right, 0px) + 8px);
   width: 44px;
   height: 44px;
   background: rgba(0, 0, 0, 0.6);
@@ -2596,7 +2596,8 @@ button {
   font-size: 12px;
   letter-spacing: 0.15em;
   color: #d4b340;
-  max-width: calc(100vw - 130px);
+  /* keep clear of notch + reset/reload buttons (≈130px on each side) */
+  max-width: calc(100vw - env(safe-area-inset-right, 0px) - env(safe-area-inset-left, 0px) - 140px);
   text-align: center;
   line-height: 1.5;
   border-radius: 4px;
@@ -2646,7 +2647,7 @@ button {
 .hud-dpad {
   position: fixed;
   bottom: calc(env(safe-area-inset-bottom, 0px) + 70px);
-  left: 12px;
+  left: calc(env(safe-area-inset-left, 0px) + 12px);
   width: 92px;
   background: rgba(0, 0, 0, 0.62);
   border: 1px solid #483910;
