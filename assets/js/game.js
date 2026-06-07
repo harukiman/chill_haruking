@@ -6632,9 +6632,12 @@
       var id = slots[dirIds[i].toLowerCase()];
       if (id && ITEMS[id]) {
         var count = player.inventory[id] || 0;
+        // Eternal charm makes every slot read as ∞ — the count is meaningless
+        // because nothing actually decrements.
+        var displayCount = hasEternalCharm() ? '∞' : ('×' + count);
         slotEl.innerHTML = '<span class="dpad-slot-icon">' + ITEMS[id].icon + '</span>' +
-                           '<span class="dpad-slot-count' + (count === 0 ? ' out' : '') + '">×'
-                           + count + '</span>';
+                           '<span class="dpad-slot-count' + (count === 0 && !hasEternalCharm() ? ' out' : '') + '">'
+                           + displayCount + '</span>';
         slotEl.classList.remove('empty');
         slotEl.title = ITEMS[id].name + (count > 0 ? ' ×' + count : ' (未所持)');
       } else {
@@ -6678,18 +6681,19 @@
     var it = ITEMS[itemId];
     var hasKey = Object.prototype.hasOwnProperty.call(player.inventory, itemId);
     var count = player.inventory[itemId] || 0;
-    if (!hasKey) {
+    var charmOn = hasEternalCharm();
+    if (!hasKey && !charmOn) {
       toast(it.name + ': 未所持');
       return;
     }
     // Wave YY: weapons stay in inventory at ×0 after depletion. quickUse should
     // tell the player the weapon is empty (not missing) so the binding feels
-    // intentional, not broken.
-    if (it.category === 'weapon' && count <= 0) {
+    // intentional, not broken. Eternal charm bypasses both checks.
+    if (!charmOn && it.category === 'weapon' && count <= 0) {
       toast(it.name + ': 弾切れ (×0)');
       return;
     }
-    if (count <= 0) {
+    if (!charmOn && count <= 0) {
       toast(it.name + ': 残数なし');
       return;
     }
