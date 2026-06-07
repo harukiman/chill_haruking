@@ -6961,6 +6961,11 @@
         setMGStatus('ステージ 1/3');
       },
       action: function () {
+        // Close on win/lose — previously the early-return blocked the
+        // 終了 button after game end.
+        if (mgState.phase === 'win' || mgState.phase === 'lose') {
+          closeMiniGame(); return;
+        }
         if (mgState.phase !== 'play') return;
         var inZone = mgState.cursor >= mgState.zoneStart && mgState.cursor <= mgState.zoneEnd;
         if (inZone) {
@@ -7686,6 +7691,9 @@
         setMGStatus('ヒント: ' + (hintPos + 1) + '桁目は ' + target[hintPos] + '  /  1桁目を選択 → 決定');
       },
       action: function () {
+        if (mgState.phase === 'win' || mgState.phase === 'lose') {
+          closeMiniGame(); return;
+        }
         if (mgState.phase !== 'play') return;
         if (mgState.active < 2) {
           mgState.active++;
