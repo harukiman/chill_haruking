@@ -861,14 +861,15 @@
       grain: 0.5,
       chromatic: 0.3
     },
-    9: { // Suburbs — dark blue/black
+    9: { // Suburbs — open night sky over dark houses (more "outdoor")
       wall: {
         upper: { 'default': [70, 68, 80], 1: [70, 68, 80] },
         flat: true,
         pattern: 'concrete'
       },
       bg: {
-        ceiling: ['#0a0c1a', '#101428', '#1a2038'],
+        // Storm sky: deep purple zenith → indigo horizon
+        ceiling: ['#0c0820', '#181440', '#3a2860'],
         floor:   ['#0a0c14', '#141822', '#1c2030']
       },
       floorDefault: [40, 42, 55],
@@ -900,18 +901,19 @@
       grain: 0.35,
       chromatic: 0.25
     },
-    15: { // THE GARDEN — overgrown moss green
+    15: { // THE GARDEN — overgrown outdoor sky over moss-covered walls
       wall: {
         upper: { 'default': [40, 80, 30], 1: [40, 80, 30] },
         flat: true,
         pattern: 'concrete'
       },
       bg: {
-        ceiling: ['#0a1808', '#152610', '#203620'],
+        // Overcast dusk sky → wet leaves below. Feels exterior.
+        ceiling: ['#8a98a8', '#7a8a98', '#5a7080'],
         floor:   ['#0a1408', '#162818', '#243020']
       },
       floorDefault: [30, 60, 28],
-      ceilingDefault: [20, 40, 18],
+      ceilingDefault: [110, 130, 150],
       fogDist: 12,
       ambientLoop: 'wind',
       sanDrain: 0.7,
