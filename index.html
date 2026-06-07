@@ -27,7 +27,7 @@
   <!-- Apple touch icon — used when added to home screen on iOS. Same
        SVG as the favicon, sized 180×180 so iOS rasterizes cleanly. -->
   <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' fill='%23d4b340'/><rect x='0' y='90' width='180' height='90' fill='%23b08628'/><circle cx='90' cy='90' r='10' fill='%23000'/><text x='90' y='150' text-anchor='middle' fill='%23382a08' font-family='Times New Roman' font-weight='bold' font-size='22' letter-spacing='2'>THE</text></svg>">
-  <link rel="stylesheet" href="assets/css/game.css?v=309">
+  <link rel="stylesheet" href="assets/css/game.css?v=310">
 </head>
 <body oncontextmenu="return false;">
 
@@ -146,6 +146,9 @@
 
   <!-- Directional damage flash overlay -->
   <div id="damageDirOverlay" class="damage-dir-overlay" aria-hidden="true"></div>
+
+  <!-- FPS counter (debug) — opt-in via title settings 「FPS 表示」 -->
+  <div id="fpsCounter" class="fps-counter" aria-hidden="true" style="display:none;">FPS --</div>
 
   <!-- Save indicator — slides in briefly when auto-save fires -->
   <div id="saveIndicator" class="save-indicator" aria-hidden="true">
@@ -1103,8 +1106,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="assets/js/engine.js?v=309"></script>
-  <script src="assets/js/game.js?v=309"></script>
+  <script src="assets/js/engine.js?v=310"></script>
+  <script src="assets/js/game.js?v=310"></script>
 
   <!-- POST-LOAD VERIFICATION + DIRECT BINDING FALLBACK
        After game.js IIFE runs, this script confirms __titleAction is the real one.

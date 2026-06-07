@@ -11017,8 +11017,29 @@
   // ============================================================
   //  GAME LOOP HOOK
   // ============================================================
+  // FPS counter throttle — only update DOM every ~10 frames.
+  var _fpsCounterTickAcc = 0;
+  function _updateFpsCounter(dt) {
+    _fpsCounterTickAcc += dt;
+    if (_fpsCounterTickAcc < 0.25) return;
+    _fpsCounterTickAcc = 0;
+    try {
+      if (localStorage.getItem('bk_fps') !== '1') {
+        var fcOff = el('fpsCounter');
+        if (fcOff && fcOff.style.display !== 'none') fcOff.style.display = 'none';
+        return;
+      }
+    } catch (e) { return; }
+    var fc = el('fpsCounter');
+    if (!fc) return;
+    if (fc.style.display === 'none') fc.style.display = '';
+    var f = Math.round(GameEngine._fpsEma || 0);
+    fc.textContent = 'FPS ' + f;
+    fc.classList.toggle('low', f < 30);
+  }
   function onUpdate(dt) {
     pollGamepad();
+    _updateFpsCounter(dt);
     if (state === ST.PLAYING && !phoneOpen && !miniGameOpen) {
       updatePlayer(dt);
       updateEntities(dt);
