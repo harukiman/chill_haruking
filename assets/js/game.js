@@ -6128,8 +6128,8 @@
       if (id && ITEMS[id]) {
         var count = player.inventory[id] || 0;
         slotEl.innerHTML = '<span class="dpad-slot-icon">' + ITEMS[id].icon + '</span>' +
-                           '<span class="dpad-slot-count' + (count === 0 ? ' out' : '') + '">'
-                           + (count > 0 ? '×' + count : '0') + '</span>';
+                           '<span class="dpad-slot-count' + (count === 0 ? ' out' : '') + '">×'
+                           + count + '</span>';
         slotEl.classList.remove('empty');
         slotEl.title = ITEMS[id].name + (count > 0 ? ' ×' + count : ' (未所持)');
       } else {
@@ -6822,6 +6822,32 @@
     _uncannySpeak(line);
   }
 
+  // Weapons pick up with a randomised "ammo" count instead of always +1, so
+  // a pistol you find might give 2 shots, a shotgun maybe 1, etc. Same-weapon
+  // pickups stack on top of the current count. Once the count hits 0 the
+  // weapon auto-deletes from inventory but the D-pad binding stays bound at
+  // ×0 so the player can re-bind on re-pickup.
+  var WEAPON_AMMO_PICKUP = {
+    pistol:          [2, 4],   // 2–4 shots
+    shotgun:         [1, 2],   // 1–2 shells
+    revolver:        [1, 3],
+    katana:          [3, 5],
+    flare:           [1, 1],   // single use
+    mirror:          [1, 1],   // single use
+    soul_lantern:    [1, 1],
+    haruki_charm:    [1, 1],
+    architect_blade: [2, 3],
+    siren_whistle:   [1, 1],
+    mirror_shard:    [1, 1],
+    revenant_blade:  [2, 4],
+    void_grenade:    [1, 2]
+  };
+  function _rollWeaponPickupCount(itemId) {
+    var range = WEAPON_AMMO_PICKUP[itemId];
+    if (!range) return 1;
+    return Math.floor(range[0] + Math.random() * (range[1] - range[0] + 1));
+  }
+
   function pickUpItem(itemId, gx, gy) {
     var item = ITEMS[itemId];
     // First flashlight pickup grants a fresh battery (the player has no light
@@ -6832,11 +6858,16 @@
       player.flashlightBattery = 100;
     }
     if (!item) return;
-    player.inventory[itemId] = (player.inventory[itemId] || 0) + 1;
+    var addAmount = 1;
+    if (item.category === 'weapon') {
+      addAmount = _rollWeaponPickupCount(itemId);
+    }
+    player.inventory[itemId] = (player.inventory[itemId] || 0) + addAmount;
     if (!pickedUpItems[currentLevel]) pickedUpItems[currentLevel] = {};
     pickedUpItems[currentLevel][gridKey(gx, gy)] = true;
     delete pickupSpots[gridKey(gx, gy)];
-    showDiscovery(item.icon, 'アイテム入手', item.name);
+    var nameLabel = item.name + (item.category === 'weapon' ? ' (×' + addAmount + ')' : '');
+    showDiscovery(item.icon, 'アイテム入手', nameLabel);
     if (audioInitialized) GameEngine.playSound('item_get');
     if (navigator.vibrate) navigator.vibrate(20);
     stats.totalItemsCollected++;
@@ -8993,8 +9024,15 @@
                       (player.flashlightOn ? 'ON' : 'OFF') + ' ' + battPct + '%</span>';
         }
         if (item.id === 'radio') stateMark = '<span class="inv-state ' + (player.radioOn ? 'on' : 'off') + '">' + (player.radioOn ? 'ON' : 'OFF') + '</span>';
+        // Weapons always show a count (it's their ammo). Other stackables
+        // only show when > 1 to avoid noise. ∞ stays for persistent items.
+        var isWeapon = item.category === 'weapon';
+        var countBadge = item.persistent
+          ? '<span class="inv-perm">∞</span>'
+          : (isWeapon ? '<span class="inv-count ammo">×' + cnt + '</span>'
+                      : (cnt > 1 ? '<span class="inv-count">' + cnt + '</span>' : ''));
         slot.innerHTML = '<span style="font-size:28px;">' + item.icon + '</span>' +
-          (item.persistent ? '<span class="inv-perm">∞</span>' : (cnt > 1 ? '<span class="inv-count">' + cnt + '</span>' : '')) +
+          countBadge +
           stateMark +
           '<span class="inv-name">' + item.name.slice(0, 6) + '</span>';
         (function (itemId) {
