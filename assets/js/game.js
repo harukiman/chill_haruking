@@ -10586,6 +10586,7 @@
     setTimeout(function () {
       if (cancelled) return;
       setLine('黄色い、無限の、壁紙の世界へ。');
+      try { _uncannySpeak('ようこそ。'); } catch (e) {}
     }, 12400);
     setTimeout(function () {
       if (cancelled) return;
@@ -10595,6 +10596,7 @@
       if (cancelled) return;
       setLine('— 遠くで、誰かが、笑った。');
       if (audioInitialized) GameEngine.playSound('whisper');
+      try { _uncannySpeak('もう、戻れない。'); } catch (e) {}
     }, 18000);
     // No auto-finish — user taps overlay or skip button to advance
     // Safety net: auto-finish after 40s if no tap (was 30 — but intro now 20s)
