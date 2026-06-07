@@ -12356,7 +12356,9 @@
   function openLevelSelect() {
     var grid = el('lvlselGrid');
     grid.innerHTML = '';
-    var order = [0, 1, 2, 3, 4, 5, 6, 7, 8, 11, 12, 13, 9];
+    // Free-roam level order matches in-game progression
+    // (0→1→…→8→11→12→13→14→15→9). 14 and 15 were missing previously.
+    var order = [0, 1, 2, 3, 4, 5, 6, 7, 8, 11, 12, 13, 14, 15, 9];
     for (var i = 0; i < order.length; i++) {
       var lvId = order[i];
       var def = LEVELS[lvId];
