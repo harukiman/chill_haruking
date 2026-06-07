@@ -7929,13 +7929,81 @@
     if (performance.now() - _noteViewerOpenedAt < NOTE_INPUT_LOCK_MS) return false;
     return true;
   }
+  // Note viewer pagination state — for long secret docs, split into pages
+  // at \n\n paragraph boundaries (~300 char target) and show ◀ X/Y ▶.
+  var _notePages = [];
+  var _notePageIdx = 0;
+  function _splitNotePages(text, maxLen) {
+    var paras = text.split(/\n\n+/);
+    var pages = [], cur = '';
+    paras.forEach(function (p) {
+      var test = cur ? cur + '\n\n' + p : p;
+      if (test.length > maxLen && cur) {
+        pages.push(cur);
+        cur = p;
+      } else {
+        cur = test;
+      }
+    });
+    if (cur) pages.push(cur);
+    return pages.length ? pages : [text];
+  }
+  function _renderNotePage() {
+    el('noteText').textContent = _notePages[_notePageIdx] || '';
+    var navEl = el('notePageNav');
+    if (navEl) {
+      if (_notePages.length > 1) {
+        navEl.style.display = 'flex';
+        var lbl = el('notePageLabel');
+        if (lbl) lbl.textContent = (_notePageIdx + 1) + ' / ' + _notePages.length;
+        var prev = el('notePrevBtn');
+        var next = el('noteNextBtn');
+        if (prev) prev.disabled = _notePageIdx === 0;
+        if (next) next.disabled = _notePageIdx === _notePages.length - 1;
+      } else {
+        navEl.style.display = 'none';
+      }
+    }
+  }
+  function _bindNoteNavOnce() {
+    var prev = el('notePrevBtn'), next = el('noteNextBtn');
+    if (prev && !prev._bound) {
+      prev._bound = true;
+      prev.addEventListener('click', function (e) {
+        e.stopPropagation();
+        if (_notePageIdx > 0) {
+          _notePageIdx--;
+          _renderNotePage();
+          if (audioInitialized) try { GameEngine.playSound('paper'); } catch (er) {}
+        }
+      });
+    }
+    if (next && !next._bound) {
+      next._bound = true;
+      next.addEventListener('click', function (e) {
+        e.stopPropagation();
+        if (_notePageIdx < _notePages.length - 1) {
+          _notePageIdx++;
+          _renderNotePage();
+          if (audioInitialized) try { GameEngine.playSound('paper'); } catch (er) {}
+        }
+      });
+    }
+  }
+
   function showNoteViewer(title, text, opts) {
     el('noteTitle').textContent = title;
-    el('noteText').textContent = text;
+    // Paginate when the text would clearly overflow even in 重厚 mode.
+    var heavy = !!(opts && opts.weight === 'heavy');
+    var pageLen = heavy ? 320 : 600;
+    _notePages = (text.length > pageLen) ? _splitNotePages(text, pageLen) : [text];
+    _notePageIdx = 0;
+    _bindNoteNavOnce();
+    _renderNotePage();
     // Optional 重厚 mode for secret docs — serif + amber tint, applied via
     // CSS class on the note-panel.
     var panel = el('noteViewerOverlay') && el('noteViewerOverlay').querySelector('.note-panel');
-    if (panel) panel.classList.toggle('weight-heavy', !!(opts && opts.weight === 'heavy'));
+    if (panel) panel.classList.toggle('weight-heavy', heavy);
     showOverlay('noteViewerOverlay');
     _noteViewerOpenedAt = performance.now();
     _noteCloseArmed = false;

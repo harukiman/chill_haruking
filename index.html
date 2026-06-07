@@ -20,7 +20,7 @@
   <meta name="twitter:title" content="THE BACKROOMS — featuring HARUKI">
   <meta name="twitter:description" content="一人称モバイル探索ホラー。Level 0 から no-clip で階層を降下。壁の向こうにカレが待つ。">
   <title>THE BACKROOMS</title>
-  <link rel="stylesheet" href="assets/css/game.css?v=215">
+  <link rel="stylesheet" href="assets/css/game.css?v=216">
 </head>
 <body oncontextmenu="return false;">
 
@@ -914,6 +914,11 @@
       <h3 class="note-title" id="noteTitle"></h3>
       <div class="note-divider"></div>
       <p class="note-text" id="noteText"></p>
+      <div id="notePageNav" class="note-page-nav" style="display:none;">
+        <button id="notePrevBtn" type="button" class="note-page-btn">◀</button>
+        <span id="notePageLabel" class="note-page-label">1 / 1</span>
+        <button id="noteNextBtn" type="button" class="note-page-btn">▶</button>
+      </div>
       <button id="closeNoteBtn" class="note-close-btn" type="button">閉じる</button>
     </div>
   </div>
@@ -1010,8 +1015,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="assets/js/engine.js?v=215"></script>
-  <script src="assets/js/game.js?v=215"></script>
+  <script src="assets/js/engine.js?v=216"></script>
+  <script src="assets/js/game.js?v=216"></script>
 
   <!-- POST-LOAD VERIFICATION + DIRECT BINDING FALLBACK
        After game.js IIFE runs, this script confirms __titleAction is the real one.
