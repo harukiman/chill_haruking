@@ -9156,10 +9156,18 @@
     crawler: { sound: 'knock', prob: 0.006 },
     wretch: { sound: 'whisper', prob: 0.005 },
     boss: { sound: 'stinger', prob: 0.002 },
+    haruki_boss: { sound: 'whisper', prob: 0.006 },
     mrhotel: { sound: 'clock_tick', prob: 0.012 },
     haruki: { sound: 'phone', prob: 0.005 },
     echo: { sound: 'whisper', prob: 0.008 },
-    faceling: { sound: 'whisper', prob: 0.005 }
+    faceling: { sound: 'whisper', prob: 0.005 },
+    // New 2026-06 entities — give each one a signature ambient cue so
+    // distant ones don't sit silent.
+    witness: { sound: 'whisper', prob: 0.004 },   // exhale
+    lurker:  { sound: 'breath', prob: 0.006 },     // shallow breath
+    shadow:  { sound: 'tinnitus', prob: 0.005 },   // ringing
+    drowned: { sound: 'pipe_drip', prob: 0.008 },  // water drip
+    vinewalker: { sound: 'pipe_creak', prob: 0.005 } // creaking vines
   };
 
   function updateEntities(dt) {
