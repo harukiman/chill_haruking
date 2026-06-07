@@ -541,45 +541,43 @@ button {
 /* ============================================================
  *  TITLE SETTINGS OVERLAY
  * ============================================================ */
+/* Title settings overlay — completely overrides .overlay flex centering.
+   Flex centering + tall content was clipping the bottom rows: the card got
+   centered vertically, so its top edge went off-screen above the scroll
+   container with no way to scroll up. Using block layout instead lets the
+   card sit at the top and the overlay scroll naturally. */
 .title-settings-overlay {
   z-index: 55;
   background: rgba(0, 0, 0, 0.85);
-  /* Force scroll on the overlay itself */
+  display: none;  /* shown via inline style by showOverlay() */
+  align-items: unset !important;
+  justify-content: unset !important;
   overflow-y: auto !important;
   -webkit-overflow-scrolling: touch !important;
   overscroll-behavior: contain;
   touch-action: pan-y !important;
-  /* iOS Safari: svh = smallest viewport, prevents clipping under URL bar.
-     dvh adapts to dynamic toolbar but can still clip mid-scroll on older iOS,
-     so we layer svh as baseline and dvh as expansion. */
+  /* layered units for iOS Safari toolbar handling */
   height: 100vh;
   height: 100svh;
   height: 100dvh;
-  max-height: 100vh;
-  max-height: 100svh;
-  max-height: 100dvh;
-  /* Account for safe area at top/bottom. Extra 120px buffer so the last
-     row never sits behind the iOS toolbar / Android nav bar / home indicator. */
-  padding-top: calc(env(safe-area-inset-top, 0px) + 8px);
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 120px);
+  padding: calc(env(safe-area-inset-top, 0px) + 8px) 0
+           calc(env(safe-area-inset-bottom, 0px) + 140px);
   box-sizing: border-box;
 }
-/* Stack settings from top (override .overlay flex center) — only when actually shown */
+/* When shown, behave as block so .ts-card flows from the top and the parent
+   can scroll. Both the spaced and unspaced display: flex variants are covered. */
 .title-settings-overlay[style*="display: flex"],
 .title-settings-overlay[style*="display:flex"] {
-  flex-direction: column !important;
-  align-items: center !important;
-  justify-content: flex-start !important;
+  display: block !important;
 }
 .ts-card {
   width: min(92vw, 420px);
+  margin: 12px auto 80px;
   background: linear-gradient(180deg, rgba(35, 26, 6, 0.95) 0%, rgba(15, 12, 4, 0.95) 100%);
   border: 1px solid rgba(212, 179, 64, 0.55);
   border-radius: 16px;
-  padding: 22px 22px 24px;
-  margin: 20px 0;
+  padding: 22px 22px 28px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(240, 220, 138, 0.1);
-  /* No own overflow — parent overlay scrolls */
 }
 .ts-title {
   font-family: 'Times New Roman', serif;
