@@ -3409,6 +3409,56 @@
       pickupSpots[key] = itemId;
       pickupRenderList.push({ key: key, wx: spot.gx * TS + TS / 2, wy: spot.gy * TS + TS / 2, itemId: itemId });
     }
+    // ── Guarantee level-required items ──
+    // Random pool rolls don't promise the player will actually find the
+    // gating items the level needs (flashlight for dark levels, keycard
+    // for the Lv4 gate, lockpick for Lv8). User report: 「灯りが必要な
+    // 場所があるのに懐中電灯が入手できない」. Force one un-picked item
+    // spot to hold the required item if no random roll did.
+    var LEVEL_REQUIRED_ITEMS = {
+      0:  ['flashlight'],
+      1:  ['keycard'],     // Lv4 gate uses keycard — let player pre-stock
+      3:  ['flashlight'],
+      4:  ['keycard'],
+      6:  ['flashlight'],
+      7:  ['lockpick'],    // Lv8 gate uses lockpick
+      8:  ['lockpick'],
+      11: ['flashlight'],
+      14: ['flashlight']
+    };
+    var required = LEVEL_REQUIRED_ITEMS[levelId];
+    if (required && required.length) {
+      // Walkable item spot keys we haven't reserved as guaranteed weapon
+      // tiles (those are intentional weapon drops).
+      var nonWeaponKeys = [];
+      for (var kk in pickupSpots) {
+        if (!Object.prototype.hasOwnProperty.call(pickupSpots, kk)) continue;
+        if (weaponSpotSet[kk]) continue;
+        nonWeaponKeys.push(kk);
+      }
+      for (var ri = 0; ri < required.length; ri++) {
+        var reqId = required[ri];
+        // Already covered by a random roll?
+        var have = false;
+        for (var pk in pickupSpots) {
+          if (pickupSpots[pk] === reqId) { have = true; break; }
+        }
+        if (have) continue;
+        // Already in player inventory from an earlier level? Skip.
+        if ((player.inventory[reqId] || 0) > 0) continue;
+        // Force-assign: pick the first non-weapon spot we have available.
+        if (nonWeaponKeys.length > 0) {
+          var pickKey = nonWeaponKeys.shift();
+          pickupSpots[pickKey] = reqId;
+          for (var pri = 0; pri < pickupRenderList.length; pri++) {
+            if (pickupRenderList[pri].key === pickKey) {
+              pickupRenderList[pri].itemId = reqId;
+              break;
+            }
+          }
+        }
+      }
+    }
     // Enforce weapon budget — even using every weapon found cannot clear the
     // floor of enemies. Lv9 is the only exception (boss arena, generous cap).
     // Any over-cap weapons are downgraded to a non-weapon roll from the pool.
