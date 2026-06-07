@@ -225,6 +225,14 @@ body {
 .weapon-hand.show.bobbing {
   animation: weapon-walk-bob 0.55s ease-in-out infinite;
 }
+.weapon-hand.out-of-ammo .weapon-hand-grip {
+  filter:
+    grayscale(1)
+    brightness(0.55)
+    drop-shadow(0 4px 6px rgba(0, 0, 0, 0.92))
+    drop-shadow(0 0 1px rgba(255, 60, 60, 0.4));
+  opacity: 0.7;
+}
 @keyframes weapon-walk-bob {
   0%   { transform: translateX(-50%) translateY(20%) rotate(0deg); }
   50%  { transform: translateX(-50%) translateY(15%) rotate(1.5deg); }

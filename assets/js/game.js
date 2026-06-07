@@ -5001,8 +5001,13 @@
       if (id && ITEMS[id]) {
         handIc.innerHTML = getWeaponIconHTML(id);
         if (state === ST.PLAYING) hand.classList.add('show');
+        // Greyscale the FPS hand sprite when out of ammo so the player
+        // gets visual confirmation that firing won't work.
+        var emptyState = (player.inventory[id] || 0) <= 0 && !hasEternalCharm();
+        hand.classList.toggle('out-of-ammo', emptyState);
       } else {
         hand.classList.remove('show');
+        hand.classList.remove('out-of-ammo');
       }
     }
   }
