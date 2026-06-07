@@ -1407,8 +1407,9 @@
       stateTimer: 0,
       alive: true,
       hp: 999,
-      bossHp: 500, // ~ 2.5x normal boss → 相応に強い
-      color: getEntityColor('haruki_boss'),
+      bossHp: 1500,    // bumped 500 → 1500 with the rest of the 2026-06-07
+      bossHpMax: 1500, // boss durability pass — the hidden boss is THE
+      color: getEntityColor('haruki_boss'), // bonus encounter, must feel like one
       bodyColor: '#180004',
       _isHidden: true
     });
@@ -3636,17 +3637,23 @@
       for (var ei = 0; ei < def.entities.length; ei++) {
         var ent = def.entities[ei];
         // Per-type HP base so CHAOS / NORMAL difficulty actually scales.
+        // Boss-class values are the BOSS HP pool (bossHp), not regular hp.
+        // User asked 2026-06-07 「ボスの耐久力をもっと高くする」 — bumped
+        // boss/haruki_boss base from 200 / 200 → 600 / 900 so a hand-cannon
+        // pistol mag no longer ends them in 4-5 hits.
         var hpBase = ({
           hound: 60,
           skinstealer: 80,
           smiler: 90,
           partygoer: 50,
-          boss: 200
+          boss: 600,
+          haruki_boss: 900
         })[ent.type] || 100;
+        var isBoss = (ent.type === 'boss' || ent.type === 'haruki_boss');
         var diffMul = (DIFFICULTIES[currentDifficulty] && DIFFICULTIES[currentDifficulty].hpMul) || 1;
         // Enemy HP scales inversely to player hpMul — harder diff = tougher enemies.
         var enemyHp = Math.round(hpBase * (2 - diffMul));
-        entities.push({
+        var spawn = {
           type: ent.type,
           x: ent.gx * TS + TS / 2,
           y: ent.gy * TS + TS / 2,
@@ -3660,7 +3667,12 @@
           hpMax: enemyHp,
           color: getEntityColor(ent.type),
           bodyColor: '#000000'
-        });
+        };
+        if (isBoss) {
+          spawn.bossHp = enemyHp;     // overrides the legacy fallback of 200
+          spawn.bossHpMax = enemyHp;
+        }
+        entities.push(spawn);
       }
     }
 
@@ -7992,96 +8004,108 @@
   // ── LEVEL-SPECIFIC AMBIENT EVENTS ─────────────────────────
   // Each level rolls its own atmospheric beat every ~15s. Functions are
   // intentionally lightweight — small SE + brief hallu-text or shake.
+  // Per-level visual tint flash. Brief hallucinationLayer overlay so even
+  // audio-only ambient events get a matching visual cue. Each level uses
+  // a signature color so the player builds intuition about where they are.
+  function _flashLevelTint(rgba, durMs) {
+    var hl = el('hallucinationLayer');
+    if (!hl) return;
+    hl.style.display = 'block';
+    var prevBg = hl.style.background;
+    var prevOp = hl.style.opacity;
+    hl.style.background = rgba;
+    hl.style.opacity = '1';
+    setTimeout(function () {
+      if (!hl) return;
+      hl.style.background = prevBg;
+      hl.style.opacity = prevOp;
+    }, durMs || 220);
+  }
   var LEVEL_AMBIENT_EVENTS = {
-    0: [
-      function () { try { GameEngine.playSound('fluorescent'); } catch (e) {} },
-      function () {
-        var hl = el('hallucinationLayer');
-        if (hl) {
-          hl.style.display = 'block';
-          var prev = hl.style.opacity;
-          hl.style.opacity = '0.85'; setTimeout(function () { if (hl) hl.style.opacity = prev || ''; }, 110);
-        }
-      }
+    // Each level now has 3-5 events mixing audio + per-level visual tint
+    // so the ambient roll never feels purely audio. User request: 「ボスの
+    // レベルのような視覚的イベント設計を他のレベルでも適宜実装したい」.
+    0: [ // LOBBY — fluorescent stutters, lemon-yellow flicker
+      function () { try { GameEngine.playSound('fluorescent'); } catch (e) {} _flashLevelTint('rgba(255,240,140,0.55)', 90); },
+      function () { _flashLevelTint('rgba(40,40,40,0.55)', 120); try { GameEngine.playSound('static'); } catch (e) {} },
+      function () { _flashLevelTint('rgba(255,200,40,0.35)', 220); }
     ],
-    1: [
-      function () { try { GameEngine.playSound('footstep'); } catch (e) {} },
-      function () { try { GameEngine.playSound('pipe_creak'); } catch (e) {} }
+    1: [ // HABITABLE — warm sodium light, distant footstep echo
+      function () { try { GameEngine.playSound('footstep'); } catch (e) {} _flashLevelTint('rgba(180,120,40,0.18)', 320); },
+      function () { try { GameEngine.playSound('pipe_creak'); } catch (e) {} GameEngine.shakeScreen(2, 0.08); },
+      function () { _flashLevelTint('rgba(110,70,30,0.30)', 260); }
     ],
-    2: [
-      function () { try { GameEngine.playSound('pipe_drip'); } catch (e) {} },
-      function () { try { GameEngine.playSound('pipe_creak'); } catch (e) {} }
+    2: [ // PIPES — splash + steam burst, blue-cyan tint
+      function () { try { GameEngine.playSound('pipe_drip'); } catch (e) {} _flashLevelTint('rgba(20,80,140,0.30)', 180); },
+      function () { try { GameEngine.playSound('pipe_creak'); } catch (e) {} GameEngine.shakeScreen(4, 0.15); },
+      function () { _flashLevelTint('rgba(180,220,240,0.30)', 220); } // steam puff
     ],
-    3: [
-      function () {
-        try { GameEngine.playSound('static'); } catch (e) {}
-        GameEngine.shakeScreen(3, 0.1);
-      },
-      function () { try { GameEngine.playSound('clock_tick'); } catch (e) {} }
+    3: [ // ELECTRICAL — strobe + sparks + tinted blue/white
+      function () { try { GameEngine.playSound('static'); } catch (e) {} GameEngine.shakeScreen(5, 0.18); _flashLevelTint('rgba(180,220,255,0.85)', 80); },
+      function () { _flashLevelTint('rgba(0,0,0,0.95)', 120); try { GameEngine.playSound('static'); } catch (e) {} },
+      function () { _flashLevelTint('rgba(255,255,255,0.70)', 50); try { GameEngine.playSound('clock_tick'); } catch (e) {} }
     ],
-    4: [
-      function () { try { GameEngine.playSound('phone'); } catch (e) {} },
+    4: [ // OFFICE — phone ring + paper flutter + cubicle hum
+      function () { try { GameEngine.playSound('phone'); } catch (e) {} _flashLevelTint('rgba(200,180,100,0.25)', 320); },
+      function () { try { GameEngine.playSound('paper'); } catch (e) {} _flashLevelTint('rgba(255,250,220,0.30)', 220); },
       function () { try { GameEngine.playSound('clock_tick'); } catch (e) {} },
-      function () { try { GameEngine.playSound('paper'); } catch (e) {} }
+      function () { _flashLevelTint('rgba(40,40,60,0.45)', 180); try { GameEngine.playSound('whisper'); } catch (e) {} }
     ],
-    5: [
-      function () { try { GameEngine.playSound('glass_rattle'); } catch (e) {} },
-      function () { try { GameEngine.playSound('phone'); } catch (e) {} },
-      function () { try { GameEngine.playSound('elevator_hum'); } catch (e) {} }
+    5: [ // HOTEL — elevator ding + warm corridor flicker
+      function () { try { GameEngine.playSound('glass_rattle'); } catch (e) {} _flashLevelTint('rgba(140,80,40,0.30)', 260); },
+      function () { try { GameEngine.playSound('elevator_hum'); } catch (e) {} },
+      function () { _flashLevelTint('rgba(200,150,80,0.40)', 300); try { GameEngine.playSound('phone'); } catch (e) {} }
     ],
-    6: [
-      function () {
-        var hl = el('hallucinationLayer');
-        if (hl) {
-          hl.style.display = 'block';
-          hl.style.opacity = '0.6'; setTimeout(function () { if (hl) hl.style.opacity = '0'; }, 90);
-        }
-        try { GameEngine.playSound('static'); } catch (e) {}
-      },
-      function () { try { GameEngine.playSound('breath'); } catch (e) {} }
+    6: [ // DARK HALLWAY — flashlight glint of something + pitch black flash
+      function () { _flashLevelTint('rgba(255,255,255,0.40)', 60); try { GameEngine.playSound('static'); } catch (e) {} },
+      function () { _flashLevelTint('rgba(0,0,0,0.92)', 220); try { GameEngine.playSound('breath'); } catch (e) {} GameEngine.shakeScreen(3, 0.12); },
+      function () { try { GameEngine.playSound('whisper'); } catch (e) {} _flashLevelTint('rgba(80,0,30,0.45)', 200); }
     ],
-    7: [
-      function () { try { GameEngine.playSound('wind'); } catch (e) {} },
-      function () { try { GameEngine.playSound('whisper'); } catch (e) {} }
+    7: [ // CORRIDOR — wind howl + horizon hint
+      function () { try { GameEngine.playSound('wind'); } catch (e) {} _flashLevelTint('rgba(140,120,80,0.20)', 320); },
+      function () { try { GameEngine.playSound('whisper'); } catch (e) {} _flashLevelTint('rgba(40,40,40,0.45)', 240); },
+      function () { _flashLevelTint('rgba(200,180,120,0.18)', 360); } // distant sky band
     ],
-    8: [
-      function () { try { GameEngine.playSound('breath'); } catch (e) {} },
-      function () { try { GameEngine.playSound('whisper'); } catch (e) {} }
+    8: [ // HIVE — yellow honeycomb pulse + buzzing
+      function () { try { GameEngine.playSound('breath'); } catch (e) {} _flashLevelTint('rgba(230,180,40,0.40)', 240); },
+      function () { try { GameEngine.playSound('whisper'); } catch (e) {} GameEngine.shakeScreen(2, 0.10); },
+      function () { _flashLevelTint('rgba(120,80,20,0.55)', 200); }
     ],
-    9: [
-      function () {
-        try { GameEngine.playSound('thunder'); } catch (e) {}
-        GameEngine.shakeScreen(10, 0.4);
-      },
-      function () { try { _uncannySpeak('まだ、いるよ。'); } catch (e) {} }
+    9: [ // SUBURBS — boss arena: lightning + thunder + sky strobe
+      function () { try { GameEngine.playSound('thunder'); } catch (e) {} GameEngine.shakeScreen(10, 0.4); _flashLevelTint('rgba(180,180,200,0.85)', 100); },
+      function () { try { _uncannySpeak('まだ、いるよ。'); } catch (e) {} _flashLevelTint('rgba(100,0,30,0.35)', 320); },
+      function () { _flashLevelTint('rgba(40,40,80,0.45)', 320); try { GameEngine.playSound('wind'); } catch (e) {} },
+      function () { _flashLevelTint('rgba(220,220,255,0.75)', 50); try { GameEngine.playSound('thunder'); } catch (e) {} }
     ],
-    11: [
-      function () { try { GameEngine.playSound('clock_tick'); } catch (e) {} },
-      function () { try { GameEngine.playSound('paper'); } catch (e) {} }
-    ],
-    12: [
-      function () { try { GameEngine.playSound('stinger'); } catch (e) {} },
-      function () {
-        var hl = el('hallucinationLayer');
-        if (hl) {
-          hl.style.display = 'block';
-          hl.style.background = 'rgba(200, 80, 160, 0.18)';
-          setTimeout(function () { if (hl) hl.style.background = ''; }, 220);
-        }
-      }
-    ],
-    13: [
+    11: [ // OFFICE DISTRICT — train rumble + neon strip
+      function () { try { GameEngine.playSound('clock_tick'); } catch (e) {} _flashLevelTint('rgba(120,180,200,0.20)', 240); },
       function () { try { GameEngine.playSound('paper'); } catch (e) {} },
+      function () { _flashLevelTint('rgba(40,180,200,0.50)', 80); try { GameEngine.playSound('static'); } catch (e) {} GameEngine.shakeScreen(6, 0.20); }, // train pass
+      function () { _flashLevelTint('rgba(220,120,40,0.35)', 200); } // sodium light bleed
+    ],
+    12: [ // FUN — party strobe in 3 colors
+      function () { try { GameEngine.playSound('stinger'); } catch (e) {} _flashLevelTint('rgba(200,80,160,0.60)', 110); },
+      function () { _flashLevelTint('rgba(60,180,220,0.55)', 110); try { GameEngine.playSound('phone'); } catch (e) {} },
+      function () { _flashLevelTint('rgba(220,220,80,0.55)', 110); GameEngine.shakeScreen(3, 0.1); },
+      function () { _flashLevelTint('rgba(255,40,80,0.55)', 110); }
+    ],
+    13: [ // LIBRARY — golden book glow + page flip
+      function () { try { GameEngine.playSound('paper'); } catch (e) {} _flashLevelTint('rgba(220,180,100,0.35)', 280); },
       function () { try { GameEngine.playSound('clock_tick'); } catch (e) {} },
-      function () { try { GameEngine.playSound('footstep'); } catch (e) {} }
+      function () { try { GameEngine.playSound('whisper'); } catch (e) {} _flashLevelTint('rgba(40,30,15,0.55)', 200); },
+      function () { _flashLevelTint('rgba(180,140,60,0.45)', 320); }
     ],
-    14: [
-      function () { try { GameEngine.playSound('pipe_drip'); } catch (e) {} },
-      function () { try { GameEngine.playSound('breath'); } catch (e) {} }
+    14: [ // TRENCH — water splash + cold blue tint + bubble pop
+      function () { try { GameEngine.playSound('pipe_drip'); } catch (e) {} _flashLevelTint('rgba(40,80,120,0.55)', 220); },
+      function () { try { GameEngine.playSound('breath'); } catch (e) {} _flashLevelTint('rgba(0,0,0,0.85)', 160); }, // submerged
+      function () { _flashLevelTint('rgba(120,180,200,0.40)', 320); GameEngine.shakeScreen(2, 0.10); }, // bubble surface
+      function () { try { GameEngine.playSound('static'); } catch (e) {} _flashLevelTint('rgba(80,180,200,0.30)', 280); }
     ],
-    15: [
-      function () { try { GameEngine.playSound('wind'); } catch (e) {} },
-      function () { try { GameEngine.playSound('whisper'); } catch (e) {} }
+    15: [ // OUTDOOR/GRAVEL — sky brighten + wind + crow caw (whisper)
+      function () { try { GameEngine.playSound('wind'); } catch (e) {} _flashLevelTint('rgba(180,180,220,0.30)', 320); },
+      function () { try { GameEngine.playSound('whisper'); } catch (e) {} _flashLevelTint('rgba(220,200,160,0.40)', 240); }, // sun glare
+      function () { _flashLevelTint('rgba(140,180,220,0.45)', 280); GameEngine.shakeScreen(2, 0.10); }, // distant rumble
+      function () { _flashLevelTint('rgba(40,40,60,0.35)', 280); } // cloud shadow
     ]
   };
   var _levelEventRollT = 8;

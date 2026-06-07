@@ -1122,8 +1122,9 @@
     // with an outline; regular entities get a thin minimal bar that only
     // shows once they've taken damage so a full-HP zoo doesn't clutter
     // the FOV.
-    var maxHp = entity.bossHp !== undefined ? 200
-              : (entity.hpMax !== undefined ? entity.hpMax : 100);
+    var maxHp = entity.bossHpMax !== undefined ? entity.bossHpMax
+              : (entity.bossHp !== undefined ? entity.bossHp
+              : (entity.hpMax !== undefined ? entity.hpMax : 100));
     var curHp = entity.bossHp !== undefined ? entity.bossHp
               : (entity.hp !== undefined ? entity.hp : maxHp);
     var isBoss = (entity.type === 'boss' || entity.type === 'haruki_boss');
