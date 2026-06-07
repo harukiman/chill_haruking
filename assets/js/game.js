@@ -13224,6 +13224,19 @@
         tsVib.classList.toggle('off', !vibOn);
       });
     }
+    // Enforce vibrate toggle — wrap navigator.vibrate so existing
+    // call sites automatically respect bk_vibrate. Previously the
+    // toggle saved but every call still fired regardless.
+    if (typeof navigator.vibrate === 'function' && !navigator._bkWrapped) {
+      var _origVibrate = navigator.vibrate.bind(navigator);
+      navigator.vibrate = function (pattern) {
+        try {
+          if (localStorage.getItem('bk_vibrate') === '0') return false;
+        } catch (e) {}
+        try { return _origVibrate(pattern); } catch (e) { return false; }
+      };
+      navigator._bkWrapped = true;
+    }
     var tsFps = el('tsFpsToggle');
     if (tsFps) {
       var fpsOn = localStorage.getItem('bk_fps') === '1';
