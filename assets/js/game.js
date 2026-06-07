@@ -3026,6 +3026,7 @@
     overlay.addEventListener('click', finish);
     // Scripted beats
     later(400,  function () { setText('— LEVEL 9 — THE SUBURBS'); });
+    later(800,  function () { speakSituational('boss_approach', { cooldownMs: 20000 }); });
     later(1700, flashLightning);
     later(2200, function () { setText('空に月はない。\n月のような、何かがある。'); });
     later(4200, flashLightning);
@@ -3361,6 +3362,12 @@
     el('lrFlavor').textContent = (def.hint || '') + '\n\n[ 画面をタップして始める ]';
     showOverlay('levelReachCinematic');
     if (audioInitialized) GameEngine.playSound('stinger');
+    // Sparse situational whisper on level entry — sells the "descent" theme.
+    // 35% chance to fire; cooldown handled by speakSituational so it can't
+    // chain across rapid no-clip transitions.
+    if (Math.random() < 0.35) {
+      setTimeout(function () { speakSituational('level_descent', { cooldownMs: 25000 }); }, 600);
+    }
     var lrOverlay = el('levelReachCinematic');
     // FPS descent shot for the first 1.6s — fades behind title card text.
     // Cancelled on advance() so skipping doesn't leave a RAF running.
@@ -3892,6 +3899,20 @@
     // Safe area: no SAN drain (the safe-area regen below handles healing).
     if (player.inSafeZone) sanDrain = 0;
     player.san = Math.max(0, player.san - sanDrain * dt);
+    // SAN-bucket transition triggers a sparse low-SAN whisper. We only fire on
+    // *crosses* into a lower bucket so a long run at 25% SAN doesn't chatter.
+    var sanPct = (player.san / player.sanMax) * 100;
+    var newBucket = sanPct < 12 ? 'critical' : (sanPct < 30 ? 'low' : (sanPct < 55 ? 'mid' : 'high'));
+    if (newBucket !== _sanBucket) {
+      var order = { high: 3, mid: 2, low: 1, critical: 0 };
+      // Only on transitions to a *lower* bucket
+      if (order[newBucket] < order[_sanBucket]) {
+        if (newBucket === 'critical' || newBucket === 'low') {
+          speakSituational('low_san', { cooldownMs: 30000 });
+        }
+      }
+      _sanBucket = newBucket;
+    }
 
     // Flashlight battery drain: 1%/s while ON. When depleted, auto-swap to
     // the next spare flashlight if any. Otherwise turn it off.
@@ -6011,6 +6032,53 @@
     } catch (e) {}
   }
 
+  // Situational TTS line banks. Categories are sparse on purpose so the voice
+  // stays unsettling rather than chatty. Each category has its own cooldown
+  // tracked in _ttsCategoryCooldown so categories don't crowd each other out.
+  var TTS_LINES = {
+    low_san: [
+      'もう、いるよ。',
+      'うしろを見るな。',
+      '気づかれた。',
+      '正気でいられるね。',
+      'すぐ、そこに。',
+      'もう、戻れない。'
+    ],
+    level_descent: [
+      'ようこそ。',
+      '降りてきたね。',
+      'ここは、まだ浅い。',
+      '深く、深く。',
+      'もうすぐ、会える。'
+    ],
+    enemy_close: [
+      '見つけた。',
+      'こっちにおいで。',
+      'ねえ。',
+      'にげても、むだ。'
+    ],
+    boss_approach: [
+      '待っていた。',
+      'ようやく、来たね。',
+      'もう、はなさない。'
+    ],
+    note_dread: [
+      '読まないで。',
+      'やめておけ。',
+      '知ってしまったね。'
+    ],
+    item_uncanny: [
+      'それは、私のだよ。',
+      'うけとった?',
+      '気をつけて。'
+    ]
+  };
+  // Per-category cooldown so a low_san line doesn't immediately steal a slot
+  // from a boss_approach line and vice versa.
+  var _ttsCategoryCooldown = {};
+  // Track SAN bucket so we only fire on threshold *crosses* — repeated ticks
+  // at the same SAN range don't keep whispering.
+  var _sanBucket = 'high';
   // Web Speech API helper for an uncanny low-pitch whisper voice. Used by the
   // enemy-line system for ハルキ系 / boss / wretch so the player physically
   // hears what they're saying. Throttled so it never queues up faster than
@@ -6041,6 +6109,25 @@
       } catch (e) {}
       window.speechSynthesis.speak(u);
     } catch (e) {}
+  }
+
+  // Public situational TTS — pick a random line from a TTS_LINES category and
+  // speak it through _uncannySpeak, respecting per-category cooldown and the
+  // user's bk_tts_voices toggle (default ON).
+  function speakSituational(category, opts) {
+    opts = opts || {};
+    var bank = TTS_LINES[category];
+    if (!bank || !bank.length) return;
+    try {
+      if (localStorage.getItem('bk_tts_voices') === '0') return;
+    } catch (e) {}
+    var now = performance.now();
+    var lastCat = _ttsCategoryCooldown[category] || 0;
+    var cdMs = opts.cooldownMs || 15000; // categories self-throttle ~15s
+    if (now - lastCat < cdMs) return;
+    _ttsCategoryCooldown[category] = now;
+    var line = bank[Math.floor(Math.random() * bank.length)];
+    _uncannySpeak(line);
   }
 
   function pickUpItem(itemId, gx, gy) {
@@ -9524,6 +9611,22 @@
         if (fpsInd) fpsInd.style.display = fpsOn ? 'block' : 'none';
       });
     }
+    // TTS uncanny voices opt-out — defaults ON, persists as bk_tts_voices.
+    var tsTts = el('tsTtsVoicesToggle');
+    if (tsTts) {
+      var ttsOn = localStorage.getItem('bk_tts_voices') !== '0';
+      tsTts.textContent = ttsOn ? 'ON' : 'OFF';
+      tsTts.classList.toggle('off', !ttsOn);
+      tsTts.addEventListener('click', function () {
+        ttsOn = !ttsOn;
+        localStorage.setItem('bk_tts_voices', ttsOn ? '1' : '0');
+        tsTts.textContent = ttsOn ? 'ON' : 'OFF';
+        tsTts.classList.toggle('off', !ttsOn);
+        if (!ttsOn) {
+          try { window.speechSynthesis.cancel(); } catch (e) {}
+        }
+      });
+    }
     // Title-screen Performance toggles (mirror of in-game Phone Options).
     // Same storage keys + engine flags so both UIs are in sync. Phone-options
     // already binds with setupPerfToggle on init; here we re-read storage so
@@ -9586,6 +9689,12 @@
         var fpsOn2 = localStorage.getItem('bk_fps') === '1';
         tsFps2.textContent = fpsOn2 ? 'ON' : 'OFF';
         tsFps2.classList.toggle('off', !fpsOn2);
+      }
+      var tsTts2 = el('tsTtsVoicesToggle');
+      if (tsTts2) {
+        var ttsOn2 = localStorage.getItem('bk_tts_voices') !== '0';
+        tsTts2.textContent = ttsOn2 ? 'ON' : 'OFF';
+        tsTts2.classList.toggle('off', !ttsOn2);
       }
     };
     // Gamepad mapping UI — visual diagram + "press a button to assign" flow

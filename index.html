@@ -20,7 +20,7 @@
   <meta name="twitter:title" content="THE BACKROOMS — featuring HARUKI">
   <meta name="twitter:description" content="一人称モバイル探索ホラー。Level 0 から no-clip で階層を降下。壁の向こうにカレが待つ。">
   <title>THE BACKROOMS</title>
-  <link rel="stylesheet" href="assets/css/game.css?v=117">
+  <link rel="stylesheet" href="assets/css/game.css?v=118">
 </head>
 <body oncontextmenu="return false;">
 
@@ -171,6 +171,10 @@
         <div class="ts-row ts-toggle-row">
           <span>FPS 表示</span>
           <button id="tsFpsToggle" type="button" class="ts-toggle off">OFF</button>
+        </div>
+        <div class="ts-row ts-toggle-row">
+          <span>うっすらボイス (TTS)</span>
+          <button id="tsTtsVoicesToggle" type="button" class="ts-toggle">ON</button>
         </div>
       </div>
       <div class="ts-section">
@@ -901,8 +905,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="assets/js/engine.js?v=117"></script>
-  <script src="assets/js/game.js?v=117"></script>
+  <script src="assets/js/engine.js?v=118"></script>
+  <script src="assets/js/game.js?v=118"></script>
 
   <!-- POST-LOAD VERIFICATION + DIRECT BINDING FALLBACK
        After game.js IIFE runs, this script confirms __titleAction is the real one.
