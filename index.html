@@ -20,7 +20,7 @@
   <meta name="twitter:title" content="THE BACKROOMS — featuring HARUKI">
   <meta name="twitter:description" content="一人称モバイル探索ホラー。Level 0 から no-clip で階層を降下。壁の向こうにカレが待つ。">
   <title>THE BACKROOMS</title>
-  <link rel="stylesheet" href="assets/css/game.css?v=107">
+  <link rel="stylesheet" href="assets/css/game.css?v=108">
 </head>
 <body oncontextmenu="return false;">
 
@@ -317,6 +317,9 @@
     <div class="es-vignette"></div>
     <div class="es-text" id="esText"></div>
   </div>
+
+  <!-- Muzzle Flash (weapon fire effect) -->
+  <div id="muzzleFlash" class="muzzle-flash"></div>
 
   <!-- Unique Reward Flash -->
   <div id="uniqueRewardFlash" class="overlay unique-reward-flash" style="display:none;">
@@ -817,8 +820,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="assets/js/engine.js?v=107"></script>
-  <script src="assets/js/game.js?v=107"></script>
+  <script src="assets/js/engine.js?v=108"></script>
+  <script src="assets/js/game.js?v=108"></script>
 
   <!-- POST-LOAD VERIFICATION + DIRECT BINDING FALLBACK
        After game.js IIFE runs, this script confirms __titleAction is the real one.

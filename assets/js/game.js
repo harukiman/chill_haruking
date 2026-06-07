@@ -108,6 +108,7 @@
     var safes = [];
     var stairsUp = [];
     var stairsDown = [];
+    var weaponSpots = [];  // dedicated weapon-only pickup tiles ('w')
 
     for (var y = 0; y < h; y++) {
       var row = [];
@@ -128,6 +129,7 @@
           case 's': t = 11; safes.push({ gx: x, gy: y }); break;
           case 'U': t = 0; stairsUp.push({ gx: x, gy: y }); break;
           case 'd': t = 0; stairsDown.push({ gx: x, gy: y }); break;
+          case 'w': t = 5; itemSpots.push({ gx: x, gy: y }); weaponSpots.push({ gx: x, gy: y }); break;
           case 'P': t = 0; spawn = { gx: x, gy: y }; break;
           default:  t = 0; break;
         }
@@ -146,7 +148,8 @@
       hazards: hazards,
       safes: safes,
       stairsUp: stairsUp,
-      stairsDown: stairsDown
+      stairsDown: stairsDown,
+      weaponSpots: weaponSpots
     };
   }
 
@@ -210,7 +213,7 @@
     '#......FFFF........FF............#',
     '#..F...FFFF..........n...........#',
     '#..F.................F......i....#',
-    '#......F....X........F...........#',
+    '#......F....X........F....w......#',
     '#......F.........FF..............#',
     '#....................F...........#',
     '#................................#',
@@ -241,7 +244,7 @@
     '#.n..#~~~............#',
     '#....D~~~............#',
     '#....#~~~....X.......#',
-    '#....#~~~............#',
+    '#....#~~~....w.......#',
     '######################'
   ];
 
@@ -351,7 +354,7 @@
     '#.....#....#.....#',
     '#.....#.X..#.....#',
     '#.....######.....#',
-    '#................#',
+    '#......w.........#',
     '##################'
   ];
 
@@ -411,7 +414,7 @@
     '#.FFFFFFFF.#',
     '#..........#',
     '#......X...#',
-    '#..........#',
+    '#..w.......#',
     '############'
   ];
 
@@ -1194,6 +1197,28 @@
   // ============================================================
   // Helper: damage the nearest entity that lies inside a forward cone
   // (angle in radians, distance in tiles). Returns the affected entity or null.
+  // Show a brief muzzle-flash overlay. CSS class .show triggers the animation
+  // (defined in game.css). Class is removed after the animation length so
+  // rapid fire restarts the flash cleanly.
+  function _muzzleFlash(color) {
+    var mf = el('muzzleFlash');
+    if (!mf) return;
+    if (color) mf.style.color = color;
+    mf.classList.remove('show');
+    void mf.offsetWidth;
+    mf.classList.add('show');
+    setTimeout(function () { mf.classList.remove('show'); }, 220);
+  }
+  // Spray blood/spark particles from the hit point toward the player. tinge
+  // chooses the particle palette per weapon flavour.
+  function _hitParticles(target, count, tinge) {
+    if (!GameEngine.addParticle) return;
+    for (var pi = 0; pi < count; pi++) {
+      var spread = (Math.random() - 0.5) * 30;
+      GameEngine.addParticle(tinge || 'spark',
+        target.x + spread, target.y + spread);
+    }
+  }
   function _attackForward(p, opts) {
     var bestE = null, bestDist = Infinity;
     var ang = p.angle;
@@ -1228,6 +1253,8 @@
         toast(getEntityLabel(bestE.type) + ' 撃破');
       }
     }
+    // Blood/spark feedback at the hit location
+    _hitParticles(bestE, 6, 'spark');
     return bestE;
   }
   function getEntityLabel(t) {
@@ -1235,15 +1262,24 @@
               partygoer: 'PARTYGOER', boss: 'BOSS', haruki: 'HARUKI',
               haruki_boss: 'HARUKI 真', crawler: 'CRAWLER' })[t] || t;
   }
-  // Register weapons into the global ITEMS map (defined above)
+  // Register weapons into the global ITEMS map (defined above).
+  // Each effect() now layers: muzzle flash overlay, multi-track SE, screen
+  // shake, hit particles. The look/feel is intentionally over-the-top
+  // because the player only gets a handful of shots per level.
   ITEMS.pistol = {
     id: 'pistol', name: '拳銃', icon: '🔫',
     desc: '中距離・低反動。1発で hound 系を倒せる。所持数=残弾。',
     category: 'weapon',
     effect: function (p) {
+      _muzzleFlash('#fff2c0');
+      if (audioInitialized) {
+        GameEngine.playSound('hit');
+        GameEngine.playSound('clock_tick'); // sharp click as report
+      }
       var hit = _attackForward(p, { dmg: 60, rangeTiles: 8, coneDeg: 14 });
-      if (audioInitialized) GameEngine.playSound('hit');
-      GameEngine.shakeScreen(4, 0.15);
+      GameEngine.shakeScreen(6, 0.2);
+      if (hit) _hitParticles(hit, 4, 'spark');
+      if (navigator.vibrate) navigator.vibrate(15);
       toast(hit ? '命中: ' + getEntityLabel(hit.type) : '空振り');
     }
   };
@@ -1252,15 +1288,20 @@
     desc: '近距離・広範囲。大ダメージだが弾数少。',
     category: 'weapon',
     effect: function (p) {
-      // Multiple pellets within a wide cone — damage scales by hits
-      var hits = 0;
+      _muzzleFlash('#ffd070');
+      if (audioInitialized) {
+        GameEngine.playSound('hit');
+        GameEngine.playSound('thunder');
+      }
+      var hits = 0, lastHit = null;
       for (var s = 0; s < 5; s++) {
         var h = _attackForward(p, { dmg: 35, rangeTiles: 4.5, coneDeg: 55 });
-        if (h) hits++;
+        if (h) { hits++; lastHit = h; }
       }
-      if (audioInitialized) GameEngine.playSound('hit');
-      GameEngine.shakeScreen(10, 0.35);
+      GameEngine.shakeScreen(14, 0.45);
       GameEngine.redFlash();
+      if (lastHit) _hitParticles(lastHit, 12, 'spark');
+      if (navigator.vibrate) navigator.vibrate([30, 20, 30]);
       toast(hits ? hits + 'ヒット' : '空振り');
     }
   };
@@ -1269,9 +1310,15 @@
     desc: '近接・即斬。耐久度1ずつ消費。Boss にも有効。',
     category: 'weapon',
     effect: function (p) {
+      _muzzleFlash('#c0d8ff'); // cool blue slash gleam
+      if (audioInitialized) {
+        GameEngine.playSound('hit');
+        GameEngine.playSound('paper'); // sharp swish-like overlay
+      }
       var hit = _attackForward(p, { dmg: 95, rangeTiles: 1.6, coneDeg: 80 });
-      if (audioInitialized) GameEngine.playSound('hit');
-      GameEngine.shakeScreen(5, 0.18);
+      GameEngine.shakeScreen(7, 0.22);
+      if (hit) _hitParticles(hit, 10, 'spark');
+      if (navigator.vibrate) navigator.vibrate(20);
       toast(hit ? '斬撃: ' + getEntityLabel(hit.type) : '空振り');
     }
   };
@@ -1280,9 +1327,15 @@
     desc: '長距離・高貫通。6発まで装填、命中力高い。',
     category: 'weapon',
     effect: function (p) {
+      _muzzleFlash('#ffe080');
+      if (audioInitialized) {
+        GameEngine.playSound('hit');
+        GameEngine.playSound('stinger');
+      }
       var hit = _attackForward(p, { dmg: 85, rangeTiles: 12, coneDeg: 8 });
-      if (audioInitialized) GameEngine.playSound('hit');
-      GameEngine.shakeScreen(6, 0.22);
+      GameEngine.shakeScreen(9, 0.3);
+      if (hit) _hitParticles(hit, 6, 'spark');
+      if (navigator.vibrate) navigator.vibrate(25);
       toast(hit ? '貫通: ' + getEntityLabel(hit.type) : '空振り');
     }
   };
@@ -2458,12 +2511,31 @@
     var pool = LEVEL_ITEM_POOLS[levelId] || ['almond_water'];
     pickupSpots = {};
     pickupRenderList = [];
+    // Index of weapon-only spots so we always roll a weapon for them.
+    var weaponSpotSet = {};
+    if (parsed.weaponSpots) {
+      for (var wsi0 = 0; wsi0 < parsed.weaponSpots.length; wsi0++) {
+        var ws0 = parsed.weaponSpots[wsi0];
+        weaponSpotSet[gridKey(ws0.gx, ws0.gy)] = true;
+      }
+    }
+    var weaponPool = pool.filter(function (id) {
+      return ITEMS[id] && ITEMS[id].category === 'weapon';
+    });
+    // Ensure at least one weapon option even if the level pool has none — a
+    // 'w' tile is a promise that the player will find a weapon here.
+    if (weaponPool.length === 0) weaponPool = ['pistol'];
     for (var i = 0; i < parsed.itemSpots.length; i++) {
       var spot = parsed.itemSpots[i];
       var key = gridKey(spot.gx, spot.gy);
       // Skip if already picked up in this run
       if (pickedUpItems[levelId] && pickedUpItems[levelId][key]) continue;
-      var itemId = pool[Math.floor(Math.random() * pool.length)];
+      var itemId;
+      if (weaponSpotSet[key]) {
+        itemId = weaponPool[Math.floor(Math.random() * weaponPool.length)];
+      } else {
+        itemId = pool[Math.floor(Math.random() * pool.length)];
+      }
       pickupSpots[key] = itemId;
       pickupRenderList.push({ key: key, wx: spot.gx * TS + TS / 2, wy: spot.gy * TS + TS / 2, itemId: itemId });
     }
@@ -2480,20 +2552,26 @@
       return !(ITEMS[id] && ITEMS[id].category === 'weapon');
     });
     if (nonWeaponPool.length === 0) nonWeaponPool = ['almond_water'];
-    // Collect weapon spot keys, shuffle so the downgrade is fair.
+    // Collect weapon spot keys, EXCLUDING dedicated 'w' spots which are
+    // promised weapon drops. Shuffle so the downgrade is fair.
     var weaponKeys = [];
     for (var wk in pickupSpots) {
       if (Object.prototype.hasOwnProperty.call(pickupSpots, wk)) {
+        if (weaponSpotSet[wk]) continue;
         var wid = pickupSpots[wk];
         if (ITEMS[wid] && ITEMS[wid].category === 'weapon') weaponKeys.push(wk);
       }
     }
+    // Weapon budget excludes the guaranteed 'w' spots (already counted as
+    // intentional drops by the level designer).
+    var dedicatedWeaponCount = parsed.weaponSpots ? parsed.weaponSpots.length : 0;
+    var remainingCap = Math.max(0, weaponCap - dedicatedWeaponCount);
     for (var wsh = weaponKeys.length - 1; wsh > 0; wsh--) {
       var wj = Math.floor(Math.random() * (wsh + 1));
       var wt = weaponKeys[wsh]; weaponKeys[wsh] = weaponKeys[wj]; weaponKeys[wj] = wt;
     }
-    if (weaponKeys.length > weaponCap) {
-      for (var wOver = weaponCap; wOver < weaponKeys.length; wOver++) {
+    if (weaponKeys.length > remainingCap) {
+      for (var wOver = remainingCap; wOver < weaponKeys.length; wOver++) {
         var dk = weaponKeys[wOver];
         var newId = nonWeaponPool[Math.floor(Math.random() * nonWeaponPool.length)];
         pickupSpots[dk] = newId;
@@ -9111,6 +9189,20 @@
           // Close phone first so titleSettingsOverlay (z=55) isn't hidden by phone (z=60)
           try { if (typeof closePhone === 'function') closePhone(); } catch (e) {}
           showOverlay('titleSettingsOverlay');
+          // The phone options entry point is labelled "詳細設定 (ゲームパッド/振動 etc.)"
+          // so the user expects to land at the gamepad section. Scroll the
+          // overlay there after layout settles. Without this, the overlay
+          // opens at the audio-volume top and looks like a wrong screen.
+          setTimeout(function () {
+            var ov = el('titleSettingsOverlay');
+            var diag = el('tsGpDiagram');
+            if (ov && diag) {
+              try {
+                var topInOverlay = diag.offsetTop - 12;
+                ov.scrollTop = Math.max(0, topInOverlay);
+              } catch (e) {}
+            }
+          }, 60);
           break;
         case 'closeSettings':
           stage = 'closeSettings';

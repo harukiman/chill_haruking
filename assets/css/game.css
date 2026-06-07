@@ -3620,6 +3620,32 @@ button {
 .es-text.show { opacity: 1; }
 
 /* ============================================================
+ *  MUZZLE FLASH (weapon fire overlay)
+ * ============================================================ */
+.muzzle-flash {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 86;
+  opacity: 0;
+  background:
+    radial-gradient(circle at 50% 78%, currentColor 0%, transparent 22%),
+    radial-gradient(circle at 50% 78%, rgba(255, 240, 180, 0.5) 0%, transparent 38%);
+  color: #fff2c0;
+  mix-blend-mode: screen;
+  filter: blur(2px);
+}
+.muzzle-flash.show {
+  animation: muzzleFlashFire 0.22s ease-out forwards;
+}
+@keyframes muzzleFlashFire {
+  0%   { opacity: 0;    transform: scale(0.8); }
+  15%  { opacity: 0.95; transform: scale(1.05); }
+  40%  { opacity: 0.6;  transform: scale(1.1); }
+  100% { opacity: 0;    transform: scale(1.15); }
+}
+
+/* ============================================================
  *  UNIQUE REWARD FLASH (mini-game win)
  * ============================================================ */
 .unique-reward-flash {
