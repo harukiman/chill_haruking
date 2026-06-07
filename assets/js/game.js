@@ -4120,6 +4120,7 @@
     player.hp = player.hpMax;
     player.san = player.sanMax = 100;
     player.stam = player.stamMax = 100;
+    applyHalfRespawnIfDied();
     player.inventory = {};
     player.flashlightOn = false;
     player.radioOn = false;
@@ -8458,6 +8459,27 @@
     setTimeout(finish, 30000);
   }
 
+  // Death penalty: after dying, every vital is clamped to 50% of max on the
+  // next game start (normal new game / continue / endless restart). Flag is
+  // consumed on use so a healthy run is not permanently penalised.
+  function applyHalfRespawnIfDied() {
+    var justDied = false;
+    try {
+      if (localStorage.getItem('thebackrooms_just_died_v1') === '1') {
+        justDied = true;
+        localStorage.removeItem('thebackrooms_just_died_v1');
+      }
+    } catch (e) {}
+    if (!justDied) return;
+    var halfHp  = Math.round(player.hpMax  * 0.5);
+    var halfSan = Math.round(player.sanMax * 0.5);
+    var halfSt  = Math.round(player.stamMax * 0.5);
+    player.hp   = Math.min(player.hp,   halfHp);
+    player.san  = Math.min(player.san,  halfSan);
+    player.stam = Math.min(player.stam, halfSt);
+    toast('— 再起。半身で立ち上がる。');
+  }
+
   function startNewGame() {
     state = ST.LOADING;
     hideOverlay('titleScreen');
@@ -8490,23 +8512,8 @@
     player.hpMax = Math.round(100 * diff.hpMul);
     player.san = player.sanMax = 100;
     player.stam = player.stamMax = 100;
-    // After a death, every vital starts at half max as a soft penalty until
-    // the player heals. Flag is consumed (cleared) on use.
-    var justDied = false;
-    try {
-      if (localStorage.getItem('thebackrooms_just_died_v1') === '1') {
-        justDied = true;
-        localStorage.removeItem('thebackrooms_just_died_v1');
-      }
-    } catch (e) {}
-    if (justDied) {
-      player.hp = Math.round(player.hpMax * 0.5);
-      player.san = Math.round(player.sanMax * 0.5);
-      player.stam = Math.round(player.stamMax * 0.5);
-      toast('— 再起。半身で立ち上がる。');
-    } else {
-      player.hp = player.hpMax;
-    }
+    player.hp = player.hpMax;
+    applyHalfRespawnIfDied();
     player.inventory = {};
     player.flashlightOn = false;
     player.flashlightBattery = 0;
@@ -8546,6 +8553,10 @@
       GameEngine.initAudio();
       audioInitialized = true;
     }
+    // Death penalty also applies when resuming from save after a death (the
+    // common path: retryBtn → continueGame). Without this, half-respawn only
+    // triggered on brand-new runs and the user perceived the feature as dead.
+    applyHalfRespawnIfDied();
     setLevel(currentLevel);
   }
 
