@@ -298,34 +298,37 @@
 
   // ── LEVEL 5 — THE HOTEL ─────────────────────────────────
   // Long carpet corridor with doors. Partygoers / Mr.Hotel
-  // Lv5 redesigned as a Resident-Evil-style mansion: entrance hall, four
-  // north chambers, central safe room, deep wings, a 2F stair pair (U/d)
-  // that teleports between locations to simulate a second floor without a
-  // multi-floor renderer, and a southern exit corridor with the X tile.
+  // Lv5 redesigned as a Resident-Evil-style mansion. v3 fixes a critical
+  // connectivity bug where the south exit room was unreachable because doors
+  // in horizontal walls landed on top of vertical interior walls. v3 uses
+  // BFS-verified connectivity: every door in a horizontal wall is flanked
+  // north/south by open floor, every doorway in the south wall opens into a
+  // wide exit corridor with the X tile. 2F stair pair (U at col 4, d at col 26)
+  // teleports between locations to simulate a second floor.
   var LV5_ROWS = [
     '##############################',
-    '#P..F.....F.....F.....F.....F#',
+    '#P...F......F......F......F..#',
     '#............................#',
-    '####D######.######.######D####',
-    '#...#......D......D......#...#',
-    '#.i.#..n...#..i...#..F...#.n.#',
-    '#...#......#......#......#...#',
-    '####D######D######D######D####',
+    '####D########D########D#######',
+    '#....#........#........#.....#',
+    '#..i....n.......i.......n....#',
+    '#....#........#........#.....#',
+    '####D########D########D#######',
     '#............................#',
-    '#..F.................F.......#',
-    '#............s...............#',
-    '####.######D######D######.####',
     '#............................#',
-    '#...n........F........F...n..#',
+    '#.............s..............#',
+    '####D########D########D#######',
+    '#....#........#........#.....#',
+    '#..n....F.......i.......F....#',
+    '#....#........#........#.....#',
+    '####D########D########D#######',
     '#............................#',
-    '####.######.######.######.####',
+    '#...U.....................d..#',
     '#............................#',
-    '#..F....U.................d..#',
+    '##############D###############',
     '#............................#',
-    '####D######D######D######D####',
-    '#...#......#......#......#...#',
-    '#.i.D..F...D..n...D..F...D.X.#',
-    '#...#......#......#......#...#',
+    '#...........................X#',
+    '#............................#',
     '##############################'
   ];
 
@@ -1614,6 +1617,36 @@
         text: 'M.E.G. 入手の重大資料:\n\n"私は Level 9 を建てた者。\n人間だった頃の最後の願いは、\n「平穏な郊外で老後を過ごしたい」だった。\n\nだから、ここを永遠の郊外にした。\n人々を迎え入れた。\n\nだが、誰も帰らない。\nだから、私が引き留めている、と思われている。\n\n— 違う。彼らが、帰りたくないのだ。"' },
       { title: '満月の不在',
         text: 'この階層に月は無い。\nだが、月が「あった」場所には、\n大きな黒い円が浮かんでいる。\n\n直視すると、自分の影が伸びる。\n影は、自分より大きく、自分を見つめ返す。\n\n— あれは月の不在ではない。\n  月の代わりに、何かが見ているのだ。' }
+    ],
+
+    14: [
+      { title: 'Trench 探索日誌',
+        text: '海底ステーションへの入口を見つけた。\n壁を抜けた先 — 塩辛い水。\n足音は伝わらない。声も伝わらない。\nだが「視線」だけは届く。\n\n— BR-14 探検記' },
+      { title: '溺れた同行者',
+        text: '彼はここで「もう少し探そう」と言った。\nそれから、彼が振り返ることはなかった。\n\n水底に、彼の輪郭だけが残っている。\nたまに、こちらに手を伸ばすことがある。' },
+      { title: '塩の柱',
+        text: '中央広間に塩の柱が立っている。\n触れた者の手の感触が、徐々に塩に変わる。\n\n言い伝えでは、振り返らずに通り抜けたとき、\n柱の中から自分の名を呼ぶ声が聞こえる。\n返事をしてはならない。' },
+      { title: 'M.E.G. 警告 #BR-14-α',
+        text: '通称: THE TRENCH。\nLevel 14 — Backrooms 公式分類 C-3。\n\n潜水装備は機能しない。\nだが「呼吸が必要」と感じなくなった者から、\nここの住人になる。' },
+      { title: 'ハルキの噂 (海底版)',
+        text: '"水底にも、ハルキがいる"\n— ある no-clipper の最後の音声記録。\n\n録音時刻は、まだ海底に降りる前のはず。\nだが、ハルキは既にここに居た。' },
+      { title: '帰路の図',
+        text: '出口は南東の隔壁の向こう。\nバルブを 3 回 反時計回りに回すと、\n壁が一時的に no-clip 可能になる。\n\n— 急げ。タイドが変わる前に。' }
+    ],
+
+    15: [
+      { title: '庭師の手記',
+        text: 'この温室は誰のためのものか。\n私は知らない。\n剪定の時間だけが繰り返されていることを知っている。\n\n— 庭師 #1 (筆跡判定: 同一人物による複数代記述)' },
+      { title: '生垣の中の窓',
+        text: '迷路の生垣の根元に、時折「窓」が見える。\n覗き込むと別の階層の景色が見えるが、\n手を伸ばすと窓は消える。\n\n窓に映ったお前は、\nお前ではないかもしれない。' },
+      { title: 'M.E.G. 報告 #BR-15-γ',
+        text: 'Level 15 — THE GARDEN。\nFaceling 個体多数生息。\n\n顔のない者にも植物の手入れは可能であり、\nむしろ感情のない作業として最適化されている、\nという仮説あり。' },
+      { title: '甘い実',
+        text: '中央付近に赤い実をつける低木がある。\n甘い香り。\n食べた者は満たされた表情で立ち止まり、\n二度と動かなくなる。\n\n— 香りだけ嗅いで通り過ぎろ。' },
+      { title: '永遠の春',
+        text: '温度は常に 18.5 度。湿度 62%。\n季節は来ない。だから、終わりもない。\n\n但し、稀に「秋の匂い」が漂う日がある。\nその時だけ、no-clip しやすい。' },
+      { title: 'ハルキの薔薇',
+        text: '迷路の中心に、一輪だけ咲く黒い薔薇がある。\n誰が植えたか、誰も知らない。\n\nハルキはそれを毎晩、訪れる。\nお前が中心に辿り着いた時、\n薔薇は摘み取られた後かもしれない。' }
     ]
   };
 
@@ -5036,11 +5069,16 @@
       if (!slotEl) continue;
       var id = slots[dirIds[i].toLowerCase()];
       if (id && ITEMS[id]) {
-        slotEl.textContent = ITEMS[id].icon;
+        // Icon + count badge. Count = 0 -> shows "0" with .out so the player
+        // can still see the binding but knows the item is depleted.
+        var count = player.inventory[id] || 0;
+        slotEl.innerHTML = '<span class="dpad-slot-icon">' + ITEMS[id].icon + '</span>' +
+                           '<span class="dpad-slot-count' + (count === 0 ? ' out' : '') + '">'
+                           + (count > 0 ? '×' + count : '0') + '</span>';
         slotEl.classList.remove('empty');
-        slotEl.title = ITEMS[id].name + (player.inventory[id] ? ' ×' + player.inventory[id] : ' (未所持)');
+        slotEl.title = ITEMS[id].name + (count > 0 ? ' ×' + count : ' (未所持)');
       } else {
-        slotEl.textContent = '';
+        slotEl.innerHTML = '';
         slotEl.classList.add('empty');
         slotEl.title = '未割当';
       }
