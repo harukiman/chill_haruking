@@ -956,11 +956,14 @@
          timeLimit: null },
     11: { id: 11, name: 'LEVEL !', subtitle: 'END OF THE LINE',
          rows: LV11_ROWS, theme: 11,
-         hint: '線路の上を歩く。遠くから何かが近づく音。',
-         intro: '駅の匂い...ここで降りる客はいない。',
+         hint: '線路を抜けた先...どこかのオフィス街。中立の人々と露店。\n攻撃されない限り、彼らも攻撃してこない。',
+         intro: '駅を抜けた...意外な明るさ。誰かが歩いている。',
          entities: [
            { type: 'hound', gx: 5, gy: 26 },
-           { type: 'crawler', gx: 7, gy: 13 }
+           { type: 'civilian', gx: 4, gy: 5 },
+           { type: 'civilian', gx: 9, gy: 9 },
+           { type: 'civilian', gx: 3, gy: 16 },
+           { type: 'civilian', gx: 8, gy: 21 }
          ],
          timeLimit: null },
     12: { id: 12, name: 'LEVEL Fun =)', subtitle: 'ETERNAL PARTY',
@@ -3810,6 +3813,7 @@
       case 'smiler': return '#f0f0f0';
       case 'skinstealer': return '#a08070';
       case 'partygoer': return '#502828';
+      case 'civilian': return '#cd9b6c'; // warm beige — clearly human, non-threatening
       default: return '#444';
     }
   }
@@ -7057,6 +7061,15 @@
         wanderEntity(e, dt, 40 * sMul);
         if (distP < 1.5 * TS) {
           attackPlayer(15 * dt);
+        }
+      } else if (e.type === 'civilian') {
+        // Neutral NPC — wanders peacefully, never attacks. If player walks
+        // up close, the civilian halts briefly (acknowledging presence) then
+        // resumes wandering. Hostile only if attacked (handled in damage path).
+        wanderEntity(e, dt, 22 * sMul);
+        if (distP < 2.0 * TS) {
+          // Stall their wander step by zeroing their angular drift this frame
+          e.angle = (e.angle || 0) + (Math.random() - 0.5) * dt * 0.4;
         }
       } else if (e.type === 'crawler') {
         // Fast attacker that retreats after hitting
