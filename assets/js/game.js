@@ -814,6 +814,9 @@
       },
       floorDefault: [80, 72, 56],
       ceilingDefault: [150, 158, 175],
+      ceilingPattern: 'sky',
+      // Office district overcast day: pale blue horizon → cool grey zenith.
+      skyGradient: [[170, 180, 200], [70, 90, 130]],
       fogDist: 14,
       ambientLoop: 'wind',
       sanDrain: 0.2,   // safe district — SAN drain minimal
@@ -842,7 +845,7 @@
       grain: 0.3,
       chromatic: 0.15
     },
-    7: { // Run For Your Life — fast chase, red tint
+    7: { // Run For Your Life — fast chase, red tint, outdoor blood-red sky
       wall: {
         upper: { 'default': [80, 30, 30], 1: [80, 30, 30] },
         flat: true,
@@ -854,6 +857,9 @@
       },
       floorDefault: [50, 24, 24],
       ceilingDefault: [40, 18, 18],
+      ceilingPattern: 'sky',
+      // Horizon: warm bloody dawn → zenith: near-black with violet bleed.
+      skyGradient: [[80, 18, 18], [12, 4, 8]],
       fogDist: 10,
       ambientLoop: 'wind',
       sanDrain: 1.2,
@@ -893,6 +899,9 @@
       },
       floorDefault: [40, 42, 55],
       ceilingDefault: [20, 25, 40],
+      ceilingPattern: 'sky',
+      // Suburbs at storm-night: indigo horizon → near-black violet zenith.
+      skyGradient: [[60, 50, 110], [10, 6, 28]],
       fogDist: 13,
       ambientLoop: 'wind',
       bgmLoop: 'nostalgic',
@@ -933,6 +942,9 @@
       },
       floorDefault: [30, 60, 28],
       ceilingDefault: [110, 130, 150],
+      ceilingPattern: 'sky',
+      // Garden dusk: warm-grey horizon → cooler grey zenith.
+      skyGradient: [[140, 150, 165], [60, 75, 95]],
       fogDist: 12,
       ambientLoop: 'wind',
       sanDrain: 0.7,

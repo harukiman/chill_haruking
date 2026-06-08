@@ -947,6 +947,23 @@
         var cgx = cFloorX | 0;
         var cgy = cFloorY | 0;
 
+        // ── Sky pattern (outdoor levels) ────────────────────
+        // Replaces tile-based ceiling lookup with a screen-Y gradient
+        // so outdoor levels read as open sky instead of corridor
+        // ceiling tiles. Skips jitter / light contrib / fog so the
+        // sky stays uniform across columns. theme.skyGradient =
+        // [ [horizonR,G,B], [zenithR,G,B] ].
+        if (engine.theme && engine.theme.ceilingPattern === 'sky') {
+          var skyDef = engine.theme.skyGradient || [[20, 24, 40], [8, 10, 24]];
+          var t01 = Math.max(0, Math.min(1, (halfH - cy) / halfH));
+          var sR = (skyDef[0][0] * (1 - t01) + skyDef[1][0] * t01) | 0;
+          var sG = (skyDef[0][1] * (1 - t01) + skyDef[1][1] * t01) | 0;
+          var sB = (skyDef[0][2] * (1 - t01) + skyDef[1][2] * t01) | 0;
+          ctx.fillStyle = 'rgb(' + sR + ',' + sG + ',' + sB + ')';
+          ctx.fillRect(fScreenX, cy, stripWidth, 2);
+          continue;
+        }
+
         if (cgx < 0 || cgx >= mapW || cgy < 0 || cgy >= mapH) continue;
 
         // Default ceiling: theme-driven (else dark warm tone)
