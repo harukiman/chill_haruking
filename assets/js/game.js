@@ -1340,6 +1340,92 @@
     mf.classList.add('show');
     setTimeout(function () { mf.classList.remove('show'); }, 220);
   }
+
+  // ── Bullet tracers ──
+  // Brief streak from the muzzle (lower-center screen) to the hit point
+  // (or to the in-front max range if the shot missed). Adds the visceral
+  // confirmation that the gun actually projected something into the world
+  // — previously firing a pistol was only audio + screen shake + a screen
+  // flash, with no spatial cue of where the bullet went. Pure render-time
+  // effect, no physics — tracers don't interact with anything.
+  var tracers = []; // { worldEndX, worldEndY, life, lifeMax, color, width }
+  var TRACER_MAX = 12;
+  function _spawnTracer(p, opts) {
+    if (tracers.length >= TRACER_MAX) tracers.shift();
+    var ex, ey;
+    if (opts.hit) {
+      ex = opts.hit.x;
+      ey = opts.hit.y;
+    } else {
+      // Miss — project straight in front of the player to rangeTiles.
+      var r = (opts.rangeTiles || 8) * TS;
+      ex = p.x + Math.cos(p.angle) * r;
+      ey = p.y + Math.sin(p.angle) * r;
+    }
+    // Per-shot lateral jitter so back-to-back shots don't draw the same
+    // line. Small, in world space, so far targets get more visual spread.
+    var jitterAng = (Math.random() - 0.5) * 0.04;
+    var dEx = ex - p.x, dEy = ey - p.y;
+    var len = Math.sqrt(dEx * dEx + dEy * dEy) || 1;
+    var jx = -dEy / len * jitterAng * len;
+    var jy =  dEx / len * jitterAng * len;
+    tracers.push({
+      worldEndX: ex + jx,
+      worldEndY: ey + jy,
+      life: 0.12, lifeMax: 0.12,
+      color: opts.color || 'rgba(255,240,180,0.95)',
+      width: opts.width || 2
+    });
+  }
+  function updateTracers(dt) {
+    if (!tracers.length) return;
+    for (var i = tracers.length - 1; i >= 0; i--) {
+      tracers[i].life -= dt;
+      if (tracers[i].life <= 0) tracers.splice(i, 1);
+    }
+  }
+  function drawTracers(ctx) {
+    if (!tracers.length || !player) return;
+    var w = GameEngine.width;
+    var h = GameEngine.height;
+    var cosT = Math.cos(player.angle);
+    var sinT = Math.sin(player.angle);
+    // Origin: lower-center screen (where the gun nozzle is on the HUD).
+    // Slightly to the right so the line reads as coming from a hand-gun
+    // on the player's right side.
+    var oX = w * 0.55;
+    var oY = h * 0.72;
+    for (var i = 0; i < tracers.length; i++) {
+      var t = tracers[i];
+      var dx = t.worldEndX - player.x;
+      var dy = t.worldEndY - player.y;
+      var tX = -dx * sinT + dy * cosT;
+      var tY = dx * cosT + dy * sinT;
+      if (tY <= 0.1) continue;
+      var sx = (w / 2) * (1 + tX / tY);
+      var sy = h / 2; // shoot through the reticle vertical
+      var lifeR = t.life / t.lifeMax;
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      // Outer halo
+      ctx.strokeStyle = t.color;
+      ctx.lineWidth = t.width * 2.6 * lifeR;
+      ctx.globalAlpha = 0.35 * lifeR;
+      ctx.beginPath();
+      ctx.moveTo(oX, oY);
+      ctx.lineTo(sx, sy);
+      ctx.stroke();
+      // Hot core
+      ctx.lineWidth = Math.max(1, t.width * lifeR);
+      ctx.globalAlpha = 0.95 * lifeR;
+      ctx.beginPath();
+      ctx.moveTo(oX, oY);
+      ctx.lineTo(sx, sy);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+  window._spawnTracer = _spawnTracer;
   // Spray blood/spark particles from the hit point toward the player. tinge
   // chooses the particle palette per weapon flavour.
   function _hitParticles(target, count, tinge) {
@@ -1925,6 +2011,7 @@
         GameEngine.playSound('clock_tick'); // sharp click as report
       }
       var hit = _attackForward(p, { dmg: 60, rangeTiles: 8, coneDeg: 14, weaponId: 'pistol' });
+      _spawnTracer(p, { hit: hit, rangeTiles: 8, color: 'rgba(255,240,160,0.95)', width: 2 });
       GameEngine.shakeScreen(6, 0.2);
       if (hit) _hitParticles(hit, 4, 'spark');
       if (navigator.vibrate) navigator.vibrate(15);
@@ -1945,6 +2032,8 @@
       for (var s = 0; s < 5; s++) {
         var h = _attackForward(p, { dmg: 35, rangeTiles: 4.5, coneDeg: 55, weaponId: 'shotgun' });
         if (h) { hits++; lastHit = h; }
+        // One tracer per pellet — wide spread reads as a shotgun blast.
+        _spawnTracer(p, { hit: h, rangeTiles: 4.5, color: 'rgba(255,180,100,0.9)', width: 2 });
       }
       GameEngine.shakeScreen(14, 0.45);
       GameEngine.redFlash();
@@ -1996,6 +2085,7 @@
         GameEngine.playSound('stinger');
       }
       var hit = _attackForward(p, { dmg: 85, rangeTiles: 12, coneDeg: 8, weaponId: 'revolver' });
+      _spawnTracer(p, { hit: hit, rangeTiles: 12, color: 'rgba(255,220,120,0.95)', width: 3 });
       GameEngine.shakeScreen(9, 0.3);
       if (hit) _hitParticles(hit, 6, 'spark');
       if (navigator.vibrate) navigator.vibrate(25);
@@ -11773,6 +11863,9 @@
     // Ambient atmospheric particles (dust / embers / bubbles / ...).
     // Cheap — bounded pool (36 max) and one fillrect/glow per particle.
     try { drawParticles(ctx); } catch (e) {}
+    // Bullet tracers — drawn AFTER entities/props so the line passes in
+    // front of the world. Lifespan ~120ms keeps them snappy.
+    try { drawTracers(ctx); } catch (e) {}
 
     // Draw entities (type-aware). Dead entities linger for 700 ms with
     // a fade+sink so kills feel satisfying instead of popping out.
@@ -12012,6 +12105,8 @@
       // block. Each kind has gravity / drift / lifespan + billboard
       // render gated by gfxQuality !== 'low'.
       updateParticles(dt);
+      // Bullet tracers — short-lived (~120ms) so they don't accumulate.
+      updateTracers(dt);
     }
     if (miniGameOpen) updateMiniGame(dt);
   }

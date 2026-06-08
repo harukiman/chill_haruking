@@ -956,6 +956,7 @@
   <h2>変更履歴 (抜粋)</h2>
   <table>
     <tr><th>ver</th><th>変更</th></tr>
+    <tr><td>v7.0</td><td>★ 銃のトレーサー追加 — pistol/shotgun/revolver 発射時に lower-center → 着弾点 (or 最大射程の前方) へ光跡を描画。空中ジッター、命中色 (yellow/orange/gold)、コア+ハロ 2 ライン、120ms 寿命。lighter blend で発光</td></tr>
     <tr><td>v6.9</td><td>★ アンビエントパーティクル新システム — dust/ember/bubble/leaf/spore/ash の 6種、レベル固有 (Lv14 bubble / Lv15 leaf / Lv6 ember / Lv9 ash 等)、bounded pool 36 + gravity/drift/lifespan 物理、z-buffer occlusion 付き billboard 描画、gfxQuality=low で完全 skip。既存 LEVEL_AMBIENT_PARTICLES → addParticle の旧パスは削除</td></tr>
     <tr><td>v6.8</td><td>★ プロップス発光ライト — lamp/candle/pc/tv が GameEngine.pointLights に点光源を登録、周囲の壁・床が warm/cool に染まる。色温度・半径・揺らぎ profile 別。id 'prop_l_*' で scripted 'l_*' と分離</td></tr>
     <tr><td>v6.7</td><td>★ レベル遷移高速化 + 画面サイズ変動バグ修正 — loading 900→350ms / lr FPS descent 1100→800ms / tap-gate 400→150ms / auto-advance 8000→4000ms。forceCanvasResize を idempotent 化 (window dimensions 不変なら no-op) + 遷移中 4 箇所の呼び出しを最終 1 箇所に集約</td></tr>
