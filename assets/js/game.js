@@ -5948,6 +5948,19 @@
       }
     }
 
+    // Camera headbob — phase advances while walking, amp eases toward
+    // a sprint/walk target so the bob ramps up smoothly. Read in
+    // onRender to translate the world a few px each frame. ~3px walk
+    // / ~5px sprint reads as physical without obscuring the reticle.
+    if (len > 0.01) {
+      player._headbobPhase = (player._headbobPhase || 0) + dt * (sprint ? 14 : 9);
+      var _headbobTarget = sprint ? 5.0 : 2.8;
+      player._headbobAmp = (player._headbobAmp || 0) * 0.92 + _headbobTarget * 0.08;
+    } else {
+      // Damped recovery so stopping doesn't snap the world up by 5px.
+      player._headbobAmp = (player._headbobAmp || 0) * 0.85;
+    }
+
     GameEngine.setPlayerView(player.x, player.y, player.angle);
 
     // Stamina
@@ -11998,6 +12011,14 @@
     if (!currentMap) return;
     if (state === ST.TITLE || state === ST.ENDED || state === ST.DEAD) return;
 
+    // Camera headbob — translate the whole world a few px each frame
+    // based on player walk phase. Wraps the entire render so map / props
+    // / decals / entities / HUD-in-world / threat compass all bob in
+    // sync. The ctx.restore at the end of this function reverts it.
+    var _bobY = Math.sin(player._headbobPhase || 0) * (player._headbobAmp || 0);
+    ctx.save();
+    if (Math.abs(_bobY) > 0.05) ctx.translate(0, _bobY);
+
     GameEngine.drawMap();
 
     // Decorative props (desks/beds/lamps/...) — drawn after the map so the
@@ -12118,6 +12139,13 @@
     if (player._nearestThreat && player._nearestThreatDist < 14 * TS) {
       drawThreatCompass(ctx, player._nearestThreat, player._nearestThreatDist, player._threatLevel || 0);
     }
+
+    // Closes the ctx.save() at the top of onRender that applied the
+    // camera headbob translate. Must run after EVERY return path that
+    // could exit the function — currently only the early returns at the
+    // top (before save was called), so a single restore at the end is
+    // safe.
+    ctx.restore();
   }
 
   function drawThreatCompass(ctx, target, dist, threatLevel) {
