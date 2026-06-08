@@ -9842,6 +9842,19 @@
         else continue; // skip AI while stunned
       }
 
+      // Per-entity walk tracking — feeds drawTypedEntity's bob/sway so
+      // monsters visually walk instead of slide. Delta sampled at start
+      // of each tick from previous frame's movement.
+      if (e._prevX === undefined) { e._prevX = e.x; e._prevY = e.y; }
+      var _delta = Math.sqrt((e.x - e._prevX) * (e.x - e._prevX) + (e.y - e._prevY) * (e.y - e._prevY));
+      var _spd = _delta / Math.max(dt, 0.001);
+      e._walkSpeed = (e._walkSpeed === undefined ? _spd : e._walkSpeed * 0.85 + _spd * 0.15);
+      if (e._walkPhase === undefined) e._walkPhase = Math.random() * 6.28;
+      // Phase rate: ~6 rad/sec at speed 80 (sprint) = ~1 step/sec; gives
+      // a believable plodding cadence without going too cartoony.
+      e._walkPhase += (e._walkSpeed || 0) * dt * 0.075;
+      e._prevX = e.x; e._prevY = e.y;
+
       var dx = player.x - e.x;
       var dy = player.y - e.y;
       var distP = Math.sqrt(dx * dx + dy * dy);
@@ -10478,6 +10491,21 @@
       var sinkPx = spriteH * 0.5 * (e._deathSink || 0);
       startY += sinkPx;
     }
+
+    // Walk-cycle bob — vertical bounce synced to per-entity walkPhase
+    // (set in updateEntities from frame-to-frame movement). Amplitude
+    // ramps with speed so stationary entities don't bob (only breath).
+    // Capped at ~3% of sprite height so the cadence is felt without
+    // turning every monster into a cartoon.
+    var walkAmp = Math.min(1, (e._walkSpeed || 0) / 80);
+    var walkBobPx = Math.sin(e._walkPhase || 0) * spriteH * 0.030 * walkAmp;
+    startY += walkBobPx;
+    // Subtle lateral sway at half the bob frequency — heavier entities
+    // (bosses) get more sway for menacing gait.
+    var swayMul = (e.type === 'boss' || e.type === 'haruki_boss') ? 0.020 : 0.008;
+    var walkSwayPx = Math.sin((e._walkPhase || 0) * 0.5) * spriteW * swayMul * walkAmp;
+    startX += walkSwayPx;
+    screenX += walkSwayPx;
 
     var fogFactor = Math.max(0.15, 1 - depthTiles / maxDist);
     var zBuf = GameEngine._zBuffer;
