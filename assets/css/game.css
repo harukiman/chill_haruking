@@ -163,6 +163,10 @@ body {
   box-shadow: 0 0 14px rgba(80, 128, 192, 0.6);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  /* manipulation suppresses the 300ms tap delay AND keeps the touch
+     responsive even when a second finger is active on the move zone.
+     User 2026-06-08: 「移動しながら攻撃ボタン」 must work. */
+  touch-action: manipulation;
   display: none;
   align-items: center;
   justify-content: center;
@@ -2686,8 +2690,12 @@ img.haruki-mosaic,
  * ============================================================ */
 #actionBtn {
   position: fixed;
-  right: calc(28px + env(safe-area-inset-right, 0px));
-  bottom: calc(110px + env(safe-area-inset-bottom, 0px));
+  /* Sits to the LEFT of the blue weapon button (same bottom row) so
+     the two never visually crowd. Previous stacked layout (weapon at
+     bottom 28, action at bottom 110) left only ~4px between the two
+     78px circles — 2026-06-08 user report: 「ボタンが重ならないように」. */
+  right: calc(118px + env(safe-area-inset-right, 0px));
+  bottom: calc(28px + env(safe-area-inset-bottom, 0px));
   width: 78px;
   height: 78px;
   background: radial-gradient(circle, #cc2828 0%, #882020 65%, #441010 100%);
@@ -2701,6 +2709,7 @@ img.haruki-mosaic,
   z-index: 14;
   box-shadow: 0 0 14px rgba(200, 0, 0, 0.6);
   cursor: pointer;
+  touch-action: manipulation;
 }
 #actionBtn:active {
   background: radial-gradient(circle, #ff5050 0%, #aa2828 65%, #551010 100%);
@@ -2727,7 +2736,9 @@ img.haruki-mosaic,
  * ============================================================ */
 .quick-item-btn {
   position: fixed;
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 210px);
+  /* Sits ABOVE the side-by-side action+weapon row (both 78px tall,
+     bottom 28). 28 + 78 + 14 = 120 puts ~14px between the rows. */
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 120px);
   right: calc(env(safe-area-inset-right, 0px) + 14px);
   width: 50px;
   height: 50px;
@@ -4908,7 +4919,15 @@ img.haruki-mosaic,
   .status-vital { grid-template-columns: 50px 1fr 50px; font-size: 10px; }
   .inv-grid { grid-template-columns: repeat(3, 1fr); }
   .opt-row { grid-template-columns: 80px 1fr 40px; }
-  #actionBtn { width: 68px; height: 68px; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+  /* Narrow phones: shrink the side-by-side row and keep them anchored
+     bottom-right. Action sits to the left of weapon, 68px each, ~10px
+     between, ~22px from the corner. */
+  #actionBtn { width: 68px; height: 68px;
+               bottom: calc(22px + env(safe-area-inset-bottom, 0px));
+               right: calc(100px + env(safe-area-inset-right, 0px)); }
+  .weapon-attack-btn { width: 68px; height: 68px;
+                       bottom: calc(22px + env(safe-area-inset-bottom, 0px));
+                       right: calc(22px + env(safe-area-inset-right, 0px)); }
 }
 
 @media (max-height: 700px) {
@@ -4917,16 +4936,19 @@ img.haruki-mosaic,
   .menu-btn { min-height: 42px; padding: 10px 22px; font-size: 13px; }
   .title-menu { gap: 7px; }
   .title-content { padding: 14px 16px; }
-  /* HUD: shrink overlap risk on small phones */
+  /* HUD: shrink overlap risk on small phones. quick-item sits above
+     the action/weapon row — keep ~14px gap above the 68/78px tall
+     buttons. */
   .floating-map { width: 150px; height: 150px; }
-  .quick-item-btn { width: 46px; height: 46px; bottom: calc(env(safe-area-inset-bottom, 0px) + 180px); }
+  .quick-item-btn { width: 46px; height: 46px;
+                    bottom: calc(env(safe-area-inset-bottom, 0px) + 110px); }
   .floating-map-btn { width: 40px; height: 40px; }
 }
 /* Very narrow portrait — stack map/item buttons cleanly along right edge */
 @media (max-width: 380px) {
   .floating-map-btn { top: calc(env(safe-area-inset-top, 8px) + 56px); right: 6px; width: 38px; height: 38px; }
   .quick-item-btn   { right: 6px; width: 44px; height: 44px;
-                      bottom: calc(env(safe-area-inset-bottom, 0px) + 200px); }
+                      bottom: calc(env(safe-area-inset-bottom, 0px) + 104px); }
   .floating-map     { width: 140px; height: 140px; right: 50px; }
   .quick-item-panel { right: 56px; max-width: calc(100vw - 70px); }
 }
@@ -4934,7 +4956,15 @@ img.haruki-mosaic,
 @media (orientation: landscape) and (max-height: 480px) {
   .floating-map-btn { top: calc(env(safe-area-inset-top, 8px) + 4px); right: 60px; }
   .floating-map    { top: calc(env(safe-area-inset-top, 8px) + 4px); right: 110px; width: 150px; height: 140px; }
-  .quick-item-btn  { bottom: calc(env(safe-area-inset-bottom, 0px) + 100px); width: 44px; height: 44px; }
+  /* Landscape: action+weapon row is shorter (68px). quick-item lifts
+     just above that — 22 + 68 + 12 = 102. */
+  .quick-item-btn  { bottom: calc(env(safe-area-inset-bottom, 0px) + 102px); width: 44px; height: 44px; }
+  #actionBtn { width: 64px; height: 64px;
+               bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+               right: calc(94px + env(safe-area-inset-right, 0px)); }
+  .weapon-attack-btn { width: 64px; height: 64px;
+                       bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+                       right: calc(22px + env(safe-area-inset-right, 0px)); }
 }
 @media (max-height: 580px) {
   .game-title { font-size: 32px; }

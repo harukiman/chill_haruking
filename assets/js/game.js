@@ -13343,13 +13343,29 @@
         closeItemUseModal();
       });
     }
-    // weaponAttackBtn → fire equipped weapon
+    // weaponAttackBtn → fire equipped weapon. Two-path binding:
+    //   touchstart: fires immediately and is delivered even while the
+    //               left thumb is holding the move zone (multitouch on
+    //               iOS sometimes drops the synthetic click during an
+    //               active touch, so player feedback was "ボタンが
+    //               反応しない 移動中" — 2026-06-08 user report).
+    //   click:      mouse + accessibility fallback. Debounced against
+    //               the touch path so a single press doesn't double-fire.
     var wabBtn = el('weaponAttackBtn');
     if (wabBtn) {
-      wabBtn.addEventListener('click', function (e) {
-        e.stopPropagation();
+      var _wabLastFire = 0;
+      function _wabFireNow(e) {
+        if (e && e.stopPropagation) e.stopPropagation();
+        var now = performance.now();
+        if (now - _wabLastFire < 250) return;
+        _wabLastFire = now;
         fireEquippedWeapon();
-      });
+      }
+      wabBtn.addEventListener('touchstart', function (e) {
+        e.preventDefault();
+        _wabFireNow(e);
+      }, { passive: false });
+      wabBtn.addEventListener('click', _wabFireNow);
     }
 
     // Mini-game controls
