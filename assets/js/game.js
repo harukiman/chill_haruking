@@ -1362,6 +1362,37 @@
   // effect, no physics — tracers don't interact with anything.
   var tracers = []; // { worldEndX, worldEndY, life, lifeMax, color, width }
   var TRACER_MAX = 12;
+  // Spawn a small puff of smoke ahead of the player — used by gun fire
+  // for muzzle smoke. Bounded by the same PARTICLE_POOL_SIZE cap so
+  // rapid auto-fire can't blow past the budget.
+  function _spawnGunSmoke(p, count) {
+    if (gfxQuality === 'low') return;
+    var def = PARTICLE_KINDS.smoke;
+    if (!def) return;
+    var n = Math.min(count || 3, 5);
+    for (var i = 0; i < n; i++) {
+      if (particles.length >= PARTICLE_POOL_SIZE) break;
+      // Emit a step in front of the muzzle so puffs don't spawn inside
+      // the player's body.
+      var spread = (Math.random() - 0.5) * 14;
+      var ahead = 28 + Math.random() * 18;
+      var px = p.x + Math.cos(p.angle) * ahead + Math.cos(p.angle + Math.PI / 2) * spread;
+      var py = p.y + Math.sin(p.angle) * ahead + Math.sin(p.angle + Math.PI / 2) * spread;
+      particles.push({
+        kind: 'smoke',
+        x: px, y: py,
+        z: 0.25 + Math.random() * 0.10,
+        vx: (Math.random() - 0.5) * def.driftX,
+        vy: (Math.random() - 0.5) * def.driftY,
+        vz: 0,
+        life: def.life * (0.85 + Math.random() * 0.3),
+        lifeMax: def.life,
+        size: def.size * (0.8 + Math.random() * 0.6),
+        _seedR: Math.random()
+      });
+    }
+  }
+
   function _spawnTracer(p, opts) {
     if (tracers.length >= TRACER_MAX) tracers.shift();
     var ex, ey;
@@ -2024,6 +2055,7 @@
       }
       var hit = _attackForward(p, { dmg: 60, rangeTiles: 8, coneDeg: 14, weaponId: 'pistol' });
       _spawnTracer(p, { hit: hit, rangeTiles: 8, color: 'rgba(255,240,160,0.95)', width: 2 });
+      _spawnGunSmoke(p, 2);
       GameEngine.shakeScreen(6, 0.2);
       if (hit) _hitParticles(hit, 4, 'spark');
       if (navigator.vibrate) navigator.vibrate(15);
@@ -2047,6 +2079,7 @@
         // One tracer per pellet — wide spread reads as a shotgun blast.
         _spawnTracer(p, { hit: h, rangeTiles: 4.5, color: 'rgba(255,180,100,0.9)', width: 2 });
       }
+      _spawnGunSmoke(p, 4); // shotgun: bigger smoke puff
       GameEngine.shakeScreen(14, 0.45);
       GameEngine.redFlash();
       if (lastHit) _hitParticles(lastHit, 12, 'spark');
@@ -2098,6 +2131,7 @@
       }
       var hit = _attackForward(p, { dmg: 85, rangeTiles: 12, coneDeg: 8, weaponId: 'revolver' });
       _spawnTracer(p, { hit: hit, rangeTiles: 12, color: 'rgba(255,220,120,0.95)', width: 3 });
+      _spawnGunSmoke(p, 3); // revolver: medium puff
       GameEngine.shakeScreen(9, 0.3);
       if (hit) _hitParticles(hit, 6, 'spark');
       if (navigator.vibrate) navigator.vibrate(25);
@@ -11571,6 +11605,15 @@
       size: 0.8,
       color: [180, 180, 175],
       alphaMul: 0.60
+    },
+    smoke: {
+      // Gun muzzle smoke — short-lived puff that rises and disperses
+      gravity: -3.0,
+      driftX: 4, driftY: 4,
+      life: 1.4,
+      size: 1.0,
+      color: [200, 200, 200],
+      alphaMul: 0.40
     }
   };
 

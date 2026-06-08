@@ -956,6 +956,7 @@
   <h2>変更履歴 (抜粋)</h2>
   <table>
     <tr><th>ver</th><th>変更</th></tr>
+    <tr><td>v7.7</td><td>★ マズルスモーク — pistol/shotgun/revolver 発射で銃口前方に煙パーティクル spawn (2/4/3個)。PARTICLE_KINDS.smoke 追加 (rising、life 1.4s、alpha 0.40)。bounded pool 36 で auto-fire 連打でもオーバーフローしない</td></tr>
     <tr><td>v7.6</td><td>★ 屋外レベル sky gradient — engine.js 天井 render に 'sky' pattern 分岐追加、screen-Y で horizon→zenith gradient 描画。Lv7 (blood-red) / Lv9 (storm violet) / Lv11 (overcast blue) / Lv15 (dusk grey) に適用。屋内レベルは従来通り tile-based 天井</td></tr>
     <tr><td>v7.5</td><td>★ カメラ headbob — 歩行/スプリント中に world 全体を sin 波で上下動。amp 2.8/5.0px、phase 速度 9/14 rad/s。onRender 全体を ctx.translate でラップ、停止時は damped recovery で snap 回避</td></tr>
     <tr><td>v7.4</td><td>★ 息切れ SE ループ — スタミナ &lt; 30% で breath SE が周期再生 (0.30→2.4s / 0.05→1.0s)。スタミナ &gt; 35% 回復で自動停止</td></tr>
