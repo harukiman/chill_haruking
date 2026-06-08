@@ -956,6 +956,7 @@
   <h2>変更履歴 (抜粋)</h2>
   <table>
     <tr><th>ver</th><th>変更</th></tr>
+    <tr><td>v7.3</td><td>★ 低 HP 心拍ループ — HP &lt; 30% で心拍 SE が周期再生、HP 5% に近づくほど周期 0.7s → 0.32s 短縮。lowHpVignette に beat-pulse class で視覚 flash 同期。HP &gt; 32% 回復で自動停止</td></tr>
     <tr><td>v7.2</td><td>★ 床影 + 血 decal — drawTypedEntity が各エンティティの足元に短い楕円シャドウを描画 (boss 0.65 / 通常 0.50 α、z-buffer 連動)。死亡時に decals[] に blood decal 自動 push (civilian は薄め茶色、ボスは scope 外)。最大 30、30秒寿命で fade、レベル切替で reset</td></tr>
     <tr><td>v7.1</td><td>★ エンティティ歩行アニメ — 各 entity の frame-to-frame 移動から walkSpeed/walkPhase 算出、drawTypedEntity が sin 波の bob (sprite H × 3%) + 半周波の lateral sway を適用 (ボスは 2.5×)。停止時は breath のみ、走行時に上下動。サブピクセル shift で z-buffer 影響なし</td></tr>
     <tr><td>v7.0</td><td>★ 銃のトレーサー追加 — pistol/shotgun/revolver 発射時に lower-center → 着弾点 (or 最大射程の前方) へ光跡を描画。空中ジッター、命中色 (yellow/orange/gold)、コア+ハロ 2 ライン、120ms 寿命。lighter blend で発光</td></tr>

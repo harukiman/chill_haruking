@@ -653,6 +653,17 @@ body {
   0%, 100% { opacity: 0.75; }
   50%      { opacity: 1.0;  }
 }
+/* One-shot pulse triggered per heartbeat tick (JS toggles the class).
+   The single frame jolt synchronises the vignette flash to the audio
+   thud so the player feels the beat instead of just hearing it. */
+.low-hp-vignette.beat-pulse {
+  animation: low-hp-beat 0.32s ease-out 1;
+}
+@keyframes low-hp-beat {
+  0%   { opacity: 1.0; transform: scale(1.0); }
+  35%  { opacity: 0.6; transform: scale(1.02); }
+  100% { opacity: var(--vig-base, 0.75); transform: scale(1.0); }
+}
 /* Floating damage numbers — spawned at screen-center on weapon hits */
 .damage-popup {
   position: fixed;

@@ -6325,11 +6325,38 @@
     // Update floating map (if visible)
     if (floatingMapOpen) drawFloatingMap();
 
+    // Continuous low-HP heartbeat — starts at 30% HP, frequency ramps up
+    // as HP drops to 5% (period 0.7s → 0.32s). Pulses the lowHpVignette
+    // alongside so visual + audio stay in sync. Stops cleanly when HP
+    // recovers above 32%.
+    if (player._heartbeatT === undefined) player._heartbeatT = 0;
+    if (hpRatio < 0.30) {
+      // Lerp period: 0.30 → 0.7s, 0.05 → 0.32s. Clamped so even after
+      // critical HP we don't fall below ~0.30s (audio quality / spam).
+      var hpRatioClamp = Math.max(0.05, Math.min(0.30, hpRatio));
+      var beatPeriod = 0.32 + (hpRatioClamp - 0.05) / 0.25 * (0.7 - 0.32);
+      player._heartbeatT += dt;
+      if (player._heartbeatT >= beatPeriod) {
+        player._heartbeatT = 0;
+        if (audioInitialized) try { GameEngine.playSound('heartbeat'); } catch (e) {}
+        var vigPulse = el('lowHpVignette');
+        if (vigPulse) {
+          vigPulse.classList.remove('beat-pulse');
+          void vigPulse.offsetWidth;
+          vigPulse.classList.add('beat-pulse');
+        }
+      }
+    } else if (hpRatio > 0.32) {
+      // Recovery: clear the accumulator so next dip starts fresh.
+      player._heartbeatT = 0;
+    }
+
     // Threshold warnings (sound + toast on crossing 50% / 25%)
     if (!player._lastHpRatio) player._lastHpRatio = 1;
     if (!player._lastSanRatio) player._lastSanRatio = 1;
     if (player._lastHpRatio >= 0.25 && hpRatio < 0.25 && audioInitialized) {
-      GameEngine.playSound('heartbeat');
+      // One-shot stinger on crossing 25%. The continuous heartbeat loop
+      // above keeps reinforcing the danger after this initial alert.
       toast('⚠ HP 25% 以下');
     }
     if (player._lastSanRatio >= 0.25 && sanRatio0 < 0.25 && audioInitialized) {
