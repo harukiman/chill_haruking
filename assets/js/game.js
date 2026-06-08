@@ -2534,6 +2534,10 @@
   };
 
   var entities = [];         // current level entities (live, with state)
+  // Decorative props (desks, beds, lamps, etc). Render-only — no AI / no
+  // collision / no damage. Populated at level load from LEVEL_PROP_CONFIG.
+  // Each entry: { gx, gy, kind, _wx, _wy, _wobble }.
+  var props = [];
   var pickedUpItems = {};    // {levelId: {gx_gy: true}}
   var readNotes = {};        // {levelId: {gx_gy: true}}
   var pickupSpots = {};      // {gx_gy: itemId} (this level)
@@ -3843,6 +3847,11 @@
     // Add point lights for visibility (per-level pattern)
     GameEngine.pointLights = [];
     addLevelLights(levelId);
+
+    // Decorative props (desks/beds/lamps/...) — render-only, no collision.
+    // Populated from LEVEL_PROP_CONFIG using the actual built map so props
+    // never end up inside a wall when the layout shifts.
+    try { populateProps(levelId); } catch (e) { props = []; }
 
     // Audio: stop all ambient + BGM loops, start fresh ones
     if (audioInitialized) {
@@ -5490,6 +5499,146 @@
       return false;
     }
     return false;
+  }
+
+  // ============================================================
+  //  PROPS — per-level decorative furniture / objects
+  // ============================================================
+  // Each prop kind has a hint about where it tends to look natural:
+  //   wallSide: true  → prefers a floor tile orthogonally adjacent to a wall
+  //   wallSide: false → standalone (rugs / plants / pillars)
+  // count is per-level baseline; tweaked by gfxQuality (LOW halves to save fillrect cost).
+  var PROP_KIND_DEFAULTS = {
+    desk:     { wallSide: true,  hScale: 0.55, wScale: 1.05 },
+    chair:    { wallSide: false, hScale: 0.50, wScale: 0.45 },
+    pc:       { wallSide: false, hScale: 0.32, wScale: 0.45 },  // sits on desk if adjacent
+    bed:      { wallSide: true,  hScale: 0.45, wScale: 1.30 },
+    lamp:     { wallSide: false, hScale: 0.95, wScale: 0.22 },  // floor lamp — tall
+    counter:  { wallSide: true,  hScale: 0.60, wScale: 1.25 },
+    shelf:    { wallSide: true,  hScale: 1.05, wScale: 0.85 },
+    bookcase: { wallSide: true,  hScale: 1.10, wScale: 0.80 },
+    plant:    { wallSide: false, hScale: 0.85, wScale: 0.55 },
+    crate:    { wallSide: false, hScale: 0.55, wScale: 0.65 },
+    trashcan: { wallSide: false, hScale: 0.60, wScale: 0.40 },
+    medical:  { wallSide: true,  hScale: 0.70, wScale: 0.65 },  // hospital cart
+    tv:       { wallSide: true,  hScale: 0.45, wScale: 0.75 },
+    bench:    { wallSide: false, hScale: 0.42, wScale: 1.00 },
+    kiosk:    { wallSide: true,  hScale: 1.20, wScale: 0.90 },
+    pillar:   { wallSide: false, hScale: 1.50, wScale: 0.50 },
+    barrel:   { wallSide: false, hScale: 0.75, wScale: 0.60 },
+    rug:      { wallSide: false, hScale: 0.04, wScale: 1.20, flat: true },
+    candle:   { wallSide: false, hScale: 0.45, wScale: 0.15 },
+    rock:     { wallSide: false, hScale: 0.40, wScale: 0.70 },
+    coral:    { wallSide: false, hScale: 0.85, wScale: 0.45 },
+    hedge:    { wallSide: true,  hScale: 0.85, wScale: 1.00 }
+  };
+
+  // Per-level prop placement plan. Numbers are total props of that kind;
+  // populateProps picks valid floor tiles at level load. Keep counts modest
+  // — every prop is a billboard, so 30+ per level starts to cost fillrect.
+  var LEVEL_PROP_CONFIG = {
+    0:  [ { kind: 'chair', n: 4 }, { kind: 'trashcan', n: 3 }, { kind: 'lamp', n: 2 } ],
+    1:  [ { kind: 'crate', n: 6 }, { kind: 'barrel', n: 4 }, { kind: 'pillar', n: 3 } ],
+    2:  [ { kind: 'crate', n: 4 }, { kind: 'barrel', n: 3 }, { kind: 'pillar', n: 2 } ],
+    3:  [ { kind: 'crate', n: 3 }, { kind: 'rock', n: 5 }, { kind: 'plant', n: 2 } ],
+    4:  [ { kind: 'desk', n: 6 }, { kind: 'chair', n: 8 }, { kind: 'pc', n: 5 },
+          { kind: 'plant', n: 3 }, { kind: 'shelf', n: 2 } ],
+    5:  [ { kind: 'bed', n: 4 }, { kind: 'lamp', n: 4 }, { kind: 'counter', n: 2 },
+          { kind: 'plant', n: 2 }, { kind: 'tv', n: 2 } ],
+    6:  [ { kind: 'candle', n: 6 }, { kind: 'crate', n: 2 } ],
+    7:  [ { kind: 'rock', n: 6 }, { kind: 'plant', n: 3 }, { kind: 'hedge', n: 2 } ],
+    8:  [ { kind: 'pillar', n: 4 }, { kind: 'barrel', n: 2 } ],
+    9:  [ { kind: 'chair', n: 5 }, { kind: 'shelf', n: 3 }, { kind: 'candle', n: 4 },
+          { kind: 'rug', n: 2 }, { kind: 'bookcase', n: 2 } ],
+    11: [ { kind: 'bench', n: 4 }, { kind: 'kiosk', n: 2 }, { kind: 'plant', n: 4 },
+          { kind: 'trashcan', n: 3 } ],
+    12: [ { kind: 'crate', n: 3 }, { kind: 'pillar', n: 2 }, { kind: 'candle', n: 4 } ],
+    13: [ { kind: 'bookcase', n: 8 }, { kind: 'shelf', n: 4 }, { kind: 'chair', n: 3 },
+          { kind: 'desk', n: 2 }, { kind: 'lamp', n: 2 } ],
+    14: [ { kind: 'coral', n: 6 }, { kind: 'rock', n: 4 } ],
+    15: [ { kind: 'hedge', n: 6 }, { kind: 'plant', n: 5 }, { kind: 'bench', n: 2 } ]
+  };
+
+  // Returns true if the tile at (gx, gy) is open floor (walkable, not a door).
+  function _propTileIsFloor(gx, gy) {
+    if (!currentMap || gx < 0 || gy < 0 || gx >= currentMap.width || gy >= currentMap.height) return false;
+    var t = currentMap.tiles[gy][gx];
+    return t === 0 || t === 4;
+  }
+  // True if any 4-neighbour is a wall (or boundary). Used to bias furniture
+  // toward the walls so beds/desks/shelves look anchored instead of floating.
+  function _propTileNearWall(gx, gy) {
+    if (!currentMap) return true;
+    var dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+    for (var i = 0; i < dirs.length; i++) {
+      var nx = gx + dirs[i][0], ny = gy + dirs[i][1];
+      if (nx < 0 || ny < 0 || nx >= currentMap.width || ny >= currentMap.height) return true;
+      var tt = currentMap.tiles[ny][nx];
+      if (tt === 1 || tt === 8 || tt === 9) return true;
+    }
+    return false;
+  }
+  function _propSeededRng(seed) {
+    var s = (seed | 0) || 1;
+    return function () {
+      s = (s * 1103515245 + 12345) & 0x7fffffff;
+      return s / 0x7fffffff;
+    };
+  }
+  function populateProps(levelId) {
+    props = [];
+    var cfg = LEVEL_PROP_CONFIG[levelId];
+    if (!cfg || !currentMap) return;
+    // Gather candidate floor tiles (excluding tiles within 2 of the spawn so
+    // the player isn't blocked-by-furniture on respawn).
+    var sp = currentMap.spawn || { gx: 1, gy: 1 };
+    var wallSideTiles = [];
+    var openTiles = [];
+    for (var y = 1; y < currentMap.height - 1; y++) {
+      for (var x = 1; x < currentMap.width - 1; x++) {
+        if (!_propTileIsFloor(x, y)) continue;
+        if (Math.abs(x - sp.gx) + Math.abs(y - sp.gy) <= 2) continue;
+        if (_propTileNearWall(x, y)) wallSideTiles.push([x, y]);
+        else openTiles.push([x, y]);
+      }
+    }
+    // gfxQuality LOW halves to keep fillrect under control on older phones.
+    var qScale = (gfxQuality === 'low') ? 0.5 : (gfxQuality === 'high' ? 1.0 : 0.85);
+    var rng = _propSeededRng(levelId * 9176 + 31);
+    var used = {};
+    function _key(t) { return t[0] + '_' + t[1]; }
+    function _pickFrom(pool) {
+      // shuffle a copy lazily — just pick a random unused one
+      for (var tries = 0; tries < 18; tries++) {
+        if (!pool.length) return null;
+        var idx = (rng() * pool.length) | 0;
+        var t = pool[idx];
+        if (!used[_key(t)]) { used[_key(t)] = 1; return t; }
+      }
+      return null;
+    }
+    for (var ci = 0; ci < cfg.length; ci++) {
+      var entry = cfg[ci];
+      var def = PROP_KIND_DEFAULTS[entry.kind];
+      if (!def) continue;
+      var count = Math.max(1, Math.round(entry.n * qScale));
+      var pool = def.wallSide ? wallSideTiles : openTiles;
+      // Fallback to the other pool if the preferred one is exhausted.
+      for (var k = 0; k < count; k++) {
+        var t = _pickFrom(pool);
+        if (!t) t = _pickFrom(def.wallSide ? openTiles : wallSideTiles);
+        if (!t) break;
+        var jitterX = (rng() - 0.5) * TS * 0.30;
+        var jitterY = (rng() - 0.5) * TS * 0.30;
+        props.push({
+          kind: entry.kind,
+          gx: t[0], gy: t[1],
+          _wx: t[0] * TS + TS / 2 + jitterX,
+          _wy: t[1] * TS + TS / 2 + jitterY,
+          _wobble: rng() * 6.28
+        });
+      }
+    }
   }
 
   function isWalkable(wx, wy) {
@@ -11060,6 +11209,309 @@
   }
 
   // ============================================================
+  //  PROP RENDERER (decorative furniture / objects, billboard style)
+  // ============================================================
+  // Each kind paints a stylised silhouette using filled rects + the engine's
+  // z-buffer for occlusion (so a desk hidden behind a wall is invisible).
+  // Cheap on the GPU/CPU vs full entity sprites — no eyes / breathing /
+  // per-row drawImage. ~3-8 rects per prop.
+  function drawProp(ctx, p) {
+    if (!currentMap) return;
+    var w = GameEngine.width;
+    var h = GameEngine.height;
+    var dx = p._wx - player.x;
+    var dy = p._wy - player.y;
+    var cosT = Math.cos(player.angle);
+    var sinT = Math.sin(player.angle);
+    var tX = -dx * sinT + dy * cosT;
+    var tY = dx * cosT + dy * sinT;
+    if (tY <= 0.1) return;
+    var depthTiles = tY / TS;
+    var maxDist = 18;
+    if (depthTiles > maxDist) return;
+
+    var def = PROP_KIND_DEFAULTS[p.kind] || { hScale: 0.5, wScale: 0.6 };
+    var screenX = (w / 2) * (1 + tX / tY);
+    var fullH = Math.abs(h / depthTiles) * 0.8;
+    var spriteH = fullH * def.hScale;
+    var spriteW = fullH * def.wScale;
+    // Floor-anchored: bottom of the sprite sits at the horizon (mid-screen),
+    // top extends upward by spriteH.
+    var floorY = (h - fullH) / 2 + fullH;
+    var topY = floorY - spriteH;
+    var startX = screenX - spriteW / 2;
+    var endX = startX + spriteW;
+
+    var zBuf = GameEngine._zBuffer;
+    if (!zBuf) return;
+    var fog = Math.max(0.10, 1 - depthTiles / maxDist);
+
+    ctx.save();
+    ctx.globalAlpha = fog;
+
+    function _bar(x, y, ww, hh, col) {
+      var sc = Math.max(0, Math.floor(x));
+      var ec = Math.min(w, Math.ceil(x + ww));
+      ctx.fillStyle = col;
+      for (var c = sc; c < ec; c++) {
+        if (c >= 0 && c < w && zBuf[c] > depthTiles) ctx.fillRect(c, y, 1, hh);
+      }
+    }
+    function _dot(cx, cy, rr, col) {
+      var c = Math.round(cx);
+      if (c < 0 || c >= w || zBuf[c] <= depthTiles) return;
+      ctx.fillStyle = col;
+      ctx.beginPath();
+      ctx.arc(cx, cy, rr, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Soft floor shadow under every prop — small dark ellipse anchored at
+    // floorY. Reads as a grounding pad so the prop doesn't feel cut-out.
+    var shW = spriteW * 0.95;
+    var shStartX = screenX - shW / 2;
+    var shadowBar = Math.max(2, fullH * 0.018);
+    _bar(shStartX, floorY - shadowBar * 0.4, shW, shadowBar, 'rgba(0,0,0,0.45)');
+
+    switch (p.kind) {
+      case 'desk': {
+        // Wide rectangular top + 4 thin legs
+        var topH = spriteH * 0.28;
+        _bar(startX, topY, spriteW, topH, '#5a3820');
+        // Highlight stripe at the front edge so it reads as a flat surface
+        _bar(startX, topY + topH - 1, spriteW, 1, 'rgba(120,80,40,0.9)');
+        var legH = spriteH - topH;
+        var legW = Math.max(1, spriteW * 0.05);
+        _bar(startX, topY + topH, legW, legH, '#2a1408');
+        _bar(endX - legW, topY + topH, legW, legH, '#2a1408');
+        break;
+      }
+      case 'chair': {
+        // Back + seat + legs (single block silhouette)
+        var seatH = spriteH * 0.20;
+        var seatY = topY + spriteH * 0.55;
+        var backH = spriteH * 0.55;
+        _bar(startX, topY, spriteW, backH, '#2a1a12');
+        _bar(startX, seatY, spriteW, seatH, '#3a2418');
+        var cLegW = Math.max(1, spriteW * 0.10);
+        _bar(startX, seatY + seatH, cLegW, spriteH * 0.25, '#180c06');
+        _bar(endX - cLegW, seatY + seatH, cLegW, spriteH * 0.25, '#180c06');
+        break;
+      }
+      case 'pc': {
+        // Monitor + base
+        var monH = spriteH * 0.65;
+        _bar(startX, topY, spriteW, monH, '#181820');
+        _bar(startX + 1, topY + 1, spriteW - 2, monH - 2, '#202d3a');
+        // Screen glow (cool blue, slight pulse)
+        var glowI = 0.55 + Math.sin(performance.now() * 0.004 + p._wobble) * 0.1;
+        ctx.fillStyle = 'rgba(80,160,220,' + (fog * glowI * 0.6).toFixed(2) + ')';
+        ctx.fillRect(startX + 2, topY + 2, Math.max(1, spriteW - 4), Math.max(1, monH - 4));
+        // Base
+        var baseW = spriteW * 0.45;
+        var baseX = screenX - baseW / 2;
+        _bar(baseX, topY + monH, baseW, spriteH * 0.10, '#101018');
+        _bar(startX + spriteW * 0.2, topY + monH + spriteH * 0.10, spriteW * 0.6, spriteH * 0.06, '#181820');
+        break;
+      }
+      case 'bed': {
+        // Mattress (white sheets) + lower frame + headboard hint
+        var mattH = spriteH * 0.55;
+        _bar(startX, topY + spriteH * 0.10, spriteW, mattH, '#d6d2c4');
+        _bar(startX, topY + spriteH * 0.10, spriteW, 2, '#f0ecdc'); // sheet highlight
+        // Pillow (left or right random — use wobble)
+        var pillowW = spriteW * 0.25;
+        var pillowX = (p._wobble % 1 > 0.5) ? startX + 2 : endX - pillowW - 2;
+        _bar(pillowX, topY + spriteH * 0.10, pillowW, spriteH * 0.16, '#f8f4e4');
+        // Frame underneath
+        _bar(startX, topY + spriteH * 0.65, spriteW, spriteH * 0.30, '#3a2a18');
+        // Headboard
+        _bar(startX, topY, spriteW * 0.15, spriteH, '#4a3220');
+        break;
+      }
+      case 'lamp': {
+        // Tall pole + shade
+        var poleW = Math.max(1, spriteW * 0.20);
+        _bar(screenX - poleW / 2, topY + spriteH * 0.25, poleW, spriteH * 0.70, '#2a201a');
+        // Shade
+        var shadeH = spriteH * 0.30;
+        _bar(startX, topY, spriteW, shadeH, '#7a5a30');
+        // Warm bulb glow
+        var lglow = 0.65 + Math.sin(performance.now() * 0.005 + p._wobble) * 0.2;
+        var lcx = screenX, lcy = topY + shadeH * 0.6;
+        var lgrad = ctx.createRadialGradient(lcx, lcy, 0, lcx, lcy, spriteW * 1.4);
+        lgrad.addColorStop(0, 'rgba(255,210,120,' + (fog * lglow * 0.7).toFixed(2) + ')');
+        lgrad.addColorStop(1, 'rgba(255,180,80,0)');
+        ctx.fillStyle = lgrad;
+        ctx.fillRect(lcx - spriteW * 1.4, lcy - spriteW * 1.4, spriteW * 2.8, spriteW * 2.8);
+        // Base disc
+        _bar(startX + spriteW * 0.25, topY + spriteH - 2, spriteW * 0.5, 2, '#1a1410');
+        break;
+      }
+      case 'counter': {
+        // Long low counter + edge highlight
+        _bar(startX, topY, spriteW, spriteH, '#3a2a18');
+        _bar(startX, topY, spriteW, Math.max(1, spriteH * 0.10), '#6a4a28');
+        // Panel lines (3)
+        for (var pn = 1; pn < 3; pn++) {
+          var pnX = startX + (spriteW * pn / 3);
+          _bar(pnX, topY + spriteH * 0.15, 1, spriteH * 0.80, 'rgba(0,0,0,0.5)');
+        }
+        break;
+      }
+      case 'shelf':
+      case 'bookcase': {
+        // Tall narrow rectangle + horizontal shelf lines + book color blocks
+        _bar(startX, topY, spriteW, spriteH, '#2a1a10');
+        // Shelves
+        for (var sh = 1; sh <= 3; sh++) {
+          var shY = topY + spriteH * (sh / 4);
+          _bar(startX, shY, spriteW, 1, '#4a3218');
+          // Book blocks on each shelf
+          var bookCount = 4;
+          for (var bk = 0; bk < bookCount; bk++) {
+            var bx = startX + spriteW * (bk / bookCount) + 1;
+            var bw = Math.max(1, spriteW / bookCount - 1.5);
+            var bh = spriteH * 0.18;
+            var hueSeed = ((sh * 7 + bk * 13 + ((p._wobble * 50) | 0)) % 6);
+            var bookCols = ['#883030', '#306688', '#6a4a18', '#3a5a3a', '#583a6a', '#787018'];
+            _bar(bx, shY - bh - 1, bw, bh, bookCols[hueSeed]);
+          }
+        }
+        break;
+      }
+      case 'plant': {
+        // Pot + leafy mass (sway slightly)
+        var sway = Math.sin(performance.now() * 0.0015 + p._wobble) * 1.5;
+        var potH = spriteH * 0.25;
+        _bar(startX + spriteW * 0.15, topY + spriteH - potH, spriteW * 0.70, potH, '#5a3818');
+        var leafW = spriteW * 0.95;
+        var leafX = screenX - leafW / 2 + sway;
+        var leafH = spriteH - potH - 2;
+        _bar(leafX, topY, leafW, leafH, '#1a3a18');
+        // Highlight strands
+        _bar(leafX + leafW * 0.3, topY + 1, 1, leafH * 0.5, '#3a6a28');
+        _bar(leafX + leafW * 0.6, topY + 2, 1, leafH * 0.6, '#2a5a20');
+        break;
+      }
+      case 'crate': {
+        _bar(startX, topY, spriteW, spriteH, '#6a4a20');
+        _bar(startX, topY, spriteW, 1, '#8a6a30');
+        _bar(startX, topY + spriteH - 1, spriteW, 1, '#3a2810');
+        _bar(screenX, topY, 1, spriteH, '#3a2810'); // center plank
+        break;
+      }
+      case 'trashcan': {
+        _bar(startX, topY + spriteH * 0.05, spriteW, spriteH * 0.95, '#202020');
+        _bar(startX, topY, spriteW, spriteH * 0.10, '#3a3a3a'); // lid rim
+        break;
+      }
+      case 'medical': {
+        // White cart + red cross
+        _bar(startX, topY, spriteW, spriteH, '#e0e0d8');
+        _bar(startX, topY + spriteH * 0.5, spriteW, 1, '#a0a098');
+        // Red cross
+        _bar(screenX - spriteW * 0.18, topY + spriteH * 0.20, spriteW * 0.36, spriteH * 0.10, '#c02020');
+        _bar(screenX - spriteW * 0.06, topY + spriteH * 0.10, spriteW * 0.12, spriteH * 0.30, '#c02020');
+        // Wheels
+        _bar(startX + 1, topY + spriteH - 2, spriteW * 0.20, 2, '#101010');
+        _bar(endX - spriteW * 0.20 - 1, topY + spriteH - 2, spriteW * 0.20, 2, '#101010');
+        break;
+      }
+      case 'tv': {
+        // Wall-mounted TV with grey casing + dark screen + faint hum
+        _bar(startX, topY, spriteW, spriteH, '#181818');
+        _bar(startX + 2, topY + 2, Math.max(1, spriteW - 4), Math.max(1, spriteH - 4), '#080820');
+        var tvFlick = (Math.sin(performance.now() * 0.025 + p._wobble) > 0.7);
+        if (tvFlick) {
+          ctx.fillStyle = 'rgba(120,140,160,' + (fog * 0.5).toFixed(2) + ')';
+          ctx.fillRect(startX + 3, topY + 3, Math.max(1, spriteW - 6), Math.max(1, spriteH - 6));
+        }
+        break;
+      }
+      case 'bench': {
+        // Long flat seat + 2 legs
+        _bar(startX, topY + spriteH * 0.30, spriteW, spriteH * 0.30, '#3a2818');
+        var bLegW = Math.max(1, spriteW * 0.06);
+        _bar(startX + 2, topY + spriteH * 0.60, bLegW, spriteH * 0.40, '#1a1008');
+        _bar(endX - bLegW - 2, topY + spriteH * 0.60, bLegW, spriteH * 0.40, '#1a1008');
+        break;
+      }
+      case 'kiosk': {
+        // Tall narrow stand + sign on top (yellow/red)
+        _bar(startX, topY, spriteW, spriteH, '#3a3028');
+        // Sign panel
+        _bar(startX, topY, spriteW, spriteH * 0.25, '#a83020');
+        _bar(startX, topY + spriteH * 0.05, spriteW, 1, '#f0c060');
+        break;
+      }
+      case 'pillar': {
+        _bar(startX + spriteW * 0.10, topY, spriteW * 0.80, spriteH, '#202020');
+        _bar(startX + spriteW * 0.10, topY, spriteW * 0.80, spriteH * 0.05, '#404040');
+        _bar(startX + spriteW * 0.05, topY + spriteH - 2, spriteW * 0.90, 2, '#101010');
+        break;
+      }
+      case 'barrel': {
+        _bar(startX + spriteW * 0.10, topY, spriteW * 0.80, spriteH, '#4a3020');
+        _bar(startX + spriteW * 0.10, topY + spriteH * 0.25, spriteW * 0.80, 1, '#6a4828');
+        _bar(startX + spriteW * 0.10, topY + spriteH * 0.70, spriteW * 0.80, 1, '#6a4828');
+        break;
+      }
+      case 'rug': {
+        // Flat decor — short, wide ellipse hugging the floor line so it
+        // reads as a rug seen forward through the perspective rather
+        // than a tall vertical oval.
+        ctx.fillStyle = 'rgba(120,40,40,' + (fog * 0.6).toFixed(2) + ')';
+        ctx.beginPath();
+        ctx.ellipse(screenX, floorY - 1, spriteW / 2, Math.max(1, fullH * 0.04), 0, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+      }
+      case 'candle': {
+        var candleH = spriteH * 0.7;
+        _bar(screenX - 1, topY + spriteH * 0.30, 2, candleH, '#e8d8b0');
+        // Flame
+        var flameY = topY + spriteH * 0.30;
+        var flick = Math.sin(performance.now() * 0.012 + p._wobble) * 0.3 + 0.7;
+        _dot(screenX, flameY, Math.max(1.5, spriteW * 0.45 * flick), 'rgba(255,180,80,' + (fog * 0.85).toFixed(2) + ')');
+        _dot(screenX, flameY, Math.max(1, spriteW * 0.18 * flick), 'rgba(255,240,180,' + fog.toFixed(2) + ')');
+        // Halo glow
+        var clglow = ctx.createRadialGradient(screenX, flameY, 0, screenX, flameY, spriteW * 2.0);
+        clglow.addColorStop(0, 'rgba(255,180,80,' + (fog * 0.4).toFixed(2) + ')');
+        clglow.addColorStop(1, 'rgba(255,180,80,0)');
+        ctx.fillStyle = clglow;
+        ctx.fillRect(screenX - spriteW * 2.0, flameY - spriteW * 2.0, spriteW * 4.0, spriteW * 4.0);
+        break;
+      }
+      case 'rock': {
+        _bar(startX + spriteW * 0.05, topY, spriteW * 0.90, spriteH, '#3a3a38');
+        _bar(startX + spriteW * 0.30, topY, spriteW * 0.40, spriteH * 0.25, '#5a5a58');
+        break;
+      }
+      case 'coral': {
+        // Branchy under-sea decor — pink/orange tone
+        _bar(screenX - spriteW * 0.10, topY, spriteW * 0.20, spriteH, '#a04050');
+        _bar(screenX + spriteW * 0.10, topY + spriteH * 0.20, spriteW * 0.18, spriteH * 0.70, '#b85060');
+        _bar(screenX - spriteW * 0.28, topY + spriteH * 0.30, spriteW * 0.16, spriteH * 0.55, '#a04848');
+        break;
+      }
+      case 'hedge': {
+        // Garden hedge — dark green with leaf jitter
+        _bar(startX, topY, spriteW, spriteH, '#1a3618');
+        for (var lf = 0; lf < 5; lf++) {
+          var lfX = startX + spriteW * (lf / 5);
+          _bar(lfX, topY + (lf % 2) * 2, Math.max(1, spriteW * 0.18), spriteH, '#244828');
+        }
+        break;
+      }
+      default:
+        _bar(startX, topY, spriteW, spriteH, '#404040');
+    }
+
+    ctx.restore();
+  }
+
+  // ============================================================
   //  RENDER
   // ============================================================
   function onRender(ctx) {
@@ -11067,6 +11519,16 @@
     if (state === ST.TITLE || state === ST.ENDED || state === ST.DEAD) return;
 
     GameEngine.drawMap();
+
+    // Decorative props (desks/beds/lamps/...) — drawn after the map so the
+    // z-buffer reflects wall occlusion, but before entities so monsters
+    // visually overlap furniture they're standing in front of. Cheap
+    // (3-8 fillrect per prop, depth-fog culled at 18 tiles).
+    if (props && props.length) {
+      for (var pp = 0; pp < props.length; pp++) {
+        try { drawProp(ctx, props[pp]); } catch (e) {}
+      }
+    }
 
     // Draw entities (type-aware). Dead entities linger for 700 ms with
     // a fade+sink so kills feel satisfying instead of popping out.

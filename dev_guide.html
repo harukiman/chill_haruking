@@ -956,6 +956,8 @@
   <h2>変更履歴 (抜粋)</h2>
   <table>
     <tr><th>ver</th><th>変更</th></tr>
+    <tr><td>v6.6</td><td>★ レベル固有プロップス追加 — 22 種家具/小物 (desk/bed/lamp/pc/plant/bookcase/...) を 16 レベルに自動配置。populateProps が currentMap.tiles を走査して壁際/開放に応じて配置。render-only でセーブ非干渉</td></tr>
+    <tr><td>v6.5</td><td>攻撃ボタン: touchstart 直接発火で移動中も使用可、actionBtn を左横に並べて重なり解消、touch-action: manipulation 付与</td></tr>
     <tr><td>v6.4</td><td>★ 5 セーブスロット (タイトル「セーブスロット」ボタン → 5 行 overlay、各スロット名前付与・選択・削除可、レガシー単一セーブはスロット1へ自動移行、実績/図鑑は全スロット共通)</td></tr>
     <tr><td>v6.3</td><td>★ オープニングに FPS 視点の廊下歩行シーン追加 (introScene0 + mini raycaster, 4.5s)</td></tr>
     <tr><td>v6.2</td><td>perf: 背景グラデキャッシュ (theme/h不変なら再生成skip) + pickup/note 座標事前計算で per-frame split() 削減</td></tr>
