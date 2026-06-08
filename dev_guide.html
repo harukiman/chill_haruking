@@ -956,6 +956,7 @@
   <h2>変更履歴 (抜粋)</h2>
   <table>
     <tr><th>ver</th><th>変更</th></tr>
+    <tr><td>v6.8</td><td>★ プロップス発光ライト — lamp/candle/pc/tv が GameEngine.pointLights に点光源を登録、周囲の壁・床が warm/cool に染まる。色温度・半径・揺らぎ profile 別。id 'prop_l_*' で scripted 'l_*' と分離</td></tr>
     <tr><td>v6.7</td><td>★ レベル遷移高速化 + 画面サイズ変動バグ修正 — loading 900→350ms / lr FPS descent 1100→800ms / tap-gate 400→150ms / auto-advance 8000→4000ms。forceCanvasResize を idempotent 化 (window dimensions 不変なら no-op) + 遷移中 4 箇所の呼び出しを最終 1 箇所に集約</td></tr>
     <tr><td>v6.6</td><td>★ レベル固有プロップス追加 — 22 種家具/小物 (desk/bed/lamp/pc/plant/bookcase/...) を 16 レベルに自動配置。populateProps が currentMap.tiles を走査して壁際/開放に応じて配置。render-only でセーブ非干渉</td></tr>
     <tr><td>v6.5</td><td>攻撃ボタン: touchstart 直接発火で移動中も使用可、actionBtn を左横に並べて重なり解消、touch-action: manipulation 付与</td></tr>

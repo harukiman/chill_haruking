@@ -5600,6 +5600,18 @@
       return s / 0x7fffffff;
     };
   }
+  // Light-emitting prop kinds. Each pushes a point light into the engine
+  // so the surrounding walls/floor pick up the warm/cool tint instead of
+  // staying flat-dark — adds a lot of perceived realism in dim levels.
+  // intensity is kept modest so the existing scripted point lights stay
+  // dominant; props contribute background glow.
+  var PROP_LIGHT_PROFILES = {
+    lamp:   { r: 255, g: 210, b: 130, radius: 4.0, intensity: 0.55, flicker: 0.06 },
+    candle: { r: 255, g: 160, b: 70,  radius: 2.5, intensity: 0.45, flicker: 0.35 },
+    pc:     { r: 110, g: 170, b: 230, radius: 2.0, intensity: 0.30, flicker: 0.04 },
+    tv:     { r: 130, g: 160, b: 220, radius: 2.8, intensity: 0.40, flicker: 0.20 }
+  };
+
   function populateProps(levelId) {
     props = [];
     var cfg = LEVEL_PROP_CONFIG[levelId];
@@ -5645,13 +5657,28 @@
         if (!t) break;
         var jitterX = (rng() - 0.5) * TS * 0.30;
         var jitterY = (rng() - 0.5) * TS * 0.30;
-        props.push({
+        var pp = {
           kind: entry.kind,
           gx: t[0], gy: t[1],
           _wx: t[0] * TS + TS / 2 + jitterX,
           _wy: t[1] * TS + TS / 2 + jitterY,
           _wobble: rng() * 6.28
-        });
+        };
+        props.push(pp);
+        // Register a point light for emissive kinds. id namespaced as
+        // 'prop_l' + index so removePointLight on level reload (entities
+        // re-init clears GameEngine.pointLights anyway) doesn't collide
+        // with the scripted level lights ('l_<n>').
+        var lp = PROP_LIGHT_PROFILES[entry.kind];
+        if (lp && GameEngine.addPointLight) {
+          GameEngine.addPointLight('prop_l_' + props.length, t[0], t[1], {
+            radius: lp.radius,
+            r: lp.r, g: lp.g, b: lp.b,
+            intensity: lp.intensity,
+            flicker: lp.flicker,
+            phase: pp._wobble
+          });
+        }
       }
     }
   }
