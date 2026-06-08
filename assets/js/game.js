@@ -6116,6 +6116,24 @@
     if (sprint) player._sprintingDuration = (player._sprintingDuration || 0) + dt;
     else player._sprintingDuration = 0;
 
+    // Heavy-breath audio loop — kicks in when stamina drops below 30%
+    // (whether sprinting or just recovering from sprint exhaustion).
+    // Period shortens as stamina worsens so the player feels the
+    // exertion. 0.30 → 2.4s, 0.05 → 1.0s. Auto-silences once stam > 35%.
+    var staRatio = player.stam / player.stamMax;
+    if (player._breathT === undefined) player._breathT = 0;
+    if (staRatio < 0.30) {
+      var staClamp = Math.max(0.05, Math.min(0.30, staRatio));
+      var breathPeriod = 1.0 + (staClamp - 0.05) / 0.25 * (2.4 - 1.0);
+      player._breathT += dt;
+      if (player._breathT >= breathPeriod) {
+        player._breathT = 0;
+        if (audioInitialized) try { GameEngine.playSound('breath'); } catch (e) {}
+      }
+    } else if (staRatio > 0.35) {
+      player._breathT = 0;
+    }
+
     // Death check
     if (player.hp <= 0) {
       var killer = '不明';
