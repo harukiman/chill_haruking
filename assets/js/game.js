@@ -3946,6 +3946,10 @@
     // Per-level ambient particles (dust / embers / leaves / bubbles ...)
     try { initParticlesForLevel(levelId); } catch (e) { particles = []; particleConfig = null; }
 
+    // Reset floor decals (blood splats etc.) — they're scoped to the
+    // current level, no cross-level persistence.
+    try { clearDecals(); } catch (e) { decals = []; }
+
     // Audio: stop all ambient + BGM loops, start fresh ones
     if (audioInitialized) {
       ['ambient', 'fluorescent', 'pipe_drip', 'electric', 'wind',
@@ -10514,6 +10518,22 @@
     ctx.save();
     ctx.globalAlpha = fogFactor;
 
+    // Foot shadow — short horizontal ellipse at the entity's floor line.
+    // Grounds the sprite (otherwise entities feel like they're floating
+    // a few pixels above the floor in the raycaster projection). Bigger
+    // for bosses, scaled with depth.
+    var _sCenterCol = Math.round(screenX);
+    if (_sCenterCol >= 0 && _sCenterCol < w && zBuf[_sCenterCol] > depthTiles) {
+      var _shadowR = spriteW * 0.42;
+      var _shadowH = Math.max(2, spriteH * 0.035);
+      var _shadowY = startY + spriteH - _shadowH * 0.4;
+      var _shadowAlpha = (e.type === 'boss' || e.type === 'haruki_boss') ? 0.65 : 0.50;
+      ctx.fillStyle = 'rgba(0,0,0,' + (_shadowAlpha * fogFactor).toFixed(2) + ')';
+      ctx.beginPath();
+      ctx.ellipse(screenX, _shadowY, _shadowR, _shadowH, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
     // Subtle breathing oscillation per entity (low CPU cost — single sin per frame)
     var breath = Math.sin((performance.now() + (e._breathPhase || (e._breathPhase = Math.random() * 6.28))) * 0.003) * 0.012;
     var pulse = 0.5 + 0.5 * Math.sin(performance.now() * 0.008 + (e._eyePhase || (e._eyePhase = Math.random() * 6.28)));
@@ -11357,6 +11377,63 @@
   }
 
   // ============================================================
+  //  FLOOR DECALS — blood splats, scorch marks
+  // ============================================================
+  // Persistent floor stains. Spawned on entity death so kills leave a
+  // visible trace at the corpse site, then fade after ~25s. Bounded
+  // pool (oldest dropped) so corpse-spam levels stay performant.
+  var DECAL_MAX = 30;
+  var decals = []; // { kind, x, y, bornAt, life, radiusTiles, color }
+  function pushDecal(kind, x, y, opts) {
+    opts = opts || {};
+    if (decals.length >= DECAL_MAX) decals.shift();
+    decals.push({
+      kind: kind,
+      x: x, y: y,
+      bornAt: performance.now(),
+      life: opts.life || 25000, // ms
+      radiusTiles: opts.radiusTiles || 0.55,
+      color: opts.color || 'rgba(120,20,20,0.55)'
+    });
+  }
+  function clearDecals() { decals = []; }
+  function drawDecals(ctx) {
+    if (!decals.length) return;
+    var w = GameEngine.width;
+    var h = GameEngine.height;
+    var zBuf = GameEngine._zBuffer;
+    if (!zBuf) return;
+    var cosT = Math.cos(player.angle);
+    var sinT = Math.sin(player.angle);
+    var nowT = performance.now();
+    for (var i = 0; i < decals.length; i++) {
+      var d = decals[i];
+      var age = nowT - d.bornAt;
+      if (age > d.life) continue;
+      var dx = d.x - player.x;
+      var dy = d.y - player.y;
+      var tX = -dx * sinT + dy * cosT;
+      var tY = dx * cosT + dy * sinT;
+      if (tY <= 0.1) continue;
+      var depthTiles = tY / TS;
+      if (depthTiles > 14) continue;
+      var c = Math.round((w / 2) * (1 + tX / tY));
+      if (c < 0 || c >= w || zBuf[c] <= depthTiles) continue;
+      var fullH = Math.abs(h / depthTiles) * 0.8;
+      var floorY = (h - fullH) / 2 + fullH - 1;
+      var radPx = (d.radiusTiles * TS / tY) * (h / TS) * 0.55;
+      // Fade last 40% of life
+      var fadeR = 1 - Math.max(0, (age - d.life * 0.6) / (d.life * 0.4));
+      ctx.fillStyle = d.color;
+      ctx.globalAlpha = Math.max(0, Math.min(1, fadeR)) * Math.max(0.10, 1 - depthTiles / 14);
+      ctx.beginPath();
+      ctx.ellipse(c, floorY, Math.max(1, radPx), Math.max(1, radPx * 0.35), 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  // ============================================================
   //  AMBIENT PARTICLES — dust motes, embers, bubbles, leaves
   // ============================================================
   // Bounded pool (PARTICLE_POOL_SIZE max) spawning around the player.
@@ -11888,6 +11965,11 @@
       }
     }
 
+    // Floor decals (blood splats, scorch marks) — under everything else
+    // so entities stand on top, but after props so a blood splat next
+    // to a desk reads naturally.
+    try { drawDecals(ctx); } catch (e) {}
+
     // Ambient atmospheric particles (dust / embers / bubbles / ...).
     // Cheap — bounded pool (36 max) and one fillrect/glow per particle.
     try { drawParticles(ctx); } catch (e) {}
@@ -11911,6 +11993,20 @@
         e._deathFade = fade;
         e._deathSink = sinceDeath / 700; // 0..1 sink ratio for vertical drop
         drawTypedEntity(ctx, e);
+        // Spawn a blood decal exactly once per death (first frame after
+        // death). Skip for bosses since the boss death cinematic already
+        // dominates the visual; civilians use a slightly different colour.
+        if (!e._decalSpawned) {
+          e._decalSpawned = true;
+          if (e.type !== 'boss' && e.type !== 'haruki_boss') {
+            var isCiv = (e.type === 'civilian');
+            pushDecal('blood', e.x, e.y, {
+              radiusTiles: isCiv ? 0.45 : 0.60,
+              color: isCiv ? 'rgba(140,30,30,0.45)' : 'rgba(120,20,20,0.60)',
+              life: 30000
+            });
+          }
+        }
       }
     }
 
