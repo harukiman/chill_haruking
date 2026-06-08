@@ -3853,6 +3853,9 @@
     // never end up inside a wall when the layout shifts.
     try { populateProps(levelId); } catch (e) { props = []; }
 
+    // Per-level ambient particles (dust / embers / leaves / bubbles ...)
+    try { initParticlesForLevel(levelId); } catch (e) { particles = []; particleConfig = null; }
+
     // Audio: stop all ambient + BGM loops, start fresh ones
     if (audioInitialized) {
       ['ambient', 'fluorescent', 'pipe_drip', 'electric', 'wind',
@@ -6310,26 +6313,11 @@
     // the previous beat so they stay surprising. Skipped during cutscenes,
     // chase, safe-area, or while the phone/settings overlay is open.
     if (typeof _isGamePaused !== 'function' || !_isGamePaused()) {
-      // ── Per-level signature ambient particles ──
-      // Each level emits a signature particle near the player every
-      // ~0.6s (level-dependent rate). Adds visual life to the static
-      // walls. User feedback: 「オブジェクトも少なく単調」.
-      player._ambParticleT = (player._ambParticleT || 0) - dt;
-      if (player._ambParticleT <= 0 && GameEngine.addParticle) {
-        var pSpec = LEVEL_AMBIENT_PARTICLES[currentLevel];
-        if (pSpec) {
-          player._ambParticleT = pSpec.interval || 0.6;
-          // Emit slightly off-camera so particles drift INTO view.
-          var px = player.x + (Math.random() - 0.5) * TS * 6;
-          var py = player.y + (Math.random() - 0.5) * TS * 6;
-          for (var ppi = 0; ppi < (pSpec.count || 1); ppi++) {
-            GameEngine.addParticle(pSpec.type, px + (Math.random() - 0.5) * TS,
-                                   py + (Math.random() - 0.5) * TS);
-          }
-        } else {
-          player._ambParticleT = 2.0;
-        }
-      }
+      // Per-level signature ambient particles are now driven by the
+      // bounded `particles[]` pool in updateParticles(dt) (richer kinds:
+      // dust/ember/bubble/leaf/spore/ash, gravity + drift, gfxQuality
+      // gate). The legacy LEVEL_AMBIENT_PARTICLES → GameEngine.addParticle
+      // path was deleted to avoid spawning both systems in parallel.
       if (!_inCinematic && !player.inSafeZone && !player._beingChased) {
         _ambientEventRollT = (_ambientEventRollT || 0) - dt;
         if (_ambientEventRollT <= 0) {
@@ -11251,6 +11239,216 @@
   }
 
   // ============================================================
+  //  AMBIENT PARTICLES — dust motes, embers, bubbles, leaves
+  // ============================================================
+  // Bounded pool (PARTICLE_POOL_SIZE max) spawning around the player.
+  // Each kind has gravity / drift / lifespan that fits the level theme.
+  // gfxQuality === 'low' disables the whole system to spare mobile fillrate.
+  var PARTICLE_POOL_SIZE = 36;
+  var particles = []; // { kind, x, y, z, vx, vy, vz, life, lifeMax, size, _seedR }
+  var particleConfig = null; // { kind, rate (spawns/sec) }
+
+  // kind → physics + visual profile
+  var PARTICLE_KINDS = {
+    dust: {
+      // White motes drifting through fluorescent light — backrooms-y
+      gravity: -0.5,   // slight upward float
+      driftX: 6, driftY: 6,
+      life: 8.0,
+      size: 0.7,
+      color: [220, 220, 200],
+      alphaMul: 0.45
+    },
+    ember: {
+      // Glowing orange embers rising — Lv6/Lv9
+      gravity: -4.0,
+      driftX: 3, driftY: 3,
+      life: 3.0,
+      size: 0.9,
+      color: [255, 140, 60],
+      alphaMul: 0.85,
+      glow: true
+    },
+    bubble: {
+      // Upward bubbles in submerged Lv14
+      gravity: -8.0,
+      driftX: 2, driftY: 2,
+      life: 4.0,
+      size: 1.1,
+      color: [200, 230, 255],
+      alphaMul: 0.55,
+      ring: true
+    },
+    leaf: {
+      // Falling leaves in garden Lv15 / suburbs Lv7
+      gravity: 1.5,
+      driftX: 18, driftY: 18,
+      life: 9.0,
+      size: 1.2,
+      color: [180, 140, 60],
+      alphaMul: 0.80
+    },
+    spore: {
+      // Pale green spores in Lv15 vine / Lv8 hive corners
+      gravity: -0.8,
+      driftX: 10, driftY: 10,
+      life: 7.0,
+      size: 0.6,
+      color: [170, 230, 160],
+      alphaMul: 0.55,
+      glow: true
+    },
+    ash: {
+      // Slow grey ash — Lv12 / Lv9 boss area
+      gravity: 0.6,
+      driftX: 8, driftY: 8,
+      life: 7.5,
+      size: 0.8,
+      color: [180, 180, 175],
+      alphaMul: 0.60
+    }
+  };
+
+  // Per-level particle assignment. rate is in spawns/second.
+  var LEVEL_PARTICLES = {
+    0:  { kind: 'dust',   rate: 3.5 },
+    1:  { kind: 'dust',   rate: 2.5 },
+    2:  { kind: 'dust',   rate: 2.0 },
+    3:  { kind: 'spore',  rate: 1.5 },
+    4:  { kind: 'dust',   rate: 3.0 },
+    5:  { kind: 'dust',   rate: 2.5 },
+    6:  { kind: 'ember',  rate: 1.8 },
+    7:  { kind: 'leaf',   rate: 2.2 },
+    8:  { kind: 'spore',  rate: 1.8 },
+    9:  { kind: 'ash',    rate: 2.4 },
+    11: { kind: 'leaf',   rate: 1.6 },
+    12: { kind: 'ash',    rate: 2.6 },
+    13: { kind: 'dust',   rate: 4.0 },
+    14: { kind: 'bubble', rate: 3.5 },
+    15: { kind: 'leaf',   rate: 3.0 }
+  };
+
+  function initParticlesForLevel(levelId) {
+    particles = [];
+    particleConfig = LEVEL_PARTICLES[levelId] || null;
+  }
+
+  // Spawn a single particle near the player. Position is jittered within
+  // 6 tiles around player so the system stays visually local and we
+  // don't waste pool slots on far-off particles the player can't see.
+  var _particleSpawnAcc = 0;
+  function _spawnOneParticle() {
+    if (!particleConfig || !PARTICLE_KINDS[particleConfig.kind]) return;
+    if (particles.length >= PARTICLE_POOL_SIZE) return;
+    var def = PARTICLE_KINDS[particleConfig.kind];
+    var ang = Math.random() * Math.PI * 2;
+    var dist = (1.5 + Math.random() * 4.5) * TS;
+    var px = player.x + Math.cos(ang) * dist;
+    var py = player.y + Math.sin(ang) * dist;
+    // Verify roughly walkable so we don't spawn inside walls
+    if (!isWalkable(px, py)) return;
+    var z = 0.4 + Math.random() * 0.55; // 0..1 ceiling-relative height
+    if (def.gravity < 0) z = Math.random() * 0.35; // upward → start low
+    particles.push({
+      kind: particleConfig.kind,
+      x: px, y: py,
+      z: z,
+      vx: (Math.random() - 0.5) * def.driftX,
+      vy: (Math.random() - 0.5) * def.driftY,
+      vz: 0,
+      life: def.life,
+      lifeMax: def.life,
+      size: def.size * (0.7 + Math.random() * 0.6),
+      _seedR: Math.random()
+    });
+  }
+
+  function updateParticles(dt) {
+    if (gfxQuality === 'low') return;
+    if (!particleConfig) return;
+    _particleSpawnAcc += dt * particleConfig.rate;
+    while (_particleSpawnAcc >= 1) {
+      _spawnOneParticle();
+      _particleSpawnAcc -= 1;
+    }
+    // Integrate + cull
+    for (var i = particles.length - 1; i >= 0; i--) {
+      var p = particles[i];
+      var def = PARTICLE_KINDS[p.kind];
+      if (!def) { particles.splice(i, 1); continue; }
+      p.life -= dt;
+      if (p.life <= 0) { particles.splice(i, 1); continue; }
+      // Vertical (z) motion — small steps, gravity controls upward float / fall
+      p.z -= def.gravity * dt * 0.05;
+      if (p.z < 0.02 || p.z > 1.05) { particles.splice(i, 1); continue; }
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      // Drift wobble — natural sway
+      p.vx += (Math.random() - 0.5) * def.driftX * dt * 0.5;
+      p.vy += (Math.random() - 0.5) * def.driftY * dt * 0.5;
+      // Decay velocity slightly so particles don't accelerate forever
+      p.vx *= 0.97;
+      p.vy *= 0.97;
+    }
+  }
+
+  function drawParticles(ctx) {
+    if (gfxQuality === 'low' || !particles.length) return;
+    var w = GameEngine.width;
+    var h = GameEngine.height;
+    var zBuf = GameEngine._zBuffer;
+    if (!zBuf) return;
+    var cosT = Math.cos(player.angle);
+    var sinT = Math.sin(player.angle);
+    for (var i = 0; i < particles.length; i++) {
+      var p = particles[i];
+      var def = PARTICLE_KINDS[p.kind];
+      if (!def) continue;
+      var dx = p.x - player.x;
+      var dy = p.y - player.y;
+      var tX = -dx * sinT + dy * cosT;
+      var tY = dx * cosT + dy * sinT;
+      if (tY <= 0.1) continue;
+      var depthTiles = tY / TS;
+      if (depthTiles > 14) continue; // close-range only
+      var screenX = (w / 2) * (1 + tX / tY);
+      var c = Math.round(screenX);
+      if (c < 0 || c >= w || zBuf[c] <= depthTiles) continue;
+      var spriteH = Math.abs(h / depthTiles) * 0.8;
+      // z=0 → floor, z=1 → ceiling. Translate to vertical screen offset.
+      var floorY = (h - spriteH) / 2 + spriteH;
+      var ceilY = (h - spriteH) / 2;
+      var yScreen = floorY - (floorY - ceilY) * p.z;
+      // Size in px; tiny near, smaller far.
+      var sizePx = Math.max(1, p.size * (220 / depthTiles));
+      var lifeRatio = p.life / p.lifeMax;
+      // Fade in over first 12% of life, hold, fade out last 30%
+      var fadeIn = Math.min(1, (1 - lifeRatio) * 8);
+      var fadeOut = Math.min(1, lifeRatio / 0.3);
+      var alpha = def.alphaMul * fadeIn * fadeOut * Math.max(0.15, 1 - depthTiles / 14);
+      var col = def.color;
+      ctx.fillStyle = 'rgba(' + col[0] + ',' + col[1] + ',' + col[2] + ',' + alpha.toFixed(2) + ')';
+      if (def.ring) {
+        ctx.beginPath();
+        ctx.arc(screenX, yScreen, sizePx, 0, Math.PI * 2);
+        ctx.stroke && (ctx.strokeStyle = ctx.fillStyle, ctx.lineWidth = 1, ctx.stroke());
+        ctx.fill();
+      } else if (def.glow) {
+        var glowR = sizePx * 3;
+        var grd = ctx.createRadialGradient(screenX, yScreen, 0, screenX, yScreen, glowR);
+        grd.addColorStop(0, 'rgba(' + col[0] + ',' + col[1] + ',' + col[2] + ',' + alpha.toFixed(2) + ')');
+        grd.addColorStop(1, 'rgba(' + col[0] + ',' + col[1] + ',' + col[2] + ',0)');
+        ctx.fillStyle = grd;
+        ctx.fillRect(screenX - glowR, yScreen - glowR, glowR * 2, glowR * 2);
+      } else {
+        ctx.beginPath();
+        ctx.arc(screenX, yScreen, sizePx, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+
+  // ============================================================
   //  PROP RENDERER (decorative furniture / objects, billboard style)
   // ============================================================
   // Each kind paints a stylised silhouette using filled rects + the engine's
@@ -11572,6 +11770,10 @@
       }
     }
 
+    // Ambient atmospheric particles (dust / embers / bubbles / ...).
+    // Cheap — bounded pool (36 max) and one fillrect/glow per particle.
+    try { drawParticles(ctx); } catch (e) {}
+
     // Draw entities (type-aware). Dead entities linger for 700 ms with
     // a fade+sink so kills feel satisfying instead of popping out.
     var nowMs_ = performance.now();
@@ -11805,36 +12007,11 @@
       updatePlayer(dt);
       updateEntities(dt);
       GameEngine.updateParticles(dt);
-      // Per-level ambient particles (skip in LOW quality)
-      if (gfxQuality !== 'low') {
-        var partRand = Math.random();
-        var pAng = Math.random() * Math.PI * 2;
-        var pDist = 100 + Math.random() * 150;
-        var px_ = player.x + Math.cos(pAng) * pDist;
-        var py_ = player.y + Math.sin(pAng) * pDist;
-        if (currentLevel === 2 && partRand < 0.05) {
-          // Lv2 Pipe Dreams — water drops
-          GameEngine.addParticle('fog', px_, py_);
-        } else if (currentLevel === 3 && partRand < 0.04) {
-          // Lv3 Electrical — sparks
-          GameEngine.addParticle('spark', px_, py_);
-        } else if (currentLevel === 5 && partRand < 0.025) {
-          // Lv5 Hotel — dust motes
-          GameEngine.addParticle('dust', px_, py_);
-        } else if (currentLevel === 8 && partRand < 0.04) {
-          // Lv8 Hive — dust (representing pollen)
-          GameEngine.addParticle('dust', px_, py_);
-        } else if (currentLevel === 9 && partRand < 0.03) {
-          // Lv9 Suburbs — fireflies (sparks)
-          GameEngine.addParticle('spark', px_, py_);
-        } else if (currentLevel === 12 && partRand < 0.04) {
-          // Lv12 Fun=) — confetti (sparks)
-          GameEngine.addParticle('spark', px_, py_);
-        } else if (partRand < 0.025) {
-          // Default dust
-          GameEngine.addParticle('dust', px_, py_);
-        }
-      }
+      // Per-level ambient particles — new system (dust/ember/bubble/
+      // leaf/spore/ash) supersedes the legacy fog/spark/dust spawn
+      // block. Each kind has gravity / drift / lifespan + billboard
+      // render gated by gfxQuality !== 'low'.
+      updateParticles(dt);
     }
     if (miniGameOpen) updateMiniGame(dt);
   }
