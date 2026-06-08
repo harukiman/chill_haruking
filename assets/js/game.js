@@ -3866,17 +3866,19 @@
     }
     player._beingChased = false;
 
-    // Force canvas resize before/during overlays (iOS Safari dynamic viewport fix)
-    forceCanvasResize();
-
-    // Loading screen — then Level Reach cinematic before play
+    // Loading screen — then Level Reach cinematic before play.
+    // User report 2026-06-08:
+    //   1) 「レベル遷移に時間がかかる」 — 900ms ハードロード + 1100ms FPS
+    //      descent が長く感じる。350ms に短縮し、cinematic への tap-gate
+    //      も 400ms → 150ms に。
+    //   2) 「レベル遷移時に画面サイズが変わるバグ」 — forceCanvasResize
+    //      を遷移中に 4 箇所で呼んでおり、iOS Safari の URL バー出現と
+    //      重なって canvas が複数回 reflow していた。最終 startPlaying
+    //      直前の 1 回だけに集約。
     if (!instant) {
       showLoadingScreen(def);
       setTimeout(function () {
         hideOverlay('loadingScreen');
-        forceCanvasResize();
-        // Lv9 plays the Haruki boss reveal cutscene before the standard
-        // level-reach card. Other levels just show the reach card.
         var afterReach = function () {
           forceCanvasResize();
           startPlaying();
@@ -3888,16 +3890,24 @@
         } else {
           playLevelReachCinematic(def, afterReach);
         }
-      }, 900);
+      }, 350);
     } else {
       forceCanvasResize();
       startPlaying();
     }
   }
 
+  // Idempotent resize — only triggers _resize + the global resize event
+  // when the viewport actually changed since the previous call. Without
+  // this guard, multiple back-to-back invocations during a transition
+  // caused visible canvas size flickers (user 2026-06-08).
+  var _lastResizeW = 0, _lastResizeH = 0;
   function forceCanvasResize() {
+    var iw = window.innerWidth, ih = window.innerHeight;
+    if (iw === _lastResizeW && ih === _lastResizeH) return;
+    _lastResizeW = iw;
+    _lastResizeH = ih;
     if (GameEngine._resize) GameEngine._resize();
-    // Also dispatch global resize event for any other listeners
     try { window.dispatchEvent(new Event('resize')); } catch (e) {}
   }
 
@@ -4784,12 +4794,14 @@
     // FPS descent shot — shorter (1.1s) to reduce transition cost on mobile.
     // Skipped entirely when gfxQuality === 'low' (handled inside the runner).
     // Cancelled on advance() so skipping doesn't leave a RAF running.
-    var lrFpsCancel = runLrFpsDescent(def, 1100);
+    var lrFpsCancel = runLrFpsDescent(def, 800);
     // Clean up previous listeners (each setLevel re-uses this overlay)
     if (lrOverlay._cleanup) { try { lrOverlay._cleanup(); } catch (e) {} }
     var done = false;
     var canAdvance = false;
-    setTimeout(function () { canAdvance = true; }, 400);
+    // Shorter tap-gate (was 400ms) — perceived responsiveness, the
+    // overlay still has enough display time to read.
+    setTimeout(function () { canAdvance = true; }, 150);
     var advance = function () {
       if (done || !canAdvance) return;
       done = true;
@@ -4799,7 +4811,9 @@
       lrOverlay.style.pointerEvents = 'none';
       lrOverlay._cleanup = null;
       hideOverlay('levelReachCinematic');
-      forceCanvasResize();
+      // forceCanvasResize is intentionally deferred to onDone (afterReach
+      // in setLevel) so the canvas only reflows once — preventing the
+      // visible size flicker the user reported on 2026-06-08.
       onDone();
     };
     lrOverlay._cleanup = function () {
@@ -4810,9 +4824,10 @@
     lrOverlay.style.pointerEvents = 'auto';
     lrOverlay.addEventListener('click', advance);
     lrOverlay.addEventListener('touchstart', advance);
-    // Safety net: auto-advance after 8s (was 60s — caused users to think
-    // they were stuck after the Haruki boss cutscene if they didn't tap).
-    setTimeout(function () { canAdvance = true; advance(); }, 8000);
+    // Safety net: auto-advance after 4s (was 8s, then 60s). The level
+    // reach card no longer needs that much hold time — the user can
+    // tap to skip immediately, and we'd rather get them into play.
+    setTimeout(function () { canAdvance = true; advance(); }, 4000);
   }
 
   function getEntityColor(type) {
